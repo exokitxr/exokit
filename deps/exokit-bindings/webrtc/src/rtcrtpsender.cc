@@ -168,6 +168,6 @@ void RTCRtpSender::Init(Local<Object> exports) {
   Nan::SetPrototypeMethod(tpl, "setParameters", SetParameters);
   Nan::SetPrototypeMethod(tpl, "getStats", GetStats);
   Nan::SetPrototypeMethod(tpl, "replaceTrack", ReplaceTrack);
-  constructor().Reset(tpl->GetFunction());
-  exports->Set(Nan::New("RTCRtpSender").ToLocalChecked(), tpl->GetFunction());
+  constructor().Reset(Nan::GetFunction(tpl).ToLocalChecked());
+  exports->Set(Nan::New("RTCRtpSender").ToLocalChecked(), Nan::GetFunction(tpl).ToLocalChecked());
 }

@@ -67,7 +67,7 @@ NAN_METHOD(LegacyStatsReport::stat) {
   Nan::HandleScope scope;
 
   auto self = Nan::ObjectWrap::Unwrap<LegacyStatsReport>(info.This());
-  auto requested = std::string(*v8::String::Utf8Value(info[0]->ToString()));
+  auto requested = std::string(*Nan::Utf8String(Local<String>::Cast(info[0])));
 
   Local<Value> found = Nan::Undefined();
   for (auto pair : self->_stats) {
@@ -129,6 +129,6 @@ void LegacyStatsReport::Init(Local<Object> exports) {
   Nan::SetAccessor(tpl->InstanceTemplate(), Nan::New("timestamp").ToLocalChecked(), GetTimestamp, ReadOnly);
   Nan::SetAccessor(tpl->InstanceTemplate(), Nan::New("type").ToLocalChecked(), GetType, ReadOnly);
 
-  constructor().Reset(tpl->GetFunction());
-  exports->Set(Nan::New("LegacyStatsReport").ToLocalChecked(), tpl->GetFunction());
+  constructor().Reset(Nan::GetFunction(tpl).ToLocalChecked());
+  exports->Set(Nan::New("LegacyStatsReport").ToLocalChecked(), Nan::GetFunction(tpl).ToLocalChecked());
 }

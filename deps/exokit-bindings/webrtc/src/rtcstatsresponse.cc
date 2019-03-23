@@ -77,6 +77,6 @@ void RTCStatsResponse::Init(Local<Object> exports) {
   tpl->SetClassName(Nan::New("RTCStatsResponse").ToLocalChecked());
   tpl->InstanceTemplate()->SetInternalFieldCount(1);
   Nan::SetPrototypeMethod(tpl, "result", result);
-  constructor().Reset(tpl->GetFunction());
-  exports->Set(Nan::New("RTCStatsResponse").ToLocalChecked(), tpl->GetFunction());
+  constructor().Reset(Nan::GetFunction(tpl).ToLocalChecked());
+  exports->Set(Nan::New("RTCStatsResponse").ToLocalChecked(), Nan::GetFunction(tpl).ToLocalChecked());
 }
