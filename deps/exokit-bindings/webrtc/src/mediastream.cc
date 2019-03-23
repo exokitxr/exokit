@@ -285,6 +285,6 @@ void MediaStream::Init(Local<Object> exports) {
   Nan::SetPrototypeMethod(tpl, "addTrack", AddTrack);
   Nan::SetPrototypeMethod(tpl, "removeTrack", RemoveTrack);
   Nan::SetPrototypeMethod(tpl, "clone", Clone);
-  constructor().Reset(tpl->GetFunction());
-  exports->Set(Nan::New("MediaStream").ToLocalChecked(), tpl->GetFunction());
+  constructor().Reset(Nan::GetFunction(tpl).ToLocalChecked());
+  exports->Set(Nan::New("MediaStream").ToLocalChecked(), Nan::GetFunction(tpl).ToLocalChecked());
 }

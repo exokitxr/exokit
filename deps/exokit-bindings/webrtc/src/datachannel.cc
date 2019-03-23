@@ -198,7 +198,7 @@ NAN_METHOD(DataChannel::Send) {
     }
     if (info[0]->IsString()) {
       Local<String> str = Local<String>::Cast(info[0]);
-      std::string data = *String::Utf8Value(str);
+      std::string data = *Nan::Utf8String(str);
 
       webrtc::DataBuffer buffer(data);
       self->_jingleDataChannel->Send(buffer);
@@ -428,6 +428,6 @@ void DataChannel::Init(Local<Object> exports) {
   Nan::SetAccessor(tpl->InstanceTemplate(), Nan::New("binaryType").ToLocalChecked(), GetBinaryType, SetBinaryType);
   Nan::SetAccessor(tpl->InstanceTemplate(), Nan::New("readyState").ToLocalChecked(), GetReadyState, ReadOnly);
 
-  constructor().Reset(tpl->GetFunction());
-  exports->Set(Nan::New("DataChannel").ToLocalChecked(), tpl->GetFunction());
+  constructor().Reset(Nan::GetFunction(tpl).ToLocalChecked());
+  exports->Set(Nan::New("DataChannel").ToLocalChecked(), Nan::GetFunction(tpl).ToLocalChecked());
 }

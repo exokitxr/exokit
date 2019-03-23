@@ -161,6 +161,6 @@ void RTCRtpTransceiver::Init(Local<Object> exports) {
   Nan::SetAccessor(tpl->InstanceTemplate(), Nan::New("currentDirection").ToLocalChecked(), GetCurrentDirection, nullptr);
   Nan::SetPrototypeMethod(tpl, "stop", Stop);
   Nan::SetPrototypeMethod(tpl, "setCodecPreferences", SetCodecPreferences);
-  constructor().Reset(tpl->GetFunction());
-  exports->Set(Nan::New("RTCRtpTransceiver").ToLocalChecked(), tpl->GetFunction());
+  constructor().Reset(Nan::GetFunction(tpl).ToLocalChecked());
+  exports->Set(Nan::New("RTCRtpTransceiver").ToLocalChecked(), Nan::GetFunction(tpl).ToLocalChecked());
 }

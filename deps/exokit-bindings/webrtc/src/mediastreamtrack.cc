@@ -199,6 +199,6 @@ void MediaStreamTrack::Init(Local<Object> exports) {
   Nan::SetPrototypeMethod(tpl, "addEventListener", AddEventListener);
   Nan::SetPrototypeMethod(tpl, "removeEventListener", RemoveEventListener);
   Nan::SetPrototypeMethod(tpl, "dispatchEvent", DispatchEvent);
-  constructor().Reset(tpl->GetFunction());
-  exports->Set(Nan::New("MediaStreamTrack").ToLocalChecked(), tpl->GetFunction());
+  constructor().Reset(Nan::GetFunction(tpl).ToLocalChecked());
+  exports->Set(Nan::New("MediaStreamTrack").ToLocalChecked(), Nan::GetFunction(tpl).ToLocalChecked());
 }

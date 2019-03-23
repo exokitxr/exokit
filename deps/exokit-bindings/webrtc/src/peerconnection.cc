@@ -927,6 +927,6 @@ void PeerConnection::Init(Local<Object> exports) {
   Nan::SetAccessor(tpl->InstanceTemplate(), Nan::New("iceConnectionState").ToLocalChecked(), GetIceConnectionState, ReadOnly);
   Nan::SetAccessor(tpl->InstanceTemplate(), Nan::New("iceGatheringState").ToLocalChecked(), GetIceGatheringState, ReadOnly);
 
-  constructor().Reset(tpl->GetFunction());
-  exports->Set(Nan::New("PeerConnection").ToLocalChecked(), tpl->GetFunction());
+  constructor().Reset(Nan::GetFunction(tpl).ToLocalChecked());
+  exports->Set(Nan::New("PeerConnection").ToLocalChecked(), Nan::GetFunction(tpl).ToLocalChecked());
 }

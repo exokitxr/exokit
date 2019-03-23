@@ -82,5 +82,5 @@ void node_webrtc::RTCVideoSink::Init(v8::Local<v8::Object> exports) {
   tpl->InstanceTemplate()->SetInternalFieldCount(1);
   Nan::SetAccessor(tpl->InstanceTemplate(), Nan::New("stopped").ToLocalChecked(), GetStopped, nullptr);
   Nan::SetPrototypeMethod(tpl, "stop", JsStop);
-  exports->Set(Nan::New("RTCVideoSink").ToLocalChecked(), tpl->GetFunction());
+  exports->Set(Nan::New("RTCVideoSink").ToLocalChecked(), Nan::GetFunction(tpl).ToLocalChecked());
 }

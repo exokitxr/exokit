@@ -90,6 +90,6 @@ void node_webrtc::RTCVideoSource::Init(v8::Local<v8::Object> exports) {
   Nan::SetAccessor(tpl->InstanceTemplate(), Nan::New("needsDenoising").ToLocalChecked(), GetNeedsDenoising, nullptr);
   Nan::SetAccessor(tpl->InstanceTemplate(), Nan::New("isScreencast").ToLocalChecked(), GetIsScreencast, nullptr);
 
-  constructor().Reset(tpl->GetFunction());
-  exports->Set(Nan::New("RTCVideoSource").ToLocalChecked(), tpl->GetFunction());
+  constructor().Reset(Nan::GetFunction(tpl).ToLocalChecked());
+  exports->Set(Nan::New("RTCVideoSource").ToLocalChecked(), Nan::GetFunction(tpl).ToLocalChecked());
 }

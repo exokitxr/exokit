@@ -156,6 +156,6 @@ void RTCRtpReceiver::Init(Local<Object> exports) {
   Nan::SetPrototypeMethod(tpl, "getParameters", GetParameters);
   Nan::SetPrototypeMethod(tpl, "getContributingSources", GetContributingSources);
   Nan::SetPrototypeMethod(tpl, "getSynchronizationSources", GetSynchronizationSources);
-  constructor().Reset(tpl->GetFunction());
-  exports->Set(Nan::New("RTCRtpReceiver").ToLocalChecked(), tpl->GetFunction());
+  constructor().Reset(Nan::GetFunction(tpl).ToLocalChecked());
+  exports->Set(Nan::New("RTCRtpReceiver").ToLocalChecked(), Nan::GetFunction(tpl).ToLocalChecked());
 }

@@ -158,7 +158,7 @@ FROM_JS_IMPL(std::string, value) {
   if (maybeString.IsEmpty()) {
     return node_webrtc::Validation<std::string>::Invalid("Expected a string");
   }
-  auto string = std::string(*v8::String::Utf8Value(maybeString));
+  auto string = std::string(*Nan::Utf8String(maybeString));
   return node_webrtc::Pure(string);
 }
 
