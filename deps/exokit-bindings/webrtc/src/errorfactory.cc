@@ -11,7 +11,7 @@
 
 #include "src/converters.h"
 #include "src/converters/object.h"
-#include "src/converters/v8.h"  // IWYU pragma: keep
+#include "src/converters/v8-converters.h"  // IWYU pragma: keep
 
 namespace node_webrtc {
 

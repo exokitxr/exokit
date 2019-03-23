@@ -5,7 +5,7 @@
  * project authors may be found in the AUTHORS file in the root of the source
  * tree.
  */
-#include "src/converters/v8.h"
+#include "src/converters/v8-converters.h"
 
 TO_JS_IMPL(node_webrtc::SomeError, someError) {
   Nan::EscapableHandleScope scope;
