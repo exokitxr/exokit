@@ -29,7 +29,6 @@ using node_webrtc::StateEvent;
 using v8::External;
 using v8::Function;
 using v8::FunctionTemplate;
-using v8::Handle;
 using v8::Integer;
 using v8::Local;
 using v8::Number;

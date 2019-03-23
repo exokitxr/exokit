@@ -20,7 +20,6 @@ using node_webrtc::PeerConnectionFactory;
 using v8::External;
 using v8::Function;
 using v8::FunctionTemplate;
-using v8::Handle;
 using v8::Local;
 using v8::Object;
 using v8::Value;
