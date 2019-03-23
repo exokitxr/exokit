@@ -27,15 +27,15 @@ void Uninitialize() {
 
 NAN_METHOD(BlitFrameBuffer) {
   Local<Object> glObj = Local<Object>::Cast(info[0]);
-  GLuint fbo1 = info[1]->Uint32Value();
-  GLuint fbo2 = info[2]->Uint32Value();
-  int sw = info[3]->Uint32Value();
-  int sh = info[4]->Uint32Value();
-  int dw = info[5]->Uint32Value();
-  int dh = info[6]->Uint32Value();
-  bool color = info[7]->BooleanValue();
-  bool depth = info[8]->BooleanValue();
-  bool stencil = info[9]->BooleanValue();
+  GLuint fbo1 = TO_UINT32(info[1]);
+  GLuint fbo2 = TO_UINT32(info[2]);
+  int sw = TO_INT32(info[3]);
+  int sh = TO_INT32(info[4]);
+  int dw = TO_INT32(info[5]);
+  int dh = TO_INT32(info[6]);
+  bool color = TO_BOOL(info[7]);
+  bool depth = TO_BOOL(info[8]);
+  bool stencil = TO_BOOL(info[9]);
 
   glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo1);
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo2);
@@ -117,8 +117,8 @@ void SetWindowSize(NATIVEwindow *window, int width, int height) {
 
 NAN_METHOD(SetWindowSize) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  int width = info[1]->Int32Value();
-  int height = info[2]->Int32Value();
+  int width = TO_INT32(info[1]);
+  int height = TO_INT32(info[2]);
 
   SetWindowSize(window, width, height);
 }
@@ -211,9 +211,9 @@ NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool v
 }
 
 NAN_METHOD(Create3D) {
-  unsigned int width = info[0]->Uint32Value();
-  unsigned int height = info[1]->Uint32Value();
-  bool initialVisible = info[2]->BooleanValue();
+  unsigned int width = TO_UINT32(info[0]);
+  unsigned int height = TO_UINT32(info[1]);
+  bool initialVisible = TO_BOOL(info[2]);
   NATIVEwindow *sharedWindow = info[3]->IsArray() ? (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[3])) : nullptr;
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[4]));
 
@@ -262,8 +262,8 @@ NAN_METHOD(Create3D) {
 }
 
 NAN_METHOD(Create2D) {
-  unsigned int width = info[0]->Uint32Value();
-  unsigned int height = info[1]->Uint32Value();
+  unsigned int width = TO_UINT32(info[0]);
+  unsigned int height = TO_UINT32(info[1]);
   NATIVEwindow *sharedWindow = info[2]->IsArray() ? (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[2])) : nullptr;
 
   NATIVEwindow *windowHandle = CreateNativeWindow(width, height, false, sharedWindow);
