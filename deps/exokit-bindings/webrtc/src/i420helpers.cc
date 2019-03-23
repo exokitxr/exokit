@@ -96,7 +96,7 @@ NAN_METHOD(node_webrtc::I420Helpers::I420ToRgba) {
   );
 }
 
-void node_webrtc::I420Helpers::Init(v8::Handle<v8::Object> exports) {
+void node_webrtc::I420Helpers::Init(v8::Local<v8::Object> exports) {
   Nan::SetMethod(exports, "rgbaToI420", RgbaToI420);
   Nan::SetMethod(exports, "i420ToRgba", I420ToRgba);
 }

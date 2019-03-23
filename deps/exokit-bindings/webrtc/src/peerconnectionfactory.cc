@@ -157,7 +157,7 @@ void PeerConnectionFactory::Dispose() {
   rtc::CleanupSSL();
 }
 
-void PeerConnectionFactory::Init(Handle<Object> exports) {
+void PeerConnectionFactory::Init(Local<Object> exports) {
   uv_mutex_init(&_lock);
 
   bool result;

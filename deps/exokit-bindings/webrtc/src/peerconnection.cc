@@ -892,7 +892,7 @@ void PeerConnection::SaveLastSdp(const RTCSessionDescriptionInit& lastSdp) {
   this->_lastSdp = lastSdp;
 }
 
-void PeerConnection::Init(Handle<Object> exports) {
+void PeerConnection::Init(Local<Object> exports) {
   Local<FunctionTemplate> tpl = Nan::New<FunctionTemplate>(New);
   tpl->SetClassName(Nan::New("PeerConnection").ToLocalChecked());
   tpl->InstanceTemplate()->SetInternalFieldCount(1);

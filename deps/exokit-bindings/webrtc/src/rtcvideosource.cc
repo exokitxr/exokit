@@ -79,7 +79,7 @@ NAN_GETTER(node_webrtc::RTCVideoSource::GetIsScreencast) {
   info.GetReturnValue().Set(self->_source->is_screencast());
 }
 
-void node_webrtc::RTCVideoSource::Init(v8::Handle<v8::Object> exports) {
+void node_webrtc::RTCVideoSource::Init(v8::Local<v8::Object> exports) {
   auto tpl = Nan::New<v8::FunctionTemplate>(New);
   tpl->SetClassName(Nan::New("RTCVideoSource").ToLocalChecked());
   tpl->InstanceTemplate()->SetInternalFieldCount(1);

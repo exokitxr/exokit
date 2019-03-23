@@ -36,7 +36,7 @@ class RTCRtpReceiver: public node_webrtc::AsyncObjectWrap {
  public:
   ~RTCRtpReceiver() override;
 
-  static void Init(v8::Handle<v8::Object> exports);
+  static void Init(v8::Local<v8::Object> exports);
 
   // NOTE(mroberts): Working around an MSVC bug.
   static RTCRtpReceiver* Unwrap(v8::Local<v8::Object> object) {

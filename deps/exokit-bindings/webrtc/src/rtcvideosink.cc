@@ -75,7 +75,7 @@ void node_webrtc::RTCVideoSink::HandleOnFrameEvent(const node_webrtc::OnFrameEve
   MakeCallback("onframe", 1, argv);
 }
 
-void node_webrtc::RTCVideoSink::Init(v8::Handle<v8::Object> exports) {
+void node_webrtc::RTCVideoSink::Init(v8::Local<v8::Object> exports) {
   v8::Local<v8::FunctionTemplate> tpl = Nan::New<v8::FunctionTemplate>(New);
   node_webrtc::RTCVideoSink::tpl().Reset(tpl);
   tpl->SetClassName(Nan::New("RTCVideoSink").ToLocalChecked());

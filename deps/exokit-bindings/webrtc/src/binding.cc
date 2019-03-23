@@ -30,7 +30,7 @@
 
 namespace node_webrtc {
 
-void init(v8::Handle<v8::Object> exports, v8::Handle<v8::Object> module) {
+void init(v8::Local<v8::Object> exports, v8::Local<v8::Object> module) {
   node_webrtc::ErrorFactory::Init(module);
   node_webrtc::GetUserMedia::Init(exports);
   node_webrtc::I420Helpers::Init(exports);

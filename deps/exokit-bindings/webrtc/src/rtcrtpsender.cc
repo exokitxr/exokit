@@ -156,7 +156,7 @@ RTCRtpSender* RTCRtpSender::Create(
   return AsyncObjectWrapWithLoop<RTCRtpSender>::Unwrap(value);
 }
 
-void RTCRtpSender::Init(Handle<Object> exports) {
+void RTCRtpSender::Init(Local<Object> exports) {
   Local<FunctionTemplate> tpl = Nan::New<FunctionTemplate>(New);
   RTCRtpSender::tpl().Reset(tpl);
   tpl->SetClassName(Nan::New("RTCRtpSender").ToLocalChecked());

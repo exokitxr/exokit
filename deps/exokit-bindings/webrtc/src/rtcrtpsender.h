@@ -31,7 +31,7 @@ class RTCRtpSender: public node_webrtc::AsyncObjectWrap {
  public:
   ~RTCRtpSender() override;
 
-  static void Init(v8::Handle<v8::Object> exports);
+  static void Init(v8::Local<v8::Object> exports);
 
   rtc::scoped_refptr<webrtc::RtpSenderInterface> sender() { return _sender; }
 

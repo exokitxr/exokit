@@ -25,7 +25,7 @@ class RTCStatsResponse
   //
   // Nodejs wrapping.
   //
-  static void Init(v8::Handle<v8::Object> exports);
+  static void Init(v8::Local<v8::Object> exports);
 
   static RTCStatsResponse* Create(double timestamp, const std::vector<std::map<std::string, std::string>>& reports);
 

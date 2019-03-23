@@ -185,7 +185,7 @@ MediaStreamTrack* MediaStreamTrack::Create(
   return AsyncObjectWrapWithLoop<MediaStreamTrack>::Unwrap(mediaStreamTrack);
 }
 
-void MediaStreamTrack::Init(Handle<Object> exports) {
+void MediaStreamTrack::Init(Local<Object> exports) {
   Local<FunctionTemplate> tpl = Nan::New<FunctionTemplate>(New);
   MediaStreamTrack::tpl().Reset(tpl);
   tpl->SetClassName(Nan::New("MediaStreamTrack").ToLocalChecked());

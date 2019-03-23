@@ -119,7 +119,7 @@ LegacyStatsReport* LegacyStatsReport::Create(double timestamp, const std::map<st
   return Nan::ObjectWrap::Unwrap<LegacyStatsReport>(report);
 }
 
-void LegacyStatsReport::Init(Handle<Object> exports) {
+void LegacyStatsReport::Init(Local<Object> exports) {
   Local<FunctionTemplate> tpl = Nan::New<FunctionTemplate> (New);
   tpl->SetClassName(Nan::New("LegacyStatsReport").ToLocalChecked());
   tpl->InstanceTemplate()->SetInternalFieldCount(1);
