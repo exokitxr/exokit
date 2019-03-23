@@ -7,7 +7,7 @@
  */
 #include "src/converters/enums.h"
 
-#include "src/converters/v8.h"  // IWYU pragma: keep
+#include "src/converters/v8-converters.h"  // IWYU pragma: keep
 
 using node_webrtc::BinaryType;
 using node_webrtc::RTCIceCredentialType;

@@ -12,7 +12,7 @@
 
 #include "src/error.h"
 #include "src/converters/dictionaries.h"  // IWYU pragma: keep
-#include "src/converters/v8.h"  // IWYU pragma: keep
+#include "src/converters/v8-converters.h"  // IWYU pragma: keep
 #include "src/rtcrtpreceiver.h"  // IWYU pragma: keep
 #include "src/rtcrtpsender.h"  // IWYU pragma: keep
 

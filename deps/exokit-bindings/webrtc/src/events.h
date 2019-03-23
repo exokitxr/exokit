@@ -17,7 +17,7 @@
 #include <webrtc/api/video/video_frame.h>
 #include <webrtc/rtc_base/scoped_ref_ptr.h>
 
-#include "src/converters/v8.h"
+#include "src/converters/v8-converters.h"
 #include "src/error.h"
 #include "src/functional/either.h"
 

@@ -23,7 +23,7 @@
 #include "src/converters.h"
 #include "src/converters/interfaces.h"  // IWYU pragma: keep
 #include "src/converters/object.h"  // IWYU pragma: keep
-#include "src/converters/v8.h"  // IWYU pragma: keep
+#include "src/converters/v8-converters.h"  // IWYU pragma: keep
 #include "src/functional/either.h"  // IWYU pragma: keep
 #include "src/i420helpers.h"  // IWYU pragma: keep
 #include "src/errorfactory.h"  // IWYU pragma: keep
