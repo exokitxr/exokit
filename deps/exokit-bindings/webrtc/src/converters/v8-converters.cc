@@ -154,11 +154,11 @@ TO_JS_IMPL(uint64_t, value) {
 }
 
 FROM_JS_IMPL(std::string, value) {
-  auto maybeString = value->ToString();
+  auto maybeString = Nan::To<v8::String>(value);
   if (maybeString.IsEmpty()) {
     return node_webrtc::Validation<std::string>::Invalid("Expected a string");
   }
-  auto string = std::string(*Nan::Utf8String(maybeString));
+  auto string = std::string(*Nan::Utf8String(maybeString.ToLocalChecked()));
   return node_webrtc::Pure(string);
 }
 
