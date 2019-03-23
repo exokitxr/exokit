@@ -22,7 +22,7 @@ void dispose(void*) {
   node_webrtc::PeerConnectionFactory::Dispose();
 }
 
-void init(v8::Handle<v8::Object> exports) {
+void init(v8::Local<v8::Object> exports) {
   node_webrtc::PeerConnectionFactory::Init(exports);
   node_webrtc::PeerConnection::Init(exports);
   node_webrtc::DataChannel::Init(exports);

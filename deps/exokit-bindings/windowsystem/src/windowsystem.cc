@@ -417,12 +417,12 @@ bool CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint
 
 NAN_METHOD(CreateRenderTarget) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
-  int width = info[1]->Uint32Value();
-  int height = info[2]->Uint32Value();
-  GLuint sharedColorTex = info[3]->Uint32Value();
-  GLuint sharedDepthStencilTex = info[4]->Uint32Value();
-  GLuint sharedMsColorTex = info[5]->Uint32Value();
-  GLuint sharedMsDepthStencilTex = info[6]->Uint32Value();
+  int width = TO_INT32(info[1]);
+  int height = TO_INT32(info[2]);
+  GLuint sharedColorTex = TO_UINT32(info[3]);
+  GLuint sharedDepthStencilTex = TO_UINT32(info[4]);
+  GLuint sharedMsColorTex = TO_UINT32(info[5]);
+  GLuint sharedMsDepthStencilTex = TO_UINT32(info[6]);
 
   GLuint fbo;
   GLuint colorTex;
@@ -450,14 +450,14 @@ NAN_METHOD(CreateRenderTarget) {
 
 NAN_METHOD(ResizeRenderTarget) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
-  int width = info[1]->Uint32Value();
-  int height = info[2]->Uint32Value();
-  GLuint fbo = info[3]->Uint32Value();
-  GLuint colorTex = info[4]->Uint32Value();
-  GLuint depthStencilTex = info[5]->Uint32Value();
-  GLuint msFbo = info[6]->Uint32Value();
-  GLuint msColorTex = info[7]->Uint32Value();
-  GLuint msDepthStencilTex = info[8]->Uint32Value();
+  int width = TO_INT32(info[1]);
+  int height = TO_INT32(info[2]);
+  GLuint fbo = TO_UINT32(info[3]);
+  GLuint colorTex = TO_UINT32(info[4]);
+  GLuint depthStencilTex = TO_UINT32(info[5]);
+  GLuint msFbo = TO_UINT32(info[6]);
+  GLuint msColorTex = TO_UINT32(info[7]);
+  GLuint msDepthStencilTex = TO_UINT32(info[8]);
 
   const int samples = 4;
 
@@ -512,9 +512,9 @@ NAN_METHOD(ResizeRenderTarget) {
 
 NAN_METHOD(DestroyRenderTarget) {
   if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber()) {
-    GLuint fbo = info[0]->Uint32Value();
-    GLuint tex = info[1]->Uint32Value();
-    GLuint depthTex = info[2]->Uint32Value();
+    GLuint fbo = TO_UINT32(info[0]);
+    GLuint tex = TO_UINT32(info[1]);
+    GLuint depthTex = TO_UINT32(info[2]);
 
     glDeleteFramebuffers(1, &fbo);
     glDeleteTextures(1, &tex);
@@ -676,7 +676,7 @@ void ComposeLayers(WebGLRenderingContext *gl, GLuint fbo, const std::vector<Laye
 NAN_METHOD(ComposeLayers) {
   if (info[0]->IsObject() && info[1]->IsNumber() && info[2]->IsArray()) {
     WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
-    GLuint fbo = info[1]->Uint32Value();
+    GLuint fbo = TO_UINT32(info[1]);
     Local<Array> array = Local<Array>::Cast(info[2]);
 
     std::vector<LayerSpec> layers;
@@ -688,16 +688,16 @@ NAN_METHOD(ComposeLayers) {
         Local<Object> elementObj = Local<Object>::Cast(element);
         
         LayerType layerType = LayerType::NONE;
-        if (elementObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLIFrameElement"))) {
+        if (JS_OBJ(elementObj->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLIFrameElement"))) {
           if (
             elementObj->Get(JS_STR("contentDocument"))->IsObject() &&
-            elementObj->Get(JS_STR("contentDocument"))->ToObject()->Get(JS_STR("framebuffer"))->IsObject()
+            JS_OBJ(elementObj->Get(JS_STR("contentDocument")))->Get(JS_STR("framebuffer"))->IsObject()
           ) {
             layerType = LayerType::IFRAME_3D;
           } else if (elementObj->Get(JS_STR("browser"))->IsObject()) {
             layerType = LayerType::IFRAME_2D;
           }
-        } else if (elementObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLCanvasElement"))) {
+        } else if (JS_OBJ(elementObj->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLCanvasElement"))) {
           if (elementObj->Get(JS_STR("framebuffer"))->IsObject()) {
             layerType = LayerType::RAW_CANVAS;
           }
@@ -705,13 +705,13 @@ NAN_METHOD(ComposeLayers) {
         
         switch (layerType) {
           case LayerType::IFRAME_3D: {
-            Local<Object> framebufferObj = Local<Object>::Cast(elementObj->Get(JS_STR("contentDocument"))->ToObject()->Get(JS_STR("framebuffer")));
-            GLuint tex = framebufferObj->Get(JS_STR("tex"))->Uint32Value();
-            GLuint depthTex = framebufferObj->Get(JS_STR("depthTex"))->Uint32Value();
-            GLuint msTex = framebufferObj->Get(JS_STR("msTex"))->Uint32Value();
-            GLuint msDepthTex = framebufferObj->Get(JS_STR("msDepthTex"))->Uint32Value();
-            int width = framebufferObj->Get(JS_STR("canvas"))->ToObject()->Get(JS_STR("width"))->Int32Value();
-            int height = framebufferObj->Get(JS_STR("canvas"))->ToObject()->Get(JS_STR("height"))->Int32Value();
+            Local<Object> framebufferObj = Local<Object>::Cast(JS_OBJ(elementObj->Get(JS_STR("contentDocument")))->Get(JS_STR("framebuffer")));
+            GLuint tex = TO_UINT32(framebufferObj->Get(JS_STR("tex")));
+            GLuint depthTex = TO_UINT32(framebufferObj->Get(JS_STR("depthTex")));
+            GLuint msTex = TO_UINT32(framebufferObj->Get(JS_STR("msTex")));
+            GLuint msDepthTex = TO_UINT32(framebufferObj->Get(JS_STR("msDepthTex")));
+            int width = TO_INT32(JS_OBJ(framebufferObj->Get(JS_STR("canvas")))->Get(JS_STR("width")));
+            int height = TO_INT32(JS_OBJ(framebufferObj->Get(JS_STR("canvas")))->Get(JS_STR("height")));
 
             layers.push_back(LayerSpec{
               width,
@@ -728,7 +728,7 @@ NAN_METHOD(ComposeLayers) {
           }
           case LayerType::IFRAME_2D: {
             Local<Object> browserObj = Local<Object>::Cast(elementObj->Get(JS_STR("browser")));
-            GLuint tex = Local<Object>::Cast(browserObj->Get(JS_STR("texture")))->Get(JS_STR("id"))->Uint32Value();
+            GLuint tex = TO_UINT32(Local<Object>::Cast(browserObj->Get(JS_STR("texture")))->Get(JS_STR("id")));
             Local<Array> viewportsArray = Local<Array>::Cast(browserObj->Get(JS_STR("viewports")));
             Local<Float32Array> viewportsFloat32Arrays[] = {
               Local<Float32Array>::Cast(viewportsArray->Get(0)),
@@ -744,8 +744,8 @@ NAN_METHOD(ComposeLayers) {
               Local<Float32Array>::Cast(projectionArray->Get(0)),
               Local<Float32Array>::Cast(projectionArray->Get(1)),
             };
-            int width = browserObj->Get(JS_STR("width"))->Int32Value();
-            int height = browserObj->Get(JS_STR("height"))->Int32Value();
+            int width = TO_INT32(browserObj->Get(JS_STR("width")));
+            int height = TO_INT32(browserObj->Get(JS_STR("height")));
 
             layers.push_back(LayerSpec{
               width,
@@ -771,12 +771,12 @@ NAN_METHOD(ComposeLayers) {
           }
           case LayerType::RAW_CANVAS: {
             Local<Object> framebufferObj = Local<Object>::Cast(elementObj->Get(JS_STR("framebuffer")));
-            GLuint tex = framebufferObj->Get(JS_STR("tex"))->Uint32Value();
-            GLuint depthTex = framebufferObj->Get(JS_STR("depthTex"))->Uint32Value();
-            GLuint msTex = framebufferObj->Get(JS_STR("msTex"))->Uint32Value();
-            GLuint msDepthTex = framebufferObj->Get(JS_STR("msDepthTex"))->Uint32Value();
-            int width = elementObj->Get(JS_STR("width"))->Int32Value();
-            int height = elementObj->Get(JS_STR("height"))->Int32Value();
+            GLuint tex = TO_UINT32(framebufferObj->Get(JS_STR("tex")));
+            GLuint depthTex = TO_UINT32(framebufferObj->Get(JS_STR("depthTex")));
+            GLuint msTex = TO_UINT32(framebufferObj->Get(JS_STR("msTex")));
+            GLuint msDepthTex = TO_UINT32(framebufferObj->Get(JS_STR("msDepthTex")));
+            int width = TO_INT32(elementObj->Get(JS_STR("width")));
+            int height = TO_INT32(elementObj->Get(JS_STR("height")));
 
             layers.push_back(LayerSpec{
               width,

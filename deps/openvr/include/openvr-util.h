@@ -7,6 +7,8 @@
 #include <openvr.h>
 #include <v8.h>
 
+#include <defines.h>
+
 //=============================================================================
 /// Template conversion function from C++ to Node.
 template<typename T>
@@ -61,15 +63,15 @@ template<>
 vr::HmdMatrix34_t decode(const v8::Local<v8::Value> value)
 {
   vr::HmdMatrix34_t result;
-  const auto matrix = value->ToObject();
+  const auto matrix = JS_OBJ(value);
 
   for (uint32_t rowIdx = 0; rowIdx < 3; ++rowIdx)
   {
-    const auto row = Nan::Get(matrix, rowIdx).ToLocalChecked()->ToObject();
+    const auto row = JS_OBJ(Nan::Get(matrix, rowIdx).ToLocalChecked());
     for (uint32_t colIdx = 0; colIdx < 4; ++colIdx)
     {
       const auto cell = Nan::Get(row, colIdx).ToLocalChecked();
-      result.m[rowIdx][colIdx] = static_cast<float>(cell->NumberValue());
+      result.m[rowIdx][colIdx] = TO_FLOAT(cell);
     }
   }
 
@@ -96,12 +98,12 @@ template<>
 vr::HmdVector3_t decode(const v8::Local<v8::Value> value)
 {
   vr::HmdVector3_t result;
-  const auto array = value->ToObject();
+  const auto array = JS_OBJ(value);
 
   for (uint32_t idx = 0; idx < 3; ++idx)
   {
     const auto cell = Nan::Get(array, idx).ToLocalChecked();
-    result.v[idx] = static_cast<float>(cell->NumberValue());
+    result.v[idx] = TO_FLOAT(cell);
   }
 
   return result;
@@ -198,7 +200,7 @@ template<>
 vr::TrackedDevicePose_t decode(const v8::Local<v8::Value> value)
 {
   vr::TrackedDevicePose_t result;
-  const auto object = value->ToObject();
+  const auto object = JS_OBJ(value);
 
   auto deviceToAbsoluteTracking_prop =
     Nan::New<v8::String>("deviceToAbsoluteTracking").ToLocalChecked();
@@ -221,17 +223,17 @@ vr::TrackedDevicePose_t decode(const v8::Local<v8::Value> value)
     Nan::New<v8::String>("trackingResult").ToLocalChecked();
   result.eTrackingResult =
     static_cast<vr::ETrackingResult>(
-      Nan::Get(object, trackingResult_prop).ToLocalChecked()->Uint32Value());
+      TO_UINT32(Nan::Get(object, trackingResult_prop).ToLocalChecked()));
 
   auto poseIsValid_prop =
     Nan::New<v8::String>("poseIsValid").ToLocalChecked();
   result.bPoseIsValid =
-    Nan::Get(object, poseIsValid_prop).ToLocalChecked()->BooleanValue();
+    TO_BOOL(Nan::Get(object, poseIsValid_prop).ToLocalChecked());
 
   auto deviceIsConnected_prop =
     Nan::New<v8::String>("deviceIsConnected").ToLocalChecked();
   result.bDeviceIsConnected =
-    Nan::Get(object, deviceIsConnected_prop).ToLocalChecked()->BooleanValue();
+    TO_BOOL(Nan::Get(object, deviceIsConnected_prop).ToLocalChecked());
 
   return result;
 }

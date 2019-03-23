@@ -5,7 +5,7 @@ namespace webaudio {
 AudioParam::AudioParam() {}
 AudioParam::~AudioParam() {}
 
-Handle<Object> AudioParam::Initialize(Isolate *isolate) {
+Local<Object> AudioParam::Initialize(Isolate *isolate) {
   Nan::EscapableHandleScope scope;
 
   // constructor
@@ -27,7 +27,7 @@ Handle<Object> AudioParam::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "cancelScheduledValues", CancelScheduledValues);
   Nan::SetMethod(proto, "cancelAndHoldAtTime", CancelAndHoldAtTime);
 
-  Local<Function> ctorFn = ctor->GetFunction();
+  Local<Function> ctorFn = Nan::GetFunction(ctor).ToLocalChecked();
 
   return scope.Escape(ctorFn);
 }
@@ -35,7 +35,7 @@ Handle<Object> AudioParam::Initialize(Isolate *isolate) {
 NAN_METHOD(AudioParam::New) {
   Nan::HandleScope scope;
 
-  if (info[0]->IsObject() && info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("AudioContext"))) {
+  if (info[0]->IsObject() && JS_OBJ(JS_OBJ(info[0])->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("AudioContext"))) {
     Local<Object> audioContextObj = Local<Object>::Cast(info[0]);
 
     AudioParam *audioParam = new AudioParam();
@@ -102,7 +102,7 @@ NAN_SETTER(AudioParam::ValueSetter) {
   if (value->IsNumber()) {
     AudioParam *audioParam = ObjectWrap::Unwrap<AudioParam>(info.This());
 
-    float newValue = value->NumberValue();
+    float newValue = TO_FLOAT(value);
     audioParam->audioParam->setValue(newValue);
   } else {
     Nan::ThrowError("setValue: invalid arguments");
@@ -115,8 +115,8 @@ NAN_METHOD(AudioParam::SetValueAtTime) {
   if (info[0]->IsNumber() && info[1]->IsNumber()) {
     AudioParam *audioParam = ObjectWrap::Unwrap<AudioParam>(info.This());
 
-    float newValue = info[0]->NumberValue();
-    float startTime = info[1]->NumberValue();
+    float newValue = TO_FLOAT(info[0]);
+    float startTime = TO_FLOAT(info[1]);
     audioParam->audioParam->setValueAtTime(newValue, startTime);
   } else {
     Nan::ThrowError("setValueAtTime: invalid arguments");
@@ -129,8 +129,8 @@ NAN_METHOD(AudioParam::LinearRampToValueAtTime) {
   if (info[0]->IsNumber() && info[1]->IsNumber()) {
     AudioParam *audioParam = ObjectWrap::Unwrap<AudioParam>(info.This());
 
-    float newValue = info[0]->NumberValue();
-    float startTime = info[1]->NumberValue();
+    float newValue = TO_FLOAT(info[0]);
+    float startTime = TO_FLOAT(info[1]);
     audioParam->audioParam->linearRampToValueAtTime(newValue, startTime);
   } else {
     Nan::ThrowError("linearRampToValueAtTime: invalid arguments");
@@ -143,8 +143,8 @@ NAN_METHOD(AudioParam::ExponentialRampToValueAtTime) {
   if (info[0]->IsNumber() && info[1]->IsNumber()) {
     AudioParam *audioParam = ObjectWrap::Unwrap<AudioParam>(info.This());
 
-    float newValue = info[0]->NumberValue();
-    float startTime = info[1]->NumberValue();
+    float newValue = TO_FLOAT(info[0]);
+    float startTime = TO_FLOAT(info[1]);
     audioParam->audioParam->exponentialRampToValueAtTime(newValue, startTime);
   } else {
     Nan::ThrowError("exponentialRampToValueAtTime: invalid arguments");
@@ -157,9 +157,9 @@ NAN_METHOD(AudioParam::SetTargetAtTime) {
   if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber()) {
     AudioParam *audioParam = ObjectWrap::Unwrap<AudioParam>(info.This());
 
-    float target = info[0]->NumberValue();
-    float time = info[1]->NumberValue();
-    float timeConstant = info[2]->NumberValue();
+    float target = TO_FLOAT(info[0]);
+    float time = TO_FLOAT(info[1]);
+    float timeConstant = TO_FLOAT(info[2]);
     audioParam->audioParam->setTargetAtTime(target, time, timeConstant);
   } else {
     Nan::ThrowError("setTargetAtTime: invalid arguments");
@@ -176,10 +176,10 @@ NAN_METHOD(AudioParam::SetValueCurveAtTime) {
     size_t numCurves = curveValue->Length();
     vector<float> curve(numCurves);
     for (size_t i = 0; i < numCurves; i++) {
-      curve[i] = curveValue->Get(i)->NumberValue();
+      curve[i] = TO_FLOAT(curveValue->Get(i));
     }
-    float time = info[1]->NumberValue();
-    float duration = info[2]->NumberValue();
+    float time = TO_FLOAT(info[1]);
+    float duration = TO_FLOAT(info[2]);
     audioParam->audioParam->setValueCurveAtTime(curve, time, duration);
   } else {
     Nan::ThrowError("setValueCurveAtTime: invalid arguments");
@@ -192,7 +192,7 @@ NAN_METHOD(AudioParam::CancelScheduledValues) {
   if (info[0]->IsNumber()) {
     AudioParam *audioParam = ObjectWrap::Unwrap<AudioParam>(info.This());
 
-    float startTime = info[0]->NumberValue();
+    float startTime = TO_FLOAT(info[0]);
     audioParam->audioParam->cancelScheduledValues(startTime);
   } else {
     Nan::ThrowError("cancelScheduledValues: invalid arguments");
@@ -205,7 +205,7 @@ NAN_METHOD(AudioParam::CancelAndHoldAtTime) {
   if (info[0]->IsNumber()) {
     AudioParam *audioParam = ObjectWrap::Unwrap<AudioParam>(info.This());
 
-    float cancelTime = info[0]->NumberValue();
+    float cancelTime = TO_FLOAT(info[0]);
     audioParam->audioParam->cancelScheduledValues(cancelTime); // TODO: should be cancelAndHoldAtTime
   } else {
     Nan::ThrowError("cancelAndHoldAtTime: invalid arguments");

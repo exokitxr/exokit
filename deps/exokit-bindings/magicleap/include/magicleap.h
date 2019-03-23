@@ -277,7 +277,7 @@ public:
 
 class MLContext : public ObjectWrap {
 public:
-  static Handle<Object> Initialize(Isolate *isolate);
+  static Local<Object> Initialize(Isolate *isolate);
 
 // protected:
   MLContext();
@@ -367,6 +367,6 @@ public:
 
 }
 
-Handle<Object> makeMl();
+Local<Object> makeMl();
 
 #endif

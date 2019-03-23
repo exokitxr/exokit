@@ -2,7 +2,7 @@
 
 using namespace v8;
 
-Handle<Object> Image::Initialize(Isolate *isolate) {
+Local<Object> Image::Initialize(Isolate *isolate) {
   Nan::EscapableHandleScope scope;
 
   // constructor
@@ -15,7 +15,7 @@ Handle<Object> Image::Initialize(Isolate *isolate) {
 
   Nan::SetMethod(proto, "load", LoadMethod);
 
-  return scope.Escape(ctor->GetFunction());
+  return scope.Escape(Nan::GetFunction(ctor).ToLocalChecked());
 }
 
 unsigned int Image::GetWidth() {
@@ -142,7 +142,7 @@ void Image::Load(Local<ArrayBuffer> arrayBuffer, size_t byteOffset, size_t byteL
     Local<Value> argv[] = {
       arg0,
     };
-    cbFn->Call(Nan::Null(), sizeof(argv)/sizeof(argv[0]), argv);
+    cbFn->Call(Isolate::GetCurrent()->GetCurrentContext(), Nan::Null(), sizeof(argv)/sizeof(argv[0]), argv);
   }
 }
 

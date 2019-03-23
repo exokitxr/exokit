@@ -6,7 +6,7 @@ StereoPannerNode::StereoPannerNode() {}
 
 StereoPannerNode::~StereoPannerNode() {}
 
-Handle<Object> StereoPannerNode::Initialize(Isolate *isolate, Local<Value> audioParamCons) {
+Local<Object> StereoPannerNode::Initialize(Isolate *isolate, Local<Value> audioParamCons) {
   Nan::EscapableHandleScope scope;
 
   // constructor
@@ -19,7 +19,7 @@ Handle<Object> StereoPannerNode::Initialize(Isolate *isolate, Local<Value> audio
   AudioNode::InitializePrototype(proto);
   StereoPannerNode::InitializePrototype(proto);
 
-  Local<Function> ctorFn = ctor->GetFunction();
+  Local<Function> ctorFn = Nan::GetFunction(ctor).ToLocalChecked();
 
   ctorFn->Set(JS_STR("AudioParam"), audioParamCons);
 
@@ -33,7 +33,7 @@ void StereoPannerNode::InitializePrototype(Local<ObjectTemplate> proto) {
 NAN_METHOD(StereoPannerNode::New) {
   Nan::HandleScope scope;
 
-  if (info[0]->IsObject() && info[0]->ToObject()->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("AudioContext"))) {
+  if (info[0]->IsObject() && JS_OBJ(JS_OBJ(info[0])->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("AudioContext"))) {
     Local<Object> audioContextObj = Local<Object>::Cast(info[0]);
 
     StereoPannerNode *stereoPannerNode = new StereoPannerNode();
@@ -46,7 +46,7 @@ NAN_METHOD(StereoPannerNode::New) {
     stereoPannerNode->context.Reset(audioContextObj);
     stereoPannerNode->audioNode = labStereoPannerNode;
 
-    Local<Function> audioParamConstructor = Local<Function>::Cast(stereoPannerNodeObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("AudioParam")));
+    Local<Function> audioParamConstructor = Local<Function>::Cast(JS_OBJ(stereoPannerNodeObj->Get(JS_STR("constructor")))->Get(JS_STR("AudioParam")));
     Local<Value> args[] = {
       audioContextObj,
     };

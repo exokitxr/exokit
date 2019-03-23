@@ -12,7 +12,7 @@ using namespace node;
 
 class CanvasPattern : public ObjectWrap {
 public:
-  static Handle<Object> Initialize(Isolate *isolate);
+  static Local<Object> Initialize(Isolate *isolate);
 
   sk_sp<SkShader> getShader() const;
 

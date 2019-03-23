@@ -32,11 +32,11 @@ void callFunction(const char *funcname, const int argc, Local<Value> argv[]) {
 
   // call function, 'this' points to global object
   TryCatch try_catch(Isolate::GetCurrent());
-  Local<Value> result = jsfunc->Call(global, argc, argv);
+  Local<Value> result = jsfunc->Call(Isolate::GetCurrent()->GetCurrentContext(), global, argc, argv).ToLocalChecked();
 
   if (result.IsEmpty()) {
-    String::Utf8Value error(try_catch.Exception());
-    String::Utf8Value stacktrace(try_catch.StackTrace(localContext).ToLocalChecked());
+    Nan::Utf8String error(try_catch.Exception());
+    Nan::Utf8String stacktrace(try_catch.StackTrace(localContext).ToLocalChecked());
     // LOGI("Error calling %s: %s:\n%s",funcname,*error,*stacktrace);
   } else {
     // LOGI("%s called",funcname);
@@ -54,8 +54,8 @@ void Java_com_mafintosh_nodeonandroid_NodeService_onResize
     unsigned int width = 1;
     unsigned int height = 1;
 
-    Handle<Number> js_width = v8::Integer::New(Isolate::GetCurrent(), width);
-    Handle<Number> js_height = v8::Integer::New(Isolate::GetCurrent(), height);
+    Local<Number> js_width = v8::Integer::New(Isolate::GetCurrent(), width);
+    Local<Number> js_height = v8::Integer::New(Isolate::GetCurrent(), height);
 
     Local<Value> argv[] = {js_width, js_height};
     callFunction("onResize", sizeof(argv)/sizeof(argv[0]), argv);
@@ -141,7 +141,7 @@ void Java_com_mafintosh_nodeonandroid_NodeService_onDrawFrame
   }
 }
 
-void InitExports(Handle<Object> exports) {
+void InitExports(Local<Object> exports) {
   std::pair<Local<Value>, Local<FunctionTemplate>> glResult = makeGl();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeGl"), glResult.first);
 
@@ -216,7 +216,7 @@ void InitExports(Handle<Object> exports) {
   exports->Set(JS_STR("initFunctionAddress"), initFunctionAddressArray);
 }
 
-void Init(Handle<Object> exports) {
+void Init(Local<Object> exports) {
   InitExports(exports);
 }
 

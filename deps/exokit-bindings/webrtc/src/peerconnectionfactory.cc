@@ -98,7 +98,7 @@ void PeerConnectionFactory::Dispose() {
   rtc::CleanupSSL();
 }
 
-void PeerConnectionFactory::Init(v8::Handle<Object> exports) {
+void PeerConnectionFactory::Init(v8::Local<Object> exports) {
   uv_mutex_init(&_lock);
 
   bool result;
@@ -109,6 +109,6 @@ void PeerConnectionFactory::Init(v8::Handle<Object> exports) {
   tpl->SetClassName(Nan::New("PeerConnectionFactory").ToLocalChecked());
   tpl->InstanceTemplate()->SetInternalFieldCount(1);
 
-  constructor.Reset(tpl->GetFunction());
-  exports->Set(Nan::New("PeerConnectionFactory").ToLocalChecked(), tpl->GetFunction());
+  constructor.Reset(Nan::GetFunction(tpl).ToLocalChecked());
+  exports->Set(Nan::New("PeerConnectionFactory").ToLocalChecked(), Nan::GetFunction(tpl).ToLocalChecked());
 }

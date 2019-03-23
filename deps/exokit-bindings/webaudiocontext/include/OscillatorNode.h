@@ -17,7 +17,7 @@ namespace webaudio {
 
 class OscillatorNode : public AudioNode {
 public:
-  static Handle<Object> Initialize(Isolate *isolate, Local<Value> audioParamCons);
+  static Local<Object> Initialize(Isolate *isolate, Local<Value> audioParamCons);
   static void InitializePrototype(Local<ObjectTemplate> proto);
 
 protected:
