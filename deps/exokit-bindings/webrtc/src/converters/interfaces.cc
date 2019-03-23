@@ -8,6 +8,7 @@
 #include "src/converters/interfaces.h"
 
 #include <nan.h>
+#include <defines.h>
 #include <webrtc/rtc_base/scoped_ref_ptr.h>
 
 #include "src/mediastream.h"  // IWYU pragma: keep
@@ -31,7 +32,7 @@
     auto isolate = Nan::GetCurrentContext()->GetIsolate(); \
     auto tpl = node_webrtc::IFACE::tpl().Get(isolate); \
     return tpl->HasInstance(value) \
-        ? node_webrtc::Pure(FROM_FN(value->ToObject())) \
+        ? node_webrtc::Pure(FROM_FN(JS_OBJ(value))) \
         : node_webrtc::Validation<node_webrtc::IFACE*>::Invalid("This is not an instance of " NAME); \
   }
 
