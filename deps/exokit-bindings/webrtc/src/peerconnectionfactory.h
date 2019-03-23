@@ -70,7 +70,7 @@ class PeerConnectionFactory
   //
   // Nodejs wrapping.
   //
-  static void Init(v8::Handle<v8::Object> exports);
+  static void Init(v8::Local<v8::Object> exports);
 
   static void Dispose();
 

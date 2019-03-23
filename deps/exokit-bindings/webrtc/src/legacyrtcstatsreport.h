@@ -24,7 +24,7 @@ class LegacyStatsReport
   //
   // Nodejs wrapping.
   //
-  static void Init(v8::Handle<v8::Object> exports);
+  static void Init(v8::Local<v8::Object> exports);
 
   static LegacyStatsReport* Create(double timestamp, const std::map<std::string, std::string>& stats);
 

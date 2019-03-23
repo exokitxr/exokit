@@ -411,7 +411,7 @@ DataChannel* DataChannel::Create(
   return AsyncObjectWrapWithLoop<DataChannel>::Unwrap(channel);
 }
 
-void DataChannel::Init(Handle<Object> exports) {
+void DataChannel::Init(Local<Object> exports) {
   Local<FunctionTemplate> tpl = Nan::New<FunctionTemplate>(New);
   tpl->SetClassName(Nan::New("DataChannel").ToLocalChecked());
   tpl->InstanceTemplate()->SetInternalFieldCount(1);

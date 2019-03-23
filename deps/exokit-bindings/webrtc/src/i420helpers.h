@@ -114,7 +114,7 @@ class RgbaImageData {
 
 class I420Helpers {
  public:
-  static void Init(v8::Handle<v8::Object> exports);
+  static void Init(v8::Local<v8::Object> exports);
 
  private:
   static NAN_METHOD(I420ToRgba);

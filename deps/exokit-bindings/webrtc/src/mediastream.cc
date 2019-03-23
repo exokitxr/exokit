@@ -272,7 +272,7 @@ MediaStream* MediaStream::Create(
   return Nan::ObjectWrap::Unwrap<MediaStream>(mediaStream);
 }
 
-void MediaStream::Init(Handle<Object> exports) {
+void MediaStream::Init(Local<Object> exports) {
   Local<FunctionTemplate> tpl = Nan::New<FunctionTemplate>(New);
   MediaStream::tpl().Reset(tpl);
   tpl->SetClassName(Nan::New("MediaStream").ToLocalChecked());

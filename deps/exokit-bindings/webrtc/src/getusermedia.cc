@@ -142,6 +142,6 @@ NAN_METHOD(node_webrtc::GetUserMedia::GetUserMediaImpl) {
   resolver->Resolve(Nan::GetCurrentContext(), MediaStream::wrap()->GetOrCreate(factory, stream)->handle()).IsNothing();
 }
 
-void node_webrtc::GetUserMedia::Init(v8::Handle<v8::Object> exports) {
+void node_webrtc::GetUserMedia::Init(v8::Local<v8::Object> exports) {
   Nan::SetMethod(exports, "getUserMedia", GetUserMediaImpl);
 }

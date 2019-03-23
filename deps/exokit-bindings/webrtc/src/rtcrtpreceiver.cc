@@ -145,7 +145,7 @@ RTCRtpReceiver* RTCRtpReceiver::Create(
   return RTCRtpReceiver::Unwrap(value);
 }
 
-void RTCRtpReceiver::Init(Handle<Object> exports) {
+void RTCRtpReceiver::Init(Local<Object> exports) {
   Local<FunctionTemplate> tpl = Nan::New<FunctionTemplate>(New);
   RTCRtpReceiver::tpl().Reset(tpl);
   tpl->SetClassName(Nan::New("RTCRtpReceiver").ToLocalChecked());

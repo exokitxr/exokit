@@ -33,7 +33,7 @@ class MediaStream
  public:
   ~MediaStream() override;
 
-  static void Init(v8::Handle<v8::Object> exports);
+  static void Init(v8::Local<v8::Object> exports);
 
   static ::node_webrtc::Wrap <
   MediaStream*,

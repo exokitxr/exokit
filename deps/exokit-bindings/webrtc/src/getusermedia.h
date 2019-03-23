@@ -19,7 +19,7 @@ namespace node_webrtc {
 
 class GetUserMedia {
  public:
-  static void Init(v8::Handle<v8::Object> exports);
+  static void Init(v8::Local<v8::Object> exports);
 
  private:
   static NAN_METHOD(GetUserMediaImpl);

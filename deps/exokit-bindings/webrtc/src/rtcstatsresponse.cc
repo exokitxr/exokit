@@ -73,7 +73,7 @@ RTCStatsResponse* RTCStatsResponse::Create(
   return Nan::ObjectWrap::Unwrap<RTCStatsResponse>(response);
 }
 
-void RTCStatsResponse::Init(Handle<Object> exports) {
+void RTCStatsResponse::Init(Local<Object> exports) {
   Local<FunctionTemplate> tpl = Nan::New<FunctionTemplate> (New);
   tpl->SetClassName(Nan::New("RTCStatsResponse").ToLocalChecked());
   tpl->InstanceTemplate()->SetInternalFieldCount(1);
