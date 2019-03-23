@@ -540,7 +540,7 @@ Local<Function> MLMesher::Initialize(Isolate *isolate) {
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
   Nan::SetMethod(proto, "destroy", Destroy);
 
-  Local<Function> ctorFn = ctor->GetFunction();
+  Local<Function> ctorFn = Nan::GetFunction(ctor).ToLocalChecked();
 
   return scope.Escape(ctorFn);
 }
@@ -786,7 +786,7 @@ Local<Function> MLPlaneTracker::Initialize(Isolate *isolate) {
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
   Nan::SetMethod(proto, "destroy", Destroy);
 
-  Local<Function> ctorFn = ctor->GetFunction();
+  Local<Function> ctorFn = Nan::GetFunction(ctor).ToLocalChecked();
 
   return scope.Escape(ctorFn);
 }
@@ -950,7 +950,7 @@ Local<Function> MLHandTracker::Initialize(Isolate *isolate) {
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
   Nan::SetMethod(proto, "destroy", Destroy);
 
-  Local<Function> ctorFn = ctor->GetFunction();
+  Local<Function> ctorFn = Nan::GetFunction(ctor).ToLocalChecked();
 
   return scope.Escape(ctorFn);
 }
@@ -1472,7 +1472,7 @@ Local<Function> MLEyeTracker::Initialize(Isolate *isolate) {
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
   Nan::SetMethod(proto, "destroy", Destroy);
 
-  Local<Function> ctorFn = ctor->GetFunction();
+  Local<Function> ctorFn = Nan::GetFunction(ctor).ToLocalChecked();
 
   return scope.Escape(ctorFn);
 }
@@ -1739,7 +1739,7 @@ NAN_METHOD(MLImageTracker::New) {
   MLImageTrackerTargetSettings trackerSettings;
   trackerSettings.is_enabled = true;
   trackerSettings.is_stationary = true;
-  float longerDimension = (float)dimensionNumber->NumberValue();
+  float longerDimension = TO_FLOAT(dimensionNumber);
   trackerSettings.longer_dimension = longerDimension;
   char name[64];
   sprintf(name, "tracker%u", numImageTrackers++);
@@ -1788,7 +1788,7 @@ Local<Function> MLImageTracker::Initialize(Isolate *isolate) {
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
   Nan::SetMethod(proto, "destroy", Destroy);
 
-  Local<Function> ctorFn = ctor->GetFunction();
+  Local<Function> ctorFn = Nan::GetFunction(ctor).ToLocalChecked();
 
   return scope.Escape(ctorFn);
 }
@@ -1937,7 +1937,7 @@ MLContext::MLContext() : window(nullptr), position{0, 0, 0}, rotation{0, 0, 0, 1
 
 MLContext::~MLContext() {}
 
-Handle<Object> MLContext::Initialize(Isolate *isolate) {
+Local<Object> MLContext::Initialize(Isolate *isolate) {
   Nan::EscapableHandleScope scope;
 
   // constructor
@@ -1955,7 +1955,7 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "PrepareFrame", PrepareFrame);
   Nan::SetMethod(proto, "SubmitFrame", SubmitFrame);
 
-  Local<Function> ctorFn = ctor->GetFunction();
+  Local<Function> ctorFn = Nan::GetFunction(ctor).ToLocalChecked();
 
   Nan::SetMethod(ctorFn, "InitLifecycle", InitLifecycle);
   Nan::SetMethod(ctorFn, "DeinitLifecycle", DeinitLifecycle);
@@ -3168,9 +3168,9 @@ NAN_METHOD(MLContext::Exit) {
   if (info[0]->IsObject() && info[1]->IsNumber() && info[2]->IsNumber() && info[3]->IsNumber() && info[4]->IsFloat32Array() && info[5]->IsFloat32Array() && info[6]->IsFloat32Array()) {
     MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
     WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
-    GLuint framebuffer = info[1]->Uint32Value();
-    GLuint width = info[2]->Uint32Value();
-    GLuint height = info[3]->Uint32Value();
+    GLuint framebuffer = TO_UINT32(info[1]);
+    GLuint width = TO_UINT32(info[2]);
+    GLuint height = TO_UINT32(info[3]);
     
     Local<Float32Array> transformFloat32Array = Local<Float32Array>::Cast(info[4]);
     Local<Float32Array> projectionFloat32Array = Local<Float32Array>::Cast(info[5]);
@@ -3496,9 +3496,9 @@ NAN_METHOD(MLContext::PrepareFrame) {
     if (depthEnabled) {
       MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
       WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
-      GLuint framebuffer = info[1]->Uint32Value();
-      GLuint width = info[2]->Uint32Value();
-      GLuint height = info[3]->Uint32Value();
+      GLuint framebuffer = TO_UINT32(info[1]);
+      GLuint width = TO_UINT32(info[2]);
+      GLuint height = TO_UINT32(info[3]);
       
       windowsystem::SetCurrentWindowContext(gl->windowHandle);
       
@@ -3582,9 +3582,9 @@ NAN_METHOD(MLContext::SubmitFrame) {
 
   if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber()) {
     // WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
-    GLuint colorTex = info[0]->Uint32Value();
-    unsigned int width = info[1]->Uint32Value();
-    unsigned int height = info[2]->Uint32Value();
+    GLuint colorTex = TO_UINT32(info[0]);
+    unsigned int width = TO_UINT32(info[1]);
+    unsigned int height = TO_UINT32(info[2]);
 
     GLsync sync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 
@@ -3666,7 +3666,7 @@ NAN_METHOD(MLContext::GetSize) {
 NAN_METHOD(MLContext::SetContentTexture) {
   if (info[0]->IsNumber()) {
     MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
-    mlContext->contentTexture = info[0]->Uint32Value();
+    mlContext->contentTexture = TO_UINT32(info[0]);
   } else {
     Nan::ThrowError("MLContext::SetContentTexture: invalid arguments");
   }
@@ -3775,9 +3775,9 @@ NAN_METHOD(MLContext::RequestImageTracking) {
     Local<Object> imageObj = Local<Object>::Cast(info[1]);
 
     if (
-      imageObj->Get(JS_STR("constructor"))->ToObject()->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLImageElement")) &&
+      JS_OBJ(imageObj->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLImageElement")) &&
       imageObj->Get(JS_STR("image"))->IsObject() &&
-      imageObj->Get(JS_STR("image"))->ToObject()->Get(JS_STR("data"))->IsUint8ClampedArray()
+      JS_OBJ(imageObj->Get(JS_STR("image")))->Get(JS_STR("data"))->IsUint8ClampedArray()
     ) {
       Local<Function> mlImageTrackerCons = Nan::New(mlImageTrackerConstructor);
       Local<Value> argv[] = {
@@ -3795,7 +3795,7 @@ NAN_METHOD(MLContext::RequestImageTracking) {
 
 NAN_METHOD(MLContext::RequestDepthPopulation) {
   if (info[0]->IsBoolean()) {
-    depthEnabled = info[0]->BooleanValue();
+    depthEnabled = TO_BOOL(info[0]);
   } else {
     Nan::ThrowError("MLContext::RequestDepthPopulation: invalid arguments");
   }
@@ -4287,7 +4287,7 @@ MLVec3f MLContext::OffsetFloor(const MLVec3f &position) {
 
 }
 
-Handle<Object> makeMl() {
+Local<Object> makeMl() {
   Nan::EscapableHandleScope scope;
   return scope.Escape(ml::MLContext::Initialize(Isolate::GetCurrent()));
 }
