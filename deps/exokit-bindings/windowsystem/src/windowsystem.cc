@@ -790,7 +790,7 @@ NAN_METHOD(ComposeLayers) {
         switch (layerType) {
           case LayerType::IFRAME_3D: {
             Local<Object> framebufferObj = Local<Object>::Cast(elementObj->Get(JS_STR("contentDocument"))->ToObject()->Get(JS_STR("framebuffer")));
-            GLuint tex = TO_UINT32(framebufferObj->Get(JS_STR("tex"));
+            GLuint tex = TO_UINT32(framebufferObj->Get(JS_STR("tex")));
             GLuint depthTex = TO_UINT32(framebufferObj->Get(JS_STR("depthTex")));
             GLuint msTex = TO_UINT32(framebufferObj->Get(JS_STR("msTex")));
             GLuint msDepthTex = TO_UINT32(framebufferObj->Get(JS_STR("msDepthTex")));
