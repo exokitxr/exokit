@@ -1316,9 +1316,7 @@ NAN_METHOD(InitWindow2D) {
 }
 
 NATIVEwindow *CreateWindowHandle(unsigned int  width, unsigned int  height, bool initialVisible, NATIVEwindow *sharedWindow) {
-  exout << "create window handle 1 " << width << " " << height << " " << initialVisible << " " << sharedWindow << std::endl;
   NATIVEwindow *windowHandle = CreateNativeWindow(width, height, initialVisible, sharedWindow);
-  exout << "create window handle 2 " << (void *)windowHandle << std::endl;
 
   if (windowHandle) {
     SetCurrentWindowContext(windowHandle);
