@@ -1246,7 +1246,32 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       }
     };
     const _renderChildren = async () => {
-      const childSyncs = (await Promise.all(windows.map(window => window.tickAnimationFrame('child')))).flat();
+      for (let i = 0; i < windows.length; i++) {
+        const window = windows[i];
+        if (!window.promise) {
+          window.syncs = [];
+          window.promise = window.tickAnimationFrame('child')
+            .then(syncs => {
+              window.syncs = syncs;
+            })
+            .catch(err => {
+              console.warn(err.stack);
+            })
+            .finally(() => {
+              window.promise = null;
+            });
+        }
+      }
+      const timeoutPromise = new Promise((accept, reject) => {
+        setTimeout(() => {
+          accept();
+        }, 1000/60);
+      });
+      await Promise.race([
+        Promise.all(windows.map(window => window.promise)),
+        timeoutPromise,
+      ]);
+      const childSyncs = windows.map(window => window.syncs || []).flat();
       for (let i = 0; i < GlobalContext.contexts.length; i++) {
         const context = GlobalContext.contexts[i];
         nativeWindow.setCurrentWindowContext(context.getWindowHandle());
