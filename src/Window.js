@@ -1255,6 +1255,12 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       }
     };
     const _renderChildren = async () => {
+      let timeout;
+      const timeoutPromise = new Promise((accept, reject) => {
+        timeout = setTimeout(() => {
+          accept();
+        }, 1000/60);
+      });
       for (let i = 0; i < windows.length; i++) {
         const window = windows[i];
         if (window.phase === PHASES.WAITED) {
@@ -1266,15 +1272,11 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
           window.phase = PHASES.PENDING;
         }
       }
-      const timeoutPromise = new Promise((accept, reject) => {
-        setTimeout(() => {
-          accept();
-        }, 1000/60);
-      });
       await Promise.race([
-        Promise.all(windows.map(window => window.promise)),
         timeoutPromise,
+        Promise.all(windows.map(window => window.promise)),
       ]);
+      clearTimeout(timeout);
       const childSyncs = windows.map(window => window.syncs || []).flat();
       for (let i = 0; i < GlobalContext.contexts.length; i++) {
         const context = GlobalContext.contexts[i];
