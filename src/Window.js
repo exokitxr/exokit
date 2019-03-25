@@ -1280,10 +1280,12 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       const childSyncs = windows.map(window => window.syncs || []).flat();
       for (let i = 0; i < GlobalContext.contexts.length; i++) {
         const context = GlobalContext.contexts[i];
-        nativeWindow.setCurrentWindowContext(context.getWindowHandle());
+        if (context.d === 3) {
+          nativeWindow.setCurrentWindowContext(context.getWindowHandle());
 
-        for (let j = 0; j < childSyncs.length; j++) {
-          nativeWindow.waitSync(childSyncs[j]);
+          for (let j = 0; j < childSyncs.length; j++) {
+            nativeWindow.waitSync(childSyncs[j]);
+          }
         }
       }
       for (let i = 0; i < childSyncs.length; i++) {
