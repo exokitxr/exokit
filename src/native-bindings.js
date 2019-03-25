@@ -79,36 +79,10 @@ const _onGl3DConstruct = (gl, canvas) => {
         const visible = document.documentElement.contains(canvas);
         const {hidden} = document;
         const sharedWindowHandle = Array.from(GlobalContext.xrState.windowHandle);
-        const title = `Exokit ${GlobalContext.version}`;
-        
-        const argsBuffer = new Uint32Array(2 + 1 + 2);
-        argsBuffer[0] = canvasWidth;
-        argsBuffer[1] = canvasHeight;
-        argsBuffer[2] = (visible && !hidden) ? 1 : 0;
-        argsBuffer[3] = sharedWindowHandle[0];
-        argsBuffer[4] = sharedWindowHandle[1];
-        const windowHandle = global.runSyncTop(nativeWindow.createWindowHandle.functionAddress, argsBuffer);
         // XXX also set title
-        /* const windowHandle = global.runSyncTop(`(() => {
-          const {
-            canvasWidth,
-            canvasHeight,
-            visible,
-            hidden,
-            sharedWindowHandle,
-            title,
-          } = global._;
-          const windowHandle = nativeBindings.nativeWindow.createWindowHandle(canvasWidth, canvasHeight, visible && !hidden, sharedWindowHandle);
-          nativeBindings.nativeWindow.setWindowTitle(windowHandle, title);
-          return windowHandle;
-        })()`, {
-          canvasWidth,
-          canvasHeight,
-          visible,
-          hidden,
-          sharedWindowHandle,
-          title,
-        }); */
+        // const title = `Exokit ${GlobalContext.version}`;
+
+        const windowHandle = nativeWindow.createWindowHandle(canvasWidth, canvasHeight, GlobalContext.id === 1, sharedWindowHandle);
         return nativeWindow.initWindow3D(windowHandle, gl);
       } catch (err) {
         console.warn(err.stack);
@@ -311,22 +285,10 @@ const _onGl3DConstruct = (gl, canvas) => {
         if (!hidden) {
           const domVisible = canvas.ownerDocument.documentElement.contains(canvas);
           const windowVisible = nativeWindow.isVisible(windowHandle);
-          if (domVisible) {
-            if (!windowVisible) {
-              const argsBuffer = new Uint32Array(2 + 1);
-              argsBuffer[0] = windowHandle[0];
-              argsBuffer[1] = windowHandle[1];
-              argsBuffer[2] = 1;
-              global.runSyncTop(nativeWindow.setVisibility.functionAddress, argsBuffer);
-            }
-          } else {
-            if (windowVisible) {
-              const argsBuffer = new Uint32Array(2 + 1);
-              argsBuffer[0] = windowHandle[0];
-              argsBuffer[1] = windowHandle[1];
-              argsBuffer[2] = 0;
-              global.runSyncTop(nativeWindow.setVisibility.functionAddress, argsBuffer);
-            }
+          if (domVisible && !windowVisible) {
+            nativeWindow.setVisibility(windowHandle, true);
+          } else if (!domVisible && windowVisible) {
+            nativeWindow.setVisibility(windowHandle, false);
           }
         }
       });
@@ -351,18 +313,7 @@ const _onGl3DConstruct = (gl, canvas) => {
         // GlobalContext.mlPresentState.mlGlContextId = 0;
       }
 
-      const argsBuffer = new Uint32Array(2);
-      argsBuffer[0] = windowHandle[0];
-      argsBuffer[1] = windowHandle[1];
-      global.runSyncTop(nativeWindow.destroyWindowHandle.functionAddress, argsBuffer);
-      /* global.runSyncTop(`(() => {
-        const {
-          windowHandle,
-        } = global._;
-        nativeBindings.nativeWindow.destroy(windowHandle);
-      })()`, {
-        windowHandle,
-      }); */
+      nativeWindow.destroyWindowHandle(windowHandle);
       canvas._context = null;
 
       if (hidden) {
@@ -421,25 +372,7 @@ const _onGl2DConstruct = (ctx, canvas) => {
     if (!window[symbols.optionsSymbol].args.headless) {
       try {
         const sharedWindowHandle = Array.from(GlobalContext.xrState.windowHandle);
-        const argsBuffer = new Uint32Array(2 + 1 + 2);
-        argsBuffer[0] = canvasWidth;
-        argsBuffer[1] = canvasHeight;
-        argsBuffer[2] = 0;
-        argsBuffer[3] = sharedWindowHandle[0];
-        argsBuffer[4] = sharedWindowHandle[1];
-        const windowHandle = global.runSyncTop(nativeWindow.createWindowHandle.functionAddress, argsBuffer);
-        /* const windowHandle = global.runSyncTop(`(() => {
-          const {
-            canvasWidth,
-            canvasHeight,
-            sharedWindowHandle,
-          } = global._;
-          return nativeBindings.nativeWindow.createWindowHandle(canvasWidth, canvasHeight, false, sharedWindowHandle);
-        })()`, {
-          canvasWidth,
-          canvasHeight,
-          sharedWindowHandle,
-        }); */
+        const windowHandle = nativeWindow.createWindowHandle(canvasWidth, canvasHeight, false, sharedWindowHandle);
         return nativeWindow.initWindow2D(windowHandle);
       } catch (err) {
         console.warn(err.message);
@@ -978,15 +911,8 @@ if (bindings.nativeMl) {
           mlPresentState.mlContext = new bindings.nativeMl();
           const windowHandle = context.getWindowHandle();
           const graphicsWindowHandle = (() => {
-            const argsBuffer = new Uint32Array(2 + 1 + 2);
-            let index = 0;
-            argsBuffer[index++] = 1; // width
-            argsBuffer[index++] = 1; // height
-            argsBuffer[index++] = 0; // visible
-            argsBuffer[index++] = xrState.windowHandle[0];
-            argsBuffer[index++] = xrState.windowHandle[1];
-            const topRequestContext = nativeWorker.getTopRequestContext();
-            const windowHandle = topRequestContext.runSyncTop(nativeWindow.createWindowHandle.functionAddress, argsBuffer);
+            const topWindowHandle = Array.from(xrState.windowHandle);
+            const windowHandle = nativeWindow.createWindowHandle(1, 1, false, topWindowHandle);
             return windowHandle;
           })();
           mlPresentState.mlContext.Present(windowHandle, context, graphicsWindowHandle);

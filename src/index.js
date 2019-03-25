@@ -131,9 +131,6 @@ const windows = [];
 GlobalContext.windows = windows;
 // const contexts = [];
 
-const topRequestContext = nativeBindings.nativeWorker.makeRequestContext();
-topRequestContext.makeThread();
-nativeBindings.nativeWorker.setTopRequestContext(topRequestContext);
 const xrState = (() => {
   const _makeSab = size => {
     const sab = new SharedArrayBuffer(size);
@@ -149,13 +146,7 @@ const xrState = (() => {
   const result = {};
   {
     result.windowHandle = _makeTypedArray(Uint32Array, 2);
-    const argsBuffer = new Uint32Array(2 + 1 + 2);
-    let index = 0;
-    argsBuffer[index++] = 1; // width
-    argsBuffer[index++] = 1; // height
-    argsBuffer[index++] = 0; // visible
-    argsBuffer[index++] = 0; argsBuffer[index++] = 0; // shared window handle
-    const windowHandle = topRequestContext.runSyncTop(nativeBindings.nativeWindow.createWindowHandle.functionAddress, argsBuffer);
+    const windowHandle = nativeBindings.nativeWindow.createWindowHandle(1, 1, false, null);
     result.windowHandle.set(windowHandle);
   }
   result.isPresenting = _makeTypedArray(Uint32Array, 1);
@@ -286,7 +277,6 @@ const _startTopRenderLoop = () => {
     }
 
     // poll operating system events
-    topRequestContext.runSyncTop(nativeBindings.nativeWindow.pollEvents.functionAddress, new Uint32Array(0));
     if (args.performance) {
       const now = Date.now();
       const diff = now - timestamps.last;

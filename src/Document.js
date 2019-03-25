@@ -129,30 +129,7 @@ function initDocument (document, window) {
       
       for (let i = 0; i < GlobalContext.contexts.length; i++) {
         const context = GlobalContext.contexts[i];
-        const windowHandle = context.getWindowHandle();
-        const argsBuffer = new Uint32Array(2 + 1);
-        let index = 0;
-        argsBuffer[index++] = windowHandle[0];
-        argsBuffer[index++] = windowHandle[1];
-        argsBuffer[index++] = pointerLockElement ? 0 : 1;
-        global.runSyncTop(nativeBindings.nativeWindow.setCursorMode.functionAddress, argsBuffer);
-        /* global.runSyncTop(`(() => {
-          const {
-            windowHandles,
-            pointerLockElement,
-          } = global._;
-          for (let i = 0; i < windowHandles.length; i++) {
-            const windowHandle = windowHandles[i];
-
-            if (nativeBindings.nativeWindow.isVisible(windowHandle)) {
-              // console.log('set cursor mode', windowHandle, (windowHandle[0]<<32)|windowHandle[1], !pointerLockElement);
-              nativeBindings.nativeWindow.setCursorMode(windowHandle, !pointerLockElement);
-            }
-          }
-        })()`, {
-          windowHandles,
-          pointerLockElement,
-        }); */
+        nativeBindings.nativeWindow.setCursorMode(context.getWindowHandle(), !pointerLockElement);
       }
 
       const iframes = document.getElementsByTagName('iframe');
@@ -168,34 +145,7 @@ function initDocument (document, window) {
       
       for (let i = 0; i < GlobalContext.contexts.length; i++) {
         const context = GlobalContext.contexts[i];
-        const windowHandle = context.getWindowHandle();
-        const argsBuffer = new Uint32Array(2 + 1);
-        let index = 0;
-        argsBuffer[index++] = windowHandle[0];
-        argsBuffer[index++] = windowHandle[1];
-        argsBuffer[index++] = fullscreenElement ? 1 : 0;
-        global.runSyncTop(nativeBindings.setFullscreen.setCursorMode.functionAddress, argsBuffer);
-      
-        /* global.runSyncTop(`(() => {
-          const {
-            windowHandles,
-            fullscreenElement,
-          } = global._;
-          for (let i = 0; i < windowHandles.length; i++) {
-            const windowHandle = windowHandles[i];
-
-            if (nativeBindings.nativeWindow.isVisible(windowHandle)) {
-              if (fullscreenElement) {
-                nativeBindings.nativeWindow.setFullscreen(windowHandle);
-              } else {
-                nativeBindings.nativeWindow.exitFullscreen(windowHandle);
-              }
-            }
-          }
-        })()`, {
-          windowHandles,
-          fullscreenElement,
-        }); */
+        nativeBindings.nativeWindow.setFullscreen(context.getWindowHandle(), !!fullscreenElement);
       }
       
       const iframes = document.getElementsByTagName('iframe');
