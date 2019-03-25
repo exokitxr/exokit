@@ -1819,71 +1819,79 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
 
     for (let i = 0; i < contexts.length; i++) {
       const context = contexts[i];
-      const windowHandle = context.getWindowHandle();
 
-      nativeWindow.setCurrentWindowContext(windowHandle);
+      if (context.d === 3) {
+        const windowHandle = context.getWindowHandle();
 
-      const isVisible = nativeWindow.isVisible(windowHandle) || oculusVrGlContext === context || oculusMobileVrGlContext === context || mlGlContext === context;
-      if (isVisible) {
-        if (vrPresentState.oculusSystem && oculusVrGlContext === context && vrPresentState.hasPose) {
-          if (vrPresentState.layers.length > 0) {
-            nativeWindow.composeLayers(context, vrPresentState.fbo, vrPresentState.layers, xrState);
-          } else {
-            nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, oculusVrGlContext.canvas.width, oculusVrGlContext.canvas.height, oculusVrGlContext.canvas.width, oculusVrGlContext.canvas.height, true, false, false);
+        const isVisible = nativeWindow.isVisible(windowHandle) || oculusVrGlContext === context || oculusMobileVrGlContext === context || mlGlContext === context;
+        if (isVisible) {
+          nativeWindow.setCurrentWindowContext(windowHandle);
+
+          if (vrPresentState.oculusSystem && oculusVrGlContext === context && vrPresentState.hasPose) {
+            if (vrPresentState.layers.length > 0) {
+              nativeWindow.composeLayers(context, vrPresentState.fbo, vrPresentState.layers, xrState);
+            } else {
+              nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, oculusVrGlContext.canvas.width, oculusVrGlContext.canvas.height, oculusVrGlContext.canvas.width, oculusVrGlContext.canvas.height, true, false, false);
+            }
+
+            vrPresentState.oculusSystem.Submit(context, vrPresentState.fbo, oculusVrGlContext.canvas.width, oculusVrGlContext.canvas.height);
+            vrPresentState.hasPose = false;
+
+            nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, oculusVrGlContext.canvas.width * (args.blit ? 0.5 : 1), oculusVrGlContext.canvas.height, xrState.renderWidth[0], xrState.renderHeight[0], true, false, false);
+
+          } else if (vrPresentState.compositor && openVrGlContext === context && vrPresentState.hasPose) {
+            if (vrPresentState.layers.length > 0) {
+              nativeWindow.composeLayers(context, vrPresentState.fbo, vrPresentState.layers, xrState);
+            } else {
+              nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, openVrGlContext.canvas.width, openVrGlContext.canvas.height, openVrGlContext.canvas.width, openVrGlContext.canvas.height, true, false, false);
+            }
+
+            nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, oculusVrGlContext.canvas.width * (args.blit ? 0.5 : 1), oculusVrGlContext.canvas.height, xrState.renderWidth[0], xrState.renderHeight[0], true, false, false);
+          } else if (openVrGlContext === context && vrPresentState.hasPose) {
+            if (vrPresentState.layers.length > 0) {
+              nativeWindow.composeLayers(context, vrPresentState.fbo, vrPresentState.layers, xrState);
+            } else {
+              nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, openVrGlContext.canvas.width, openVrGlContext.canvas.height, openVrGlContext.canvas.width, openVrGlContext.canvas.height, true, false, false);
+            }
+
+            nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, openVrGlContext.canvas.width * (args.blit ? 0.5 : 1), openVrGlContext.canvas.height, xrState.renderWidth[0], xrState.renderHeight[0], true, false, false);
+          } else if (oculusMobileVrGlContext === context && oculusMobileVrPresentState.hasPose) {
+            if (oculusMobileVrPresentState.layers.length > 0) {
+              nativeWindow.composeLayers(context, oculusMobileVrPresentState.fbo, oculusMobileVrPresentState.layers);
+            } else {
+              nativeWindow.blitFrameBuffer(context, oculusMobileVrPresentState.msFbo, oculusMobileVrPresentState.fbo, oculusMobileVrGlContext.canvas.width, oculusMobileVrGlContext.canvas.height, oculusMobileVrGlContext.canvas.width, oculusMobileVrGlContext.canvas.height, true, false, false);
+            }
+
+            oculusMobileVrPresentState.vrContext.Submit(oculusMobileVrGlContext, oculusMobileVrPresentState.fbo, oculusMobileVrGlContext.canvas.width, oculusMobileVrGlContext.canvas.height);
+            oculusMobileVrPresentState.hasPose = false;
+          } else if (mlGlContext === context && mlPresentState.mlHasPose) {
+            if (mlPresentState.layers.length > 0) { // TODO: composition can be directly to the output texture array
+              nativeWindow.composeLayers(context, mlPresentState.mlFbo, mlPresentState.layers, xrState);
+            } else {
+              nativeWindow.blitFrameBuffer(context, mlPresentState.mlMsFbo, mlPresentState.mlFbo, mlGlContext.canvas.width, mlGlContext.canvas.height, mlGlContext.canvas.width, mlGlContext.canvas.height, true, false, false);
+            }
+
+            mlPresentState.mlContext.SubmitFrame(mlPresentState.mlTex, mlGlContext.canvas.width, mlGlContext.canvas.height);
+            mlPresentState.mlHasPose = false;
+          } else if (fakePresentState.layers.length > 0) { // XXX blit only to the intended context
+            nativeWindow.composeLayers(context, 0, fakePresentState.layers, xrState);
+            context.finish();
           }
-
-          vrPresentState.oculusSystem.Submit(context, vrPresentState.fbo, oculusVrGlContext.canvas.width, oculusVrGlContext.canvas.height);
-          vrPresentState.hasPose = false;
-
-          nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, oculusVrGlContext.canvas.width * (args.blit ? 0.5 : 1), oculusVrGlContext.canvas.height, xrState.renderWidth[0], xrState.renderHeight[0], true, false, false);
-
-        } else if (vrPresentState.compositor && openVrGlContext === context && vrPresentState.hasPose) {
-          if (vrPresentState.layers.length > 0) {
-            nativeWindow.composeLayers(context, vrPresentState.fbo, vrPresentState.layers, xrState);
-          } else {
-            nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, openVrGlContext.canvas.width, openVrGlContext.canvas.height, openVrGlContext.canvas.width, openVrGlContext.canvas.height, true, false, false);
-          }
-
-          vrPresentState.compositor.Submit(context, vrPresentState.tex);
-          vrPresentState.hasPose = false;
-
-          nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, openVrGlContext.canvas.width * (args.blit ? 0.5 : 1), openVrGlContext.canvas.height, xrState.renderWidth[0], xrState.renderHeight[0], true, false, false);
-        } else if (oculusMobileVrGlContext === context && oculusMobileVrPresentState.hasPose) {
-          if (oculusMobileVrPresentState.layers.length > 0) {
-            nativeWindow.composeLayers(context, oculusMobileVrPresentState.fbo, oculusMobileVrPresentState.layers);
-          } else {
-            nativeWindow.blitFrameBuffer(context, oculusMobileVrPresentState.msFbo, oculusMobileVrPresentState.fbo, oculusMobileVrGlContext.canvas.width, oculusMobileVrGlContext.canvas.height, oculusMobileVrGlContext.canvas.width, oculusMobileVrGlContext.canvas.height, true, false, false);
-          }
-
-          oculusMobileVrPresentState.vrContext.Submit(oculusMobileVrGlContext, oculusMobileVrPresentState.fbo, oculusMobileVrGlContext.canvas.width, oculusMobileVrGlContext.canvas.height);
-          oculusMobileVrPresentState.hasPose = false;
-        } else if (mlGlContext === context && mlPresentState.mlHasPose) {
-          if (mlPresentState.layers.length > 0) { // TODO: composition can be directly to the output texture array
-            nativeWindow.composeLayers(context, mlPresentState.mlFbo, mlPresentState.layers, xrState);
-          } else {
-            nativeWindow.blitFrameBuffer(context, mlPresentState.mlMsFbo, mlPresentState.mlFbo, mlGlContext.canvas.width, mlGlContext.canvas.height, mlGlContext.canvas.width, mlGlContext.canvas.height, true, false, false);
-          }
-
-          mlPresentState.mlContext.SubmitFrame(mlPresentState.mlTex, mlGlContext.canvas.width, mlGlContext.canvas.height);
-          mlPresentState.mlHasPose = false;
-        } else if (fakePresentState.layers.length > 0) { // XXX blit only to the intended context
-          nativeWindow.composeLayers(context, 0, fakePresentState.layers, xrState);
-          context.finish();
-        }
-      }
-
-      if (type === 'top') {
-        nativeWindow.swapBuffers(windowHandle);
-      }
-      if (isMac) {
-        const drawFramebuffer = context.getFramebuffer(context.DRAW_FRAMEBUFFER);
-        if (drawFramebuffer) {
-          context.bindFramebuffer(context.DRAW_FRAMEBUFFER, drawFramebuffer);
         }
 
-        const readFramebuffer = context.getFramebuffer(context.READ_FRAMEBUFFER);
-        if (readFramebuffer) {
-          context.bindFramebuffer(context.READ_FRAMEBUFFER, readFramebuffer);
+        if (type === 'top') {
+          nativeWindow.swapBuffers(windowHandle);
+        }
+        if (isMac) {
+          const drawFramebuffer = context.getFramebuffer(context.DRAW_FRAMEBUFFER);
+          if (drawFramebuffer) {
+            context.bindFramebuffer(context.DRAW_FRAMEBUFFER, drawFramebuffer);
+          }
+
+          const readFramebuffer = context.getFramebuffer(context.READ_FRAMEBUFFER);
+          if (readFramebuffer) {
+            context.bindFramebuffer(context.READ_FRAMEBUFFER, readFramebuffer);
+          }
         }
       }
     }
