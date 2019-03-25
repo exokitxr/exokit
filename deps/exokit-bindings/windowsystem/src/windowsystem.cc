@@ -369,7 +369,7 @@ void InitializeLocalGlState(WebGLRenderingContext *gl) {
 }
 
 constexpr GLint MAX_TEXTURE_SIZE = 4096;
-bool CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint sharedColorTex, GLuint sharedDepthStencilTex, GLuint sharedMsColorTex, GLuint sharedMsDepthStencilTex, GLuint *pfbo, GLuint *pcolorTex, GLuint *pdepthStencilTex, GLuint *pmsFbo, GLuint *pmsColorTex, GLuint *pmsDepthStencilTex) {
+void CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint sharedColorTex, GLuint sharedDepthStencilTex, GLuint sharedMsColorTex, GLuint sharedMsDepthStencilTex, GLuint *pfbo, GLuint *pcolorTex, GLuint *pdepthStencilTex, GLuint *pmsFbo, GLuint *pmsColorTex, GLuint *pmsDepthStencilTex) {
   const int samples = 4;
 
   GLuint &fbo = *pfbo;
@@ -445,8 +445,6 @@ bool CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint
     glClear(GL_DEPTH_BUFFER_BIT); // initialize to far depth
   }
 
-  bool framebufferOk = (glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
-
   if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
   } else {
@@ -467,8 +465,6 @@ bool CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint
   } else {
     glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
   }
-
-  return framebufferOk;
 }
 
 NAN_METHOD(CreateRenderTarget) {
@@ -486,21 +482,16 @@ NAN_METHOD(CreateRenderTarget) {
   GLuint msFbo;
   GLuint msColorTex;
   GLuint msDepthStencilTex;
-  bool ok = CreateRenderTarget(gl, width, height, sharedColorTex, sharedDepthStencilTex, sharedMsColorTex, sharedMsDepthStencilTex, &fbo, &colorTex, &depthStencilTex, &msFbo, &msColorTex, &msDepthStencilTex);
 
-  Local<Value> result;
-  if (ok) {
-    Local<Array> array = Array::New(Isolate::GetCurrent(), 6);
-    array->Set(0, JS_INT(fbo));
-    array->Set(1, JS_INT(colorTex));
-    array->Set(2, JS_INT(depthStencilTex));
-    array->Set(3, JS_INT(msFbo));
-    array->Set(4, JS_INT(msColorTex));
-    array->Set(5, JS_INT(msDepthStencilTex));
-    result = array;
-  } else {
-    result = Null(Isolate::GetCurrent());
-  }
+  CreateRenderTarget(gl, width, height, sharedColorTex, sharedDepthStencilTex, sharedMsColorTex, sharedMsDepthStencilTex, &fbo, &colorTex, &depthStencilTex, &msFbo, &msColorTex, &msDepthStencilTex);
+
+  Local<Array> result = Array::New(Isolate::GetCurrent(), 6);
+  result->Set(0, JS_NUM(fbo));
+  result->Set(1, JS_NUM(colorTex));
+  result->Set(2, JS_NUM(depthStencilTex));
+  result->Set(3, JS_NUM(msFbo));
+  result->Set(4, JS_NUM(msColorTex));
+  result->Set(5, JS_NUM(msDepthStencilTex));
   info.GetReturnValue().Set(result);
 }
 
