@@ -1456,20 +1456,22 @@ NAN_METHOD(CreateWindowHandle) {
 }
 
 void DestroyWindowHandle(NATIVEwindow *window) {
-  {
-    std::lock_guard<std::mutex> lock(eventHandlerMapMutex);
+  uv_sem_t sem;
+  uv_sem_init(&sem, 0);
+
+  QueueInjection(window, [window](InjectionHandler *injectionHandler) -> void {
+    DestroyNativeWindow(window);
 
     EventHandler *handler = eventHandlerMap[window];
     eventHandlerMap.erase(window);
     eventHandlerMap2.erase(handler->async.get());
     delete handler;
-  }
-
-  QueueInjection(window, [&](InjectionHandler *injectionHandler) -> void {
-    DestroyNativeWindow(window);
 
     injectionHandler->live = false;
   });
+
+  uv_sem_wait(&sem);
+  uv_sem_destroy(&sem);
 }
 uintptr_t DestroyWindowHandleFn(unsigned char *argsBuffer) {
   unsigned int *argsBufferArray = (unsigned int *)argsBuffer;
