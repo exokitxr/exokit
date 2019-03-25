@@ -36,6 +36,14 @@ namespace glfw {
     Nan::Persistent<Function> handlerFn;
     std::deque<std::function<void(std::function<void(int argc, Local<Value> *argv)>)>> fns;
   };
+
+  class InjectionHandler {
+  public:
+    InjectionHandler();
+
+    bool live;
+    std::deque<std::function<void(InjectionHandler *injectionHandler)>> fns;
+  };
   
   NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool visible, NATIVEwindow *sharedWindow);
   void GetWindowSize(NATIVEwindow *window, int *width, int *height);
