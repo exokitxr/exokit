@@ -1257,19 +1257,12 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       }
     };
     const _renderChildren = async () => {
-      const childSyncs = [];
       for (let i = 0; i < windows.length; i++) {
         const window = windows[i];
         if (window.phase === PHASES.WAITED) {
           window.promise = window.tickAnimationFrame('child')
             .then(syncs => {
-              childSyncs.push.apply(childSyncs, syncs);
-            })
-            .catch(err => {
-              console.warn(err.stack);
-            })
-            .finally(() => {
-              window.phase = PHASES.DONE;
+              window.syncs = syncs;
               window.promise = null;
             });
           window.phase = PHASES.PENDING;
@@ -1277,13 +1270,14 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       }
       const timeoutPromise = new Promise((accept, reject) => {
         setTimeout(() => {
-          accept(false);
+          accept();
         }, 1000/60);
       });
-      const ok = await Promise.race([
-        Promise.all(windows.map(window => window.promise)).then(() => true),
+      await Promise.race([
+        Promise.all(windows.map(window => window.promise)),
         timeoutPromise,
       ]);
+      const childSyncs = windows.map(window => window.syncs || []).flat();
       for (let i = 0; i < GlobalContext.contexts.length; i++) {
         const context = GlobalContext.contexts[i];
         nativeWindow.setCurrentWindowContext(context.getWindowHandle());
@@ -1294,6 +1288,13 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       }
       for (let i = 0; i < childSyncs.length; i++) {
         nativeWindow.deleteSync(childSyncs[i]);
+      }
+      for (let i = 0; i < windows.length; i++) {
+        const window = windows[i];
+        if (window.syncs) {
+          window.phase = PHASES.DONE;
+          window.syncs = null;
+        }
       }
     };
     
