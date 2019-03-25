@@ -1411,7 +1411,7 @@ NATIVEwindow *CreateWindowHandle(unsigned int width, unsigned int height, bool i
         std::lock_guard<std::mutex> lock(eventHandlerMapMutex);
 
         if (injectionHandler->fns.size() > 0) {
-          for (auto iter = injectionHandler->fns.begin(); iter != injectionHandler->fns.end(); iter++) {
+          for (auto iter = injectionHandler->fns.begin(); injectionHandler->live && iter != injectionHandler->fns.end(); iter++) {
             std::function<void(InjectionHandler *)> &fn = *iter;
             fn(injectionHandler);
           }
