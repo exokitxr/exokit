@@ -2064,4 +2064,5 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
 
 global.require = undefined;
 global.process = undefined;
+global.onrunasync = type => global.tickAnimationFrame(type);
 // global.setImmediate = undefined; // need this for the TLS implementation
