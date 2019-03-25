@@ -10,10 +10,13 @@ namespace glfw {
 thread_local NATIVEwindow *currentWindow = nullptr;
 std::map<NATIVEwindow *, EventHandler *> eventHandlerMap;
 std::map<uv_async_t *, EventHandler *> eventHandlerMap2;
+std::map<NATIVEwindow *, InjectionHandler *> injectionHandlerMap;
 std::mutex eventHandlerMapMutex;
 int lastX = 0, lastY = 0; // XXX track this per-window
 
 EventHandler::EventHandler(NATIVEwindow *window, uv_async_t *async, Local<Function> handlerFn) : window(window), async(async), handlerFn(handlerFn) {}
+
+InjectionHandler::InjectionHandler() : live(true) {}
 
 void RunEventInWindowThread(uv_async_t *async) {
   Nan::HandleScope scope;
@@ -22,11 +25,11 @@ void RunEventInWindowThread(uv_async_t *async) {
   Local<Function> handlerFn;
   {
     std::lock_guard<std::mutex> lock(eventHandlerMapMutex);
-    
+
     EventHandler *handler = eventHandlerMap2[async];
     localFns = std::move(handler->fns);
     handler->fns.clear();
-    
+
     handlerFn = Nan::New(handler->handlerFn);
   }
   for (auto iter = localFns.begin(); iter != localFns.end(); iter++) {
@@ -35,7 +38,7 @@ void RunEventInWindowThread(uv_async_t *async) {
     (*iter)([&](int argc, Local<Value> *argv) -> void {
       Local<Object> asyncObject = Nan::New<Object>();
       AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "mlEvents");
-      
+
       asyncResource.MakeCallback(handlerFn, argc, argv);
     });
   }
@@ -143,12 +146,38 @@ void QueueEvent(NATIVEwindow *window, std::function<void(std::function<void(int,
   EventHandler *eventHandler;
   {
     std::lock_guard<std::mutex> lock(eventHandlerMapMutex);
-    
-    eventHandler = eventHandlerMap[window];
-    eventHandler->fns.push_back(fn);
+
+    auto iter = eventHandlerMap.find(window);
+    if (iter != eventHandlerMap.end()) {
+      eventHandler = iter->second;
+      eventHandler->fns.push_back(fn);
+    } else {
+      eventHandler = nullptr;
+    }
   }
-  
-  uv_async_send(eventHandler->async);
+
+  if (eventHandler) {
+    uv_async_send(eventHandler->async);
+  }
+}
+
+void QueueInjection(NATIVEwindow *window, std::function<void(InjectionHandler *injectionHandler)> fn) {
+  InjectionHandler *injectionHandler;
+  {
+    std::lock_guard<std::mutex> lock(eventHandlerMapMutex);
+
+    auto iter = injectionHandlerMap.find(window);
+    if (iter != injectionHandlerMap.end()) {
+      injectionHandler = iter->second;
+      injectionHandler->fns.push_back(fn);
+    } else {
+      injectionHandler = nullptr;
+    }
+  }
+
+  if (injectionHandler) {
+    glfwPostEmptyEvent();
+  }
 }
 
 // Window callbacks handling
@@ -225,7 +254,7 @@ void APIENTRY windowDropCB(NATIVEwindow *window, int count, const char **paths) 
       evt,
     };
     eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
-    
+
     for (int i = 0; i < localPaths.size(); i++) {
       delete[] localPaths[i];
     }
@@ -542,7 +571,7 @@ void APIENTRY keyCB(NATIVEwindow *window, int key, int scancode, int action, int
       };
       eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
     });
-    
+
     if (action == GLFW_PRESS && isPrintable) {
       keyCB(window, charCode, scancode, GLFW_REPEAT, mods);
     }
@@ -556,7 +585,7 @@ void APIENTRY cursorPosCB(NATIVEwindow* window, double x, double y) {
   if(y<0 || y>=h) return;
 
   int mode = glfwGetInputMode(window, GLFW_CURSOR);
-  
+
   int movementX, movementY;
   if (mode == GLFW_CURSOR_DISABLED) {
     movementX = x - (w / 2);
@@ -570,7 +599,7 @@ void APIENTRY cursorPosCB(NATIVEwindow* window, double x, double y) {
 
   lastX = x;
   lastY = y;
-  
+
   QueueEvent(window, [=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
     Local<Object> evt = Nan::New<Object>();
     evt->Set(JS_STR("type"),JS_STR("mousemove"));
@@ -949,7 +978,7 @@ void SetCurrentWindowContext(NATIVEwindow *window) {
 void ReadPixels(WebGLRenderingContext *gl, unsigned int fbo, int x, int y, int width, int height, unsigned int format, unsigned int type, unsigned char *data) {
   glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
   glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
-  
+
   if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
     glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
   } else {
@@ -1056,7 +1085,7 @@ uintptr_t SetVisibilityFn(unsigned char *argsBuffer) {
 NAN_METHOD(SetVisibility) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   bool visible = info[1]->BooleanValue();
-  
+
   SetVisibility(window, visible);
 }
 
@@ -1081,36 +1110,32 @@ const GLFWvidmode *getBestVidMode(NATIVEwindow *window, GLFWmonitor *monitor) {
   return bestVidMode;
 }
 
-bool SetFullscreen(NATIVEwindow *window, bool enabled) {
-  GLFWmonitor *monitor = getMonitor();
+void SetFullscreen(NATIVEwindow *window, bool enabled) {
+  QueueInjection(window, [window, enabled](InjectionHandler *injectionHandler) -> void {
+    GLFWmonitor *monitor = getMonitor();
 
-  if (enabled) {
-    const GLFWvidmode *vidMode = getBestVidMode(window, monitor);
-    if (vidMode != nullptr) {
-      glfwSetWindowMonitor(window, monitor, 0, 0, vidMode->width, vidMode->height, 0);
-
-      return true;
+    if (enabled) {
+      const GLFWvidmode *vidMode = getBestVidMode(window, monitor);
+      if (vidMode != nullptr) {
+        glfwSetWindowMonitor(window, monitor, 0, 0, vidMode->width, vidMode->height, 0);
+      }
     } else {
-      return false;
+      const GLFWvidmode *vidMode = getBestVidMode(window, monitor);
+      glfwSetWindowMonitor(window, nullptr, vidMode->width/2 - 1280/2, vidMode->height/2 - 1024/2, 1280, 1024, 0);
     }
-  } else {
-    const GLFWvidmode *vidMode = getBestVidMode(window, monitor);
-    glfwSetWindowMonitor(window, nullptr, vidMode->width/2 - 1280/2, vidMode->height/2 - 1024/2, 1280, 1024, 0);
-    return true;
-  }
+  });
 }
 uintptr_t SetFullscreenFn(unsigned char *argsBuffer) {
   unsigned int *argsBufferArray = (unsigned int *)argsBuffer;
   NATIVEwindow *window = (NATIVEwindow *)(((uintptr_t)(argsBufferArray[0]) << 32) | (uintptr_t)(argsBufferArray[1]));
   bool enabled = (bool)(uint32_t)(argsBuffer[2]);
-  bool result = SetFullscreen(window, enabled);
-  return result ? 1 : 0;
+  SetFullscreen(window, enabled);
+  return 0;
 }
 NAN_METHOD(SetFullscreen) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   bool enabled = info[1]->BooleanValue();
-  bool result = SetFullscreen(window, enabled);
-  info.GetReturnValue().Set(JS_BOOL(result));
+  SetFullscreen(window, enabled);
 }
 
 /* NAN_METHOD(WindowShouldClose) {
@@ -1232,7 +1257,7 @@ NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool v
   }
 
   glfwWindowHint(GLFW_VISIBLE, visible);
-  
+
   NATIVEwindow *window = glfwCreateWindow(width, height, "Exokit", nullptr, sharedWindow);
   if (!window) {
     exerr << "Can't create GLFW window" << std::endl;
@@ -1259,15 +1284,15 @@ NAN_METHOD(InitWindow3D) {
 
     glGenFramebuffers(sizeof(framebuffers)/sizeof(framebuffers[0]), framebuffers);
     glGenTextures(sizeof(framebufferTextures)/sizeof(framebufferTextures[0]), framebufferTextures);
-    
+
     SetCurrentWindowContext(windowHandle);
   } else {
     glGenFramebuffers(sizeof(framebuffers)/sizeof(framebuffers[0]), framebuffers);
     glGenTextures(sizeof(framebufferTextures)/sizeof(framebufferTextures[0]), framebufferTextures);
   } */
-  
+
   windowsystembase::InitializeLocalGlState(gl);
-  
+
   GLuint vao;
   glGenVertexArrays(1, &vao);
   glBindVertexArray(vao);
@@ -1296,66 +1321,108 @@ NAN_METHOD(InitWindow2D) {
   NATIVEwindow *windowHandle = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
 
   SetCurrentWindowContext(windowHandle);
-  
+
   GLuint tex;
   glGenTextures(1, &tex);
   /* if (sharedWindow != nullptr) {
     SetCurrentWindowContext(sharedWindow);
 
     glGenTextures(1, &tex);
-    
+
     SetCurrentWindowContext(windowHandle);
   } else {
     glGenTextures(1, &tex);
   } */
-  
+
   Local<Array> result = Nan::New<Array>(2);
   result->Set(0, pointerToArray(windowHandle));
   result->Set(1, JS_INT(tex));
   info.GetReturnValue().Set(result);
 }
 
-NATIVEwindow *CreateWindowHandle(unsigned int  width, unsigned int  height, bool initialVisible, NATIVEwindow *sharedWindow) {
-  NATIVEwindow *windowHandle = CreateNativeWindow(width, height, initialVisible, sharedWindow);
+NATIVEwindow *CreateWindowHandle(unsigned int width, unsigned int height, bool initialVisible, NATIVEwindow *sharedWindow) {
+  NATIVEwindow *result;
+  uv_sem_t sem;
+  uv_sem_init(&sem, 0);
+  std::thread([&]() -> void {
+    NATIVEwindow *windowHandle = CreateNativeWindow(width, height, initialVisible, sharedWindow);
 
-  if (windowHandle) {
-    SetCurrentWindowContext(windowHandle);
+    if (windowHandle) {
+      SetCurrentWindowContext(windowHandle);
 
-    GLenum err = glewInit();
-    if (!err) {
-      glfwSwapInterval(0);
-      
-      glfwSetInputMode(windowHandle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+      GLenum err = glewInit();
+      if (!err) {
+        glfwSwapInterval(0);
 
-      // window callbacks
-      glfwSetWindowPosCallback(windowHandle, windowPosCB);
-      glfwSetWindowSizeCallback(windowHandle, windowSizeCB);
-      glfwSetWindowCloseCallback(windowHandle, windowCloseCB);
-      glfwSetWindowRefreshCallback(windowHandle, windowRefreshCB);
-      glfwSetWindowFocusCallback(windowHandle, windowFocusCB);
-      glfwSetWindowIconifyCallback(windowHandle, windowIconifyCB);
-      glfwSetFramebufferSizeCallback(windowHandle, windowFramebufferSizeCB);
-      glfwSetDropCallback(windowHandle, windowDropCB);
+        glfwSetInputMode(windowHandle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
-      // input callbacks
-      glfwSetKeyCallback(windowHandle, keyCB);
-      glfwSetMouseButtonCallback(windowHandle, mouseButtonCB);
-      glfwSetCursorPosCallback(windowHandle, cursorPosCB);
-      glfwSetCursorEnterCallback(windowHandle, cursorEnterCB);
-      glfwSetScrollCallback(windowHandle, scrollCB);
-    } else {
-      /* Problem: glewInit failed, something is seriously wrong. */
-      exerr << "Can't init GLEW (glew error " << (const char *)glewGetErrorString(err) << ")" << std::endl;
-      
-      DestroyNativeWindow(windowHandle);
-      
-      windowHandle = nullptr;
+        // window callbacks
+        glfwSetWindowPosCallback(windowHandle, windowPosCB);
+        glfwSetWindowSizeCallback(windowHandle, windowSizeCB);
+        glfwSetWindowCloseCallback(windowHandle, windowCloseCB);
+        glfwSetWindowRefreshCallback(windowHandle, windowRefreshCB);
+        glfwSetWindowFocusCallback(windowHandle, windowFocusCB);
+        glfwSetWindowIconifyCallback(windowHandle, windowIconifyCB);
+        glfwSetFramebufferSizeCallback(windowHandle, windowFramebufferSizeCB);
+        glfwSetDropCallback(windowHandle, windowDropCB);
+
+        // input callbacks
+        glfwSetKeyCallback(windowHandle, keyCB);
+        glfwSetMouseButtonCallback(windowHandle, mouseButtonCB);
+        glfwSetCursorPosCallback(windowHandle, cursorPosCB);
+        glfwSetCursorEnterCallback(windowHandle, cursorEnterCB);
+        glfwSetScrollCallback(windowHandle, scrollCB);
+      } else {
+        /* Problem: glewInit failed, something is seriously wrong. */
+        exerr << "Can't init GLEW (glew error " << (const char *)glewGetErrorString(err) << ")" << std::endl;
+
+        DestroyNativeWindow(windowHandle);
+
+        windowHandle = nullptr;
+      }
+
+      SetCurrentWindowContext(nullptr);
     }
-    
-    SetCurrentWindowContext(nullptr);
-  }
-    
-  return windowHandle;
+
+    InjectionHandler *injectionHandler;
+    {
+      std::lock_guard<std::mutex> lock(eventHandlerMapMutex);
+
+      injectionHandler = new InjectionHandler();
+      injectionHandlerMap[windowHandle] = injectionHandler;
+    }
+
+    result = windowHandle;
+
+    uv_sem_post(&sem);
+
+    for (;;) {
+      glfwWaitEvents();
+
+      {
+        std::lock_guard<std::mutex> lock(eventHandlerMapMutex);
+
+        if (injectionHandler->fns.size() > 0) {
+          for (auto iter = injectionHandler->fns.begin(); iter != injectionHandler->fns.end(); iter++) {
+            std::function<void(InjectionHandler *)> &fn = *iter;
+            fn(injectionHandler);
+          }
+          injectionHandler->fns.clear();
+
+          if (!injectionHandler->live) {
+            injectionHandlerMap.erase(windowHandle);
+            delete injectionHandler;
+            break;
+          }
+        }
+      }
+    }
+  }).detach();
+
+  uv_sem_wait(&sem);
+  uv_sem_destroy(&sem);
+
+  return result;
 }
 uintptr_t CreateWindowHandleFn(unsigned char *argsBuffer) {
   unsigned int *argsBufferArray = (unsigned int *)argsBuffer;
@@ -1381,16 +1448,16 @@ NAN_METHOD(CreateWindowHandle) {
 }
 
 void DestroyWindowHandle(NATIVEwindow *window) {
-  DestroyNativeWindow(window);
-  
-  {
-    std::lock_guard<std::mutex> lock(eventHandlerMapMutex);
+  QueueInjection(window, [window](InjectionHandler *injectionHandler) -> void {
+    DestroyNativeWindow(window);
 
     EventHandler *handler = eventHandlerMap[window];
     eventHandlerMap.erase(window);
     eventHandlerMap2.erase(handler->async);
     delete handler;
-  }
+
+    injectionHandler->live = false;
+  });
 }
 uintptr_t DestroyWindowHandleFn(unsigned char *argsBuffer) {
   unsigned int *argsBufferArray = (unsigned int *)argsBuffer;
@@ -1407,7 +1474,7 @@ NAN_METHOD(SetEventHandler) {
   if (info[0]->IsArray() && info[1]->IsFunction()) {
     Local<Array> windowHandle = Local<Array>::Cast(info[0]);
     Local<Function> handlerFn = Local<Function>::Cast(info[1]);
-    
+
     NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
     {
       std::lock_guard<std::mutex> lock(eventHandlerMapMutex);
@@ -1416,7 +1483,7 @@ NAN_METHOD(SetEventHandler) {
       uv_loop_t *loop = windowsystembase::GetEventLoop();
       uv_async_init(loop, async, RunEventInWindowThread);
       EventHandler *handler = new EventHandler(window, async, handlerFn);
-      
+
       eventHandlerMap[window] = handler;
       eventHandlerMap2[async] = handler;
     }
@@ -1448,26 +1515,28 @@ NAN_METHOD(GetRefreshRate) {
   } else {
     refreshRate = 60;
   }
-  
+
   info.GetReturnValue().Set(refreshRate);
 }
 
 void SetCursorMode(NATIVEwindow *window, bool enabled) {
-  if (enabled) {
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-  } else {
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+  QueueInjection(window, [window, enabled](InjectionHandler *injectionHandler) -> void {
+    if (enabled) {
+      glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    } else {
+      glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-    int w, h;
-    glfwGetWindowSize(window, &w, &h);
+      int w, h;
+      glfwGetWindowSize(window, &w, &h);
 
-    int centerX = w/2;
-    int centerY = h/2;
-    glfwSetCursorPos(window, centerX, centerY);
+      int centerX = w/2;
+      int centerY = h/2;
+      glfwSetCursorPos(window, centerX, centerY);
 
-    lastX = centerX;
-    lastY = centerY;
-  }
+      lastX = centerX;
+      lastY = centerY;
+    }
+  });
 }
 uintptr_t SetCursorModeFn(unsigned char *argsBuffer) {
   unsigned int *argsBufferArray = (unsigned int *)argsBuffer;
@@ -1504,7 +1573,7 @@ NAN_METHOD(SetClipboard) {
   if (info[0]->IsString()) {
     NATIVEwindow *window = GetCurrentWindowContext();
     Nan::Utf8String utf8_value(info[0]);
-    glfwSetClipboardString(window, *utf8_value);   
+    glfwSetClipboardString(window, *utf8_value);
   } else {
     Nan::ThrowTypeError("Invalid arguments");
   }
@@ -1877,7 +1946,7 @@ Local<Object> makeWindow() {
   v8::EscapableHandleScope scope(isolate);
 
   Local<Object> target = Object::New(isolate);
-  
+
   windowsystembase::Decorate(target);
 
   Nan::SetMethod(target, "initWindow3D", glfw::InitWindow3D);
