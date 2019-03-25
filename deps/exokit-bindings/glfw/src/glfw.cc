@@ -14,10 +14,6 @@ std::map<NATIVEwindow *, InjectionHandler *> injectionHandlerMap;
 std::mutex eventHandlerMapMutex;
 int lastX = 0, lastY = 0; // XXX track this per-window
 
-EventHandler::EventHandler(NATIVEwindow *window, uv_async_t *async, Local<Function> handlerFn) : window(window), async(async), handlerFn(handlerFn) {}
-
-InjectionHandler::InjectionHandler() : live(true) {}
-
 void RunEventInWindowThread(uv_async_t *async) {
   Nan::HandleScope scope;
 
@@ -43,6 +39,18 @@ void RunEventInWindowThread(uv_async_t *async) {
     });
   }
 }
+
+EventHandler::EventHandler(uv_loop_t *loop, Local<Function> handlerFn) : async(new uv_async_t()), handlerFn(handlerFn) {
+  uv_async_init(loop, async.get(), RunEventInWindowThread);
+}
+
+EventHandler::~EventHandler() {
+  uv_close((uv_handle_t *)async.release(), [](uv_handle_t *handle) {
+    delete handle;
+  });
+}
+
+InjectionHandler::InjectionHandler() : live(true) {}
 
 GLFWmonitor* _activeMonitor;
 GLFWmonitor* getMonitor() {
@@ -157,7 +165,7 @@ void QueueEvent(NATIVEwindow *window, std::function<void(std::function<void(int,
   }
 
   if (eventHandler) {
-    uv_async_send(eventHandler->async);
+    uv_async_send(eventHandler->async.get());
   }
 }
 
@@ -1448,13 +1456,17 @@ NAN_METHOD(CreateWindowHandle) {
 }
 
 void DestroyWindowHandle(NATIVEwindow *window) {
-  QueueInjection(window, [window](InjectionHandler *injectionHandler) -> void {
-    DestroyNativeWindow(window);
+  {
+    std::lock_guard<std::mutex> lock(eventHandlerMapMutex);
 
     EventHandler *handler = eventHandlerMap[window];
     eventHandlerMap.erase(window);
-    eventHandlerMap2.erase(handler->async);
+    eventHandlerMap2.erase(handler->async.get());
     delete handler;
+  }
+
+  QueueInjection(window, [&](InjectionHandler *injectionHandler) -> void {
+    DestroyNativeWindow(window);
 
     injectionHandler->live = false;
   });
@@ -1479,13 +1491,10 @@ NAN_METHOD(SetEventHandler) {
     {
       std::lock_guard<std::mutex> lock(eventHandlerMapMutex);
 
-      uv_async_t *async = new uv_async_t();
-      uv_loop_t *loop = windowsystembase::GetEventLoop();
-      uv_async_init(loop, async, RunEventInWindowThread);
-      EventHandler *handler = new EventHandler(window, async, handlerFn);
+      EventHandler *handler = new EventHandler(windowsystembase::GetEventLoop(), handlerFn);
 
       eventHandlerMap[window] = handler;
-      eventHandlerMap2[async] = handler;
+      eventHandlerMap2[handler->async.get()] = handler;
     }
   } else {
     Nan::ThrowError("SetEventHandler: invalid arguments");

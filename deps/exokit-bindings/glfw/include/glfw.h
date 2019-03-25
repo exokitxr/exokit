@@ -29,10 +29,10 @@ typedef GLFWwindow NATIVEwindow;
 namespace glfw {
   class EventHandler {
   public:
-    EventHandler(NATIVEwindow *window, uv_async_t *async, Local<Function> handlerFn);
+    EventHandler(uv_loop_t *loop, Local<Function> handlerFn);
+    ~EventHandler();
     
-    NATIVEwindow *window;
-    uv_async_t *async;
+    std::unique_ptr<uv_async_t> async;
     Nan::Persistent<Function> handlerFn;
     std::deque<std::function<void(std::function<void(int argc, Local<Value> *argv)>)>> fns;
   };
