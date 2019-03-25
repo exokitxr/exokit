@@ -17,8 +17,8 @@ const _makeWindow = (options = {}) => {
   });
   window.id = id;
   window.tickAnimationFrame = type => window.runAsync(`window.tickAnimationFrame("${type}");`);
+  window.phase = 0;
   window.promise = null;
-  window.syncs = null;
   
   window.on('resize', ({width, height}) => {
     window.width = width;

@@ -777,7 +777,7 @@ NAN_METHOD(ComposeLayers) {
             elementObj->Get(JS_STR("contentDocument"))->IsObject() &&
             JS_OBJ(elementObj->Get(JS_STR("contentDocument")))->Get(JS_STR("framebuffer"))->IsObject() &&
             elementObj->Get(JS_STR("contentWindow"))->IsObject() &&
-            JS_OBJ(elementObj->Get(JS_STR("contentWindow")))->Get(JS_STR("syncs"))->IsArray()
+            TO_UINT32(JS_OBJ(elementObj->Get(JS_STR("contentWindow")))->Get(JS_STR("phase"))) == 4 // PHASES.COMPLETE
           ) {
             layerType = LayerType::IFRAME_3D;
           } else if (elementObj->Get(JS_STR("browser"))->IsObject()) {
