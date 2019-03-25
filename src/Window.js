@@ -2065,4 +2065,10 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
 global.require = undefined;
 global.process = undefined;
 global.onrunasync = type => global.tickAnimationFrame(type);
+global.onexit = () => {
+  const localContexts = contexts.slice();
+  for (let i = 0; i < localContexts.length; i++) {
+    localContexts[i].destroy();
+  }
+};
 // global.setImmediate = undefined; // need this for the TLS implementation
