@@ -639,9 +639,9 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     window.navigator.xr = new XR.XR(window);
   }
 
-  window.destroy = function() {
+  /* window.destroy = function() {
     this._emit('destroy', {window: this});
-  };
+  }; */
   window.URL = URL;
   window.console = console;
   window.alert = console.log;
