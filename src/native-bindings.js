@@ -298,8 +298,6 @@ const _onGl3DConstruct = (gl, canvas) => {
     gl.destroy = (destroy => function() {
       destroy.call(this);
 
-      nativeWindow.setCurrentWindowContext(windowHandle);
-
       if (gl.id === GlobalContext.vrPresentState.glContextId) {
         throw new Error('destroyed vr presenting context');
         /* bindings.nativeVr.VR_Shutdown();
