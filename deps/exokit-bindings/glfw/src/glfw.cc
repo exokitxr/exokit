@@ -1061,7 +1061,7 @@ NAN_METHOD(RestoreWindow) {
 
 NAN_METHOD(SetVisibility) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  bool visible = info[1]->BooleanValue();
+  bool visible = TO_BOOL(info[1]);
 
   QueueInjection(window, [window, visible](InjectionHandler *injectionHandler) -> void {
     if (visible) {
@@ -1095,7 +1095,7 @@ const GLFWvidmode *getBestVidMode(NATIVEwindow *window, GLFWmonitor *monitor) {
 
 NAN_METHOD(SetFullscreen) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  bool enabled = info[1]->BooleanValue();
+  bool enabled = TO_BOOL(info[1]);
 
   QueueInjection(window, [window, enabled](InjectionHandler *injectionHandler) -> void {
     GLFWmonitor *monitor = getMonitor();
@@ -1447,7 +1447,7 @@ NAN_METHOD(GetRefreshRate) {
 
 NAN_METHOD(SetCursorMode) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  bool enabled = info[1]->BooleanValue();
+  bool enabled = TO_BOOL(info[1]);
 
   QueueInjection(window, [window, enabled](InjectionHandler *injectionHandler) -> void {
     if (enabled) {

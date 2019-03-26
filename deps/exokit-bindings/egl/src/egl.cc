@@ -170,7 +170,7 @@ NAN_METHOD(RestoreWindow) {
 
 NAN_METHOD(SetVisibility) {
   /* NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  bool visible = info[1]->BooleanValue(); */
+  bool visible = TO_BOOL(info[1]); */
 
   // nothing
 }
@@ -181,7 +181,7 @@ NAN_METHOD(IsVisible) {
 
 NAN_METHOD(SetFullscreen) {
   /* NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  bool enabled = info[1]->BooleanValue(); */
+  bool enabled = TO_BOOL(info[1]); */
 
   // nothing
 }
@@ -281,9 +281,9 @@ NAN_METHOD(InitWindow2D) {
 }
 
 NAN_METHOD(CreateWindowHandle) {
-  unsigned int width = info[0]->IsNumber() ? info[0]->Uint32Value() : 1;
-  unsigned int height = info[1]->IsNumber() ? info[1]->Uint32Value() : 1;
-  bool initialVisible = info[2]->IsBoolean() ? info[2]->BooleanValue() : false;
+  unsigned int width = info[0]->IsNumber() ? TO_UINT32(info[0]) : 1;
+  unsigned int height = info[1]->IsNumber() ? TO_UINT32(info[1]) : 1;
+  bool initialVisible = info[2]->IsBoolean() ? TO_BOOL(info[2]) : false;
   NATIVEwindow *sharedWindow = info[3]->IsArray() ? (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[3])) : nullptr;
 
   NATIVEwindow *windowHandle = CreateNativeWindow(width, height, initialVisible, sharedWindow);
@@ -320,7 +320,7 @@ NAN_METHOD(GetRefreshRate) {
 
 NAN_METHOD(SetCursorMode) {
   /* NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  bool enabled = info[1]->BooleanValue(); */
+  bool enabled = TO_BOOL(info[1]); */
 
   // nothing
 }
