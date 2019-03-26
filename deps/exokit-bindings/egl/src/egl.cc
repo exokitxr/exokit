@@ -7,7 +7,7 @@ namespace egl {
 constexpr EGLint glMajorVersion = 4;
 constexpr EGLint glMinorVersion = 5;
 
-bool initialized = false;
+thread_local bool initialized = false;
 thread_local NATIVEwindow *currentWindow = nullptr;
 int lastX = 0, lastY = 0; // XXX track this per-window
 std::unique_ptr<Nan::Persistent<Function>> eventHandler;
