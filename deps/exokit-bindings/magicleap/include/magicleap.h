@@ -117,18 +117,30 @@ public:
 
 void RunResInMainThread(uv_async_t *handle);
 
-class MLPoll {
+class MLCallback {
+public:
+  MLCallback(uv_loop_t *loop, std::function<void()> fn);
+  ~MLCallback();
+
+  static void RunInAsyncThread(uv_async_t *handle);
+
+// protected:
+  std::unique_ptr<uv_async_t> async;
+  std::function<void()> fn;
+};
+
+/* class MLPoll {
 public:
   Nan::Persistent<Object> windowObj;
   std::function<void()> cb;
   
   MLPoll(Local<Object> windowObj, std::function<void()> cb);
   ~MLPoll();
-};
+}; */
 
 class MLRaycaster : public ObjectWrap {
 public:
-  MLRaycaster(Local<Object> windowObj, MLHandle requestHandle, Local<Function> cb);
+  MLRaycaster(Local<Object> windowObj, MLHandle requestHandle, uv_loop_t *loop, Local<Function> cb);
   ~MLRaycaster();
 
   bool Update();
@@ -136,6 +148,7 @@ public:
 // protected:
   Nan::Persistent<Object> windowObj;
   MLHandle requestHandle;
+  uv_loop_t *loop;
   Nan::Persistent<Function> cb;
 };
 
@@ -169,7 +182,7 @@ class MLMesher : public ObjectWrap {
 public:
   static Local<Function> Initialize(Isolate *isolate);
 
-  MLMesher(Local<Object> windowObj);
+  MLMesher(Local<Object> windowObj, uv_loop_t *loop);
   ~MLMesher();
 
   static NAN_METHOD(New);
@@ -181,6 +194,7 @@ public:
 
 // protected:
   Nan::Persistent<Object> windowObj;
+  uv_loop_t *loop;
   Nan::Persistent<Function> cb;
 };
 
@@ -188,7 +202,7 @@ class MLPlaneTracker : public ObjectWrap {
 public:
   static Local<Function> Initialize(Isolate *isolate);
 
-  MLPlaneTracker(Local<Object> windowObj);
+  MLPlaneTracker(Local<Object> windowObj, uv_loop_t *loop);
   ~MLPlaneTracker();
 
   static NAN_METHOD(New);
@@ -200,6 +214,7 @@ public:
 
 // protected:
   Nan::Persistent<Object> windowObj;
+  uv_loop_t *loop;
   Nan::Persistent<Function> cb;
 };
 
@@ -207,7 +222,7 @@ class MLHandTracker : public ObjectWrap {
 public:
   static Local<Function> Initialize(Isolate *isolate);
 
-  MLHandTracker(Local<Object> windowObj);
+  MLHandTracker(Local<Object> windowObj, uv_loop_t *loop);
   ~MLHandTracker();
 
   static NAN_METHOD(New);
@@ -222,6 +237,7 @@ public:
 // protected:
   Nan::Persistent<Object> windowObj;
   Nan::Persistent<Function> cb;
+  uv_loop_t *loop;
   Nan::Persistent<Function> ongesture;
 };
 
@@ -250,11 +266,12 @@ public:
 
 class CameraRequest {
 public:
-  CameraRequest(Local<Function> cbFn);
+  CameraRequest(uv_loop_t *loop, Local<Function> cbFn);
   void Set(int width, int height, uint8_t *data, size_t size);
   void Update();
 
 // protected:
+  uv_loop_t *loop;
   Nan::Persistent<Function> cbFn;
   int width;
   int height;
@@ -279,6 +296,7 @@ public:
   Nan::Persistent<Object> windowObj;
   MLHandle trackerHandle;
   float size;
+  uv_loop_t *loop;
   Nan::Persistent<Function> cb;
   MLTransform transform;
   bool valid;

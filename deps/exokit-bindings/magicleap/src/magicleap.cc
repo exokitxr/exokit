@@ -49,6 +49,12 @@ void QueueEvent(std::function<void(std::function<void(int, Local<Value> *)>)> fn
   uv_async_send(eventHandler->async);
 }
 
+void QueueCallback(uv_loop_t *loop, std::function<void()> fn) {
+  MLCallback *mlCallback = new MLCallback(loop, fn);
+
+  uv_async_send(mlCallback->async.get());
+}
+
 uv_sem_t reqSem;
 uv_sem_t resSem;
 uv_async_t resAsync;
@@ -64,7 +70,7 @@ Nan::Persistent<Function> mlHandTrackerConstructor;
 Nan::Persistent<Function> mlEyeTrackerConstructor;
 Nan::Persistent<Function> mlImageTrackerConstructor;
 
-std::list<MLPoll *> polls;
+// std::list<MLPoll *> polls;
 
 std::thread cameraRequestThread;
 std::mutex cameraRequestMutex;
@@ -333,11 +339,11 @@ static void onNewInitArg(void* application_context) {
 static void onStop(void* application_context) {
   // ((struct application_context_t*)application_context)->dummy_value = DummyValue::STOPPED;
   ML_LOG(Info, "%s: On stop called.", application_name);
-  
+
   QueueEvent([=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
     Local<Object> obj = Nan::New<Object>();
     obj->Set(JS_STR("type"), JS_STR("stop"));
-    
+
     Local<Value> argv[] = {
       obj,
     };
@@ -394,7 +400,6 @@ MLMat4f getWindowTransformMatrix(Local<Object> windowObj, bool inverse = true) {
   Local<Object> localDocumentObj = Local<Object>::Cast(windowObj->Get(JS_STR("document")));
   Local<Value> xrOffsetValue = localDocumentObj->Get(JS_STR("xrOffset"));
 
-  MLMat4f result;
   if (xrOffsetValue->IsObject()) {
     Local<Object> xrOffsetObj = Local<Object>::Cast(xrOffsetValue);
     Local<Float32Array> positionFloat32Array = Local<Float32Array>::Cast(xrOffsetObj->Get(JS_STR("position")));
@@ -422,7 +427,7 @@ MLMat4f getWindowTransformMatrix(Local<Object> windowObj, bool inverse = true) {
 
 // MLRaycaster
 
-MLRaycaster::MLRaycaster(Local<Object> windowObj, MLHandle requestHandle, Local<Function> cb) : windowObj(windowObj), requestHandle(requestHandle), cb(cb) {}
+MLRaycaster::MLRaycaster(Local<Object> windowObj, MLHandle requestHandle, uv_loop_t *loop, Local<Function> cb) : windowObj(windowObj), requestHandle(requestHandle), loop(loop), cb(cb) {}
 
 MLRaycaster::~MLRaycaster() {}
 
@@ -431,20 +436,20 @@ bool MLRaycaster::Update() {
   MLResult result = MLRaycastGetResult(raycastTracker, this->requestHandle, &raycastResult);
   if (result == MLResult_Ok) {
     if (raycastResult.state == MLRaycastResultState_HitObserved) {
-      const MLVec3f &position = raycastResult.hitpoint;
-      const MLVec3f &normal = raycastResult.normal;
-      const MLQuaternionf &quaternion = getQuaternionFromUnitVectors(MLVec3f{0, 1, 0}, normal);
-      const MLVec3f &scale = {1, 1, 1};
-      MLMat4f hitMatrix = composeMatrix(position, quaternion, scale);
+      const MLVec3f position = raycastResult.hitpoint;
+      const MLQuaternionf quaternion = getQuaternionFromUnitVectors(MLVec3f{0, 1, 0}, raycastResult.normal);
+      const MLVec3f scale = {1, 1, 1};
 
-      Local<Object> localWindowObj = Nan::New(this->windowObj);
-      MLMat4f transformMatrix = getWindowTransformMatrix(localWindowObj);
-      if (!isIdentityMatrix(transformMatrix)) {
-        hitMatrix = multiplyMatrices(transformMatrix, hitMatrix);
-      }
-
-      polls.push_back(new MLPoll(localWindowObj, [this, hitMatrix]() -> void {
+      QueueCallback(loop, [this, position, quaternion, scale]() -> void {
         if (!this->cb.IsEmpty()) {
+          MLMat4f hitMatrix = composeMatrix(position, quaternion, scale);
+
+          Local<Object> localWindowObj = Nan::New(this->windowObj);
+          MLMat4f transformMatrix = getWindowTransformMatrix(localWindowObj);
+          if (!isIdentityMatrix(transformMatrix)) {
+            hitMatrix = multiplyMatrices(transformMatrix, hitMatrix);
+          }
+
           Local<Object> asyncObject = Nan::New<Object>();
           AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLRaycaster::Update");
 
@@ -460,13 +465,13 @@ bool MLRaycaster::Update() {
           };
           asyncResource.MakeCallback(cb, sizeof(argv)/sizeof(argv[0]), argv);
         }
-        
-        delete this;
-      }));
-    } else {
-      Local<Object> localWindowObj = Nan::New(this->windowObj);
 
-      polls.push_back(new MLPoll(localWindowObj, [this]() -> void {
+        delete this;
+      });
+    } else {
+      // Local<Object> localWindowObj = Nan::New(this->windowObj);
+
+      QueueCallback(loop, [this]() -> void {
         if (!this->cb.IsEmpty()) {
           Local<Object> asyncObject = Nan::New<Object>();
           AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLRaycaster::Update");
@@ -480,7 +485,7 @@ bool MLRaycaster::Update() {
         }
         
         delete this;
-      }));
+      });
     }
     
     return true;
@@ -489,9 +494,9 @@ bool MLRaycaster::Update() {
   } else {
     ML_LOG(Error, "%s: Raycast request failed! %x", application_name, result);
     
-    Local<Object> localWindowObj = Nan::New(this->windowObj);
+    // Local<Object> localWindowObj = Nan::New(this->windowObj);
 
-    polls.push_back(new MLPoll(localWindowObj, [this]() -> void {
+    QueueCallback(loop, [this]() -> void {
       if (!this->cb.IsEmpty()) {
         Local<Object> asyncObject = Nan::New<Object>();
         AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLRaycaster::Update");
@@ -505,17 +510,39 @@ bool MLRaycaster::Update() {
       }
       
       delete this;
-    }));
+    });
 
     return true;
   }
 }
 
-// MLPoll
+// MLCallback
+
+MLCallback::MLCallback(uv_loop_t *loop, std::function<void()> fn) : async(new uv_async_t()), fn(fn) {
+  async->data = this;
+  uv_async_init(loop, async.get(), RunInAsyncThread);
+}
+
+MLCallback::~MLCallback() {
+  uv_close((uv_handle_t *)async.release(), [](uv_handle_t *handle) {
+    delete handle;
+  });
+}
+
+void MLCallback::RunInAsyncThread(uv_async_t *handle) {
+  Nan::HandleScope scope;
+
+  MLCallback *mlCallback = (MLCallback *)handle->data;
+  mlCallback->fn();
+
+  delete mlCallback;
+}
+
+/* // MLPoll
 
 MLPoll::MLPoll(Local<Object> windowObj, std::function<void()> cb) : windowObj(windowObj), cb(cb) {}
 
-MLPoll::~MLPoll() {}
+MLPoll::~MLPoll() {} */
 
 // MeshBuffer
 
@@ -566,12 +593,13 @@ void MeshBuffer::setBuffers(float *positions, uint32_t numPositions, float *norm
 
 // MLMesher
 
-MLMesher::MLMesher(Local<Object> windowObj) : windowObj(windowObj) {}
+MLMesher::MLMesher(Local<Object> windowObj, uv_loop_t *loop) : windowObj(windowObj), loop(loop) {}
 
 MLMesher::~MLMesher() {}
 
 NAN_METHOD(MLMesher::New) {
-  MLMesher *mlMesher = new MLMesher(Local<Object>::Cast(info[0]));
+  uv_loop_t *loop = windowsystembase::GetEventLoop();
+  MLMesher *mlMesher = new MLMesher(Local<Object>::Cast(info[0]), loop);
   Local<Object> mlMesherObj = info.This();
   mlMesher->Wrap(mlMesherObj);
 
@@ -700,9 +728,9 @@ void MLMesher::Update() {
     }
   }
 
-  Local<Object> localWindowObj = Nan::New(this->windowObj);
+  // Local<Object> localWindowObj = Nan::New(this->windowObj);
 
-  polls.push_back(new MLPoll(localWindowObj, [
+  QueueCallback(loop, [
     this,
     transformMatrix,
     types{std::move(types)},
@@ -794,7 +822,7 @@ void MLMesher::Update() {
       };
       asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
     }
-  }));
+  });
 }
 
 NAN_METHOD(MLMesher::Destroy) {
@@ -812,12 +840,13 @@ NAN_METHOD(MLMesher::Destroy) {
 
 // MLPlaneTracker
 
-MLPlaneTracker::MLPlaneTracker(Local<Object> windowObj) : windowObj(windowObj) {}
+MLPlaneTracker::MLPlaneTracker(Local<Object> windowObj, uv_loop_t *loop) : windowObj(windowObj), loop(loop) {}
 
 MLPlaneTracker::~MLPlaneTracker() {}
 
 NAN_METHOD(MLPlaneTracker::New) {
-  MLPlaneTracker *mlPlaneTracker = new MLPlaneTracker(Local<Object>::Cast(info[0]));
+  uv_loop_t *loop = windowsystembase::GetEventLoop();
+  MLPlaneTracker *mlPlaneTracker = new MLPlaneTracker(Local<Object>::Cast(info[0]), loop);
   Local<Object> mlPlaneTrackerObj = info.This();
   mlPlaneTracker->Wrap(mlPlaneTrackerObj);
 
@@ -906,9 +935,9 @@ void MLPlaneTracker::Update() {
     heights.push_back(height);
   }
 
-  Local<Object> localWindowObj = Nan::New(this->windowObj);
+  // Local<Object> localWindowObj = Nan::New(this->windowObj);
 
-  polls.push_back(new MLPoll(localWindowObj, [
+  QueueCallback(loop, [
     this,
     numPlanes,
     ids{std::move(ids)},
@@ -957,7 +986,7 @@ void MLPlaneTracker::Update() {
       };
       asyncResource.MakeCallback(cb, sizeof(argv)/sizeof(argv[0]), argv);
     }
-  }));
+  });
 }
 
 NAN_METHOD(MLPlaneTracker::Destroy) {
@@ -975,12 +1004,13 @@ NAN_METHOD(MLPlaneTracker::Destroy) {
 
 // MLHandTracker
 
-MLHandTracker::MLHandTracker(Local<Object> windowObj) : windowObj(windowObj) {}
+MLHandTracker::MLHandTracker(Local<Object> windowObj, uv_loop_t *loop) : windowObj(windowObj), loop(loop) {}
 
 MLHandTracker::~MLHandTracker() {}
 
 NAN_METHOD(MLHandTracker::New) {
-  MLHandTracker *mlHandTracker = new MLHandTracker(Local<Object>::Cast(info[0]));
+  uv_loop_t *loop = windowsystembase::GetEventLoop();
+  MLHandTracker *mlHandTracker = new MLHandTracker(Local<Object>::Cast(info[0]), loop);
   Local<Object> mlHandTrackerObj = info.This();
   mlHandTracker->Wrap(mlHandTrackerObj);
 
@@ -1160,9 +1190,9 @@ void MLHandTracker::Update() {
     lastKeyposeRight = handData.right_hand_state.keypose;
   }
 
-  Local<Object> localWindowObj = Nan::New(this->windowObj);
+  // Local<Object> localWindowObj = Nan::New(this->windowObj);
 
-  polls.push_back(new MLPoll(localWindowObj, [
+  QueueCallback(loop, [
     this,
     transformMatrix,
     leftHandBoneValid,
@@ -1479,7 +1509,7 @@ void MLHandTracker::Update() {
       };
       asyncResource.MakeCallback(cb, sizeof(argv)/sizeof(argv[0]), argv);
     }
-  }));
+  });
 }
 
 NAN_METHOD(MLHandTracker::Destroy) {
@@ -2047,7 +2077,7 @@ void cameraOnImageBufferAvailable(const MLCameraOutput *output, void *data) {
 
 // CameraRequest
 
-CameraRequest::CameraRequest(Local<Function> cbFn) : cbFn(cbFn) {}
+CameraRequest::CameraRequest(uv_loop_t *loop, Local<Function> cbFn) : loop(loop), cbFn(cbFn) {}
 
 void CameraRequest::Set(int width, int height, uint8_t *data, size_t size) {
   this->width = width;
@@ -2069,23 +2099,25 @@ void CameraRequest::Set(int width, int height, uint8_t *data, size_t size) {
 }
 
 void CameraRequest::Update() {
-  Local<Object> asyncObject = Nan::New<Object>();
-  AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "cameraRequest");
+  QueueCallback(loop, [this]() -> void {
+    Local<Object> asyncObject = Nan::New<Object>();
+    AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "CameraRequest::Update");
 
-  Local<Function> cbFn = Nan::New(this->cbFn);
+    Local<Function> cbFn = Nan::New(this->cbFn);
 
-  Local<Object> obj = Nan::New<Object>();
-  obj->Set(JS_STR("data"), Nan::New(data));
-  data.Reset();
-  obj->Set(JS_STR("width"), JS_INT(width));
-  obj->Set(JS_STR("height"), JS_INT(height));
-  // obj->Set(JS_STR("bpp"), JS_INT(bpp));
-  // obj->Set(JS_STR("stride"), JS_INT(stride));
+    Local<Object> obj = Nan::New<Object>();
+    obj->Set(JS_STR("data"), Nan::New(data));
+    data.Reset();
+    obj->Set(JS_STR("width"), JS_INT(width));
+    obj->Set(JS_STR("height"), JS_INT(height));
+    // obj->Set(JS_STR("bpp"), JS_INT(bpp));
+    // obj->Set(JS_STR("stride"), JS_INT(stride));
 
-  Local<Value> argv[] = {
-    obj,
-  };
-  asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
+    Local<Value> argv[] = {
+      obj,
+    };
+    asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
+  });
 }
 
 // MLImageTracker
@@ -2120,7 +2152,7 @@ NAN_METHOD(MLImageTracker::New) {
   MLImageTrackerTargetSettings trackerSettings;
   trackerSettings.is_enabled = true;
   trackerSettings.is_stationary = true;
-  float longerDimension = (float)dimensionNumber->NumberValue();
+  float longerDimension = TO_FLOAT(dimensionNumber);
   trackerSettings.longer_dimension = longerDimension;
   char name[64];
   sprintf(name, "tracker%u", numImageTrackers++);
@@ -2187,6 +2219,9 @@ NAN_SETTER(MLImageTracker::OnTrackSetter) {
   MLImageTracker *mlImageTracker = ObjectWrap::Unwrap<MLImageTracker>(info.This());
 
   if (value->IsFunction()) {
+    uv_loop_t *loop = windowsystembase::GetEventLoop();
+    mlImageTracker->loop = loop;
+
     Local<Function> localCb = Local<Function>::Cast(value);
     mlImageTracker->cb.Reset(localCb);
   } else {
@@ -2228,9 +2263,9 @@ void MLImageTracker::Update(MLSnapshot *snapshot) {
             decomposeMatrix(transform, position, rotation, scale);
           }
 
-          Local<Object> localWindowObj = Nan::New(this->windowObj);
+          // Local<Object> localWindowObj = Nan::New(this->windowObj);
 
-          polls.push_back(new MLPoll(localWindowObj, [this, position, rotation]() -> void {
+          QueueCallback(loop, [this, position, rotation]() -> void {
             if (!this->cb.IsEmpty()) {
               Local<Object> asyncObject = Nan::New<Object>();
               AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLImageTracker::Update");
@@ -2258,7 +2293,7 @@ void MLImageTracker::Update(MLSnapshot *snapshot) {
 
               asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
             }
-          }));
+          });
 
           valid = newValid;
         } else {
@@ -2269,9 +2304,9 @@ void MLImageTracker::Update(MLSnapshot *snapshot) {
       }
     } else {
       if (lastValid) {
-        Local<Object> localWindowObj = Nan::New(this->windowObj);
+        // Local<Object> localWindowObj = Nan::New(this->windowObj);
 
-        polls.push_back(new MLPoll(localWindowObj, [this]() -> void {
+        QueueCallback(loop, [this]() -> void {
           if (!this->cb.IsEmpty()) {
             Local<Object> asyncObject = Nan::New<Object>();
             AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLImageTracker::Update");
@@ -2284,7 +2319,7 @@ void MLImageTracker::Update(MLSnapshot *snapshot) {
 
             asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
           }
-        }));
+        });
       }
 
       valid = newValid;
@@ -2353,7 +2388,7 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(ctorFn, "RequestCamera", RequestCamera);
   Nan::SetMethod(ctorFn, "CancelCamera", CancelCamera);
   Nan::SetMethod(ctorFn, "Update", Update);
-  Nan::SetMethod(ctorFn, "Poll", Poll);
+  // Nan::SetMethod(ctorFn, "Poll", Poll);
 
   return scope.Escape(ctorFn);
 }
@@ -2778,9 +2813,9 @@ NAN_METHOD(MLContext::Present) {
 
   windowsystem::SetCurrentWindowContext(window);
 
-  unsigned int halfWidth = mlContext->render_targets_info.buffers[0].color.width;
+  /* unsigned int halfWidth = mlContext->render_targets_info.buffers[0].color.width;
   unsigned int width = halfWidth * 2;
-  unsigned int height = mlContext->render_targets_info.buffers[0].color.height;
+  unsigned int height = mlContext->render_targets_info.buffers[0].color.height; */
 
   /* GLuint fbo;
   GLuint colorTex;
@@ -3773,7 +3808,8 @@ NAN_METHOD(MLContext::RequestHitTest) {
     MLHandle requestHandle;
     MLResult result = MLRaycastRequest(raycastTracker, &raycastQuery, &requestHandle);
     if (result == MLResult_Ok) {
-      MLRaycaster *raycaster = new MLRaycaster(windowObj, requestHandle, cb);
+      uv_loop_t *loop = windowsystembase::GetEventLoop();
+      MLRaycaster *raycaster = new MLRaycaster(windowObj, requestHandle, loop, cb);
       raycasters.push_back(raycaster);
     } else {
       ML_LOG(Error, "%s: Failed to request raycast: %x %x", application_name, result);
@@ -3871,7 +3907,8 @@ NAN_METHOD(MLContext::RequestCamera) {
     {
       // std::unique_lock<std::mutex> lock(cameraRequestsMutex);
 
-      CameraRequest *cameraRequest = new CameraRequest(cbFn);
+      uv_loop_t *loop = windowsystembase::GetEventLoop();
+      CameraRequest *cameraRequest = new CameraRequest(loop, cbFn);
       cameraRequests.push_back(cameraRequest);
     }
   } else {
@@ -3978,6 +4015,7 @@ NAN_METHOD(MLContext::Update) {
 
   // requests
 
+  // XXX
   if (raycasters.size() > 0) {
     raycasters.erase(std::remove_if(raycasters.begin(), raycasters.end(), [&](MLRaycaster *r) -> bool {
       if (r->Update()) {
@@ -4261,13 +4299,13 @@ NAN_METHOD(MLContext::Update) {
   }
 }
 
-NAN_METHOD(MLContext::Poll) {
+/* NAN_METHOD(MLContext::Poll) {
   std::for_each(polls.begin(), polls.end(), [&](MLPoll *poll) {
     poll->cb();
     delete poll;
   });
   polls.clear();
-}
+} */
 
 void MLContext::TickFloor() {
   if (floorRequestPending) {
