@@ -2615,8 +2615,8 @@ NAN_METHOD(WebGLRenderingContext::FlipTextureData) {
 
   int num;
   char *pixels=(char*)getArrayData<BYTE>(info[0], &num);
-  int width = info[1]->Int32Value();
-  int height = info[2]->Int32Value();
+  int width = TO_INT32(info[1]);
+  int height = TO_INT32(info[2]);
 
   int elementSize = num / width / height;
   for (int y = 0; y < height; y++) {
