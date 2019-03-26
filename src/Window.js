@@ -1764,7 +1764,6 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
 
       // update magic leap state
       nativeMl.Update(mlPresentState.mlContext, mlGlContext); // gl context for mesh buffer population
-      nativeMl.Poll();
 
       // prepare magic leap frame
       mlPresentState.mlContext.PrepareFrame(
