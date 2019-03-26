@@ -168,42 +168,22 @@ NAN_METHOD(RestoreWindow) {
   // nothing
 }
 
-void SetVisibility(NATIVEwindow *window, bool visible) {
-  // nothing
-}
-uintptr_t SetVisibilityFn(unsigned char *argsBuffer) {
-  unsigned int *argsBufferArray = (unsigned int *)argsBuffer;
-  NATIVEwindow *window = (NATIVEwindow *)(((uintptr_t)(argsBufferArray[0]) << 32) | (uintptr_t)(argsBufferArray[1]));
-  bool visible = (bool)(uint32_t)argsBufferArray[2];
-  SetVisibility(window, visible);
-  return 0;
-}
 NAN_METHOD(SetVisibility) {
-  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  bool visible = info[1]->BooleanValue();
-  
-  SetVisibility(window, visible);
+  /* NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+  bool visible = info[1]->BooleanValue(); */
+
+  // nothing
 }
 
 NAN_METHOD(IsVisible) {
   info.GetReturnValue().Set(JS_BOOL(true));
 }
 
-bool SetFullscreen(NATIVEwindow *window, bool enabled) {
-  return false;
-}
-uintptr_t SetFullscreenFn(unsigned char *argsBuffer) {
-  unsigned int *argsBufferArray = (unsigned int *)argsBuffer;
-  NATIVEwindow *window = (NATIVEwindow *)(((uintptr_t)(argsBufferArray[0]) << 32) | (uintptr_t)(argsBufferArray[1]));
-  bool enabled = (bool)(uint32_t)(argsBuffer[2]);
-  bool result = SetFullscreen(window, enabled);
-  return result ? 1 : 0;
-}
 NAN_METHOD(SetFullscreen) {
-  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  bool enabled = info[1]->BooleanValue();
-  bool result = SetFullscreen(window, enabled);
-  info.GetReturnValue().Set(JS_BOOL(result));
+  /* NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+  bool enabled = info[1]->BooleanValue(); */
+
+  // nothing
 }
 
 NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool visible, NATIVEwindow *sharedWindow) {
@@ -259,19 +239,6 @@ NAN_METHOD(InitWindow3D) {
     
   glGenFramebuffers(sizeof(framebuffers)/sizeof(framebuffers[0]), framebuffers);
   glGenTextures(sizeof(framebufferTextures)/sizeof(framebufferTextures[0]), framebufferTextures);
-  /* if (sharedWindow != nullptr) {
-    SetCurrentWindowContext(sharedWindow);
-
-    glGenFramebuffers(sizeof(framebuffers)/sizeof(framebuffers[0]), framebuffers);
-    glGenTextures(sizeof(framebufferTextures)/sizeof(framebufferTextures[0]), framebufferTextures);
-    
-    SetCurrentWindowContext(windowHandle);
-  } else {
-    SetCurrentWindowContext(windowHandle);
-    
-    glGenFramebuffers(sizeof(framebuffers)/sizeof(framebuffers[0]), framebuffers);
-    glGenTextures(sizeof(framebufferTextures)/sizeof(framebufferTextures[0]), framebufferTextures);
-  } */
 
   windowsystembase::InitializeLocalGlState(gl);
 
@@ -306,17 +273,6 @@ NAN_METHOD(InitWindow2D) {
 
   GLuint tex;
   glGenTextures(1, &tex);
-  /* if (sharedWindow != nullptr) {
-    SetCurrentWindowContext(sharedWindow);
-
-    glGenTextures(1, &tex);
-    
-    SetCurrentWindowContext(windowHandle);
-  } else {
-    SetCurrentWindowContext(windowHandle);
-    
-    glGenTextures(1, &tex);
-  } */
 
   Local<Array> result = Nan::New<Array>(2);
   result->Set(0, pointerToArray(windowHandle));
@@ -324,26 +280,14 @@ NAN_METHOD(InitWindow2D) {
   info.GetReturnValue().Set(result);
 }
 
-NATIVEwindow *CreateWindowHandle(unsigned int width, unsigned int height, bool initialVisible, NATIVEwindow *sharedWindow) {
-  NATIVEwindow *windowHandle = CreateNativeWindow(width, height, initialVisible, sharedWindow);
-  return windowHandle;
-}
-uintptr_t CreateWindowHandleFn(unsigned char *argsBuffer) {
-  unsigned int *argsBufferArray = (unsigned int *)argsBuffer;
-  unsigned int width = argsBufferArray[0];
-  unsigned int height = argsBufferArray[1];
-  bool initialVisible = (bool)(uint32_t)argsBufferArray[2];
-  NATIVEwindow *sharedWindow = (NATIVEwindow *)(((uintptr_t)(argsBufferArray[3]) << 32) | (uintptr_t)(argsBufferArray[4]));
-  NATIVEwindow *windowHandle = CreateWindowHandle(width, height, initialVisible, sharedWindow);
-  return (uintptr_t)windowHandle;
-}
 NAN_METHOD(CreateWindowHandle) {
   unsigned int width = info[0]->IsNumber() ? info[0]->Uint32Value() : 1;
   unsigned int height = info[1]->IsNumber() ? info[1]->Uint32Value() : 1;
   bool initialVisible = info[2]->IsBoolean() ? info[2]->BooleanValue() : false;
   NATIVEwindow *sharedWindow = info[3]->IsArray() ? (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[3])) : nullptr;
-  
-  NATIVEwindow *windowHandle = CreateWindowHandle(width, height, initialVisible, sharedWindow);
+
+  NATIVEwindow *windowHandle = CreateNativeWindow(width, height, initialVisible, sharedWindow);
+
   info.GetReturnValue().Set(pointerToArray(windowHandle));
 }
 
@@ -374,21 +318,11 @@ NAN_METHOD(GetRefreshRate) {
   info.GetReturnValue().Set(JS_INT(60));
 }
 
-void SetCursorMode(NATIVEwindow *window, bool enabled) {
-  // nothing
-}
-uintptr_t SetCursorModeFn(unsigned char *argsBuffer) {
-  unsigned int *argsBufferArray = (unsigned int *)argsBuffer;
-  NATIVEwindow *window = (NATIVEwindow *)(((uintptr_t)(argsBufferArray[0]) << 32) | (uintptr_t)(argsBufferArray[1]));
-  bool enabled = (bool)(uint32_t)(argsBufferArray[2]);
-  SetCursorMode(window, enabled);
-  return 0;
-}
 NAN_METHOD(SetCursorMode) {
-  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  bool enabled = info[1]->BooleanValue();
+  /* NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+  bool enabled = info[1]->BooleanValue(); */
 
-  SetCursorMode(window, enabled);
+  // nothing
 }
 
 NAN_METHOD(SetCursorPosition) {
@@ -422,28 +356,11 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "initWindow3D", egl::InitWindow3D);
   Nan::SetMethod(target, "initWindow2D", egl::InitWindow2D);
 
-  Local<String> functionAddressString = JS_STR("functionAddress");
-  {
-    Local<Function> fn = Nan::New<FunctionTemplate>(egl::CreateWindowHandle)->GetFunction();
-    fn->Set(functionAddressString, pointerToArray((void *)egl::CreateWindowHandleFn));
-    target->Set(JS_STR("createWindowHandle"), fn);
-  }
-  {
-    Local<Function> fn = Nan::New<FunctionTemplate>(egl::DestroyWindowHandle)->GetFunction();
-    fn->Set(functionAddressString, pointerToArray((void *)egl::DestroyWindowHandleFn));
-    target->Set(JS_STR("destroyWindowHandle"), fn);
-  }
-  {
-    Local<Function> fn = Nan::New<FunctionTemplate>(egl::SetVisibility)->GetFunction();
-    fn->Set(functionAddressString, pointerToArray((void *)egl::SetVisibilityFn));
-    target->Set(JS_STR("setVisibility"), fn);
-  }
+  Nan::SetMethod(target, "createWindowHandle", egl::CreateWindowHandle);
+  Nan::SetMethod(target, "destroyWindowHandle", egl::DestroyWindowHandle);
+  Nan::SetMethod(target, "setVisibility", egl::SetVisibility);
   Nan::SetMethod(target, "isVisible", egl::IsVisible);
-  {
-    Local<Function> fn = Nan::New<FunctionTemplate>(egl::SetFullscreen)->GetFunction();
-    fn->Set(functionAddressString, pointerToArray((void *)egl::SetFullscreenFn));
-    target->Set(JS_STR("setFullscreen"), fn);
-  }
+  Nan::SetMethod(target, "setFullscreen", egl::SetFullscreen);
   Nan::SetMethod(target, "setWindowTitle", egl::SetWindowTitle);
   Nan::SetMethod(target, "getWindowSize", egl::GetWindowSize);
   Nan::SetMethod(target, "setWindowSize", egl::SetWindowSize);
@@ -455,11 +372,7 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "setEventHandler", egl::SetEventHandler);
   Nan::SetMethod(target, "swapBuffers", egl::SwapBuffers);
   Nan::SetMethod(target, "getRefreshRate", egl::GetRefreshRate);
-  {
-    Local<Function> fn = Nan::New<FunctionTemplate>(egl::SetCursorMode)->GetFunction();
-    fn->Set(functionAddressString, pointerToArray((void *)egl::SetCursorModeFn));
-    target->Set(JS_STR("setCursorMode"), fn);
-  }
+  Nan::SetMethod(target, "setCursorMode", egl::SetCursorMode);
   Nan::SetMethod(target, "setCursorPosition", egl::SetCursorPosition);
   Nan::SetMethod(target, "getClipboard", egl::GetClipboard);
   Nan::SetMethod(target, "setClipboard", egl::SetClipboard);
