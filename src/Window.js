@@ -25,6 +25,7 @@ const {XRRigidTransform} = require('./XR.js');
 
 const mkdirp = require('mkdirp');
 const ws = require('ws');
+const serviceWorker = require('window-sw');
 
 const core = require('./core.js');
 
@@ -583,6 +584,7 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
   window.localStorage = new LocalStorage(path.join(options.dataPath, '.localStorage'));
   window.sessionStorage = new LocalStorage(path.join(options.dataPath, '.sessionStorage'));
   window.indexedDB = indexedDB;
+  window.serviceWorker = serviceWorker;
   window.performance = performance;
   window.screen = new Screen(window);
   window.scrollTo = function(x = 0, y = 0) {
