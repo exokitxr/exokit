@@ -1287,17 +1287,6 @@ NAN_METHOD(InitWindow3D) {
   GLuint framebufferTextures[4];
   glGenFramebuffers(sizeof(framebuffers)/sizeof(framebuffers[0]), framebuffers);
   glGenTextures(sizeof(framebufferTextures)/sizeof(framebufferTextures[0]), framebufferTextures);
-  /* if (sharedWindow != nullptr) {
-    SetCurrentWindowContext(sharedWindow);
-
-    glGenFramebuffers(sizeof(framebuffers)/sizeof(framebuffers[0]), framebuffers);
-    glGenTextures(sizeof(framebufferTextures)/sizeof(framebufferTextures[0]), framebufferTextures);
-
-    SetCurrentWindowContext(windowHandle);
-  } else {
-    glGenFramebuffers(sizeof(framebuffers)/sizeof(framebuffers[0]), framebuffers);
-    glGenTextures(sizeof(framebufferTextures)/sizeof(framebufferTextures[0]), framebufferTextures);
-  } */
 
   windowsystembase::InitializeLocalGlState(gl);
 
@@ -1332,15 +1321,6 @@ NAN_METHOD(InitWindow2D) {
 
   GLuint tex;
   glGenTextures(1, &tex);
-  /* if (sharedWindow != nullptr) {
-    SetCurrentWindowContext(sharedWindow);
-
-    glGenTextures(1, &tex);
-
-    SetCurrentWindowContext(windowHandle);
-  } else {
-    glGenTextures(1, &tex);
-  } */
 
   Local<Array> result = Nan::New<Array>(2);
   result->Set(0, pointerToArray(windowHandle));
