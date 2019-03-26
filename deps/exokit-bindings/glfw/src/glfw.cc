@@ -916,23 +916,6 @@ NAN_METHOD(glfw_CreateWindow) {
   info.GetReturnValue().Set(pointerToArray(window));
 } */
 
-/* NAN_METHOD(CreateFramebuffer) {
-  GLuint fbo;
-  glGenFramebuffers(1, &fbo);
-	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-
-  info.GetReturnValue().Set(JS_NUM(fbo));
-}
-
-NAN_METHOD(FramebufferTextureLayer) {
-  GLuint colorTex = info[0]->Uint32Value();
-  GLuint depthTex = info[1]->Uint32Value();
-  GLint layer = info[2]->Int32Value();
-
-  glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, colorTex, 0, layer);
-  glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthTex, 0, layer);
-} */
-
 NAN_METHOD(BlitFrameBuffer) {
   Local<Object> glObj = Local<Object>::Cast(info[0]);
   GLuint fbo1 = TO_UINT32(info[1]);
@@ -1076,25 +1059,17 @@ NAN_METHOD(RestoreWindow) {
   glfwRestoreWindow(window);
 }
 
-void SetVisibility(NATIVEwindow *window, bool visible) {
-  if (visible) {
-    glfwShowWindow(window);
-  } else {
-    glfwHideWindow(window);
-  }
-}
-uintptr_t SetVisibilityFn(unsigned char *argsBuffer) {
-  unsigned int *argsBufferArray = (unsigned int *)argsBuffer;
-  NATIVEwindow *window = (NATIVEwindow *)(((uintptr_t)(argsBufferArray[0]) << 32) | (uintptr_t)(argsBufferArray[1]));
-  bool visible = (bool)(uint32_t)argsBufferArray[2];
-  SetVisibility(window, visible);
-  return 0;
-}
 NAN_METHOD(SetVisibility) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   bool visible = info[1]->BooleanValue();
 
-  SetVisibility(window, visible);
+  QueueInjection(window, [window, visible](InjectionHandler *injectionHandler) -> void {
+    if (visible) {
+      glfwShowWindow(window);
+    } else {
+      glfwHideWindow(window);
+    }
+  });
 }
 
 NAN_METHOD(IsVisible) {
@@ -1118,7 +1093,10 @@ const GLFWvidmode *getBestVidMode(NATIVEwindow *window, GLFWmonitor *monitor) {
   return bestVidMode;
 }
 
-void SetFullscreen(NATIVEwindow *window, bool enabled) {
+NAN_METHOD(SetFullscreen) {
+  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+  bool enabled = info[1]->BooleanValue();
+
   QueueInjection(window, [window, enabled](InjectionHandler *injectionHandler) -> void {
     GLFWmonitor *monitor = getMonitor();
 
@@ -1132,18 +1110,6 @@ void SetFullscreen(NATIVEwindow *window, bool enabled) {
       glfwSetWindowMonitor(window, nullptr, vidMode->width/2 - 1280/2, vidMode->height/2 - 1024/2, 1280, 1024, 0);
     }
   });
-}
-uintptr_t SetFullscreenFn(unsigned char *argsBuffer) {
-  unsigned int *argsBufferArray = (unsigned int *)argsBuffer;
-  NATIVEwindow *window = (NATIVEwindow *)(((uintptr_t)(argsBufferArray[0]) << 32) | (uintptr_t)(argsBufferArray[1]));
-  bool enabled = (bool)(uint32_t)(argsBuffer[2]);
-  SetFullscreen(window, enabled);
-  return 0;
-}
-NAN_METHOD(SetFullscreen) {
-  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  bool enabled = info[1]->BooleanValue();
-  SetFullscreen(window, enabled);
 }
 
 /* NAN_METHOD(WindowShouldClose) {
@@ -1328,12 +1294,18 @@ NAN_METHOD(InitWindow2D) {
   info.GetReturnValue().Set(result);
 }
 
-NATIVEwindow *CreateWindowHandle(unsigned int width, unsigned int height, bool initialVisible, NATIVEwindow *sharedWindow) {
-  NATIVEwindow *result;
+NAN_METHOD(CreateWindowHandle) {
+  unsigned int width = info[0]->IsNumber() ? TO_UINT32(info[0]) : 1;
+  unsigned int height = info[1]->IsNumber() ?  TO_UINT32(info[1]) : 1;
+  bool initialVisible = TO_BOOL(info[2]);
+  NATIVEwindow *sharedWindow = info[3]->IsArray() ? (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[3])) : nullptr;
+
+  NATIVEwindow *windowHandle;
+
   uv_sem_t sem;
   uv_sem_init(&sem, 0);
   std::thread([&]() -> void {
-    NATIVEwindow *windowHandle = CreateNativeWindow(width, height, initialVisible, sharedWindow);
+    windowHandle = CreateNativeWindow(width, height, initialVisible, sharedWindow);
 
     if (windowHandle) {
       SetCurrentWindowContext(windowHandle);
@@ -1380,8 +1352,6 @@ NATIVEwindow *CreateWindowHandle(unsigned int width, unsigned int height, bool i
       injectionHandlerMap[windowHandle] = injectionHandler;
     }
 
-    result = windowHandle;
-
     uv_sem_post(&sem);
 
     for (;;) {
@@ -1406,28 +1376,9 @@ NATIVEwindow *CreateWindowHandle(unsigned int width, unsigned int height, bool i
       }
     }
   }).detach();
-
   uv_sem_wait(&sem);
   uv_sem_destroy(&sem);
-
-  return result;
-}
-uintptr_t CreateWindowHandleFn(unsigned char *argsBuffer) {
-  unsigned int *argsBufferArray = (unsigned int *)argsBuffer;
-  unsigned int width = argsBufferArray[0];
-  unsigned int height = argsBufferArray[1];
-  bool initialVisible = (bool)(uint32_t)argsBufferArray[2];
-  NATIVEwindow *sharedWindow = (NATIVEwindow *)(((uintptr_t)(argsBufferArray[3]) << 32) | (uintptr_t)(argsBufferArray[4]));
-  NATIVEwindow *windowHandle = CreateWindowHandle(width, height, initialVisible, sharedWindow);
-  return (uintptr_t)windowHandle;
-}
-NAN_METHOD(CreateWindowHandle) {
-  unsigned int width = info[0]->IsNumber() ? TO_UINT32(info[0]) : 1;
-  unsigned int height = info[1]->IsNumber() ?  TO_UINT32(info[1]) : 1;
-  bool initialVisible = TO_BOOL(info[2]);
-  NATIVEwindow *sharedWindow = info[3]->IsArray() ? (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[3])) : nullptr;
-
-  NATIVEwindow *windowHandle = CreateWindowHandle(width, height, initialVisible, sharedWindow);
+  
   if (windowHandle) {
     info.GetReturnValue().Set(pointerToArray(windowHandle));
   } else {
@@ -1435,7 +1386,9 @@ NAN_METHOD(CreateWindowHandle) {
   }
 }
 
-void DestroyWindowHandle(NATIVEwindow *window) {
+NAN_METHOD(DestroyWindowHandle) {
+  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+
   uv_sem_t sem;
   uv_sem_init(&sem, 0);
 
@@ -1452,16 +1405,6 @@ void DestroyWindowHandle(NATIVEwindow *window) {
 
   uv_sem_wait(&sem);
   uv_sem_destroy(&sem);
-}
-uintptr_t DestroyWindowHandleFn(unsigned char *argsBuffer) {
-  unsigned int *argsBufferArray = (unsigned int *)argsBuffer;
-  NATIVEwindow *window = (NATIVEwindow *)(((uintptr_t)(argsBufferArray[0]) << 32) | (uintptr_t)(argsBufferArray[1]));
-  DestroyWindowHandle(window);
-  return 0;
-}
-NAN_METHOD(DestroyWindowHandle) {
-  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  DestroyWindowHandle(window);
 }
 
 NAN_METHOD(SetEventHandler) {
@@ -1502,7 +1445,10 @@ NAN_METHOD(GetRefreshRate) {
   info.GetReturnValue().Set(refreshRate);
 }
 
-void SetCursorMode(NATIVEwindow *window, bool enabled) {
+NAN_METHOD(SetCursorMode) {
+  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+  bool enabled = info[1]->BooleanValue();
+
   QueueInjection(window, [window, enabled](InjectionHandler *injectionHandler) -> void {
     if (enabled) {
       glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
@@ -1520,19 +1466,6 @@ void SetCursorMode(NATIVEwindow *window, bool enabled) {
       lastY = centerY;
     }
   });
-}
-uintptr_t SetCursorModeFn(unsigned char *argsBuffer) {
-  unsigned int *argsBufferArray = (unsigned int *)argsBuffer;
-  NATIVEwindow *window = (NATIVEwindow *)(((uintptr_t)(argsBufferArray[0]) << 32) | (uintptr_t)(argsBufferArray[1]));
-  bool enabled = (bool)(uint32_t)(argsBufferArray[2]);
-  SetCursorMode(window, enabled);
-  return 0;
-}
-NAN_METHOD(SetCursorMode) {
-  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  bool enabled = info[1]->BooleanValue();
-
-  SetCursorMode(window, enabled);
 }
 
 NAN_METHOD(SetCursorPosition) {
@@ -1935,28 +1868,11 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "initWindow3D", glfw::InitWindow3D);
   Nan::SetMethod(target, "initWindow2D", glfw::InitWindow2D);
 
-  Local<String> functionAddressString = JS_STR("functionAddress");
-  {
-    Local<Function> fn = Nan::New<FunctionTemplate>(glfw::CreateWindowHandle)->GetFunction();
-    fn->Set(functionAddressString, pointerToArray((void *)glfw::CreateWindowHandleFn));
-    target->Set(JS_STR("createWindowHandle"), fn);
-  }
-  {
-    Local<Function> fn = Nan::New<FunctionTemplate>(glfw::DestroyWindowHandle)->GetFunction();
-    fn->Set(functionAddressString, pointerToArray((void *)glfw::DestroyWindowHandleFn));
-    target->Set(JS_STR("destroyWindowHandle"), fn);
-  }
-  {
-    Local<Function> fn = Nan::New<FunctionTemplate>(glfw::SetVisibility)->GetFunction();
-    fn->Set(functionAddressString, pointerToArray((void *)glfw::SetVisibilityFn));
-    target->Set(JS_STR("setVisibility"), fn);
-  }
+  Nan::SetMethod(target, "createWindowHandle", glfw::CreateWindowHandle);
+  Nan::SetMethod(target, "destroyWindowHandle", glfw::DestroyWindowHandle);
+  Nan::SetMethod(target, "setVisibility", glfw::SetVisibility);
   Nan::SetMethod(target, "isVisible", glfw::IsVisible);
-  {
-    Local<Function> fn = Nan::New<FunctionTemplate>(glfw::SetFullscreen)->GetFunction();
-    fn->Set(functionAddressString, pointerToArray((void *)glfw::SetFullscreenFn));
-    target->Set(JS_STR("setFullscreen"), fn);
-  }
+  Nan::SetMethod(target, "setFullscreen", glfw::SetFullscreen);
   Nan::SetMethod(target, "setMonitor", glfw::SetMonitor);
   Nan::SetMethod(target, "getMonitors", glfw::GetMonitors);
   Nan::SetMethod(target, "setWindowTitle", glfw::SetWindowTitle);
@@ -1970,16 +1886,10 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "setEventHandler", glfw::SetEventHandler);
   Nan::SetMethod(target, "swapBuffers", glfw::SwapBuffers);
   Nan::SetMethod(target, "getRefreshRate", glfw::GetRefreshRate);
-  {
-    Local<Function> fn = Nan::New<FunctionTemplate>(glfw::SetCursorMode)->GetFunction();
-    fn->Set(functionAddressString, pointerToArray((void *)glfw::SetCursorModeFn));
-    target->Set(JS_STR("setCursorMode"), fn);
-  }
+  Nan::SetMethod(target, "setCursorMode", glfw::SetCursorMode);
   Nan::SetMethod(target, "setCursorPosition", glfw::SetCursorPosition);
   Nan::SetMethod(target, "getClipboard", glfw::GetClipboard);
   Nan::SetMethod(target, "setClipboard", glfw::SetClipboard);
-  // Nan::SetMethod(target, "createFramebuffer", glfw::CreateFramebuffer);
-  // Nan::SetMethod(target, "framebufferTextureLayer", glfw::FramebufferTextureLayer);
   Nan::SetMethod(target, "blitFrameBuffer", glfw::BlitFrameBuffer);
   Nan::SetMethod(target, "setCurrentWindowContext", glfw::SetCurrentWindowContext);
 
