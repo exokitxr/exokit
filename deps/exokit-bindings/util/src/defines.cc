@@ -14,6 +14,6 @@ void *arrayToPointer(Local<Array> array) {
 }
 
 void *arrayToPointer(Local<Uint32Array> array) {
-  uintptr_t n = ((uintptr_t)array->Get(0)->Uint32Value() << 32) | (uintptr_t)array->Get(1)->Uint32Value();
+  uintptr_t n = ((uintptr_t)TO_UINT32(array->Get(0)) << 32) | (uintptr_t)TO_UINT32(array->Get(1));
   return (void *)n;
 }
