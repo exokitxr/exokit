@@ -83,6 +83,7 @@
     "window-fetch": "0.0.10",
     "window-ls": "0.0.1",
     "window-selector": "0.0.7",
+    "window-sw": "0.0.3",
     "window-xhr": "0.0.30",
     "ws": "^6.2.0"
   },
