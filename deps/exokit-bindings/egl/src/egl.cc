@@ -366,14 +366,6 @@ NAN_METHOD(SetEventHandler) {
   // nothing
 }
 
-uint32_t PollEventsFn(unsigned char *argsBuffer) {
-  // nothing
-  return 0;
-}
-NAN_METHOD(PollEvents) {
-  PollEventsFn(nullptr);
-}
-
 NAN_METHOD(SwapBuffers) {
   // buffer swapping is implicit on device (MLGraphicsEndFrame)
 }
@@ -461,11 +453,6 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "iconifyWindow", egl::IconifyWindow);
   Nan::SetMethod(target, "restoreWindow", egl::RestoreWindow);
   Nan::SetMethod(target, "setEventHandler", egl::SetEventHandler);
-  {
-    Local<Function> fn = Nan::New<FunctionTemplate>(egl::PollEvents)->GetFunction();
-    fn->Set(functionAddressString, pointerToArray((void *)egl::PollEventsFn));
-    target->Set(JS_STR("pollEvents"), fn);
-  }
   Nan::SetMethod(target, "swapBuffers", egl::SwapBuffers);
   Nan::SetMethod(target, "getRefreshRate", egl::GetRefreshRate);
   {

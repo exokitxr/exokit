@@ -1483,14 +1483,6 @@ NAN_METHOD(SetEventHandler) {
   }
 }
 
-uint32_t PollEventsFn(unsigned char *argsBuffer) {
-  glfwPollEvents();
-  return 0;
-}
-NAN_METHOD(PollEvents) {
-  PollEventsFn(nullptr);
-}
-
 NAN_METHOD(SwapBuffers) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   glfwSwapBuffers(window);
@@ -1976,11 +1968,6 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "iconifyWindow", glfw::IconifyWindow);
   Nan::SetMethod(target, "restoreWindow", glfw::RestoreWindow);
   Nan::SetMethod(target, "setEventHandler", glfw::SetEventHandler);
-  {
-    Local<Function> fn = Nan::New<FunctionTemplate>(glfw::PollEvents)->GetFunction();
-    fn->Set(functionAddressString, pointerToArray((void *)glfw::PollEventsFn));
-    target->Set(JS_STR("pollEvents"), fn);
-  }
   Nan::SetMethod(target, "swapBuffers", glfw::SwapBuffers);
   Nan::SetMethod(target, "getRefreshRate", glfw::GetRefreshRate);
   {
