@@ -5,6 +5,7 @@
 #include <sstream>
 #include <map>
 #include <functional>
+#include <thread>
 #include <mutex>
 
 #include <v8.h>
