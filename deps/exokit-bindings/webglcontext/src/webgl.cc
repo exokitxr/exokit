@@ -2837,8 +2837,8 @@ NAN_METHOD(WebGLRenderingContext::TexImage2D) {
         height->TypeOf(isolate)->StrictEquals(numberString),
         border->IsNull(), // 0
         !border->IsNull() && border->TypeOf(isolate)->StrictEquals(objectString), // 1
-        !border->IsNull() && border->TypeOf(isolate)->StrictEquals(objectString) && border->ToObject()->Get(widthString)->TypeOf(isolate)->StrictEquals(numberString), // 0
-        !border->IsNull() && border->TypeOf(isolate)->StrictEquals(objectString) && border->ToObject()->Get(heightString)->TypeOf(isolate)->StrictEquals(numberString) // 0
+        !border->IsNull() && border->TypeOf(isolate)->StrictEquals(objectString) && JS_OBJ(border)->Get(widthString)->TypeOf(isolate)->StrictEquals(numberString), // 0
+        !border->IsNull() && border->TypeOf(isolate)->StrictEquals(objectString) && JS_OBJ(border)->Get(heightString)->TypeOf(isolate)->StrictEquals(numberString) // 0
       ); */
 
       Nan::ThrowError("Expected texImage2D(number target, number level, number internalformat, number format, number type, Image pixels)");
