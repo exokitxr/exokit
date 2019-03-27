@@ -1231,18 +1231,16 @@ NAN_METHOD(SetClipboard) {
 
 #ifdef TARGET_OS_MAC
 NAN_METHOD(PollEvents) {
-  if (glfwInitialized) {
-    glfwPollEvents();
+  glfwPollEvents();
 
-    {
-      std::lock_guard<std::mutex> lock(injectionHandlerMapMutex);
+  {
+    std::lock_guard<std::mutex> lock(injectionHandlerMapMutex);
 
-      for (auto iter = mainThreadInjectionHandler.fns.begin(); iter != mainThreadInjectionHandler.fns.end(); iter++) {
-        std::function<void(InjectionHandler *)> &fn = *iter;
-        fn(&mainThreadInjectionHandler);
-      }
-      mainThreadInjectionHandler.fns.clear();
+    for (auto iter = mainThreadInjectionHandler.fns.begin(); iter != mainThreadInjectionHandler.fns.end(); iter++) {
+      std::function<void(InjectionHandler *)> &fn = *iter;
+      fn(&mainThreadInjectionHandler);
     }
+    mainThreadInjectionHandler.fns.clear();
   }
 }
 #endif
