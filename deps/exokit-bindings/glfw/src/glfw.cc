@@ -6,8 +6,9 @@
 
 namespace glfw {
 
-/* @Module: Window handling */
 thread_local NATIVEwindow *currentWindow = nullptr;
+std::mutex windowHandleMutex;
+NATIVEwindow *sharedWindow = nullptr;
 std::map<NATIVEwindow *, EventHandler *> eventHandlerMap;
 std::map<uv_async_t *, EventHandler *> eventHandlerMap2;
 #ifndef TARGET_OS_MAC
@@ -908,7 +909,7 @@ NAN_METHOD(SetFullscreen) {
 }
 
 bool glfwInitialized = false;
-NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool visible, NATIVEwindow *sharedWindow) {
+NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool visible) {
   if (!glfwInitialized) {
     glewExperimental = GL_TRUE;
 
@@ -947,6 +948,13 @@ NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool v
 
   glfwWindowHint(GLFW_VISIBLE, visible);
 
+  {
+    std::lock_guard<std::mutex> lock(windowHandleMutex);
+
+    if (!sharedWindow) {
+      sharedWindow = glfwCreateWindow(1, 1, "Exokit", nullptr, nullptr);
+    }
+  }
   NATIVEwindow *window = glfwCreateWindow(width, height, "Exokit", nullptr, sharedWindow);
   if (!window) {
     exerr << "Can't create GLFW window" << std::endl;
@@ -1013,7 +1021,6 @@ NAN_METHOD(CreateWindowHandle) {
   unsigned int width = info[0]->IsNumber() ? TO_UINT32(info[0]) : 1;
   unsigned int height = info[1]->IsNumber() ?  TO_UINT32(info[1]) : 1;
   bool initialVisible = TO_BOOL(info[2]);
-  NATIVEwindow *sharedWindow = info[3]->IsArray() ? (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[3])) : nullptr;
 
   NATIVEwindow *windowHandle;
 
@@ -1024,7 +1031,7 @@ NAN_METHOD(CreateWindowHandle) {
 #else
   QueueInjection(nullptr, [&](InjectionHandler *injectionHandler) -> void {
 #endif
-    windowHandle = CreateNativeWindow(width, height, initialVisible, sharedWindow);
+    windowHandle = CreateNativeWindow(width, height, initialVisible);
 
     if (windowHandle) {
       SetCurrentWindowContext(windowHandle);

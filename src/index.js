@@ -144,11 +144,6 @@ const xrState = (() => {
   const _makeTypedArray = _makeSab(1024);
 
   const result = {};
-  {
-    result.windowHandle = _makeTypedArray(Uint32Array, 2);
-    const windowHandle = nativeBindings.nativeWindow.createWindowHandle(1, 1, false, null);
-    result.windowHandle.set(windowHandle);
-  }
   result.isPresenting = _makeTypedArray(Uint32Array, 1);
   result.renderWidth = _makeTypedArray(Float32Array, 1);
   result.renderHeight = _makeTypedArray(Float32Array, 1);

@@ -77,13 +77,12 @@ const _onGl3DConstruct = (gl, canvas) => {
   const windowSpec = (() => {
     if (!window[symbols.optionsSymbol].args.headless) {
       try {
-        const visible = document.documentElement.contains(canvas);
+        const contained = document.documentElement.contains(canvas);
         const {hidden} = document;
-        const sharedWindowHandle = Array.from(GlobalContext.xrState.windowHandle);
         // XXX also set title
         // const title = `Exokit ${GlobalContext.version}`;
 
-        const windowHandle = nativeWindow.createWindowHandle(canvasWidth, canvasHeight, GlobalContext.id === 1, sharedWindowHandle);
+        const windowHandle = nativeWindow.createWindowHandle(canvasWidth, canvasHeight, contained && !hidden);
         return nativeWindow.initWindow3D(windowHandle, gl);
       } catch (err) {
         console.warn(err.stack);
@@ -371,8 +370,7 @@ const _onGl2DConstruct = (ctx, canvas) => {
   const windowSpec = (() => {
     if (!window[symbols.optionsSymbol].args.headless) {
       try {
-        const sharedWindowHandle = Array.from(GlobalContext.xrState.windowHandle);
-        const windowHandle = nativeWindow.createWindowHandle(canvasWidth, canvasHeight, false, sharedWindowHandle);
+        const windowHandle = nativeWindow.createWindowHandle(canvasWidth, canvasHeight, false);
         return nativeWindow.initWindow2D(windowHandle);
       } catch (err) {
         console.warn(err.message);
@@ -910,11 +908,7 @@ if (bindings.nativeMl) {
         if (!xrState.isPresenting[0]) {
           mlPresentState.mlContext = new bindings.nativeMl();
           const windowHandle = context.getWindowHandle();
-          const graphicsWindowHandle = (() => {
-            const topWindowHandle = Array.from(xrState.windowHandle);
-            const windowHandle = nativeWindow.createWindowHandle(1, 1, false, topWindowHandle);
-            return windowHandle;
-          })();
+          const graphicsWindowHandle = nativeWindow.createWindowHandle(1, 1, false);
           mlPresentState.mlContext.Present(windowHandle, context, graphicsWindowHandle);
 
           const {width: halfWidth, height} = mlPresentState.mlContext.GetSize();

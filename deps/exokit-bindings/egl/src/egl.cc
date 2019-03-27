@@ -9,8 +9,10 @@ constexpr EGLint glMinorVersion = 5;
 
 thread_local bool initialized = false;
 thread_local NATIVEwindow *currentWindow = nullptr;
-int lastX = 0, lastY = 0; // XXX track this per-window
+std::mutex windowHandleMutex;
+NATIVEwindow *sharedWindow = nullptr;
 std::unique_ptr<Nan::Persistent<Function>> eventHandler;
+int lastX = 0, lastY = 0; // XXX track this per-window
 
 void Initialize() {
   if (!initialized) {
@@ -186,7 +188,7 @@ NAN_METHOD(SetFullscreen) {
   // nothing
 }
 
-NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool visible, NATIVEwindow *sharedWindow) {
+NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool visible) {
   Initialize();
   
   EGLDisplay display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
@@ -223,7 +225,15 @@ NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool v
     EGL_NONE
   };
 
-  EGLContext context = eglCreateContext(display, egl_config, sharedWindow ? GetGLContext(sharedWindow) : EGL_NO_CONTEXT, context_attribs);
+  {
+    std::lock_guard<std::mutex> lock(windowHandleMutex);
+
+    if (!sharedWindow) {
+      EGLContext sharedContext = eglCreateContext(display, egl_config, EGL_NO_CONTEXT, context_attribs);
+      sharedWindow = new NATIVEwindow{display, sharedContext, 1, 1};
+    }
+  }
+  EGLContext context = eglCreateContext(display, egl_config, GetGLContext(sharedWindow), context_attribs);
 
   return new NATIVEwindow{display, context, width, height};
 }
@@ -284,9 +294,8 @@ NAN_METHOD(CreateWindowHandle) {
   unsigned int width = info[0]->IsNumber() ? TO_UINT32(info[0]) : 1;
   unsigned int height = info[1]->IsNumber() ? TO_UINT32(info[1]) : 1;
   bool initialVisible = info[2]->IsBoolean() ? TO_BOOL(info[2]) : false;
-  NATIVEwindow *sharedWindow = info[3]->IsArray() ? (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[3])) : nullptr;
 
-  NATIVEwindow *windowHandle = CreateNativeWindow(width, height, initialVisible, sharedWindow);
+  NATIVEwindow *windowHandle = CreateNativeWindow(width, height, initialVisible);
 
   info.GetReturnValue().Set(pointerToArray(windowHandle));
 }

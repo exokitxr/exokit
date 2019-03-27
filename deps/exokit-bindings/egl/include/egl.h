@@ -34,7 +34,7 @@ public:
 #define windowsystem egl
 
 namespace egl {
-  NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool visible, NATIVEwindow *sharedWindow);
+  NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool visible);
   void GetWindowSize(NATIVEwindow *window, int *width, int *height);
   void GetFramebufferSize(NATIVEwindow *window, int *width, int *height);
   EGLContext GetGLContext(NATIVEwindow *window);
