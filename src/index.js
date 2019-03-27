@@ -238,7 +238,7 @@ const _startTopRenderLoop = () => {
   };
   const TIMESTAMP_FRAMES = 100;
 
-  nativeBindings.nativeWindow.registerPollEvents && nativeBindings.nativeWindow.registerPollEvents();
+  nativeBindings.nativeWindow.registerEventHandler && nativeBindings.nativeWindow.registerEventHandler();
 
   const _topRenderLoop = async () => {
     if (args.performance) {
@@ -282,7 +282,8 @@ const _startTopRenderLoop = () => {
       timestamps.last = now;
     }
 
-    // update media frames
+    // update events
+    nativeBindings.nativeWindow.pollEvents && nativeBindings.nativeWindow.pollEvents();
     nativeBindings.nativeVideo.Video.updateAll();
     nativeBindings.nativeBrowser && nativeBindings.nativeBrowser.Browser.updateAll(); // XXX unlock when oculus mobile supports it
 

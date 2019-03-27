@@ -1233,9 +1233,11 @@ NAN_METHOD(SetClipboard) {
 }
 
 #ifdef TARGET_OS_MAC
-void RunInInjectionThread(uv_async_t *handle) {
+NAN_METHOD(PollEvents) {
   glfwPollEvents();
+}
 
+void RunInInjectionThread(uv_async_t *handle) {
   {
     std::lock_guard<std::mutex> lock(injectionHandlerMapMutex);
 
@@ -1247,7 +1249,7 @@ void RunInInjectionThread(uv_async_t *handle) {
   }
 }
 
-NAN_METHOD(RegisterPollEvents) {
+NAN_METHOD(RegisterEventHandler) {
   uv_loop_t *loop = windowsystembase::GetEventLoop();
   uv_async_init(loop, &injectionAsync, RunInInjectionThread);
 }
@@ -1651,7 +1653,8 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "blitFrameBuffer", glfw::BlitFrameBuffer);
   Nan::SetMethod(target, "setCurrentWindowContext", glfw::SetCurrentWindowContext);
 #ifdef TARGET_OS_MAC
-  Nan::SetMethod(target, "registerPollEvents", glfw::RegisterPollEvents);
+  Nan::SetMethod(target, "pollEvents", glfw::PollEvents);
+  Nan::SetMethod(target, "registerEventHandler", glfw::RegisterEventHandler);
 #endif
 
   return scope.Escape(target);
