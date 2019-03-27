@@ -1064,13 +1064,14 @@ NAN_METHOD(CreateWindowHandle) {
           injectionHandler->fns.clear();
 
           if (!injectionHandler->live) {
-            injectionHandlerMap.erase(windowHandle);
-            delete injectionHandler;
             break;
           }
         }
       }
     }
+
+    injectionHandlerMap.erase(windowHandle);
+    delete injectionHandler;
   }).detach();
   uv_sem_wait(&sem);
   uv_sem_destroy(&sem);
