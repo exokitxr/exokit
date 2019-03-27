@@ -508,19 +508,6 @@ NAN_METHOD(ResizeRenderTarget) {
 
   const int samples = 4;
 
-  /* {
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, msFbo);
-
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex);
-    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
-    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_DEPTH24_STENCIL8, width, height, true);
-    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex, 0);
-
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msColorTex);
-    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
-    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA8, width, height, true);
-    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, msColorTex, 0);
-  } */
   {
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
 
