@@ -15,6 +15,7 @@ std::map<uv_async_t *, EventHandler *> eventHandlerMap2;
 std::map<NATIVEwindow *, InjectionHandler *> injectionHandlerMap;
 #else
 InjectionHandler mainThreadInjectionHandler;
+uv_async_t injectionAsync;
 #endif
 std::mutex eventHandlerMapMutex;
 std::mutex injectionHandlerMapMutex;
@@ -179,6 +180,8 @@ void QueueInjection(NATIVEwindow *window, std::function<void(InjectionHandler *i
 
     mainThreadInjectionHandler.fns.push_back(fn);
   }
+
+  uv_async_send(&injectionAsync);
 }
 #endif
 
@@ -1149,7 +1152,8 @@ NAN_METHOD(SetEventHandler) {
     {
       std::lock_guard<std::mutex> lock(eventHandlerMapMutex);
 
-      EventHandler *handler = new EventHandler(windowsystembase::GetEventLoop(), handlerFn);
+      uv_loop_t *loop = windowsystembase::GetEventLoop();
+      EventHandler *handler = new EventHandler(loop, handlerFn);
 
       eventHandlerMap[window] = handler;
       eventHandlerMap2[handler->async.get()] = handler;
@@ -1229,14 +1233,23 @@ NAN_METHOD(SetClipboard) {
 }
 
 #ifdef TARGET_OS_MAC
-NAN_METHOD(PollEvents) {
+void RunInInjectionThread(uv_async_t *handle) {
   glfwPollEvents();
 
-  for (auto iter = mainThreadInjectionHandler.fns.begin(); iter != mainThreadInjectionHandler.fns.end(); iter++) {
-    std::function<void(InjectionHandler *)> &fn = *iter;
-    fn(&mainThreadInjectionHandler);
+  {
+    std::lock_guard<std::mutex> lock(injectionHandlerMapMutex);
+
+    for (auto iter = mainThreadInjectionHandler.fns.begin(); iter != mainThreadInjectionHandler.fns.end(); iter++) {
+      std::function<void(InjectionHandler *)> &fn = *iter;
+      fn(&mainThreadInjectionHandler);
+    }
+    mainThreadInjectionHandler.fns.clear();
   }
-  mainThreadInjectionHandler.fns.clear();
+}
+
+NAN_METHOD(RegisterPollEvents) {
+  uv_loop_t *loop = windowsystembase::GetEventLoop();
+  uv_async_init(loop, &injectionAsync, RunInInjectionThread);
 }
 #endif
 
@@ -1638,7 +1651,7 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "blitFrameBuffer", glfw::BlitFrameBuffer);
   Nan::SetMethod(target, "setCurrentWindowContext", glfw::SetCurrentWindowContext);
 #ifdef TARGET_OS_MAC
-  Nan::SetMethod(target, "pollEvents", glfw::PollEvents);
+  Nan::SetMethod(target, "registerPollEvents", glfw::RegisterPollEvents);
 #endif
 
   return scope.Escape(target);
