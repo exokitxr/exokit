@@ -1021,7 +1021,7 @@ NAN_METHOD(CreateWindowHandle) {
 #ifndef TARGET_OS_MAC
   std::thread([&]() -> void {
 #else
-  QueueInjection(nullptr, [&]() -> void {
+  QueueInjection(nullptr, [&](InjectionHandler *injectionHandler) -> void {
 #endif
     windowHandle = CreateNativeWindow(width, height, initialVisible, sharedWindow);
 
