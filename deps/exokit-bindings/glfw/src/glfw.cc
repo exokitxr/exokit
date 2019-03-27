@@ -1016,9 +1016,9 @@ NAN_METHOD(CreateWindowHandle) {
 
   NATIVEwindow *windowHandle;
 
-#ifndef TARGET_OS_MAC
   uv_sem_t sem;
   uv_sem_init(&sem, 0);
+#ifndef TARGET_OS_MAC
   std::thread([&]() -> void {
 #else
   QueueInjection(nullptr, [&]() -> void {
