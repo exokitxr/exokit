@@ -15,7 +15,6 @@ std::map<uv_async_t *, EventHandler *> eventHandlerMap2;
 std::map<NATIVEwindow *, InjectionHandler *> injectionHandlerMap;
 #else
 InjectionHandler mainThreadInjectionHandler;
-uv_async_t injectionAsync;
 #endif
 std::mutex eventHandlerMapMutex;
 std::mutex injectionHandlerMapMutex;
@@ -180,8 +179,6 @@ void QueueInjection(NATIVEwindow *window, std::function<void(InjectionHandler *i
 
     mainThreadInjectionHandler.fns.push_back(fn);
   }
-
-  uv_async_send(&injectionAsync);
 }
 #endif
 
@@ -1234,24 +1231,19 @@ NAN_METHOD(SetClipboard) {
 
 #ifdef TARGET_OS_MAC
 NAN_METHOD(PollEvents) {
-  glfwPollEvents();
-}
+  if (glfwInitialized) {
+    glfwPollEvents();
 
-void RunInInjectionThread(uv_async_t *handle) {
-  {
-    std::lock_guard<std::mutex> lock(injectionHandlerMapMutex);
+    {
+      std::lock_guard<std::mutex> lock(injectionHandlerMapMutex);
 
-    for (auto iter = mainThreadInjectionHandler.fns.begin(); iter != mainThreadInjectionHandler.fns.end(); iter++) {
-      std::function<void(InjectionHandler *)> &fn = *iter;
-      fn(&mainThreadInjectionHandler);
+      for (auto iter = mainThreadInjectionHandler.fns.begin(); iter != mainThreadInjectionHandler.fns.end(); iter++) {
+        std::function<void(InjectionHandler *)> &fn = *iter;
+        fn(&mainThreadInjectionHandler);
+      }
+      mainThreadInjectionHandler.fns.clear();
     }
-    mainThreadInjectionHandler.fns.clear();
   }
-}
-
-NAN_METHOD(RegisterEventHandler) {
-  uv_loop_t *loop = windowsystembase::GetEventLoop();
-  uv_async_init(loop, &injectionAsync, RunInInjectionThread);
 }
 #endif
 
@@ -1654,7 +1646,6 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "setCurrentWindowContext", glfw::SetCurrentWindowContext);
 #ifdef TARGET_OS_MAC
   Nan::SetMethod(target, "pollEvents", glfw::PollEvents);
-  Nan::SetMethod(target, "registerEventHandler", glfw::RegisterEventHandler);
 #endif
 
   return scope.Escape(target);
