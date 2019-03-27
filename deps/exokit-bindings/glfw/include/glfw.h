@@ -47,7 +47,8 @@ namespace glfw {
 #endif
     std::deque<std::function<void(InjectionHandler *injectionHandler)>> fns;
   };
-
+  
+  NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool visible, NATIVEwindow *sharedWindow);
   void GetWindowSize(NATIVEwindow *window, int *width, int *height);
   void GetFramebufferSize(NATIVEwindow *window, int *width, int *height);
   NATIVEwindow *GetGLContext(NATIVEwindow *window);
