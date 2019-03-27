@@ -396,7 +396,6 @@ void CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint
 #else
     glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_DEPTH24_STENCIL8, MAX_TEXTURE_SIZE, MAX_TEXTURE_SIZE/2, true);
 #endif
-    // glFramebufferTexture2DMultisampleEXT(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, msDepthStencilTex, 0, samples);
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex, 0);
 
     if (!sharedMsColorTex) {
@@ -411,7 +410,6 @@ void CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint
 #else
     glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA8, MAX_TEXTURE_SIZE, MAX_TEXTURE_SIZE/2, true);
 #endif
-    // glFramebufferTexture2DMultisampleEXT(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, msColorTex, 0, samples);
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, msColorTex, 0);
 
     glClear(GL_DEPTH_BUFFER_BIT); // initialize to far depth
@@ -601,7 +599,6 @@ void ComposeLayer(ComposeSpec *composeSpec, PlaneSpec *planeSpec, const LayerSpe
     glUniform2f(composeSpec->texSizeLocation, layer.width, layer.height);
 
     glViewport(0, 0, layer.width, layer.height);
-    // glScissor(0, 0, width, height);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
   } else {
     glBindVertexArray(planeSpec->planeVao);
@@ -616,7 +613,6 @@ void ComposeLayer(ComposeSpec *composeSpec, PlaneSpec *planeSpec, const LayerSpe
       glUniformMatrix4fv(planeSpec->projectionMatrixLocation, 1, false, layer.projection[0]);
 
       glViewport(layer.viewports[0][0], layer.viewports[0][1], layer.viewports[0][2], layer.viewports[0][3]);
-      // glScissor(0, 0, width, height);
       glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
     }
     {
@@ -624,7 +620,6 @@ void ComposeLayer(ComposeSpec *composeSpec, PlaneSpec *planeSpec, const LayerSpe
       glUniformMatrix4fv(planeSpec->projectionMatrixLocation, 1, false, layer.projection[1]);
 
       glViewport(layer.viewports[1][0], layer.viewports[1][1], layer.viewports[1][2], layer.viewports[1][3]);
-      // glScissor(0, 0, width, height);
       glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
     }
   }
@@ -637,57 +632,6 @@ void ComposeLayers(WebGLRenderingContext *gl, GLuint fbo, const std::vector<Laye
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
 
   glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
-
-  /* // blit
-  for (size_t i = 0; i < layers.size(); i++) {
-    const LayerSpec &layer = layers[i];
-
-    if (layer.blit) {
-      glBindFramebuffer(GL_READ_FRAMEBUFFER, composeSpec->composeReadFbo);
-      glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, layer.msColorTex, 0);
-      glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, layer.msDepthTex, 0);
-
-      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, composeSpec->composeWriteFbo);
-      glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, layer.colorTex, 0);
-      glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, layer.depthTex, 0);
-
-      glBlitFramebuffer(
-        0, 0,
-        layer.width, layer.height,
-        0, 0,
-        layer.width, layer.height,
-        GL_COLOR_BUFFER_BIT,
-        GL_LINEAR);
-
-      glBlitFramebuffer(
-        0, 0,
-        layer.width, layer.height,
-        0, 0,
-        layer.width, layer.height,
-        GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT,
-        GL_NEAREST);
-
-      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
-    }
-  }
-
-  // render unblitted
-  for (size_t i = 0; i < layers.size(); i++) {
-    const LayerSpec &layer = layers[i];
-
-    if (!layer.blit) {
-      ComposeLayer(composeSpec, layer);
-    }
-  }
-
-  // render blitted
-  for (size_t i = 0; i < layers.size(); i++) {
-    const LayerSpec &layer = layers[i];
-
-    if (layer.blit) {
-      ComposeLayer(composeSpec, layer);
-    }
-  } */
 
   for (size_t i = 0; i < layers.size(); i++) {
     const LayerSpec &layer = layers[i];
