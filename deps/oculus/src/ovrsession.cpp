@@ -20,6 +20,7 @@ NAN_MODULE_INIT(OVRSession::Init)
   // Declare the stored number of fields (just the wrapped C++ object).
   tpl->InstanceTemplate()->SetInternalFieldCount(1);
 
+  Nan::SetPrototypeMethod(tpl, "GetControllersInputState", GetControllersInputState);
   Nan::SetPrototypeMethod(tpl, "GetPose", GetPose);
   Nan::SetPrototypeMethod(tpl, "Submit", Submit);
   Nan::SetPrototypeMethod(tpl, "SetupSwapChain", SetupSwapChain);
@@ -345,17 +346,66 @@ NAN_METHOD(OVRSession::GetPose) {
   rightControllerOrientationArray[1] = rightControllerOrientation.y;
   rightControllerOrientationArray[2] = rightControllerOrientation.z;
   rightControllerOrientationArray[3] = rightControllerOrientation.w;
+}
 
-  // std::cout << "POSITION: " << leftControllerPosition.x << " " << leftControllerPosition.y << " " << leftControllerPosition.z << std::endl;
+NAN_METHOD(OVRSession::GetControllersInputState) {
+  if (info.Length() != 2)
+  {
+    Nan::ThrowError("Wrong number of arguments.");
+    return;
+  }
 
-  // ovrInputState inputState;
-  // if (OVR_SUCCESS(ovr_GetInputState(session, ovrControllerType_Touch, &inputState)))
-  // {
-  //   if (inputState.Buttons & ovrButton_A)
-  //   {
-  //     std::cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXX" << std::endl;
-  //   }
-  // }
+  uint32_t hand = info[0]->Uint32Value();
+  Local<Float32Array> buttons = Local<Float32Array>::Cast(info[1]);
+  buttons->Set(0, Number::New(Isolate::GetCurrent(), std::numeric_limits<float>::quiet_NaN()));
+
+  ovrSession session = *ObjectWrap::Unwrap<OVRSession>(info.Holder())->self_;
+  ovrInputState inputState;
+
+  if (OVR_SUCCESS(ovr_GetInputState(session, ovrControllerType_Touch, &inputState)))
+  {
+    if (hand == 0) {
+      // Presses
+      buttons->Set(0, Number::New(Isolate::GetCurrent(), (inputState.Buttons & ovrButton_X) ? 1 : 0));
+      buttons->Set(1, Number::New(Isolate::GetCurrent(), (inputState.Buttons & ovrButton_Y) ? 1 : 0));
+      buttons->Set(2, Number::New(Isolate::GetCurrent(), (inputState.Buttons & ovrButton_LThumb) ? 1 : 0));
+      buttons->Set(3, Number::New(Isolate::GetCurrent(), (inputState.Buttons & ovrButton_Enter) ? 1 : 0));
+
+      // Triggers
+      buttons->Set(4, Number::New(Isolate::GetCurrent(), inputState.IndexTrigger[ovrHand_Left]));
+      buttons->Set(5, Number::New(Isolate::GetCurrent(), inputState.HandTrigger[ovrHand_Left]));
+
+      // Touches
+      buttons->Set(6, Number::New(Isolate::GetCurrent(), (inputState.Touches & ovrTouch_X) ? 1 : 0));
+      buttons->Set(7, Number::New(Isolate::GetCurrent(), (inputState.Touches & ovrTouch_Y) ? 1 : 0));
+      buttons->Set(8, Number::New(Isolate::GetCurrent(), (inputState.Touches & ovrTouch_LThumb) ? 1 : 0));
+      buttons->Set(9, Number::New(Isolate::GetCurrent(), (inputState.Touches & ovrTouch_LIndexTrigger) ? 1 : 0));
+
+      // Thumbstick axis.
+      buttons->Set(10, Number::New(Isolate::GetCurrent(), inputState.Thumbstick[ovrHand_Left].x));
+      buttons->Set(11, Number::New(Isolate::GetCurrent(), inputState.Thumbstick[ovrHand_Left].y));
+    } else {
+      // Presses
+      buttons->Set(0, Number::New(Isolate::GetCurrent(), (inputState.Buttons & ovrButton_A) ? 1 : 0));
+      buttons->Set(1, Number::New(Isolate::GetCurrent(), (inputState.Buttons & ovrButton_B) ? 1 : 0));
+      buttons->Set(2, Number::New(Isolate::GetCurrent(), (inputState.Buttons & ovrButton_RThumb) ? 1 : 0));
+      buttons->Set(3, Number::New(Isolate::GetCurrent(), (inputState.Buttons & ovrButton_Home) ? 1 : 0));
+
+      // Triggers
+      buttons->Set(4, Number::New(Isolate::GetCurrent(), inputState.IndexTrigger[ovrHand_Right]));
+      buttons->Set(5, Number::New(Isolate::GetCurrent(), inputState.HandTrigger[ovrHand_Right]));
+
+      // Touches
+      buttons->Set(6, Number::New(Isolate::GetCurrent(), (inputState.Touches & ovrTouch_A) ? 1 : 0));
+      buttons->Set(7, Number::New(Isolate::GetCurrent(), (inputState.Touches & ovrTouch_B) ? 1 : 0));
+      buttons->Set(8, Number::New(Isolate::GetCurrent(), (inputState.Touches & ovrTouch_RThumb) ? 1 : 0));
+      buttons->Set(9, Number::New(Isolate::GetCurrent(), (inputState.Touches & ovrTouch_RIndexTrigger) ? 1 : 0));
+
+      // Thumbstick axis.
+      buttons->Set(10, Number::New(Isolate::GetCurrent(), inputState.Thumbstick[ovrHand_Right].x));
+      buttons->Set(11, Number::New(Isolate::GetCurrent(), inputState.Thumbstick[ovrHand_Right].y));
+    }
+  }
 }
 
 NAN_METHOD(OVRSession::Submit)

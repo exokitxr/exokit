@@ -27,6 +27,7 @@ private:
 
   // Node construction method for new instances.
   static NAN_METHOD(New);
+  static NAN_METHOD(GetControllersInputState);
   static NAN_METHOD(GetPose);
   static NAN_METHOD(SetupSwapChain);
   static NAN_METHOD(Submit);
