@@ -16,6 +16,7 @@ std::map<NATIVEwindow *, InjectionHandler *> injectionHandlerMap;
 InjectionHandler mainThreadInjectionHandler;
 #endif
 std::mutex eventHandlerMapMutex;
+std::mutex injectionHandlerMapMutex;
 int lastX = 0, lastY = 0; // XXX track this per-window
 
 void RunEventInWindowThread(uv_async_t *async) {
@@ -155,7 +156,7 @@ void QueueEvent(NATIVEwindow *window, std::function<void(std::function<void(int,
 void QueueInjection(NATIVEwindow *window, std::function<void(InjectionHandler *injectionHandler)> fn) {
   InjectionHandler *injectionHandler;
   {
-    std::lock_guard<std::mutex> lock(eventHandlerMapMutex);
+    std::lock_guard<std::mutex> lock(injectionHandlerMapMutex);
 
     auto iter = injectionHandlerMap.find(window);
     if (iter != injectionHandlerMap.end()) {
@@ -173,7 +174,7 @@ void QueueInjection(NATIVEwindow *window, std::function<void(InjectionHandler *i
 #else
 void QueueInjection(NATIVEwindow *window, std::function<void(InjectionHandler *injectionHandler)> fn) {
   {
-    std::lock_guard<std::mutex> lock(eventHandlerMapMutex);
+    std::lock_guard<std::mutex> lock(injectionHandlerMapMutex);
 
     mainThreadInjectionHandler.fns.push_back(fn);
   }
@@ -1065,7 +1066,7 @@ NAN_METHOD(CreateWindowHandle) {
 #ifndef TARGET_OS_MAC
     InjectionHandler *injectionHandler;
     {
-      std::lock_guard<std::mutex> lock(eventHandlerMapMutex);
+      std::lock_guard<std::mutex> lock(injectionHandlerMapMutex);
 
       injectionHandler = new InjectionHandler();
       injectionHandlerMap[windowHandle] = injectionHandler;
@@ -1077,7 +1078,7 @@ NAN_METHOD(CreateWindowHandle) {
       glfwWaitEvents();
 
       {
-        std::lock_guard<std::mutex> lock(eventHandlerMapMutex);
+        std::lock_guard<std::mutex> lock(injectionHandlerMapMutex);
 
         if (injectionHandler->fns.size() > 0) {
           for (auto iter = injectionHandler->fns.begin(); injectionHandler->live && iter != injectionHandler->fns.end(); iter++) {
