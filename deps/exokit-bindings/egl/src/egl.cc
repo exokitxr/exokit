@@ -78,7 +78,7 @@ void SetCurrentWindowContext(NATIVEwindow *window) {
   }
 }
 
-void ReadPixels(WebGLRenderingContext *gl, unsigned int fbo, int x, int y, int width, int height, unsigned int format, unsigned int type, unsigned char *data) {
+/* void ReadPixels(WebGLRenderingContext *gl, unsigned int fbo, int x, int y, int width, int height, unsigned int format, unsigned int type, unsigned char *data) {
   glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
   glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
 
@@ -87,7 +87,7 @@ void ReadPixels(WebGLRenderingContext *gl, unsigned int fbo, int x, int y, int w
   } else {
     glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->defaultFramebuffer);
   }
-}
+} */
 
 NAN_METHOD(SetCurrentWindowContext) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
