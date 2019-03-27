@@ -1078,9 +1078,11 @@ NAN_METHOD(CreateWindowHandle) {
       injectionHandler = new InjectionHandler();
       injectionHandlerMap[windowHandle] = injectionHandler;
     }
+#endif
 
     uv_sem_post(&sem);
 
+#ifndef TARGET_OS_MAC
     for (;;) {
       glfwWaitEvents();
 
