@@ -888,7 +888,7 @@ NAN_METHOD(SetFullscreen) {
   });
 }
 
-bool glfwInitialized = GL_FALSE;
+bool glfwInitialized = false;
 NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool visible, NATIVEwindow *sharedWindow) {
   if (!glfwInitialized) {
     glewExperimental = GL_TRUE;
