@@ -10,7 +10,11 @@ namespace glfw {
 thread_local NATIVEwindow *currentWindow = nullptr;
 std::map<NATIVEwindow *, EventHandler *> eventHandlerMap;
 std::map<uv_async_t *, EventHandler *> eventHandlerMap2;
+#ifndef TARGET_OS_MAC
 std::map<NATIVEwindow *, InjectionHandler *> injectionHandlerMap;
+#else
+InjectionHandler mainThreadInjectionHandler;
+#endif
 std::mutex eventHandlerMapMutex;
 int lastX = 0, lastY = 0; // XXX track this per-window
 
@@ -50,7 +54,11 @@ EventHandler::~EventHandler() {
   });
 }
 
-InjectionHandler::InjectionHandler() : live(true) {}
+InjectionHandler::InjectionHandler()
+#ifndef TARGET_OS_MAC
+  : live(true)
+#endif
+  {}
 
 GLFWmonitor* _activeMonitor;
 GLFWmonitor* getMonitor() {
@@ -143,6 +151,7 @@ void QueueEvent(NATIVEwindow *window, std::function<void(std::function<void(int,
   }
 }
 
+#ifndef TARGET_OS_MAC
 void QueueInjection(NATIVEwindow *window, std::function<void(InjectionHandler *injectionHandler)> fn) {
   InjectionHandler *injectionHandler;
   {
@@ -161,6 +170,15 @@ void QueueInjection(NATIVEwindow *window, std::function<void(InjectionHandler *i
     glfwPostEmptyEvent();
   }
 }
+#else
+void QueueInjection(NATIVEwindow *window, std::function<void(InjectionHandler *injectionHandler)> fn) {
+  {
+    std::lock_guard<std::mutex> lock(eventHandlerMapMutex);
+
+    mainThreadInjectionHandler.fns.push_back(fn);
+  }
+}
+#endif
 
 // Window callbacks handling
 void APIENTRY windowPosCB(NATIVEwindow *window, int xpos, int ypos) {
@@ -998,9 +1016,13 @@ NAN_METHOD(CreateWindowHandle) {
 
   NATIVEwindow *windowHandle;
 
+#ifndef TARGET_OS_MAC
   uv_sem_t sem;
   uv_sem_init(&sem, 0);
   std::thread([&]() -> void {
+#else
+  QueueInjection(nullptr, [&]() -> void {
+#endif
     windowHandle = CreateNativeWindow(width, height, initialVisible, sharedWindow);
 
     if (windowHandle) {
@@ -1040,6 +1062,7 @@ NAN_METHOD(CreateWindowHandle) {
       SetCurrentWindowContext(nullptr);
     }
 
+#ifndef TARGET_OS_MAC
     InjectionHandler *injectionHandler;
     {
       std::lock_guard<std::mutex> lock(eventHandlerMapMutex);
@@ -1073,9 +1096,12 @@ NAN_METHOD(CreateWindowHandle) {
     injectionHandlerMap.erase(windowHandle);
     delete injectionHandler;
   }).detach();
+#else
+  });
+#endif
   uv_sem_wait(&sem);
   uv_sem_destroy(&sem);
-  
+
   if (windowHandle) {
     info.GetReturnValue().Set(pointerToArray(windowHandle));
   } else {
@@ -1088,7 +1114,6 @@ NAN_METHOD(DestroyWindowHandle) {
 
   uv_sem_t sem;
   uv_sem_init(&sem, 0);
-
   QueueInjection(window, [window](InjectionHandler *injectionHandler) -> void {
     DestroyNativeWindow(window);
 
@@ -1097,9 +1122,10 @@ NAN_METHOD(DestroyWindowHandle) {
     eventHandlerMap2.erase(handler->async.get());
     delete handler;
 
+#ifndef TARGET_OS_MAC
     injectionHandler->live = false;
+#endif
   });
-
   uv_sem_wait(&sem);
   uv_sem_destroy(&sem);
 }
@@ -1191,6 +1217,18 @@ NAN_METHOD(SetClipboard) {
     Nan::ThrowTypeError("Invalid arguments");
   }
 }
+
+#ifdef TARGET_OS_MAC
+NAN_METHOD(PollEvents) {
+  glfwPollEvents();
+
+  for (auto iter = mainThreadInjectionHandler.fns.begin(); iter != mainThreadInjectionHandler.fns.end(); iter++) {
+    std::function<void(InjectionHandler *)> &fn = *iter;
+    fn(&mainThreadInjectionHandler);
+  }
+  mainThreadInjectionHandler.fns.clear();
+}
+#endif
 
 }
 
@@ -1589,6 +1627,9 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "setClipboard", glfw::SetClipboard);
   Nan::SetMethod(target, "blitFrameBuffer", glfw::BlitFrameBuffer);
   Nan::SetMethod(target, "setCurrentWindowContext", glfw::SetCurrentWindowContext);
+#ifdef TARGET_OS_MAC
+  Nan::SetMethod(target, "pollEvents", glfw::PollEvents);
+#endif
 
   return scope.Escape(target);
 }

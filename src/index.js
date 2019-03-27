@@ -286,6 +286,7 @@ const _startTopRenderLoop = () => {
     }
 
     // update media frames
+    nativeBindings.nativeWindow.pollEvents && nativeBindings.nativeWindow.pollEvents();
     nativeBindings.nativeVideo.Video.updateAll();
     nativeBindings.nativeBrowser && nativeBindings.nativeBrowser.Browser.updateAll(); // XXX unlock when oculus mobile supports it
 
