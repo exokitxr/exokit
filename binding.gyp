@@ -632,7 +632,7 @@
             "<(module_root_dir)/node_modules/native-webrtc-deps/lib/android",
           ],
           'libraries': [
-            "<!(echo $TOOLCHAIN_LIB)/libstdc++.a",
+            "<!(echo $TOOLCHAIN_LIB)/aarch64-linux-android/libstdc++.a",
             "<(module_root_dir)/node_modules/libnode.a/libnode.a",
             #"<(module_root_dir)/node_modules/native-audio-deps/lib2/android/libLabSound.a",
             '-lskia',
@@ -657,8 +657,8 @@
             {
               'destination': '<(module_root_dir)/build/Release/',
               'files': [
-                "<!(echo $TOOLCHAIN_LIB)/libEGL.so",
-                "<!(echo $TOOLCHAIN_LIB)/libGLESv2.so"
+                "<!(echo $TOOLCHAIN_LIB)/aarch64-linux-android/21/libEGL.so",
+                "<!(echo $TOOLCHAIN_LIB)/aarch64-linux-android/21/libGLESv2.so"
               ]
             },
           ],
