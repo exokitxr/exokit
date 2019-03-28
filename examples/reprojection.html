@@ -19,7 +19,6 @@
         varying vec2 vUv;
         varying float vZDiff;
         uniform sampler2D dTexture;
-        uniform mat4 inverseMatrix;
         uniform mat4 initialProjectionMatrixInverse;
         uniform mat4 initialProjectionMatrix;
         uniform float zNear;
@@ -80,10 +79,6 @@
             dTexture: {
               type:'t',
               value: undefined !== params.depthTexture ? params.depthTexture : null
-            },
-            inverseMatrix: {
-              type:'m4',
-              value: undefined !== params.inverseMatrix ? params.inverseMatrix : null
             },
             initialProjectionMatrixInverse: {
               type:'m4',
@@ -178,7 +173,6 @@ function init() {
   hiddenScene.add(hiddenCamera);
   hiddenCamera.updateMatrixWorld();
   hiddenCamera.updateProjectionMatrix();
-  hiddenCamera.inverseMatrix = new THREE.Matrix4();
   hiddenCamera.initialProjectionMatrixInverse = new THREE.Matrix4();
   hiddenCamera.initialProjectionMatrix = new THREE.Matrix4();
   hiddenCamera.plane = new THREE.Vector4(0, 1, 0, 0);
@@ -248,7 +242,6 @@ function init() {
     zNear: hiddenCamera.near,
     zFar: hiddenCamera.far,
     plane: hiddenCamera.plane,
-    inverseMatrix: hiddenCamera.inverseMatrix,
     initialProjectionMatrixInverse: hiddenCamera.initialProjectionMatrixInverse,
     initialProjectionMatrix: hiddenCamera.initialProjectionMatrix,
   });
@@ -269,8 +262,6 @@ const _renderFrame = () => {
   screenQuad.scale.copy(camera.scale);
   screenQuad.updateMatrixWorld();
 
-  hiddenCamera.inverseMatrix.copy(hiddenCamera.matrixWorld).multiply(screenQuad.matrixWorld);
-  hiddenCamera.inverseMatrix.getInverse(hiddenCamera.inverseMatrix);
   hiddenCamera.initialProjectionMatrixInverse.copy(hiddenCamera.projectionMatrixInverse);
   hiddenCamera.initialProjectionMatrix.copy(hiddenCamera.projectionMatrix);
 
