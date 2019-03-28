@@ -13,7 +13,7 @@
     <script>
  window.ScreenQuad = (() => {
 
-      const defaultQuad = new THREE.PlaneBufferGeometry(2, 2, 1000, 1000);
+      const defaultQuad = new THREE.PlaneBufferGeometry(2, 2, window.innerWidth, window.innerHeight);
       const vertexShader = `\
         varying vec3 vViewPosition;
         varying vec2 vUv;
