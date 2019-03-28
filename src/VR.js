@@ -612,6 +612,7 @@ const getGamepads = (() => {
   const openVRId = 'OpenVR Gamepad';
 
   return () => {
+    if (!GlobalContext.isPresenting) { return []; }
     if (!gamepads) {
       const idLeft = GlobalContext.isOculusRuntime ? oculusVRIdLeft : openVRId;
       const idRight = GlobalContext.isOculusRuntime ? oculusVRIdRight : openVRId;
