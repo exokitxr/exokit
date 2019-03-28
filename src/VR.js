@@ -67,10 +67,10 @@ class GamepadButton {
   }
 
   get value() {
-    return this._value[0] !== 0;
+    return this._value[0];
   }
   set value(value) {
-    this._value[0] = value ? 1 : 0;
+    this._value[0] = value;
   }
   get pressed() {
     return this._pressed[0] !== 0;
