@@ -21,13 +21,13 @@
         uniform sampler2D dTexture;
         uniform mat4 initialProjectionMatrixInverse;
         uniform mat4 initialProjectionMatrix;
-        uniform float zNear;
-        uniform float zFar;
         uniform vec4 plane;
         void main() {
           vec2 xy = (position.xy + 1.0) / 2.0; //in [0,1] range
           float z_b = texture2D(dTexture, xy).r;
           float z_n = 2.0 * z_b - 1.0;
+          float zNear = initialProjectionMatrix[3][2] / (initialProjectionMatrix[2][2] - 1.0);
+          float zFar = initialProjectionMatrix[3][2] / (initialProjectionMatrix[2][2] + 1.0);
           float z_e = -(2.0 * zNear * zFar / (zFar + zNear - z_n * (zFar - zNear)));
           float zOrig = z_e;
           vec4 offset = initialProjectionMatrix * vec4(0.0, 0.0, z_e, 1.0);
@@ -87,14 +87,6 @@
             initialProjectionMatrix: {
               type:'m4',
               value: undefined !== params.initialProjectionMatrix ? params.initialProjectionMatrix : null
-            },
-            zNear: {
-              type:'f',
-              value: undefined !== params.zNear ? params.zNear : null
-            },
-            zFar: {
-              type:'f',
-              value: undefined !== params.zFar ? params.zFar : null
             },
             plane: {
               type:'v4',
@@ -239,8 +231,6 @@ function init() {
   screenQuad = new ScreenQuad({
     texture: renderTarget.texture,
     depthTexture: renderTarget.depthTexture,
-    zNear: hiddenCamera.near,
-    zFar: hiddenCamera.far,
     plane: hiddenCamera.plane,
     initialProjectionMatrixInverse: hiddenCamera.initialProjectionMatrixInverse,
     initialProjectionMatrix: hiddenCamera.initialProjectionMatrix,
