@@ -13,7 +13,7 @@ export TOOLCHAIN_USR="$TOOLCHAIN/sysroot/usr"
 export TOOLCHAIN_LIB=$TOOLCHAIN/sysroot/usr/lib
 export TOOLCHAIN_LIB_CXX=$TOOLCHAIN/aarch64-linux-android/lib
 export TOOLCHAIN_LIB_64=$TOOLCHAIN/aarch64-linux-android/lib64
-export TOOLCHAIN_INCLUDE_LIB=$TOOLCHAIN/include/c++/4.9.x
+#export TOOLCHAIN_INCLUDE_LIB=$TOOLCHAIN/include/c++/4.9.x
 export TOOLCHAIN_INCLUDE_SYSROOT=$TOOLCHAIN/sysroot/usr/include
 export LD_LIBRARY_PATH="./Release:.:$LD_LIBRARY_PATH"
 
