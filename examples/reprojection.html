@@ -52,9 +52,10 @@
         uniform vec4 plane;
         void main() {
           if (vZDiff < 0.0001 && dot(vViewPosition, plane.xyz) <= plane.w) {
-            vec4 c = texture2D(uTexture, vUv);
+            /* vec4 c = texture2D(uTexture, vUv);
             float dc = (1.0 - texture2D(dTexture, vUv).r) * 20.0;
-            gl_FragColor = vec4(vec3(dc) * c.rgb, c.a);
+            gl_FragColor = vec4(vec3(dc) * c.rgb, c.a); */
+            gl_FragColor = texture2D(uTexture, vUv);
           } else {
             discard;
           }
