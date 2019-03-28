@@ -13,21 +13,18 @@
     <script>
  window.ScreenQuad = (() => {
 
-      var defaultQuad = new THREE.PlaneBufferGeometry(2,2,1000, 1000);
-
-      var defaultVertexShader = [
-
-        "varying vec3 vViewPosition;",
-        "varying vec2 vUv;",
-        "varying float vZDiff;",
-        "uniform sampler2D dTexture;",
-        "uniform mat4 inverseMatrix;",
-        "uniform mat4 initialProjectionMatrixInverse;",
-        "uniform mat4 initialProjectionMatrix;",
-        "uniform float zNear;",
-        "uniform float zFar;",
-        "uniform vec4 plane;",
-        `
+      const defaultQuad = new THREE.PlaneBufferGeometry(2, 2, 1000, 1000);
+      const vertexShader = `\
+        varying vec3 vViewPosition;
+        varying vec2 vUv;
+        varying float vZDiff;
+        uniform sampler2D dTexture;
+        uniform mat4 inverseMatrix;
+        uniform mat4 initialProjectionMatrixInverse;
+        uniform mat4 initialProjectionMatrix;
+        uniform float zNear;
+        uniform float zFar;
+        uniform vec4 plane;
         void main() {
           vec2 xy = (position.xy + 1.0) / 2.0; //in [0,1] range
           float z_b = texture2D(dTexture, xy).r;
@@ -45,13 +42,8 @@
           vUv = uv;
           vZDiff = abs(zNew - zOrig);
         }
-        `,
-
-      ].join("\n");
-
-      var defaultFragmentShader = [
-
-        `
+      `;
+      const fragmentShader = `\
         varying vec3 vViewPosition;
         varying vec2 vUv;
         varying float vZDiff;
@@ -68,9 +60,7 @@
             discard;
           }
         }
-        `
-
-      ].join("\n");
+      `;
 
       function ScreenQuad( params ){
 
@@ -117,9 +107,9 @@
             },
           },
 
-          vertexShader: defaultVertexShader,
+          vertexShader,
 
-          fragmentShader: defaultFragmentShader,
+          fragmentShader,
 
           transparent: true,
 
