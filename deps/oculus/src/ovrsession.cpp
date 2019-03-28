@@ -24,7 +24,6 @@ NAN_MODULE_INIT(OVRSession::Init)
   Nan::SetPrototypeMethod(tpl, "GetPose", GetPose);
   Nan::SetPrototypeMethod(tpl, "Submit", Submit);
   Nan::SetPrototypeMethod(tpl, "SetupSwapChain", SetupSwapChain);
-  Nan::SetPrototypeMethod(tpl, "RequestGetPoses", RequestGetPoses);
   Nan::SetPrototypeMethod(tpl, "GetRecommendedRenderTargetSize", GetRecommendedRenderTargetSize);
 
   // Set a static constructor function to reference the `New` function template.
@@ -171,55 +170,6 @@ NAN_METHOD(OVRSession::GetRecommendedRenderTargetSize)
     Nan::Set(result, height_prop, Nan::New<Number>(height));
   }
   info.GetReturnValue().Set(result);
-}
-
-NAN_METHOD(OVRSession::RequestGetPoses) {
-  if (info.Length() != 3)
-  {
-    Nan::ThrowError("Wrong number of arguments.");
-    return;
-  }
-
-  std::cout << "---- RequestGetPoses  ---" << std::endl;
-
-  int *frameIndex = &ObjectWrap::Unwrap<OVRSession>(info.Holder())->frameIndex;
-  ovrSession session = *ObjectWrap::Unwrap<OVRSession>(info.Holder())->self_;
-  EyeSwapChain *eyes = &*ObjectWrap::Unwrap<OVRSession>(info.Holder())->eyes;
-  ovrPosef *eyeRenderPoses = &*ObjectWrap::Unwrap<OVRSession>(info.Holder())->eyeRenderPoses;
-  ovrHmdDesc hmdDesc = ObjectWrap::Unwrap<OVRSession>(info.Holder())->hmdDesc;
-  Local<Float32Array> hmdFloat32Array = Local<Float32Array>::Cast(info[0]);
-  Local<Float32Array> leftControllerFloat32Array = Local<Float32Array>::Cast(info[1]);
-  Local<Float32Array> rightControllerFloat32Array = Local<Float32Array>::Cast(info[2]);
-  Local<Function> cbFn = Local<Function>::Cast(info[3]);
-
-  float *hmdArray = (float *)((char *)hmdFloat32Array->Buffer()->GetContents().Data() + hmdFloat32Array->ByteOffset());
-  float *leftControllerArray = (float *)((char *)leftControllerFloat32Array->Buffer()->GetContents().Data() + leftControllerFloat32Array->ByteOffset());
-  float *rightControllerArray = (float *)((char *)rightControllerFloat32Array->Buffer()->GetContents().Data() + rightControllerFloat32Array->ByteOffset());
-
-  // Call ovr_GetRenderDesc each frame to get the ovrEyeRenderDesc, as the returned values (e.g. HmdToEyePose) may change at runtime.
-  ovrEyeRenderDesc eyeRenderDesc[2];
-  eyeRenderDesc[0] = ovr_GetRenderDesc(session, ovrEye_Left, hmdDesc.DefaultEyeFov[0]);
-  eyeRenderDesc[1] = ovr_GetRenderDesc(session, ovrEye_Right, hmdDesc.DefaultEyeFov[1]);
-
-  // Get eye poses, feeding in correct IPD offset
-  ovrPosef HmdToEyePose[2] = { eyeRenderDesc[0].HmdToEyePose,
-                               eyeRenderDesc[1].HmdToEyePose };
-
-  double sensorSampleTime;  // sensorSampleTime is fed into the layer later
-  ovr_GetEyePoses(session, *frameIndex, ovrTrue, HmdToEyePose, eyeRenderPoses, &sensorSampleTime);
-
-  memset(hmdArray, std::numeric_limits<float>::quiet_NaN(), 16);
-  memset(leftControllerArray, std::numeric_limits<float>::quiet_NaN(), 16);
-  memset(rightControllerArray, std::numeric_limits<float>::quiet_NaN(), 16);
-
-  Matrix4f poseMatrix = Matrix4f(eyeRenderPoses[0].Orientation);
-  poseMatrix.SetTranslation(eyeRenderPoses[0].Position);
-
-  for (unsigned int v = 0; v < 4; v++) {
-    for (unsigned int u = 0; u < 4; u++) {
-      hmdArray[v * 4 + u] = poseMatrix.M[u][v];
-    }
-  }
 }
 
 NAN_METHOD(OVRSession::GetPose) {

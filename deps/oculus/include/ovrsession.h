@@ -31,7 +31,6 @@ private:
   static NAN_METHOD(GetPose);
   static NAN_METHOD(SetupSwapChain);
   static NAN_METHOD(Submit);
-  static NAN_METHOD(RequestGetPoses);
   static NAN_METHOD(GetRecommendedRenderTargetSize);
 
   /// Create a singleton reference to a constructor function.
