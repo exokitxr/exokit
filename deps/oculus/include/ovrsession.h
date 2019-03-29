@@ -13,6 +13,19 @@ typedef struct SwapChain {
   ovrSizei textureSize;
 } EyeSwapChain;
 
+namespace oculusvr {
+  class OculusVRPosRes;
+  void RunResInMainThread(uv_async_t *handle);
+}
+
+class OculusVRPosRes {
+public:
+  OculusVRPosRes(Local<Function> cb);
+  ~OculusVRPosRes();
+
+  Nan::Persistent<Function> cb;
+};
+
 class OVRSession : public Nan::ObjectWrap
 {
 public:

@@ -1,13 +1,45 @@
-#include <stdlib.h>
+#include <deque>
 #include <iostream>
 #include <ovrsession.h>
+#include <stdlib.h>
+#include <mutex>
 #include <node.h>
+#include <thread>
 #include <v8.h>
 
 #include <Extras/OVR_Math.h>
 
 using namespace v8;
 using namespace OVR;
+
+namespace oculusvr {
+  uv_sem_t reqSem;
+  uv_async_t resAsync;
+  std::mutex reqMutex;
+  std::mutex resMutex;
+  std::deque<std::function<void()>> reqCbs;
+  std::deque<std::function<void()>> resCbs;
+  std::thread reqThead;
+
+  void RunResInMainThread(uv_async_t *handle) {
+    Nan::HandleScope scope;
+
+    std::function<void()> resCb;
+    {
+      std::lock_guard<std::mutex> lock(reqMutex);
+
+      resCb = resCbs.front();
+      resCbs.pop_front();
+    }
+    if (resCb) {
+      resCb();
+    }
+  }
+};
+
+OculusVRPosRes::OculusVRPosRes(Local<Function> cb) : cb(cb) {}
+
+OculusVRPosRes::~OculusVRPosRes() {}
 
 NAN_MODULE_INIT(OVRSession::Init)
 {
@@ -28,6 +60,29 @@ NAN_MODULE_INIT(OVRSession::Init)
 
   // Set a static constructor function to reference the `New` function template.
   constructor().Reset(Nan::GetFunction(tpl).ToLocalChecked());
+
+  uv_sem_init(&oculusvr::reqSem, 0);
+  uv_async_init(uv_default_loop(), &oculusvr::resAsync, oculusvr::RunResInMainThread);
+  oculusvr::reqThead = std::thread([]() -> void {
+    for (;;) {
+      uv_sem_wait(&oculusvr::reqSem);
+
+      std::function<void()> reqCb;
+      {
+        std::lock_guard<std::mutex> lock(oculusvr::reqMutex);
+
+        if (oculusvr::reqCbs.size() > 0) {
+          reqCb = oculusvr::reqCbs.front();
+          oculusvr::reqCbs.pop_front();
+        }
+      }
+      if (reqCb) {
+        reqCb();
+      } else {
+        break;
+      }
+    }
+  });
 }
 
 //=============================================================================
@@ -173,7 +228,8 @@ NAN_METHOD(OVRSession::GetRecommendedRenderTargetSize)
 }
 
 NAN_METHOD(OVRSession::GetPose) {
-  if (info.Length() != 10)
+
+  if (info.Length() != 11)
   {
     Nan::ThrowError("Wrong number of arguments.");
     return;
@@ -208,94 +264,125 @@ NAN_METHOD(OVRSession::GetPose) {
   float *rightControllerPositionArray = (float *)((char *)rightControllerPosition32Array->Buffer()->GetContents().Data() + rightControllerPosition32Array->ByteOffset());
   float *rightControllerOrientationArray = (float *)((char *)rightControllerOrientation32Array->Buffer()->GetContents().Data() + rightControllerOrientation32Array->ByteOffset());
 
-  // Call ovr_GetRenderDesc each frame to get the ovrEyeRenderDesc, as the returned values (e.g. HmdToEyePose) may change at runtime.
-  ovrEyeRenderDesc eyeRenderDesc[2];
-  eyeRenderDesc[0] = ovr_GetRenderDesc(session, ovrEye_Left, hmdDesc.DefaultEyeFov[0]);
-  eyeRenderDesc[1] = ovr_GetRenderDesc(session, ovrEye_Right, hmdDesc.DefaultEyeFov[1]);
+  Local<Function> cbFn = Local<Function>::Cast(info[10]);
 
-  // Get eye poses, feeding in correct IPD offset
-  ovrPosef HmdToEyePose[2] = { eyeRenderDesc[0].HmdToEyePose,
-                               eyeRenderDesc[1].HmdToEyePose };
+  OculusVRPosRes *vrPoseRes = new OculusVRPosRes(cbFn);
+  {
+    std::lock_guard<std::mutex> lock(oculusvr::reqMutex);
+    oculusvr::reqCbs.push_back([
+      session, frameIndex, eyes, eyeRenderPoses, hmdDesc, positionArray, orientationArray, leftViewArray, leftProjectionArray,
+      rightViewArray, rightProjectionArray, leftControllerPositionArray, leftControllerOrientationArray,
+      rightControllerPositionArray, rightControllerOrientationArray, vrPoseRes]() -> void {
 
-  double sensorSampleTime;    // sensorSampleTime is fed into the layer later
-  ovr_GetEyePoses(session, *frameIndex, ovrTrue, HmdToEyePose, eyeRenderPoses, &sensorSampleTime);
+      // Call ovr_GetRenderDesc each frame to get the ovrEyeRenderDesc, as the returned values (e.g. HmdToEyePose) may change at runtime.
+      ovrEyeRenderDesc eyeRenderDesc[2];
+      eyeRenderDesc[0] = ovr_GetRenderDesc(session, ovrEye_Left, hmdDesc.DefaultEyeFov[0]);
+      eyeRenderDesc[1] = ovr_GetRenderDesc(session, ovrEye_Right, hmdDesc.DefaultEyeFov[1]);
 
-  memset(positionArray, std::numeric_limits<float>::quiet_NaN(), 3);
-  memset(orientationArray, std::numeric_limits<float>::quiet_NaN(), 4);
-  memset(leftViewArray, std::numeric_limits<float>::quiet_NaN(), 16);
-  memset(leftProjectionArray, std::numeric_limits<float>::quiet_NaN(), 16);
-  memset(rightViewArray, std::numeric_limits<float>::quiet_NaN(), 16);
-  memset(rightProjectionArray, std::numeric_limits<float>::quiet_NaN(), 16);
+      // Get eye poses, feeding in correct IPD offset
+      ovrPosef HmdToEyePose[2] = { eyeRenderDesc[0].HmdToEyePose,
+                                   eyeRenderDesc[1].HmdToEyePose };
 
-  positionArray[0] = eyeRenderPoses[0].Position.x;
-  positionArray[1] = eyeRenderPoses[0].Position.y;
-  positionArray[2] = eyeRenderPoses[0].Position.z;
+      double sensorSampleTime;    // sensorSampleTime is fed into the layer later
+      ovr_GetEyePoses(session, *frameIndex, ovrTrue, HmdToEyePose, eyeRenderPoses, &sensorSampleTime);
 
-  orientationArray[0] = eyeRenderPoses[0].Orientation.x;
-  orientationArray[1] = eyeRenderPoses[0].Orientation.y;
-  orientationArray[2] = eyeRenderPoses[0].Orientation.z;
-  orientationArray[3] = eyeRenderPoses[0].Orientation.w;
+      memset(positionArray, std::numeric_limits<float>::quiet_NaN(), 3);
+      memset(orientationArray, std::numeric_limits<float>::quiet_NaN(), 4);
+      memset(leftViewArray, std::numeric_limits<float>::quiet_NaN(), 16);
+      memset(leftProjectionArray, std::numeric_limits<float>::quiet_NaN(), 16);
+      memset(rightViewArray, std::numeric_limits<float>::quiet_NaN(), 16);
+      memset(rightProjectionArray, std::numeric_limits<float>::quiet_NaN(), 16);
 
-  // Left view / projection
-  Matrix4f rollPitchYaw = Matrix4f(eyeRenderPoses[0].Orientation);
-  Vector3f up = Vector3f(0, 1, 0);
-  Vector3f forward = Vector3f(0, 0, -1);
-  Vector3f eye = eyeRenderPoses[0].Position;
+      positionArray[0] = eyeRenderPoses[0].Position.x;
+      positionArray[1] = eyeRenderPoses[0].Position.y;
+      positionArray[2] = eyeRenderPoses[0].Position.z;
 
-  Matrix4f leftViewMatrix = Matrix4f(eyeRenderPoses[0].Orientation);
-  leftViewMatrix.SetTranslation(eyeRenderPoses[0].Position);
-  leftViewMatrix.Invert();
+      orientationArray[0] = eyeRenderPoses[0].Orientation.x;
+      orientationArray[1] = eyeRenderPoses[0].Orientation.y;
+      orientationArray[2] = eyeRenderPoses[0].Orientation.z;
+      orientationArray[3] = eyeRenderPoses[0].Orientation.w;
 
-  Matrix4f leftProjectionMatrix = ovrMatrix4f_Projection(hmdDesc.DefaultEyeFov[0], 0.2f, 1000.0f, ovrProjection_None);
+      // Left view / projection
+      Matrix4f rollPitchYaw = Matrix4f(eyeRenderPoses[0].Orientation);
+      Vector3f up = Vector3f(0, 1, 0);
+      Vector3f forward = Vector3f(0, 0, -1);
+      Vector3f eye = eyeRenderPoses[0].Position;
 
-  rollPitchYaw = Matrix4f(eyeRenderPoses[1].Orientation);
-  up = Vector3f(0, 1, 0);
-  forward = Vector3f(0, 0, -1);
-  eye = eyeRenderPoses[1].Position;
+      Matrix4f leftViewMatrix = Matrix4f(eyeRenderPoses[0].Orientation);
+      leftViewMatrix.SetTranslation(eyeRenderPoses[0].Position);
+      leftViewMatrix.Invert();
 
-  Matrix4f rightViewMatrix = Matrix4f(eyeRenderPoses[1].Orientation);
-  rightViewMatrix.SetTranslation(eyeRenderPoses[1].Position);
-  rightViewMatrix.Invert();
-  Matrix4f rightProjectionMatrix = ovrMatrix4f_Projection(hmdDesc.DefaultEyeFov[1], 0.2f, 1000.0f, ovrProjection_None);
+      Matrix4f leftProjectionMatrix = ovrMatrix4f_Projection(hmdDesc.DefaultEyeFov[0], 0.2f, 1000.0f, ovrProjection_None);
 
-  for (unsigned int v = 0; v < 4; v++) {
-    for (unsigned int u = 0; u < 4; u++) {
-      leftViewArray[v * 4 + u] = leftViewMatrix.M[u][v];
-      leftProjectionArray[v * 4 + u] = leftProjectionMatrix.M[u][v];
-      rightViewArray[v * 4 + u] = rightViewMatrix.M[u][v];
-      rightProjectionArray[v * 4 + u] = rightProjectionMatrix.M[u][v];
-    }
+      rollPitchYaw = Matrix4f(eyeRenderPoses[1].Orientation);
+      up = Vector3f(0, 1, 0);
+      forward = Vector3f(0, 0, -1);
+      eye = eyeRenderPoses[1].Position;
+
+      Matrix4f rightViewMatrix = Matrix4f(eyeRenderPoses[1].Orientation);
+      rightViewMatrix.SetTranslation(eyeRenderPoses[1].Position);
+      rightViewMatrix.Invert();
+      Matrix4f rightProjectionMatrix = ovrMatrix4f_Projection(hmdDesc.DefaultEyeFov[1], 0.2f, 1000.0f, ovrProjection_None);
+
+      for (unsigned int v = 0; v < 4; v++) {
+        for (unsigned int u = 0; u < 4; u++) {
+          leftViewArray[v * 4 + u] = leftViewMatrix.M[u][v];
+          leftProjectionArray[v * 4 + u] = leftProjectionMatrix.M[u][v];
+          rightViewArray[v * 4 + u] = rightViewMatrix.M[u][v];
+          rightProjectionArray[v * 4 + u] = rightProjectionMatrix.M[u][v];
+        }
+      }
+
+      // Controllers.
+      double time = ovr_GetPredictedDisplayTime(session, 0);
+      ovrTrackingState trackingState = ovr_GetTrackingState(session, time, ovrTrue);
+
+      ovrPoseStatef leftControllerState = trackingState.HandPoses[ovrHand_Left];
+      ovrVector3f leftControllerPosition = leftControllerState.ThePose.Position;
+      ovrQuatf leftControllerOrientation = leftControllerState.ThePose.Orientation;
+
+      leftControllerPositionArray[0] = leftControllerPosition.x;
+      leftControllerPositionArray[1] = leftControllerPosition.y;
+      leftControllerPositionArray[2] = leftControllerPosition.z;
+
+      leftControllerOrientationArray[0] = leftControllerOrientation.x;
+      leftControllerOrientationArray[1] = leftControllerOrientation.y;
+      leftControllerOrientationArray[2] = leftControllerOrientation.z;
+      leftControllerOrientationArray[3] = leftControllerOrientation.w;
+
+      ovrPoseStatef rightControllerState = trackingState.HandPoses[ovrHand_Right];
+      ovrVector3f rightControllerPosition = rightControllerState.ThePose.Position;
+      ovrQuatf rightControllerOrientation = rightControllerState.ThePose.Orientation;
+
+      rightControllerPositionArray[0] = rightControllerPosition.x;
+      rightControllerPositionArray[1] = rightControllerPosition.y;
+      rightControllerPositionArray[2] = rightControllerPosition.z;
+
+      rightControllerOrientationArray[0] = rightControllerOrientation.x;
+      rightControllerOrientationArray[1] = rightControllerOrientation.y;
+      rightControllerOrientationArray[2] = rightControllerOrientation.z;
+      rightControllerOrientationArray[3] = rightControllerOrientation.w;
+
+      {
+        std::lock_guard<std::mutex> lock(oculusvr::resMutex);
+
+        oculusvr::resCbs.push_back([vrPoseRes]() -> void {
+          {
+            Local<Object> asyncObject = Nan::New<Object>();
+            AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "OVRSession::GetPose");
+
+            Local<Function> cb = Nan::New(vrPoseRes->cb);
+            asyncResource.MakeCallback(cb, 0, nullptr);
+          }
+
+          delete vrPoseRes;
+        });
+      }
+
+      uv_async_send(&oculusvr::resAsync);
+
+    });
   }
-
-  // Controllers.
-  double time = ovr_GetPredictedDisplayTime(session, 0);
-  ovrTrackingState trackingState = ovr_GetTrackingState(session, time, ovrTrue);
-
-  ovrPoseStatef leftControllerState = trackingState.HandPoses[ovrHand_Left];
-  ovrVector3f leftControllerPosition = leftControllerState.ThePose.Position;
-  ovrQuatf leftControllerOrientation = leftControllerState.ThePose.Orientation;
-
-  leftControllerPositionArray[0] = leftControllerPosition.x;
-  leftControllerPositionArray[1] = leftControllerPosition.y;
-  leftControllerPositionArray[2] = leftControllerPosition.z;
-
-  leftControllerOrientationArray[0] = leftControllerOrientation.x;
-  leftControllerOrientationArray[1] = leftControllerOrientation.y;
-  leftControllerOrientationArray[2] = leftControllerOrientation.z;
-  leftControllerOrientationArray[3] = leftControllerOrientation.w;
-
-  ovrPoseStatef rightControllerState = trackingState.HandPoses[ovrHand_Right];
-  ovrVector3f rightControllerPosition = rightControllerState.ThePose.Position;
-  ovrQuatf rightControllerOrientation = rightControllerState.ThePose.Orientation;
-
-  rightControllerPositionArray[0] = rightControllerPosition.x;
-  rightControllerPositionArray[1] = rightControllerPosition.y;
-  rightControllerPositionArray[2] = rightControllerPosition.z;
-
-  rightControllerOrientationArray[0] = rightControllerOrientation.x;
-  rightControllerOrientationArray[1] = rightControllerOrientation.y;
-  rightControllerOrientationArray[2] = rightControllerOrientation.z;
-  rightControllerOrientationArray[3] = rightControllerOrientation.w;
 }
 
 NAN_METHOD(OVRSession::GetControllersInputState) {

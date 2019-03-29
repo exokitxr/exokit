@@ -1297,20 +1297,24 @@ const _startRenderLoop = () => {
       }
 
       if (vrPresentState.oculusSystem) {
-        vrPresentState.oculusSystem.GetPose(
-          localPositionArray3,   // hmd position
-          localQuaternionArray4, // hmd orientation
-          localFloat32Array,     // left eye view matrix
-          localFloat32Array2,    // left eye projection matrix
-          localFloat32Array3,    // right eye view matrix
-          localFloat32Array4,     // right eye projection matrix
-          leftControllerPositionArray3, // left controller position.
-          leftControllerQuaternionArray4, // left controller orientation.
-          rightControllerPositionArray3, // right controller position.
-          rightControllerQuaternionArray4 // right controller orientation.
-        );
+        console.log("CACA")
 
-        vrPresentState.hasPose = true;
+        // wait for frame
+        await new Promise((accept, reject) => {
+          vrPresentState.oculusSystem.GetPose(
+            localPositionArray3,   // hmd position
+            localQuaternionArray4, // hmd orientation
+            localFloat32Array,     // left eye view matrix
+            localFloat32Array2,    // left eye projection matrix
+            localFloat32Array3,    // right eye view matrix
+            localFloat32Array4,     // right eye projection matrix
+            leftControllerPositionArray3, // left controller position.
+            leftControllerQuaternionArray4, // left controller orientation.
+            rightControllerPositionArray3, // right controller position.
+            rightControllerQuaternionArray4, // right controller orientation.
+            accept
+          );
+        });
 
         xrState.position = localPositionArray3;
         xrState.orientation = localQuaternionArray4;
