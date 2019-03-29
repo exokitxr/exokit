@@ -162,7 +162,7 @@ void RunResInMainThread(uv_async_t *handle) {
   for (;;) {
     std::function<void()> resCb;
     {
-      std::lock_guard<std::mutex> lock(reqMutex);
+      std::lock_guard<std::mutex> lock(resMutex);
 
       if (resCbs.size() > 0) {
         resCb = resCbs.front();
