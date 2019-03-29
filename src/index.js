@@ -1183,9 +1183,6 @@ const _startRenderLoop = () => {
         const isVisible = nativeWindow.isVisible(windowHandle) || vrPresentState.glContext === context || mlPresentState.mlGlContext === context;
         if (isVisible) {
           const window = context.canvas.ownerDocument.defaultView;
-
-          // console.log('blit layers', fakePresentState.layers.length);
-
           if (vrPresentState.glContext === context && vrPresentState.hasPose) {
             if (vrPresentState.layers.length > 0) {
               const {openVRDisplay} = window[symbols.mrDisplaysSymbol];
@@ -1297,8 +1294,6 @@ const _startRenderLoop = () => {
       }
 
       if (vrPresentState.oculusSystem) {
-        console.log("CACA")
-
         // wait for frame
         await new Promise((accept, reject) => {
           vrPresentState.oculusSystem.GetPose(
@@ -1315,6 +1310,8 @@ const _startRenderLoop = () => {
             accept
           );
         });
+
+        vrPresentState.hasPose = true;
 
         xrState.position = localPositionArray3;
         xrState.orientation = localQuaternionArray4;

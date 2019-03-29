@@ -19,14 +19,14 @@ namespace oculusvr {
   std::mutex resMutex;
   std::deque<std::function<void()>> reqCbs;
   std::deque<std::function<void()>> resCbs;
-  std::thread reqThead;
+  std::thread reqThread;
 
   void RunResInMainThread(uv_async_t *handle) {
     Nan::HandleScope scope;
 
     std::function<void()> resCb;
     {
-      std::lock_guard<std::mutex> lock(reqMutex);
+      std::lock_guard<std::mutex> lock(resMutex);
 
       resCb = resCbs.front();
       resCbs.pop_front();
@@ -63,7 +63,7 @@ NAN_MODULE_INIT(OVRSession::Init)
 
   uv_sem_init(&oculusvr::reqSem, 0);
   uv_async_init(uv_default_loop(), &oculusvr::resAsync, oculusvr::RunResInMainThread);
-  oculusvr::reqThead = std::thread([]() -> void {
+  oculusvr::reqThread = std::thread([]() -> void {
     for (;;) {
       uv_sem_wait(&oculusvr::reqSem);
 
@@ -383,6 +383,8 @@ NAN_METHOD(OVRSession::GetPose) {
 
     });
   }
+
+  uv_sem_post(&oculusvr::reqSem);
 }
 
 NAN_METHOD(OVRSession::GetControllersInputState) {
