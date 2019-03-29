@@ -479,11 +479,9 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
 
       // Oculus runtime takes precedence over OpenVR for Oculus headsets.
       if (nativeOculusVR && nativeOculusVR.Oculus_IsHmdPresent()) {
-        GlobalContext.isOculusRuntime = true;
         result.push(window[symbols.mrDisplaysSymbol].oculusVRDisplay);
       } else {
         if (nativeOpenVR && nativeOpenVR.VR_IsHmdPresent()) {
-          GlobalContext.isOculusRuntime = false;
           result.push(window[symbols.mrDisplaysSymbol].openVRDisplay);
         }
       }
@@ -495,7 +493,9 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       GlobalContext.fakeVrDisplayEnabled = true;
       return window[symbols.mrDisplaysSymbol].fakeVrDisplay;
     },
-    getGamepads,
+    getGamepads() {
+      return getGamepads(window);
+    },
     clipboard:{
       read:() => Promise.resolve(), // Not implemented yet
       readText: () => new Promise(resolve => {

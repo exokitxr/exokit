@@ -1,5 +1,6 @@
 const {EventEmitter} = require('events');
 const {Event} = require('./Event');
+const symbols = require('./symbols');
 const THREE = require('../lib/three-min.js');
 const {defaultCanvasSize, defaultEyeSeparation} = require('./constants.js');
 const GlobalContext = require('./GlobalContext');
@@ -607,15 +608,18 @@ const createVRDisplay = () => new FakeVRDisplay();
 
 const getGamepads = (() => {
   let gamepads = null;
+  // Gamepad Vendor IDs
   const oculusVRIdLeft = 'Oculus Touch (Left)';
   const oculusVRIdRight = 'Oculus Touch (Right)';
   const openVRId = 'OpenVR Gamepad';
 
-  return () => {
+  return function (window) {
     if (!GlobalContext.vrPresentState.isPresenting) { return []; }
     if (!gamepads) {
-      const idLeft = GlobalContext.isOculusRuntime ? oculusVRIdLeft : openVRId;
-      const idRight = GlobalContext.isOculusRuntime ? oculusVRIdRight : openVRId;
+      const oculusVRDisplay = window[symbols.mrDisplaysSymbol].oculusVRDisplay;
+      const oculusPresenting = oculusVRDisplay && oculusVRDisplay.isPresenting;
+      const idLeft = oculusPresenting ? oculusVRIdLeft : openVRId;
+      const idRight = oculusPresenting ? oculusVRIdRight : openVRId;
       gamepads = [
         new Gamepad('left', 0, idLeft),
         new Gamepad('right', 1, idRight),
@@ -635,5 +639,5 @@ module.exports = {
   Gamepad,
   GamepadButton,
   createVRDisplay,
-  getGamepads,
+  getGamepads
 };
