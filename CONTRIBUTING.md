@@ -1,4 +1,4 @@
-[slack]: https://exokit.slack.com/join/shared_invite/enQtNDI3NjcxNzYwMDIxLWU2NmFmOTEzMzk4NWNiYjRhMjVkYzcyNjg5YjUyMzZkYWM1ZGI4M2IwYWZiMjNlMTJjMDlkM2U3Y2JiNTc2M2Q 
+[slack]: https://exokit.slack.com/join/shared_invite/enQtNDI3NjcxNzYwMDIxLWU2NmFmOTEzMzk4NWNiYjRhMjVkYzcyNjg5YjUyMzZkYWM1ZGI4M2IwYWZiMjNlMTJjMDlkM2U3Y2JiNTc2M2Q
 [stackoverflow]: http://stackoverflow.com/questions/tagged/exokit
 
 Interested in contributing? As an open source project, we'd appreciate any help
@@ -25,13 +25,13 @@ from your questions too.
 2. Specify the version of Exokit in which the bug occurred.
 3. Specify information about your browser and system (e.g., "Exokit v0.0.420 on OS X")
 4. Describe the problem in detail (i.e., what happened and what you expected would happen).
-5. If possible, provide a small test case with [CodePen](http://codepen.io), a link to your application, and/or a screenshot. 
+5. If possible, provide a small test case with [CodePen](http://codepen.io), a link to your application, and/or a screenshot.
 
-# Contribute Code to Exokit 
+# Contribute Code to Exokit
 
 [exokit]: https://github.com/webmixedreality/exokit/
-[easy]: https://github.com/webmixedreality/exokit/issues?q=is%3Aopen+is%3Aissue+label%3Aeasy 
-[hard]: https://github.com/webmixedreality/exokit/issues?q=is%3Aopen+is%3Aissue+label%3Ahard 
+[easy]: https://github.com/webmixedreality/exokit/issues?q=is%3Aopen+is%3Aissue+label%3Aeasy
+[hard]: https://github.com/webmixedreality/exokit/issues?q=is%3Aopen+is%3Aissue+label%3Ahard
 [pr]: https://www.digitalocean.com/community/tutorials/how-to-create-a-pull-request-on-github
 [ssh]: https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent/
 
@@ -51,7 +51,7 @@ under the [MIT License](LICENSE).
 
 # Share your Work
 
-1. Create something awesome using Exokit. 
+1. Create something awesome using Exokit.
 2. Publish your work to Github (and GitHub pages) so everyone can learn from your work.
 3. Share it on [Slack](https://exokit.slack.com), Twitter, etc.
 4. For bonus points, write and publish a case study to explain how you built it.
@@ -73,7 +73,7 @@ that might be useful in the documentation, request to add it!
 If a Glitch example needs to be updated for whatever reason, we can remix the
 Glitch and update the `src` URL.
 
-# Help Your Fellow Exokit users 
+# Help Your Fellow Exokit users
 
 ## On Slack
 
@@ -89,7 +89,7 @@ Glitch and update the `src` URL.
 
 # Curate and Make Efforts Known
 
-We round up all the cool stuff happening with Exokit on the [blog](https://webmr.io/blog).
+We round up all the cool stuff happening with Exokit on the [blog](https://exokit.org/blog).
 
 # Spread the Word
 
