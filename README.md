@@ -1,9 +1,9 @@
 <h1 align="center">Exokit</h1>
-<p align="center"><a href="https://webmr.io" target="_blank"><img width="300" height="300" alt="Exokit" src="icon.png"/></a></p>
+<p align="center"><a href="https://exokit.org" target="_blank"><img width="300" height="300" alt="Exokit" src="icon.png"/></a></p>
 <p align="center"><b>:dark_sunglasses: Native VR and AR engine for JavaScript 🦖</b></p>
 
 <p align="center">
-  <a href="https://join.slack.com/t/exokit/shared_invite/enQtNDI3NjcxNzYwMDIxLWU2NmFmOTEzMzk4NWNiYjRhMjVkYzcyNjg5YjUyMzZkYWM1ZGI4M2IwYWZiMjNlMTJjMDlkM2U3Y2JiNTc2M2Q"><img src="https://img.shields.io/badge/slack-join-green.svg?logo=slack&longCache=true&style=flat"></a> 
+  <a href="https://join.slack.com/t/exokit/shared_invite/enQtNDI3NjcxNzYwMDIxLWU2NmFmOTEzMzk4NWNiYjRhMjVkYzcyNjg5YjUyMzZkYWM1ZGI4M2IwYWZiMjNlMTJjMDlkM2U3Y2JiNTc2M2Q"><img src="https://img.shields.io/badge/slack-join-green.svg?logo=slack&longCache=true&style=flat"></a>
   <a href="https://github.com/webmixedreality/exokit/releases"><img src="https://img.shields.io/github/downloads/webmixedreality/exokit/total.svg"></a>
   <a href="https://www.npmjs.com/package/exokit"><img src="https://img.shields.io/npm/v/exokit.svg"></a>
   <a href="https://travis-ci.org/modulesio/exokit-windows"><img src="https://travis-ci.org/modulesio/exokit-windows.svg?branch=master"></a>
@@ -12,9 +12,9 @@
 </p>
 
 <div align="center">
-  <a href="https://webmr.io">Site</a>
+  <a href="https://exokit.org">Site</a>
   &mdash;
-  <a href="https://webmr.io/docs/">Docs</a>
+  <a href="https://exokit.org/docs/">Docs</a>
   &mdash;
   <a href="https://discordapp.com/invite/Apk6cZN">Discord</a>
   &mdash;
@@ -30,11 +30,11 @@
 <a href="https://youtu.be/cd_DEwCDF6U"><img alt="Hands Reality Tab" target="_blank" src="assets/hands_ml.gif" height="190" width="32%"></a>
 <a href="https://youtu.be/b-UKSg0QCRE"><img alt="Live Reload Magic Leap" target="_blank" src="assets/reload_ml.gif" height="190" width="32%"></a>
 <a href="https://youtu.be/O1xA1r5SZUM"><img alt="Tutorial Reality Tab" target="_blank" src="assets/tutorial_rt.gif" height="190" width="32%"></a>
-  
+
 <a href="https://www.youtube.com/watch?v=m_QntqZmd_Q"><img alt="Reality Projection with HTC Vive and Magic Leap" target="_blank" src="assets/realityprojection.gif" height="190" width="32%"></a>
 <a href="https://youtu.be/i0MXRCNkdB4"><img alt="Emukit" target="_blank" src="assets/emukit.gif" height="190" width="32%"></a>
-<a href="https://webmr.io/"><img alt="Various Exokit Apps" target="_blank" src="assets/screenshots.gif" height="190" width="32%"></a>
-  
+<a href="https://exokit.org/"><img alt="Various Exokit Apps" target="_blank" src="assets/screenshots.gif" height="190" width="32%"></a>
+
 *Find more examples [here](https://github.com/webmixedreality/exokit/tree/master/examples) and on [YouTube](https://www.youtube.com/channel/UC87Q7_5ooY8FSLwOec52ZPQ).*
 
 
@@ -88,13 +88,13 @@ This project **enables developers to build XR experiences using the same code th
 
 ## Quickstart
 
-### Desktop 
+### Desktop
 <h4><a href="https://get.webmr.io">Download for current OS</a></h4>
 
 #### Run a WebXR site (desktop)
 
 ```sh
-exokit https://emukit.webmr.io/ # start Emukit in Exokit
+exokit https://aframe.io/a-painter/ # start A-Painter in Exokit
 ```
 
 ### Magic Leap
@@ -185,7 +185,7 @@ For questions and support, [ask on StackOverflow](https://stackoverflow.com/ques
 
 - [Join our Slack](https://join.slack.com/t/exokit/shared_invite/enQtNDI3NjcxNzYwMDIxLWU2NmFmOTEzMzk4NWNiYjRhMjVkYzcyNjg5YjUyMzZkYWM1ZGI4M2IwYWZiMjNlMTJjMDlkM2U3Y2JiNTc2M2Q) for development.
 - [Join our Discord](https://discord.gg/Apk6cZN) for hanging out.
-- [Follow @webmixedreality on Twitter](https://twitter.com/webmixedreality) for updates. 
+- [Follow @webmixedreality on Twitter](https://twitter.com/webmixedreality) for updates.
 
 
 ## Contributing
