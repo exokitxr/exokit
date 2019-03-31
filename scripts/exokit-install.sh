@@ -1,6 +1,6 @@
 #!/bin/bash
 # usage:
-#   wget -qO- https://get.webmr.io | sudo sh
+#   wget -qO- https://get.exokit.org | sudo sh
 # This script will download and install Exokit in /usr/lib
 
 echo "Exokit $VERSION install script"
@@ -11,4 +11,4 @@ if [ -x "$(command -v apt-get)" ]; then
 fi
 cd /tmp
 rm -Rf /usr/local/bin/exokit /usr/local/lib/exokit
-wget -O- https://get.webmr.io/linux-bin | tar -zxf - --directory /usr/local
+wget -O- https://get.exokit.org/linux-bin | tar -zxf - --directory /usr/local
