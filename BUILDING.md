@@ -6,7 +6,7 @@ Exokit is a node module. The core is written in Javascript, with native bindings
 
 **Requirements**: Node.js 11.6.0, Python 2, Visual Studio 2015 or 2017
 
-**Alternative requirements**: Node.js 10, as administrator: `npm install -g windows-build-tools`
+**Alternative requirements**: Node.js 11.6.0, as administrator: `npm install -g windows-build-tools`
 
 ### Procedure
 1. open **Node.js command prompt**
@@ -15,7 +15,7 @@ Exokit is a node module. The core is written in Javascript, with native bindings
 
 ## MacOS
 
-**Requirements**: Node.js 10, XCode
+**Requirements**: Node.js 11.6.0, XCode
 
 ### Procedure
 1. open **Terminal.app**
@@ -24,7 +24,7 @@ Exokit is a node module. The core is written in Javascript, with native bindings
 
 ## Linux
 
-**Requirements**: Node.js 10
+**Requirements**: Node.js 11.6.0
 
 ### Procedure
 1. open **bash**
