@@ -21,7 +21,7 @@
     - `windowsystem` - Window bindings native source and header files.
   - `openvr` - OpenVR native source and header files.
 - `docs` - Complete documentation in Markdown.
-- `examples` - Examples. `index.html` lists all of the examples.
+- `examples` - WebXR Examples.
 - `lib` - Three.js minified.
 - `metadata` - Target-specific app metadata.
 - `res` - App resources for Android-based targets.
