@@ -7,7 +7,7 @@
           'conditions': [
             ['OS=="win"', {
               'sources': [
-                'exokit.cpp',
+                'cpp/exokit.cpp',
                 'deps/exokit-bindings/bindings/src/*.cc',
                 'deps/exokit-bindings/util/src/*.cc',
                 'deps/exokit-bindings/browser/src/*.cpp',
@@ -143,7 +143,7 @@
               'conditions': [
                 ['"<!(node -e \"console.log(process.arch)\")"=="x64"', {
                   'sources': [
-                    'exokit.cpp',
+                    'cpp/exokit.cpp',
                     '<!@(ls -1 deps/exokit-bindings/bindings/src/*.cc)',
                     '<!@(ls -1 deps/exokit-bindings/util/src/*.cc)',
                     '<!@(ls -1 deps/exokit-bindings/browser/src/*.cpp)',
@@ -260,7 +260,7 @@
                 }],
                 ['"<!(node -e \"console.log(process.arch)\")"=="arm64"', {
                   'sources': [
-                    'exokit.cpp',
+                    'cpp/exokit.cpp',
                     '<!@(ls -1 deps/exokit-bindings/bindings/src/*.cc)',
                     '<!@(ls -1 deps/exokit-bindings/util/src/*.cc)',
                     '<!@(ls -1 deps/exokit-bindings/canvas/src/*.cpp)',
@@ -359,7 +359,7 @@
             }],
             ['OS=="mac"', {
               'sources': [
-                'exokit.cpp',
+                'cpp/exokit.cpp',
                 '<!@(ls -1 deps/exokit-bindings/bindings/src/*.cc)',
                 '<!@(ls -1 deps/exokit-bindings/util/src/*.cc)',
                 '<!@(ls -1 deps/exokit-bindings/browser/src/*.cpp)',
@@ -478,7 +478,7 @@
         }],
         ['"<!(echo $LUMIN)"=="1"', {
           'sources': [
-            'exokit.cpp',
+            'cpp/exokit.cpp',
             '<!@(ls -1 deps/exokit-bindings/bindings/src/*.cc)',
             '<!@(ls -1 deps/exokit-bindings/util/src/*.cc)',
             '<!@(ls -1 deps/exokit-bindings/browser/src/*.cpp)',
