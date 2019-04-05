@@ -55,5 +55,5 @@ find build/Release/obj.target node_modules -name '*.o' | xargs "$AR" crs build/l
 popd
 
 pushd android
-./gradlew build && ./gradlew assembleDebug && ./gradlew installDebug
+./gradlew build && ./gradlew assembleDebug
 popd
