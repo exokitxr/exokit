@@ -335,6 +335,13 @@ const localFloat32GamepadPoseArrays = [
   localFloat32PoseArray.slice(1*16, 2*16),
   localFloat32PoseArray.slice(2*16, 3*16)
 ];
+const localFloat32TrackerPoseArrays = (() => {
+  const result = Array(maxNumTrackers);
+  for (let i = 0; i < maxNumTrackers; i++) {
+    result[i] = localFloat32PoseArray.slice((i+3)*16, (i+4)*16);
+  }
+  return result;
+})();
 const localFloat32MatrixArray = new Float32Array(16);
 const localFovArray = new Float32Array(4);
 const localGamepadArray = new Float32Array(24);
@@ -1545,6 +1552,29 @@ const _startRenderLoop = () => {
         };
         _loadGamepad(0);
         _loadGamepad(1);
+
+        // build tracker data
+        const _loadTracker = i => {
+          const tracker = xrState.trackers[i];
+          const trackerPoseArray = localFloat32TrackerPoseArrays[i];
+          if (!isNaN(trackerPoseArray[0])) {
+            tracker.connected[0] = true;
+
+            localMatrix.fromArray(trackerPoseArray);
+            localMatrix.decompose(localVector, localQuaternion, localVector2);
+            localVector.toArray(tracker.position);
+            localQuaternion.toArray(tracker.orientation);
+          } else {
+            tracker.connected[0] = false;
+          }
+        };
+        for (let i = 0; i < maxNumTrackers; i++) {
+          _loadTracker(i);
+        }
+
+        /* if (vrPresentState.lmContext) { // XXX remove this binding
+          vrPresentState.lmContext.WaitGetPoses(handsArray);
+        } */
       }
 
       if (args.performance) {
