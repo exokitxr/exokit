@@ -6,7 +6,6 @@ set -e
 
 # Preface.
 
-TOOLCHAIN="$PWD/../ndk"
 cd "$(dirname "$0")"
 
 pushd android

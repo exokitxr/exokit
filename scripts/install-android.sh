@@ -9,5 +9,5 @@ set -e
 cd "$(dirname "$0")"
 
 pushd android
-./gradlew build && ./gradlew assembleDebug
+./gradlew installDebug
 popd
