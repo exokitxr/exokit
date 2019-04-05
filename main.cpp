@@ -31,7 +31,6 @@ typedef struct AssetStatStruct {
   uint32_t parentKey;
   size_t size;
 } AssetStat;
-// #include "assets.h"
 
 extern "C" {
 void initAssetManager(AAssetManager *am);
