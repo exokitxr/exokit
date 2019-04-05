@@ -14,13 +14,16 @@
 # limitations under the License.
 #
 
-cmake_minimum_required(VERSION 3.10.2)
+cmake_minimum_required(VERSION 3.6.0)
+
+# build native_app_glue as a static lib
+# set(${CMAKE_C_FLAGS}, "${CMAKE_C_FLAGS}")
+# add_library(native_app_glue STATIC ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c)
 
 # now build app's shared lib
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -Wall -Werror")
 
-
-add_library(native-main SHARED ${CMAKE_SOURCE_DIR}/../main.cpp)
+add_library(native-main SHARED ${CMAKE_SOURCE_DIR}/../main.cpp ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c)
 
 
 add_library( exokit STATIC IMPORTED )
@@ -51,12 +54,13 @@ set_target_properties( opus PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../
 
 include_directories( SYSTEM ${CMAKE_SOURCE_DIR}/../node_modules/nan )
 include_directories( SYSTEM ${CMAKE_SOURCE_DIR}/../deps/exokit-bindings/util/include )
-include_directories( SYSTEM ${CMAKE_SOURCE_DIR}/../.node-gyp/11.10.1/include/node )
+include_directories( SYSTEM ${CMAKE_SOURCE_DIR}/../.node-gyp/11.6.0/include/node )
+include_directories( SYSTEM ${ANDROID_NDK}/sources/android/native_app_glue )
 
 
 # add lib dependencies
-target_link_libraries(
-    native-main
+target_link_libraries(native-main
+    # native_app_glue
     android
     EGL
     GLESv1_CM
@@ -74,4 +78,4 @@ target_link_libraries(
     swresample
     opus
     OpenSLES
-        )
+)
