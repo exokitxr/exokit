@@ -241,7 +241,7 @@ void android_main(struct android_app *app) {
 
   const char *nodeString = "node";
   const char *experimentalWorkerString = "--experimental-worker";
-  const char *dotString = ".";
+  const char *dotString = "/package";
   const char *jsString = "/package/examples/tutorial.html";
   // const char *eString = "-e";
   // const char *consoleString = "const fs = require('fs'); console.log('run 1'); const l = []; fs.readdirSync('/package'); console.log('run 2'); console.log('run 3', l); let s = fs.readFileSync('/package/index.js', 'utf8'); console.log('got index 1'); console.log('got index 2', s); require('/package/index.js')";
