@@ -5,7 +5,7 @@ const fs = require('fs');
 const find = require('find');
 const murmur = require('murmurhash-js');
 
-let dirname = process.argv[2];
+let dirname = path.resolve(__dirname, '..');
 
 let assetStats = [];
 const FILE = 1;
