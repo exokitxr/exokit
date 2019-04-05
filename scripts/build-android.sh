@@ -6,7 +6,9 @@ set -e
 
 # Preface.
 
-export AR="/home/a/ndk/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android-ar"
+TOOLCHAIN="$PWD/../android-ndk-r19c/toolchain"
+export AR="$TOOLCHAIN/bin/aarch64-linux-android-ar"
+# export AR="/home/a/ndk/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android-ar"
 
 cd "$(dirname "$0")/.."
 
