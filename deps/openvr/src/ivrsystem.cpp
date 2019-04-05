@@ -774,10 +774,8 @@ NAN_METHOD(IVRSystem::GetControllerState)
     return;
   }
 
-  Local<Float32Array> buttons = Local<Float32Array>::Cast(info[1]);
-  buttons->Set(0, Number::New(Isolate::GetCurrent(), std::numeric_limits<float>::quiet_NaN()));
-
   uint32_t side = TO_UINT32(info[0]);
+  
   for (unsigned int i = 0; i < vr::k_unMaxTrackedDeviceCount; i++) {
     vr::ETrackedDeviceClass deviceClass = obj->self_->GetTrackedDeviceClass(i);
     if (deviceClass == vr::TrackedDeviceClass_Controller) {
@@ -785,6 +783,8 @@ NAN_METHOD(IVRSystem::GetControllerState)
       if ((side == 0 && controllerRole == vr::TrackedControllerRole_LeftHand) || (side == 1 && controllerRole == vr::TrackedControllerRole_RightHand)) {
         vr::VRControllerState_t controllerState;
         if (obj->self_->GetControllerState(i, &controllerState, sizeof(controllerState))) {
+          Local<Float32Array> buttons = Local<Float32Array>::Cast(info[1]);
+          
           buttons->Set(0, Number::New(Isolate::GetCurrent(), 1));
 
           buttons->Set(1, Number::New(Isolate::GetCurrent(), (controllerState.ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_System)) ? 1 : 0));
@@ -810,11 +810,13 @@ NAN_METHOD(IVRSystem::GetControllerState)
           buttons->Set(19, Number::New(Isolate::GetCurrent(), controllerState.rAxis[4].x));
           buttons->Set(20, Number::New(Isolate::GetCurrent(), controllerState.rAxis[4].y));
 
-          break;
+          return info.GetReturnValue().Set(Nan::New<Boolean>(true));
         }
       }
     }
   }
+
+  return info.GetReturnValue().Set(Nan::New<Boolean>(false));
 }
 
 NAN_METHOD(IVRSystem::TriggerHapticPulse)
