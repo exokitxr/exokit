@@ -13,22 +13,34 @@ const DIRECTORY = 2;
 
 dirname = path.join(dirname, 'android', 'app', 'assets');
 console.warn('finding assets...');
-find.file(dirname, async files => {
-  console.warn(`found ${files.length} assets`);
-  
-  for (let i = 0; i < files.length; i++) {
-    let file = files[i];
+Promise.all([
+  new Promise((accept, reject) => {
+    find.file(dirname, files => {
+      accept(files);
+    });
+  }),
+  new Promise((accept, reject) => {
+    find.dir(dirname, dirs => {
+      accept(dirs);
+    });
+  }),
+]).then(async ([files, dirs]) => {
+  console.warn(`found ${files.length} files ${dirs.length} directories`);
 
-    const stat = fs.lstatSync(file);
+  const assets = files.map(asset => ({type: FILE, asset})).concat(dirs.map(asset => ({type: DIRECTORY, asset})));
+  for (let i = 0; i < assets.length; i++) {
+    let {type, asset} = assets[i];
 
-    file = file.slice(dirname.length + 1);
-    const parentFile = path.dirname(file);
-    
+    const stat = fs.lstatSync(asset);
+
+    asset = asset.slice(dirname.length + 1);
+    const parentAsset = path.dirname(asset);
+
     const [key, parentKey] = await Promise.all([
       new Promise((accept, reject) => {
-        murmurhash3.murmur32(file, (err, hashValue) => {
+        murmurhash3.murmur32(asset, (err, hashValue) => {
           if (!err) {
-            // console.log('got hash', file, hashValue.toString(16));
+            // console.log('got hash', asset, hashValue.toString(16));
             accept(hashValue);
           } else {
             reject(err);
@@ -36,9 +48,9 @@ find.file(dirname, async files => {
         });
       }),
       new Promise((accept, reject) => {
-        murmurhash3.murmur32(parentFile, (err, hashValue) => {
+        murmurhash3.murmur32(parentAsset, (err, hashValue) => {
           if (!err) {
-            // console.log('parent file hash', JSON.stringify({parentFile, hashValue}));
+            // console.log('parent asset hash', JSON.stringify({parentAsset, hashValue}));
             accept(hashValue);
           } else {
             reject(err);
@@ -46,18 +58,16 @@ find.file(dirname, async files => {
         });
       }),
     ]);
-    const name = path.basename(file);
-    // const key = murmurhash.v3(file, '');
-    // const parentKey = murmurhash.v3(parentFile, '');
-    const type = FILE;
+
+    const name = path.basename(asset);
     const {size} = stat;
 
     assetStats.push({
-      path: file,
+      path: asset,
       name,
       key,
-      parentKey,
       type,
+      parentKey,
       size,
       // blksize,
     });
@@ -76,12 +86,13 @@ find.file(dirname, async files => {
   for (let i = 0; i < assetStats.length; i++) {
     const assetStat = assetStats[i];
 
-    const buffer = new Uint8Array(256+4+4+8);
+    const buffer = new Uint8Array(256+4+4+8+8);
     buffer.set(new TextEncoder().encode(assetStat.name.padEnd(256, '\0')));
     const dataView = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
     dataView.setUint32(256, assetStat.key, true);
     dataView.setUint32(256+4, assetStat.parentKey, true);
-    dataView.setUint32(256+4+4, assetStat.size, true); // actually setUint64
+    dataView.setUint32(256+4+4, assetStat.type, true); // actually setUint64
+    dataView.setUint32(256+4+4+8, assetStat.size, true); // actually setUint64
 
     const b = Buffer.from(buffer.buffer, buffer.byteOffset, buffer.byteLength);
     // console.log('write', b.length, b.toString('utf8'));

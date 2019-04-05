@@ -27,6 +27,7 @@ namespace node {
 typedef struct AssetStatStruct {
   char name[256];
   uint32_t key;
+  uint32_t type;
   uint32_t parentKey;
   size_t size;
 } AssetStat;
@@ -102,8 +103,9 @@ void jniOnload(JavaVM *vm) {
   }
 
   AAssetManager *am = AAssetManager_fromJava(env, globalAssetManager);
-  __android_log_print(ANDROID_LOG_INFO, "exokit", "Got Java Asset Manager %lx", (unsigned long) am);
+  __android_log_print(ANDROID_LOG_INFO, "exokit", "Got Java Asset Manager 1 %lx %lx", (unsigned long)am, (unsigned long)initAssetManager);
   initAssetManager(am);
+  __android_log_print(ANDROID_LOG_INFO, "exokit", "Got Java Asset Manager 2 %lx %lx", (unsigned long)am, (unsigned long)initAssetManager);
 
   /* vm->GetEnv((void**) &gJavaEnv, JNI_VERSION_1_6);
   jclass cls_Activity = gJavaEnv->FindClass("com/unity3d/player/UnityPlayer");
