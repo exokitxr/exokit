@@ -390,7 +390,7 @@ GlobalContext.vrPresentState = vrPresentState;
 
 class XRState {
   constructor() {
-    const sab = new SharedArrayBuffer(1024);
+    const sab = new SharedArrayBuffer(4*1024);
     let index = 0;
     const _makeTypedArray = (c, n) => {
       const result = new c(sab, index, n);
@@ -428,7 +428,7 @@ class XRState {
     this.leftFov.set(Float32Array.from([45, 45, 45, 45]));
     this.rightFov = _makeTypedArray(Float32Array, 4);
     this.rightFov.set(this.leftFov);
-    const _makeGamepad() = () = {
+    const _makeGamepad = () => {
       return {
         connected: _makeTypedArray(Uint32Array, 1),
         position: _makeTypedArray(Float32Array, 3),
