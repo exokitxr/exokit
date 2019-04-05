@@ -9,7 +9,7 @@
 #include <string>
 #include <map>
 #include <thread>
-// #include <v8.h>
+#include <v8.h>
 #include <dirent.h>
 #include <android/log.h>
 #include <jni.h>
@@ -17,7 +17,14 @@
 #include <android_native_app_glue.h>
 // #include <exout>
 
-// using namespace v8;
+using namespace v8;
+
+namespace node {
+  extern std::map<std::string, std::pair<void *, bool>> dlibs;
+  int Start(int argc, char* argv[]);
+}
+
+#include "build/libexokit/dlibs.h"
 
 namespace node {
   extern std::map<std::string, std::pair<void *, bool>> dlibs;
@@ -46,8 +53,7 @@ JNIEnv *jniGetEnv(JavaVM *vm) {
   int status;
   status = vm->GetEnv((void **) &env, JNI_VERSION_1_6);
   if (status < 0) {
-    __android_log_print(ANDROID_LOG_ERROR, "exokit",
-                        "Failed to get JNI environment, trying to attach thread");
+    __android_log_print(ANDROID_LOG_ERROR, "exokit", "Failed to get JNI environment, trying to attach thread");
     // Try to attach native thread to JVM:
     status = vm->AttachCurrentThread(&env, 0);
     if (status < 0) {
@@ -227,8 +233,12 @@ void android_main(struct android_app *app) {
   __android_log_print(ANDROID_LOG_ERROR, "exokit", "main cwd 3 %lx", (unsigned long)app);
 
   jniOnload(app->activity->vm);
-  
+
   __android_log_print(ANDROID_LOG_ERROR, "exokit", "main cwd 4 %lx", (unsigned long)app);
+
+  registerDlibs(node::dlibs);
+
+  __android_log_print(ANDROID_LOG_ERROR, "exokit", "main cwd 5 %lx", (unsigned long)app);
 
   // std::cout << "test log stdout" << std::endl;
 
