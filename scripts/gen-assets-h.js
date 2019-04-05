@@ -76,12 +76,12 @@ find.file(dirname, async files => {
   for (let i = 0; i < assetStats.length; i++) {
     const assetStat = assetStats[i];
 
-    const buffer = new Uint8Array(256+2+2+4);
+    const buffer = new Uint8Array(256+4+4+8);
     buffer.set(new TextEncoder().encode(assetStat.name.padEnd(256, '\0')));
     const dataView = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
-    dataView.setUint32(256, assetStat.key);
-    dataView.setUint32(256+2, assetStat.parentKey);
-    dataView.setUint32(256+2+2, assetStat.size);
+    dataView.setUint32(256, assetStat.key, true);
+    dataView.setUint32(256+4, assetStat.parentKey, true);
+    dataView.setUint32(256+4+4, assetStat.size, true); // actually setUint64
 
     const b = Buffer.from(buffer.buffer, buffer.byteOffset, buffer.byteLength);
     // console.log('write', b.length, b.toString('utf8'));
