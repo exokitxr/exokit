@@ -103,7 +103,7 @@ void jniOnload(JavaVM *vm) {
 
   AAssetManager *am = AAssetManager_fromJava(env, globalAssetManager);
   __android_log_print(ANDROID_LOG_INFO, "exokit", "Got Java Asset Manager %lx", (unsigned long) am);
-  initAssetManager(am, assetStats, sizeof(assetStats)/sizeof(assetStats[0]));
+  initAssetManager(am, assetStats, numAssetStats);
 
   /* vm->GetEnv((void**) &gJavaEnv, JNI_VERSION_1_6);
   jclass cls_Activity = gJavaEnv->FindClass("com/unity3d/player/UnityPlayer");
@@ -218,10 +218,16 @@ void android_main(struct android_app *app) {
   int stderrReadFd = stderrfds[0];
   std::thread stderrReaderThread([stderrReadFd]() -> void { pumpStderr(stderrReadFd); });
 
-  __android_log_print(ANDROID_LOG_ERROR, "exokit", "main cwd 1.1 %lx", (unsigned long)app->activity);
-  __android_log_print(ANDROID_LOG_ERROR, "exokit", "main cwd 2.1 %lx", (unsigned long)app->activity->vm);
+  __android_log_print(ANDROID_LOG_ERROR, "exokit", "main cwd 1 %lx", (unsigned long)app->activity);
+  __android_log_print(ANDROID_LOG_ERROR, "exokit", "main cwd 2 %lx", (unsigned long)app->activity->vm);
+
+  initAssetStats();
+  
+  __android_log_print(ANDROID_LOG_ERROR, "exokit", "main cwd 3 %lx", (unsigned long)app);
 
   jniOnload(app->activity->vm);
+  
+  __android_log_print(ANDROID_LOG_ERROR, "exokit", "main cwd 4 %lx", (unsigned long)app);
 
   // std::cout << "test log stdout" << std::endl;
 
