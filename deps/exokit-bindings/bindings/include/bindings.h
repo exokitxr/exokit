@@ -20,7 +20,7 @@
 #endif
 
 // Stub out on Android for now until get libcef working on Android.
-#if !defined(__ANDROID__)
+#if !defined(ANDROID)
   #include <browser.h>
   #include <AudioContext.h>
   #include <webrtc.h>
