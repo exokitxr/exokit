@@ -233,7 +233,7 @@ void Init(Local<Object> exports) {
 
 }
 
-#if !defined(__ANDROID__) || !defined(LUMIN)
+#if !defined(ANDROID) || !defined(LUMIN)
 NODE_MODULE(NODE_GYP_MODULE_NAME, exokit::Init)
 #else
 extern "C" {
