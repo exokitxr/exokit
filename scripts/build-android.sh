@@ -56,5 +56,4 @@ popd
 
 pushd android
 ./gradlew build && ./gradlew assembleDebug && ./gradlew installDebug
-adb shell am start -n com.webmr.exokit/android.app.NativeActivity
 popd
