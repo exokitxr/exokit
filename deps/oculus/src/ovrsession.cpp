@@ -98,7 +98,7 @@ OVRSession::OVRSession()
 : frameIndex(0), hmdMounted(false), self_(nullptr)
 {
   SetupSession();
-  // this->hmdDesc = ovr_GetHmdDesc(*this->self_);
+  this->hmdDesc = ovr_GetHmdDesc(*this->self_);
   //SetupSwapChain();
 }
 
