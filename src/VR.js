@@ -11,6 +11,7 @@ const localQuaternion = new THREE.Quaternion();
 const localMatrix = new THREE.Matrix4();
 const localMatrix2 = new THREE.Matrix4();
 const localViewMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+var globalWindow;
 
 class VRPose {
   constructor() {
@@ -307,7 +308,7 @@ class FakeVRDisplay extends VRDisplay {
   constructor(window) {
     super('FAKE');
 
-    this.window = window;
+    this.window = globalWindow = window;
 
     this.position = new THREE.Vector3();
     this.quaternion = new THREE.Quaternion();
@@ -613,10 +614,10 @@ const getGamepads = (() => {
   const oculusVRIdRight = 'Oculus Touch (Right)';
   const openVRId = 'OpenVR Gamepad';
 
-  return function (window) {
+  return function () {
     if (!GlobalContext.vrPresentState.isPresenting) { return []; }
     if (!gamepads) {
-      const oculusVRDisplay = window[symbols.mrDisplaysSymbol].oculusVRDisplay;
+      const oculusVRDisplay = globalWindow[symbols.mrDisplaysSymbol].oculusVRDisplay;
       const oculusPresenting = oculusVRDisplay && oculusVRDisplay.isPresenting;
       const idLeft = oculusPresenting ? oculusVRIdLeft : openVRId;
       const idRight = oculusPresenting ? oculusVRIdRight : openVRId;
