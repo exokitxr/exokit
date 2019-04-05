@@ -1,10 +1,13 @@
 #!/usr/bin/env node
 
+const path = require('path');
 const find = require('find');
 
-const dirname = process.argv[2];
+const dirname = path.resolve(__dirname, '..');
+const directories = ['build', 'node_modules'];
 
 find.file(/\.node$/, dirname, files => {
+  files = files.filter(file => directories.some(directory => file.indexOf(path.join(dirname, directory)) === 0));
   const header = `#include <v8.h>\n#include <node_api.h>\n\n`;
   let decls = `extern "C" {\n`;
   let registers = `inline void registerDlibs(std::map<std::string, std::pair<void *, bool>> &dlibs) {\n`;
