@@ -37,15 +37,15 @@ export LDFLAGS=""
 export npm_config_arch=aarch64
 
 pushd ..
+
+export OS="android"
 export TARGET_ARCH="aarch64"  # For webrtc install prebuilt.
 
-if test -z $NO_INSTALL
-then
-ANDROID=1 npm install --no-optional --verbose --ignore-scripts --target_arch=aarch64
-node scripts/preinstall.js
-fi
+npm install --verbose --devdir="$(pwd)/.node-gyp" --arch=aarch64 --target_arch=aarch64 --no-optional
+# ANDROID=1 npm install --no-optional --verbose --ignore-scripts --target_arch=aarch64
+# node scripts/preinstall.js
 
-OS=android node-gyp rebuild --arch=aarch64 --devdir="$(pwd)/.node-gyp" -v --loglevel=error --python="$TOOLCHAIN/bin/python2"
+# OS=android node-gyp rebuild --arch=aarch64 --devdir="$(pwd)/.node-gyp" -v --loglevel=error --python="$TOOLCHAIN/bin/python2"
 
 # Create archive.
 rm -Rf build/libexokit
