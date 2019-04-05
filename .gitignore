@@ -10,3 +10,4 @@ CMakeCache.txt
 .node-gyp
 /app
 *.sw[jklmnop]
+local.properties
