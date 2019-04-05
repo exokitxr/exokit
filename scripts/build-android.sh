@@ -6,7 +6,7 @@ set -e
 
 # Preface.
 
-TOOLCHAIN="$PWD/node_modules/android-toolchain"
+TOOLCHAIN="$PWD/../ndk"
 cd "$(dirname "$0")"
 
 export TOOLCHAIN_USR="$TOOLCHAIN/sysroot/usr"
@@ -52,4 +52,9 @@ rm -Rf build/libexokit
 mkdir -p build/libexokit
 find build/Release/obj.target node_modules -name '*.o' | xargs "$AR" crs build/libexokit/libexokit.a
 ./scripts/gen-dlibs-h.js "$(pwd)" >build/libexokit/dlibs.h
+popd
+
+pushd android
+./gradlew build && ./gradlew assembleDebug && ./gradlew installDebug
+adb shell am start -n com.webmr.exokit/android.app.NativeActivity
 popd
