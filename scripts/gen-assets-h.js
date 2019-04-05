@@ -3,7 +3,7 @@
 const path = require('path');
 const fs = require('fs');
 const find = require('find');
-const murmurhash3 = require('murmurhash3');
+const murmur = require('murmurhash-js');
 
 let dirname = process.argv[2];
 
@@ -24,7 +24,7 @@ Promise.all([
       accept(dirs);
     });
   }),
-]).then(async ([files, dirs]) => {
+]).then(([files, dirs]) => {
   console.warn(`found ${files.length} files ${dirs.length} directories`);
 
   const assets = files.map(asset => ({type: FILE, asset})).concat(dirs.map(asset => ({type: DIRECTORY, asset})));
@@ -36,31 +36,11 @@ Promise.all([
     asset = asset.slice(dirname.length + 1);
     const parentAsset = path.dirname(asset);
 
-    const [key, parentKey] = await Promise.all([
-      new Promise((accept, reject) => {
-        murmurhash3.murmur32(asset, (err, hashValue) => {
-          if (!err) {
-            // console.log('got hash', asset, hashValue.toString(16));
-            accept(hashValue);
-          } else {
-            reject(err);
-          }
-        });
-      }),
-      new Promise((accept, reject) => {
-        murmurhash3.murmur32(parentAsset, (err, hashValue) => {
-          if (!err) {
-            // console.log('parent asset hash', JSON.stringify({parentAsset, hashValue}));
-            accept(hashValue);
-          } else {
-            reject(err);
-          }
-        });
-      }),
-    ]);
-
     const name = path.basename(asset);
     const {size} = stat;
+
+    const key = murmur.murmur3(asset);
+    const parentKey = murmur.murmur3(parentAsset);
 
     assetStats.push({
       path: asset,

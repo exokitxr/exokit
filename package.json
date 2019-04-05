@@ -59,7 +59,7 @@
     "libnode.a": "0.0.9",
     "minimist": "^1.2.0",
     "mkdirp": "^0.5.1",
-    "murmurhash3": "^0.4.2",
+    "murmurhash-js": "^1.0.0",
     "nan": "^2.13.1",
     "native-audio-deps": "github:ngokevin/node-native-audio-deps#android2",
     "native-browser-deps": "0.0.16",
