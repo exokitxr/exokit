@@ -20,12 +20,20 @@
 // using namespace v8;
 
 namespace node {
-    extern std::map<std::string, std::pair<void *, bool>> dlibs;
-    int Start(int argc, char* argv[]);
+  extern std::map<std::string, std::pair<void *, bool>> dlibs;
+  int Start(int argc, char* argv[]);
 }
 
+typedef struct AssetStatStruct {
+  const char *name;
+  uint32_t key;
+  uint32_t parentKey;
+  size_t size;
+} AssetStat;
+#include "assets.h"
+
 extern "C" {
-void initAssetManager(AAssetManager *am);
+void initAssetManager(AAssetManager *am, AssetStat *as, size_t nas);
 }
 
 JNIEnv *jniGetEnv(JavaVM *vm) {
@@ -95,7 +103,7 @@ void jniOnload(JavaVM *vm) {
 
   AAssetManager *am = AAssetManager_fromJava(env, globalAssetManager);
   __android_log_print(ANDROID_LOG_INFO, "exokit", "Got Java Asset Manager %lx", (unsigned long) am);
-  initAssetManager(am);
+  initAssetManager(am, assetStats, sizeof(assetStats)/sizeof(assetStats[0]));
 
   /* vm->GetEnv((void**) &gJavaEnv, JNI_VERSION_1_6);
   jclass cls_Activity = gJavaEnv->FindClass("com/unity3d/player/UnityPlayer");
@@ -230,7 +238,7 @@ void android_main(struct android_app *app) {
   // const char *dotString = ".";
   // const char *jsString = "/app/index.html";
   const char *eString = "-e";
-  const char *consoleString = "const fs = require('fs'); console.log('run 1'); const l = []; fs.readdirSync('/package'); console.log('run 2'); console.log('run 3', l); ";
+  const char *consoleString = "const fs = require('fs'); console.log('run 1'); const l = []; fs.readdirSync('/package'); console.log('run 2'); console.log('run 3', l); let s = fs.readFileSync('/package/index.js', 'utf8'); console.log('got index 1'); console.log('got index 2', s); require('/package/index.js')";
   char argsString[4096];
   int i = 0;
 
