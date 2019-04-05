@@ -66,10 +66,22 @@ new Promise((accept, reject) => {
 }).then(() => {
   assetStats = assetStats.sort((a, b) => a.path.localeCompare(b.path));
 
-  console.log('AssetStat assetStats[] = {');
+  console.log('AssetStat *assetStats;');
+  console.log('size_t numAssetStats;');
+  console.log('void initAssetStats() {');
+  console.log(` assetStats = (AssetStat *)malloc(sizeof(AssetStat) * ${assetStats.length});`);
+  console.log(` numAssetStats = ${assetStats.length};`);
+  // console.log(` printf("initialize asset stats %d", numAssetStats); fflush(stdout);`);
   for (let i = 0; i < assetStats.length; i++) {
     const assetStat = assetStats[i];
-    console.log(`  {"${assetStat.name}", 0x${assetStat.key.toString(16)}, 0x${assetStat.parentKey.toString(16)}, ${assetStat.size}}, // ${assetStat.path}`);
+    console.log(`  { // ${assetStat.path}`);
+    console.log(`    AssetStat *assetStat = &assetStats[${i}];`);
+    console.log(`    assetStat->name = "${assetStat.name}";`);
+    console.log(`    assetStat->key = 0x${assetStat.key.toString(16)};`);
+    console.log(`    assetStat->parentKey = 0x${assetStat.parentKey.toString(16)};`);
+    console.log(`    assetStat->size = ${assetStat.size};`);
+    console.log(`  }`);
+    // console.log(`  AssetStat("${assetStat.name}", 0x${assetStat.key.toString(16)}, 0x${assetStat.parentKey.toString(16)}, ${assetStat.size}), // ${assetStat.path}`);
   }
   console.log('};\n');
 }).catch(err => {
