@@ -172,7 +172,7 @@ void InitExports(Local<Object> exports) {
   Local<Value> video = makeVideo(imageData);
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeVideo"), video);
 
-#if !defined(__ANDROID__)
+#if !defined(ANDROID)
   Local<Value> audio = makeAudio();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeAudio"), audio);
 
@@ -204,7 +204,7 @@ void InitExports(Local<Object> exports) {
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeMl"), ml);
 #endif
 
-#if !defined(__ANDROID__) || !defined(LUMIN)
+#if !defined(ANDROID) && !defined(LUMIN)
 #define NATIVE_ANALYTICS true
 #else
 #define NATIVE_ANALYTICS false
@@ -224,7 +224,7 @@ void Init(Local<Object> exports) {
 
 }
 
-#if !defined(ANDROID) || !defined(LUMIN)
+#if !defined(ANDROID) && !defined(LUMIN)
 NODE_MODULE(NODE_GYP_MODULE_NAME, exokit::Init)
 #else
 extern "C" {
