@@ -54,9 +54,9 @@ dependencies {
 }
 
 android {
-sourceSets{
+  sourceSets {
     main {
         assets.srcDirs = ['assets']
     }
-}
+  }
 }
