@@ -478,7 +478,6 @@ if (nativeBindings.nativeOculusVR) {
         nativeBindings.nativeWindow.setCurrentWindowContext(windowHandle);
 
         // fps = VR_FPS;
-
         const system = vrPresentState.system = vrPresentState.system || nativeBindings.nativeOculusVR.Oculus_Init();
         const lmContext = vrPresentState.lmContext || (nativeBindings.nativeLm && new nativeBindings.nativeLm());
 

@@ -86,19 +86,20 @@ NAN_MODULE_INIT(OVRSession::Init)
 }
 
 //=============================================================================
-Local<Object> OVRSession::NewInstance(ovrSession *session)
+Local<Object> OVRSession::NewInstance()
 {
   Nan::EscapableHandleScope scope;
   Local<Function> cons = Nan::New(constructor());
-  Local<Value> argv[1] = { Nan::New<External>(session) };
-  return scope.Escape(Nan::NewInstance(cons, 1, argv).ToLocalChecked());
+  return scope.Escape(Nan::NewInstance(cons).ToLocalChecked());
 }
 
 //=============================================================================
-OVRSession::OVRSession(ovrSession *self)
-: self_(self), frameIndex(0)
+OVRSession::OVRSession()
+: frameIndex(0), hmdMounted(false), self_(nullptr)
 {
-
+  SetupSession();
+  // this->hmdDesc = ovr_GetHmdDesc(*this->self_);
+  //SetupSwapChain();
 }
 
 //=============================================================================
@@ -110,15 +111,13 @@ NAN_METHOD(OVRSession::New)
     return;
   }
 
-  if (info.Length() != 1 || !info[0]->IsExternal())
+  if (info.Length() != 0)
   {
-    Nan::ThrowTypeError("Argument[0] must be an `ovrSession*`.");
+    Nan::ThrowTypeError("OVRSession takes no arguments");
     return;
   }
 
-  auto wrapped_instance = static_cast<ovrSession*>(
-    Local<External>::Cast(info[0])->Value());
-  OVRSession *obj = new OVRSession(wrapped_instance);
+  OVRSession *obj = new OVRSession();
   obj->Wrap(info.This());
   info.GetReturnValue().Set(info.This());
 }
@@ -482,6 +481,20 @@ NAN_METHOD(OVRSession::Submit)
     return;
   }
 
+  ovrSession session = *ObjectWrap::Unwrap<OVRSession>(info.Holder())->self_;
+  ovrSessionStatus sessionStatus;
+  ovrResult result = ovr_GetSessionStatus(session, &sessionStatus);
+
+  if (sessionStatus.HmdMounted) {
+    if (ObjectWrap::Unwrap<OVRSession>(info.Holder())->hmdMounted == false) {
+      ObjectWrap::Unwrap<OVRSession>(info.Holder())->ResetSession();
+      session = *ObjectWrap::Unwrap<OVRSession>(info.Holder())->self_;
+      ObjectWrap::Unwrap<OVRSession>(info.Holder())->hmdMounted = true;
+    }
+  } else {
+    ObjectWrap::Unwrap<OVRSession>(info.Holder())->hmdMounted = false;
+  }
+
   WebGLRenderingContext *gl = node::ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
   GLuint textureSource = info[1]->Uint32Value();
   GLuint fboIdSource = info[2]->Uint32Value();
@@ -491,8 +504,9 @@ NAN_METHOD(OVRSession::Submit)
   ovrPosef *eyeRenderPoses = &*ObjectWrap::Unwrap<OVRSession>(info.Holder())->eyeRenderPoses;
   int *frameIndex = &ObjectWrap::Unwrap<OVRSession>(info.Holder())->frameIndex;
   GLuint fboId = ObjectWrap::Unwrap<OVRSession>(info.Holder())->fboId;
-  ovrSession session = *ObjectWrap::Unwrap<OVRSession>(info.Holder())->self_;
+
   double sensorSampleTime = ObjectWrap::Unwrap<OVRSession>(info.Holder())->sensorSampleTime;
+
   EyeSwapChain *eyes = ObjectWrap::Unwrap<OVRSession>(info.Holder())->eyes;
   ovrHmdDesc hmdDesc = ObjectWrap::Unwrap<OVRSession>(info.Holder())->hmdDesc;
 
@@ -559,7 +573,6 @@ NAN_METHOD(OVRSession::Submit)
   }
 
   ovrLayerHeader* layers = &ld.Header;
-  ovrResult result = ovr_SubmitFrame(session, *frameIndex, nullptr, &layers, 1);
-
+  result = ovr_SubmitFrame(session, *frameIndex, nullptr, &layers, 1);
   *frameIndex += 1;
 }
