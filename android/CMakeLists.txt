@@ -30,7 +30,7 @@ add_library( exokit STATIC IMPORTED )
 set_target_properties( exokit PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../build/libexokit/libexokit.a )
 
 add_library( node STATIC IMPORTED )
-set_target_properties( node PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../node_modules/libnode.a/libnode.a )
+set_target_properties( node PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../node_modules/libnode.a-android/libnode.a )
 
 add_library( skia STATIC IMPORTED )
 set_target_properties( skia PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../node_modules/native-canvas-deps/lib2/android/libskia.a )
