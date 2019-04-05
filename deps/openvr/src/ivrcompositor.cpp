@@ -198,8 +198,6 @@ NAN_METHOD(IVRCompositor::WaitGetPoses)
 }
 
 void setPoseMatrix(float *dstMatrixArray, const vr::HmdMatrix34_t &srcMatrix) {
-  const vr::HmdMatrix34_t &matrix = trackedDevicePose.mDeviceToAbsoluteTracking;
-
   for (unsigned int v = 0; v < 4; v++) {
     for (unsigned int u = 0; u < 3; u++) {
       dstMatrixArray[v * 4 + u] = srcMatrix.m[u][v];
@@ -226,14 +224,12 @@ NAN_METHOD(IVRCompositor::RequestGetPoses) {
   float *leftControllerArray = hmdArray + 1*16;
   float *rightControllerArray = hmdArray + 2*16;
   float *trackerArraysStart = hmdArray + 3*16;
-  int numTrackers = 0;
-  const int maxNumTrackers = 8;
   VRPoseRes *vrPoseRes = new VRPoseRes(cbFn);
 
   {
     std::lock_guard<std::mutex> lock(vr::reqMutex);
 
-    vr::reqCbs.push_back([obj, system, hmdArray, leftControllerArray, rightControllerArray, vrPoseRes]() -> void {
+    vr::reqCbs.push_back([obj, system, hmdArray, leftControllerArray, rightControllerArray, trackerArraysStart, vrPoseRes]() -> void {
       TrackedDevicePoseArray trackedDevicePoseArray;
 	    obj->self_->WaitGetPoses(trackedDevicePoseArray.data(), static_cast<uint32_t>(trackedDevicePoseArray.size()), nullptr, 0);
 
@@ -241,6 +237,9 @@ NAN_METHOD(IVRCompositor::RequestGetPoses) {
       memcpy(hmdArray, identityMatrix, sizeof(identityMatrix));
       memcpy(leftControllerArray, identityMatrix, sizeof(identityMatrix));
       memcpy(rightControllerArray, identityMatrix, sizeof(identityMatrix));
+
+      unsigned int numTrackers = 0;
+      const unsigned int maxNumTrackers = 8;
 
       for (unsigned int i = 0; i < trackedDevicePoseArray.size(); i++) {
         const vr::TrackedDevicePose_t &trackedDevicePose = trackedDevicePoseArray[i];
@@ -266,6 +265,10 @@ NAN_METHOD(IVRCompositor::RequestGetPoses) {
             }
           }
         }
+      }
+      for (unsigned int i = numTrackers; i < maxNumTrackers; i++) {
+        float *trackerArray = trackerArraysStart + numTrackers*16;
+        trackerArray[0] = std::numeric_limits<float>::quiet_NaN();
       }
 
       {
