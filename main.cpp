@@ -186,30 +186,9 @@ void pumpStderr(int fd) {
 }
 
 void android_main(struct android_app *app) {
-  /* ovrJava java;
-  java.Vm = app->activity->vm;
-  (*java.Vm)->AttachCurrentThread( java.Vm, &java.Env, NULL );
-  java.ActivityObject = app->activity->clazz; */
-
   char cwdbuf[4096];
   char *cwd = getcwd(cwdbuf, sizeof(cwdbuf));
   __android_log_print(ANDROID_LOG_ERROR, "exokit", "main cwd 1 %s", cwd);
-
-  /* {
-    DIR *dir;
-    struct dirent *dp;
-    __android_log_print(ANDROID_LOG_ERROR, "exokit", "open dir 1");
-    dir = opendir("/");
-    __android_log_print(ANDROID_LOG_ERROR, "exokit", "open dir 2");
-    if (dir) {
-      __android_log_print(ANDROID_LOG_ERROR, "exokit", "cannot open dir %lx", (unsigned long)dir);
-      while ((dp = readdir(dir))) {
-        __android_log_print(ANDROID_LOG_ERROR, "exokit", "main readdir %s", dp->d_name);
-      }
-    } else {
-      __android_log_print(ANDROID_LOG_ERROR, "exokit", "cannot open dir");
-    }
-  } */
 
   int stdoutfds[2];
   int stderrfds[2];
@@ -236,13 +215,7 @@ void android_main(struct android_app *app) {
 
   jniOnload(app->activity->vm);
 
-  std::cout << "test log stdout" << std::endl;
-
-  /* {
-    JNIEnv *g_env;
-    // double check it's all ok
-    int getEnvStat = g_vm->GetEnv((void **)&g_env, JNI_VERSION_1_6);
-  } */
+  // std::cout << "test log stdout" << std::endl;
 
   // exout << "---------------------exokit start" << std::endl;
 
