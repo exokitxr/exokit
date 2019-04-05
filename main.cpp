@@ -1,47 +1,120 @@
 #include <unistd.h>
+// #include <stdio.h>
+// #include <fcntl.h>
+// #include <cstdlib>
+// #include <cstring>
+// #include <dlfcn.h>
+// #include <errno.h>
+#include <iostream>
 #include <string>
 #include <map>
 #include <thread>
-#include <v8.h>
-#include <ml_logging.h>
-#include <ml_lifecycle.h>
-#include <ml_privileges.h>
-#include <exout>
+// #include <v8.h>
+#include <dirent.h>
+#include <android/log.h>
+#include <jni.h>
+#include <android/asset_manager_jni.h>
+#include <android_native_app_glue.h>
+// #include <exout>
 
-using namespace v8;
+// using namespace v8;
 
 namespace node {
-  extern std::map<std::string, std::pair<void *, bool>> dlibs;
-  int Start(int argc, char* argv[]);
+    extern std::map<std::string, std::pair<void *, bool>> dlibs;
+    int Start(int argc, char* argv[]);
 }
 
-#include "build/libexokit/dlibs.h"
+extern "C" {
+void initAssetManager(AAssetManager *am);
+}
+
+JNIEnv *jniGetEnv(JavaVM *vm) {
+  JNIEnv *env;
+  if (vm == 0) {
+    __android_log_print(ANDROID_LOG_ERROR, "exokit", "Invalid global Java VM");
+    return 0;
+  }
+
+  int status;
+  status = vm->GetEnv((void **) &env, JNI_VERSION_1_6);
+  if (status < 0) {
+    __android_log_print(ANDROID_LOG_ERROR, "exokit",
+                        "Failed to get JNI environment, trying to attach thread");
+    // Try to attach native thread to JVM:
+    status = vm->AttachCurrentThread(&env, 0);
+    if (status < 0) {
+      __android_log_print(ANDROID_LOG_ERROR, "exokit", "Failed to attach current thread to JVM");
+      return 0;
+    }
+  }
+
+  return env;
+}
+jobject jniGetContext(JNIEnv *env) {
+
+  jclass activityThread = env->FindClass("android/app/ActivityThread");
+  jmethodID currentActivityThread = env->GetStaticMethodID(activityThread, "currentActivityThread",
+                                                           "()Landroid/app/ActivityThread;");
+  jobject at = env->CallStaticObjectMethod(activityThread, currentActivityThread);
+
+  jmethodID getApplication = env->GetMethodID(activityThread, "getApplication",
+                                              "()Landroid/app/Application;");
+  jobject context = env->CallObjectMethod(at, getApplication);
+  return context;
+}
+void jniOnload(JavaVM *vm) {
+  __android_log_print(ANDROID_LOG_INFO, "exokit", "on load 1");
+
+  // Uses Java VM and application context to obtain Java asset manager
+  // and then uses NDK AAssetManager_fromJava()
+  // Note: In Android emulator, this seems to only work in main thread!
+  JNIEnv *env = jniGetEnv(vm);
+  __android_log_print(ANDROID_LOG_ERROR, "exokit", "on load 2 %lx", (unsigned long) env);
+  jobject context = jniGetContext(env);
+  __android_log_print(ANDROID_LOG_ERROR, "exokit", "on load 3 %lx", (unsigned long) context);
+  jmethodID methodGetAssets =
+      env->GetMethodID(env->GetObjectClass(context),
+                       "getAssets",
+                       "()Landroid/content/res/AssetManager;");
+  if (methodGetAssets == 0) {
+    __android_log_print(ANDROID_LOG_ERROR, "exokit", "Could not get getAssets method");
+    return;
+  }
+  jobject localAssetManager =
+      env->CallObjectMethod(context,
+                            methodGetAssets);
+  if (localAssetManager == 0) {
+    __android_log_print(ANDROID_LOG_ERROR, "exokit", "Could not get local Java Asset Manager");
+    return;
+  }
+  jobject globalAssetManager = env->NewGlobalRef(localAssetManager);
+  if (globalAssetManager == 0) {
+    __android_log_print(ANDROID_LOG_ERROR, "exokit", "Could not get global Java Asset Manager");
+    return;
+  }
+
+  AAssetManager *am = AAssetManager_fromJava(env, globalAssetManager);
+  __android_log_print(ANDROID_LOG_INFO, "exokit", "Got Java Asset Manager %lx", (unsigned long) am);
+  initAssetManager(am);
+
+  /* vm->GetEnv((void**) &gJavaEnv, JNI_VERSION_1_6);
+  jclass cls_Activity = gJavaEnv->FindClass("com/unity3d/player/UnityPlayer");
+  jfieldID fid_Activity = gJavaEnv->GetStaticFieldID(cls_Activity, "currentActivity","Landroid/app/Activity;");
+  jobject obj_Activity = gJavaEnv->GetStaticObjectField(cls_Activity, fid_Activity);
+  AAssetManager*  assetManager = AAssetManager_fromJava(    gJavaEnv, obj_Activity ); */
+  // return JNI_VERSION_1_6;
+}
+
+// #include "build/libexokit/dlibs.h"
 
 const char *LOG_TAG = "exokit";
 constexpr ssize_t STDIO_BUF_SIZE = 64 * 1024;
-
-const MLPrivilegeID privileges[] = {
-  MLPrivilegeID_LowLatencyLightwear,
-  MLPrivilegeID_WorldReconstruction,
-  MLPrivilegeID_Occlusion,
-  MLPrivilegeID_ControllerPose,
-  MLPrivilegeID_CameraCapture,
-  MLPrivilegeID_AudioCaptureMic,
-  MLPrivilegeID_VoiceInput,
-  MLPrivilegeID_AudioRecognizer,
-  MLPrivilegeID_Internet,
-  MLPrivilegeID_LocalAreaNetwork,
-  MLPrivilegeID_BackgroundDownload,
-  MLPrivilegeID_BackgroundUpload,
-  MLPrivilegeID_PwFoundObjRead,
-  MLPrivilegeID_NormalNotificationsUsage,
-};
 
 void pumpStdout(int fd) {
   char buf[STDIO_BUF_SIZE + 1];
   ssize_t i = 0;
   ssize_t lineStart = 0;
-  
+
   for (;;) {
     ssize_t size = read(fd, buf + i, sizeof(buf) - i);
 
@@ -49,7 +122,8 @@ void pumpStdout(int fd) {
       for (ssize_t j = i; j < i + size; j++) {
         if (buf[j] == '\n') {
           buf[j] = 0;
-          ML_LOG_TAG(Info, LOG_TAG, "%s", buf + lineStart);
+          // ML_LOG_TAG(Info, LOG_TAG, "%s", buf + lineStart);
+          __android_log_print(ANDROID_LOG_INFO, "exokit", "%s", buf + lineStart);
 
           lineStart = j + 1;
         }
@@ -66,7 +140,8 @@ void pumpStdout(int fd) {
     } else {
       if (i > 0) {
         buf[i] = 0;
-        ML_LOG_TAG(Info, LOG_TAG, "%s", buf);
+        // ML_LOG_TAG(Info, LOG_TAG, "%s", buf);
+        __android_log_print(ANDROID_LOG_INFO, "exokit", "%s", buf);
       }
       break;
     }
@@ -76,7 +151,7 @@ void pumpStderr(int fd) {
   char buf[STDIO_BUF_SIZE + 1];
   ssize_t i = 0;
   ssize_t lineStart = 0;
-  
+
   for (;;) {
     ssize_t size = read(fd, buf + i, sizeof(buf) - i);
 
@@ -84,7 +159,8 @@ void pumpStderr(int fd) {
       for (ssize_t j = i; j < i + size; j++) {
         if (buf[j] == '\n') {
           buf[j] = 0;
-          ML_LOG_TAG(Error, LOG_TAG, "%s", buf + lineStart);
+          // ML_LOG_TAG(Error, LOG_TAG, "%s", buf + lineStart);
+          __android_log_print(ANDROID_LOG_ERROR, "exokit", "%s", buf + lineStart);
 
           lineStart = j + 1;
         }
@@ -101,32 +177,52 @@ void pumpStderr(int fd) {
     } else {
       if (i > 0) {
         buf[i] = 0;
-        ML_LOG_TAG(Error, LOG_TAG, "%s", buf);
+        __android_log_print(ANDROID_LOG_ERROR, "exokit", "%s", buf);
+        // ML_LOG_TAG(Error, LOG_TAG, "%s", buf);
       }
       break;
     }
   }
 }
 
-int main(int argc, char **argv) {
-  if (argc > 1) {
-    return node::Start(argc, argv);
-  }
+void android_main(struct android_app *app) {
+  /* ovrJava java;
+  java.Vm = app->activity->vm;
+  (*java.Vm)->AttachCurrentThread( java.Vm, &java.Env, NULL );
+  java.ActivityObject = app->activity->clazz; */
 
-  registerDlibs(node::dlibs);
-  
+  char cwdbuf[4096];
+  char *cwd = getcwd(cwdbuf, sizeof(cwdbuf));
+  __android_log_print(ANDROID_LOG_ERROR, "exokit", "main cwd 1 %s", cwd);
+
+  /* {
+    DIR *dir;
+    struct dirent *dp;
+    __android_log_print(ANDROID_LOG_ERROR, "exokit", "open dir 1");
+    dir = opendir("/");
+    __android_log_print(ANDROID_LOG_ERROR, "exokit", "open dir 2");
+    if (dir) {
+      __android_log_print(ANDROID_LOG_ERROR, "exokit", "cannot open dir %lx", (unsigned long)dir);
+      while ((dp = readdir(dir))) {
+        __android_log_print(ANDROID_LOG_ERROR, "exokit", "main readdir %s", dp->d_name);
+      }
+    } else {
+      __android_log_print(ANDROID_LOG_ERROR, "exokit", "cannot open dir");
+    }
+  } */
+
   int stdoutfds[2];
   int stderrfds[2];
   pipe(stdoutfds);
   pipe(stderrfds);
 
   // if (stdoutfds[1] != 1) {
-    close(1);
-    dup2(stdoutfds[1], 1);
+  close(1);
+  dup2(stdoutfds[1], 1);
   // }
   // if (stderrfds[1] != 2) {
-    close(2);
-    dup2(stderrfds[1], 2);
+  close(2);
+  dup2(stderrfds[1], 2);
   // }
 
   // read stdout/stderr in threads
@@ -135,106 +231,73 @@ int main(int argc, char **argv) {
   int stderrReadFd = stderrfds[0];
   std::thread stderrReaderThread([stderrReadFd]() -> void { pumpStderr(stderrReadFd); });
 
-  {
-    MLResult result = MLPrivilegesStartup();
-    if (result != MLResult_Ok) {
-      exout << "failed to start privilege system " << result << std::endl;
-    }
-    const size_t numPrivileges = sizeof(privileges) / sizeof(privileges[0]);
-    for (size_t i = 0; i < numPrivileges; i++) {
-      const MLPrivilegeID &privilege = privileges[i];
-      MLResult result = MLPrivilegesCheckPrivilege(privilege);
-      if (result != MLPrivilegesResult_Granted) {
-        const char *s = MLPrivilegesGetResultString(result);
-        exout << "did not have privilege " << privilege << " " << result << " " << s << std::endl;
+  __android_log_print(ANDROID_LOG_ERROR, "exokit", "main cwd 1.1 %lx", (unsigned long)app->activity);
+  __android_log_print(ANDROID_LOG_ERROR, "exokit", "main cwd 2.1 %lx", (unsigned long)app->activity->vm);
 
-        MLResult result = MLPrivilegesRequestPrivilege(privilege);
-        if (result != MLPrivilegesResult_Granted) {
-          const char *s = MLPrivilegesGetResultString(result);
-          exout << "failed to get privilege " << privilege << " " << result << " " << s << std::endl;
-        }
-      }
-    }
+  jniOnload(app->activity->vm);
+
+  std::cout << "test log stdout" << std::endl;
+
+  /* {
+    JNIEnv *g_env;
+    // double check it's all ok
+    int getEnvStat = g_vm->GetEnv((void **)&g_env, JNI_VERSION_1_6);
+  } */
+
+  // exout << "---------------------exokit start" << std::endl;
+
+  /* std::atexit([]() -> void {
+    // exout << "---------------------exokit end" << std::endl;
+  }); */
+
+  __android_log_print(ANDROID_LOG_ERROR, "exokit", "main 3");
+
+  const char *nodeString = "node";
+  const char *experimentalWorkerString = "--experimental-worker";
+  // const char *dotString = ".";
+  // const char *jsString = "/app/index.html";
+  const char *eString = "-e";
+  const char *consoleString = "const fs = require('fs'); console.log('run 1'); const l = []; fs.readdirSync('/package'); console.log('run 2'); console.log('run 3', l); ";
+  char argsString[4096];
+  int i = 0;
+
+  char *nodeArg = argsString + i;
+  strncpy(nodeArg, nodeString, sizeof(argsString) - i);
+  i += strlen(nodeString) + 1;
+
+  char *experimentalWorkerArg = argsString + i;
+  strncpy(experimentalWorkerArg, experimentalWorkerString, sizeof(argsString) - i);
+  i += strlen(experimentalWorkerString) + 1;
+
+  /* char *dotArg = argsString + i;
+  strncpy(dotArg, dotString, sizeof(argsString) - i);
+  i += strlen(dotString) + 1;
+  char *jsArg = argsString + i;
+  strncpy(jsArg, jsString, sizeof(argsString) - i);
+  i += strlen(jsString) + 1; */
+
+  char *eArg = argsString + i;
+  strncpy(eArg, eString, sizeof(argsString) - i);
+  i += strlen(eString) + 1;
+  char *consoleArg = argsString + i;
+  strncpy(consoleArg, consoleString, sizeof(argsString) - i);
+  i += strlen(consoleString) + 1;
+
+  char *argv[] = {nodeArg, experimentalWorkerArg, /*dotArg, jsArg,*/ eArg, consoleArg};
+  size_t argc = sizeof(argv) / sizeof(argv[0]);
+
+  for (int i = 0; i < argc; i++) {
+    __android_log_print(ANDROID_LOG_ERROR, "exokit", "arg %d %s", i, argv[i]);
   }
 
-  exout << "---------------------exokit start" << std::endl;
+  // sleep(2);
 
-  std::atexit([]() -> void {
-    exout << "---------------------exokit end" << std::endl;
-  });
+  int result = node::Start(argc, argv);
 
-  int result;
-  const char *argsEnv = getenv("ARGS");
-  if (argsEnv) {
-    char args[4096];
-    strncpy(args, argsEnv, sizeof(args));
+  __android_log_print(ANDROID_LOG_ERROR, "exokit", "exit %d", result);
 
-    char *argv[64];
-    size_t argc = 0;
-
-    int argStartIndex = 0;
-    for (int i = 0;; i++) {
-      const char c = args[i];
-      if (c == ' ') {
-        args[i] = '\0';
-        argv[argc] = args + argStartIndex;
-        argc++;
-        argStartIndex = i + 1;
-        continue;
-      } else if (c == '\0') {
-        argv[argc] = args + argStartIndex;
-        argc++;
-        break;
-      } else {
-        continue;
-      }
-    }
-    
-    for (int i = 0; i < argc; i++) {
-      exout << "get arg " << i << ": " << argv[i] << std::endl;
-    }
-
-    result = node::Start(argc, argv);
-  } else {
-    const char *jsString;
-    if (access("/package/app/index.html", F_OK) != -1) {
-      jsString = "/package/app/index.html";
-    } else {
-      jsString = "examples/realitytabs.html";
-    }
-
-    const char *nodeString = "node";
-    const char *experimentalWorkerString = "--experimental-worker";
-    const char *dotString = ".";
-    char argsString[4096];
-    int i = 0;
-
-    char *nodeArg = argsString + i;
-    strncpy(nodeArg, nodeString, sizeof(argsString) - i);
-    i += strlen(nodeString) + 1;
-
-    char *experimentalWorkerArg = argsString + i;
-    strncpy(experimentalWorkerArg, experimentalWorkerString, sizeof(argsString) - i);
-    i += strlen(experimentalWorkerString) + 1;
-
-    char *dotArg = argsString + i;
-    strncpy(dotArg, dotString, sizeof(argsString) - i);
-    i += strlen(dotString) + 1;
-
-    char *jsArg = argsString + i;
-    strncpy(jsArg, jsString, sizeof(argsString) - i);
-    i += strlen(jsString) + 1;
-
-    char *argv[] = {nodeArg, experimentalWorkerArg, dotArg, jsArg};
-    size_t argc = sizeof(argv) / sizeof(argv[0]);
-
-    node::Start(argc, argv);
-  }
-  
   close(1);
   close(2);
   stdoutReaderThread.join();
   stderrReaderThread.join();
-  
-  return result;
 }
