@@ -44,7 +44,6 @@
   "homepage": "https://github.com/exokitxr/exokit#readme",
   "dependencies": {
     "@rgrove/parse-xml": "^1.1.1",
-    "android-toolchain": "github:ngokevin/android-toolchain",
     "bugsnag": "^2.4.3",
     "cross-env": "^5.2.0",
     "css": "^2.2.4",
@@ -72,7 +71,6 @@
     "native-oculus-deps": "0.0.2",
     "native-openvr-deps": "0.0.18",
     "native-video-deps": "github:ngokevin/node-native-video-deps#android",
-    "native-webrtc-deps": "github:ngokevin/node-native-webrtc-deps#android2",
     "node-ipc": "^9.1.1",
     "node-localstorage": "^1.3.1",
     "parse-int": "^1.0.2",
