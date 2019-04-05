@@ -67,22 +67,38 @@ find.file(dirname, async files => {
 
   // console.warn('got assets', JSON.stringify(assetStats, null, 2));
 
-  console.log('AssetStat *assetStats;');
+  /* console.log('AssetStat *assetStats;');
   console.log('size_t numAssetStats;');
   console.log('void initAssetStats() {');
-  console.log(`  assetStats = (AssetStat *)malloc(sizeof(AssetStat) * ${assetStats.length});`);
-  console.log(`  numAssetStats = ${assetStats.length};`);
-  // console.log(` printf("initialize asset stats %d", numAssetStats); fflush(stdout);`);
+  // console.log(`  assetStats = (AssetStat *)malloc(sizeof(AssetStat) * ${assetStats.length});`);
+  // console.log(`  printf("initialize asset stats %d", numAssetStats); fflush(stdout);`);
+  // console.log(`  assetStats = (const AssetStat *)"`); */
   for (let i = 0; i < assetStats.length; i++) {
     const assetStat = assetStats[i];
-    console.log(`  { // ${assetStat.path}`);
+
+    const buffer = new Uint8Array(256+2+2+4);
+    buffer.set(new TextEncoder().encode(assetStat.name.padEnd(256, '\0')));
+    const dataView = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+    dataView.setUint32(256, assetStat.key);
+    dataView.setUint32(256+2, assetStat.parentKey);
+    dataView.setUint32(256+2+2, assetStat.size);
+
+    const b = Buffer.from(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+    // console.log('write', b.length, b.toString('utf8'));
+    // console.log('write 1', b.length);
+    // console.log('write 2', b.toString('utf8'));
+    // process.stdout.write(b);
+    process.stdout.write(b);
+
+    /* console.log(`  { // ${assetStat.path}`);
     console.log(`    AssetStat *as = &assetStats[${i}];`);
     console.log(`    as->name = "${assetStat.name}";`);
     console.log(`    as->key = 0x${assetStat.key.toString(16)};`);
     console.log(`    as->parentKey = 0x${assetStat.parentKey.toString(16)};`);
     console.log(`    as->size = ${assetStat.size};`);
     console.log(`  }`);
-    // console.log(`  AssetStat("${assetStat.name}", 0x${assetStat.key.toString(16)}, 0x${assetStat.parentKey.toString(16)}, ${assetStat.size}), // ${assetStat.path}`);
+    // console.log(`  AssetStat("${assetStat.name}", 0x${assetStat.key.toString(16)}, 0x${assetStat.parentKey.toString(16)}, ${assetStat.size}), // ${assetStat.path}`); */
   }
-  console.log('};\n');
+  /* console.log(`  numAssetStats = ${assetStats.length};`);
+  console.log('};\n'); */
 });

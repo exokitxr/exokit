@@ -25,15 +25,15 @@ namespace node {
 }
 
 typedef struct AssetStatStruct {
-  const char *name;
+  char name[256];
   uint32_t key;
   uint32_t parentKey;
   size_t size;
 } AssetStat;
-#include "assets.h"
+// #include "assets.h"
 
 extern "C" {
-void initAssetManager(AAssetManager *am, AssetStat *as, size_t nas);
+void initAssetManager(AAssetManager *am);
 }
 
 JNIEnv *jniGetEnv(JavaVM *vm) {
@@ -103,7 +103,7 @@ void jniOnload(JavaVM *vm) {
 
   AAssetManager *am = AAssetManager_fromJava(env, globalAssetManager);
   __android_log_print(ANDROID_LOG_INFO, "exokit", "Got Java Asset Manager %lx", (unsigned long) am);
-  initAssetManager(am, assetStats, numAssetStats);
+  initAssetManager(am);
 
   /* vm->GetEnv((void**) &gJavaEnv, JNI_VERSION_1_6);
   jclass cls_Activity = gJavaEnv->FindClass("com/unity3d/player/UnityPlayer");
@@ -221,7 +221,7 @@ void android_main(struct android_app *app) {
   __android_log_print(ANDROID_LOG_ERROR, "exokit", "main cwd 1 %lx", (unsigned long)app->activity);
   __android_log_print(ANDROID_LOG_ERROR, "exokit", "main cwd 2 %lx", (unsigned long)app->activity->vm);
 
-  initAssetStats();
+  // initAssetStats();
   
   __android_log_print(ANDROID_LOG_ERROR, "exokit", "main cwd 3 %lx", (unsigned long)app);
 

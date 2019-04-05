@@ -18,10 +18,9 @@ rsync -a --copy-links lib/ ./android/app/assets/lib
 rsync -a --copy-links examples/ ./android/app/assets/examples
 rsync -a --copy-links node_modules/ ./android/app/assets/node_modules
 
-mkdir -p build/libexokit
-
+# mkdir -p build/libexokit
 pushd scripts
-./gen-assets-h.js $(pwd)/.. >../build/libexokit/assets.h
+./gen-assets-h.js $(pwd)/.. >../android/app/assets/index.bin
 popd
 
 pushd android
