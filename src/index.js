@@ -328,10 +328,19 @@ nativeBindings.nativeCanvasRenderingContext2D.onconstruct = (ctx, canvas) => {
 };
 
 const zeroMatrix = new THREE.Matrix4();
-const localFloat32Array = zeroMatrix.toArray(new Float32Array(16));
-const localFloat32Array2 = zeroMatrix.toArray(new Float32Array(16));
-const localFloat32Array3 = zeroMatrix.toArray(new Float32Array(16));
-const localFloat32Array4 = new Float32Array(16);
+const maxNumTrackers = 8;
+const localFloat32PoseArray = zeroMatrix.toArray(new Float32Array(16*(1+2+maxNumTrackers)));
+const localFloat32HmdPoseArray = localFloat32PoseArray.slice(0*16, 1*16);
+const localFloat32LeftGamepadPoseArray = localFloat32PoseArray.slice(1*16, 2*16);
+const localFloat32RightGamepadPoseArray = localFloat32PoseArray.slice(2*16, 3*16);
+const localFloat32TrackerPoseArrays = (() => {
+  const result = Array(maxNumTrackers);
+  for (let i = 0; i < maxNumTrackers; i++) {
+    result[i] = localFloat32PoseArray.slice((i+3)*16, (i+4)*16);
+  }
+  return result;
+})();
+const localFloat32MatrixArray = new Float32Array(16);
 const localFovArray = new Float32Array(4);
 const localGamepadArray = new Float32Array(24);
 
@@ -357,11 +366,6 @@ const localVector2 = new THREE.Vector3();
 const localQuaternion = new THREE.Quaternion();
 const localMatrix = new THREE.Matrix4();
 const localMatrix2 = new THREE.Matrix4();
-const _normalizeMatrixArray = float32Array => {
-  if (isNaN(float32Array[0])) {
-    zeroMatrix.toArray(float32Array);
-  }
-};
 
 const vrPresentState = {
   vrContext: null,
@@ -1404,20 +1408,17 @@ const _startRenderLoop = () => {
         }
 
       } else if (vrPresentState.compositor) {
-
         _normalizeMatrixArray(localFloat32Array);
         _normalizeMatrixArray(localFloat32Array2);
         _normalizeMatrixArray(localFloat32Array3);
 
         // wait for frame
         await new Promise((accept, reject) => {
-            vrPresentState.compositor.RequestGetPoses(
-              vrPresentState.system,
-              localFloat32Array, // hmd
-              localFloat32Array2, // left controller
-              localFloat32Array3, // right controller
-              accept
-            );
+          vrPresentState.compositor.RequestGetPoses(
+            vrPresentState.system,
+            localFloat32PoseArray, // hmd, controllers, trackers
+            accept
+          );
         });
         if (!immediate) {
           return;
@@ -1430,7 +1431,7 @@ const _startRenderLoop = () => {
         _normalizeMatrixArray(localFloat32Array3);
 
         // build xr state
-        const hmdMatrix = localMatrix.fromArray(localFloat32Array);
+        const hmdMatrix = localMatrix.fromArray(localFloat32HmdPoseArray);
 
         hmdMatrix.decompose(localVector, localQuaternion, localVector2);
         localVector.toArray(xrState.position);
@@ -1438,8 +1439,8 @@ const _startRenderLoop = () => {
 
         hmdMatrix.getInverse(hmdMatrix);
 
-        vrPresentState.system.GetEyeToHeadTransform(0, localFloat32Array4);
-        localMatrix2.fromArray(localFloat32Array4);
+        vrPresentState.system.GetEyeToHeadTransform(0, localFloat32MatrixArray);
+        localMatrix2.fromArray(localFloat32MatrixArray);
         localMatrix2.decompose(localVector, localQuaternion, localVector2);
         localVector.toArray(xrState.leftOffset);
         localMatrix2
@@ -1447,18 +1448,16 @@ const _startRenderLoop = () => {
           .multiply(hmdMatrix);
         localMatrix2.toArray(xrState.leftViewMatrix);
 
-        vrPresentState.system.GetProjectionMatrix(0, xrState.depthNear[0], xrState.depthFar[0], localFloat32Array4);
-        _normalizeMatrixArray(localFloat32Array4);
-        xrState.leftProjectionMatrix.set(localFloat32Array4);
+        vrPresentState.system.GetProjectionMatrix(0, xrState.depthNear[0], xrState.depthFar[0], localFloat32MatrixArray);
+        xrState.leftProjectionMatrix.set(localFloat32MatrixArray);
 
         vrPresentState.system.GetProjectionRaw(0, localFovArray);
         for (let i = 0; i < localFovArray.length; i++) {
           xrState.leftFov[i] = Math.atan(localFovArray[i]) / Math.PI * 180;
         }
 
-        vrPresentState.system.GetEyeToHeadTransform(1, localFloat32Array4);
-        _normalizeMatrixArray(localFloat32Array4);
-        localMatrix2.fromArray(localFloat32Array4);
+        vrPresentState.system.GetEyeToHeadTransform(1, localFloat32MatrixArray);
+        localMatrix2.fromArray(localFloat32MatrixArray);
         localMatrix2.decompose(localVector, localQuaternion, localVector2);
         localVector.toArray(xrState.rightOffset);
         localMatrix2
@@ -1466,9 +1465,8 @@ const _startRenderLoop = () => {
           .multiply(hmdMatrix);
         localMatrix2.toArray(xrState.rightViewMatrix);
 
-        vrPresentState.system.GetProjectionMatrix(1, xrState.depthNear[0], xrState.depthFar[0], localFloat32Array4);
-        _normalizeMatrixArray(localFloat32Array4);
-        xrState.rightProjectionMatrix.set(localFloat32Array4);
+        vrPresentState.system.GetProjectionMatrix(1, xrState.depthNear[0], xrState.depthFar[0], localFloat32MatrixArray);
+        xrState.rightProjectionMatrix.set(localFloat32MatrixArray);
 
         vrPresentState.system.GetProjectionRaw(1, localFovArray);
         for (let i = 0; i < localFovArray.length; i++) {
@@ -1476,9 +1474,8 @@ const _startRenderLoop = () => {
         }
 
         // build stage parameters
-        // vrPresentState.system.GetSeatedZeroPoseToStandingAbsoluteTrackingPose(localFloat32Array4);
-        // _normalizeMatrixArray(localFloat32Array4);
-        // stageParameters.sittingToStandingTransform.set(localFloat32Array4);
+        // vrPresentState.system.GetSeatedZeroPoseToStandingAbsoluteTrackingPose(localFloat32MatrixArray);
+        // stageParameters.sittingToStandingTransform.set(localFloat32MatrixArray);
 
         // build gamepads data
         {
@@ -1487,7 +1484,7 @@ const _startRenderLoop = () => {
           if (!isNaN(localGamepadArray[0])) {
             leftGamepad.connected[0] = true;
 
-            localMatrix.fromArray(localFloat32Array2);
+            localMatrix.fromArray(localFloat32LeftGamepadPoseArray);
             localMatrix.decompose(localVector, localQuaternion, localVector2);
             localVector.toArray(leftGamepad.position);
             localQuaternion.toArray(leftGamepad.orientation);
@@ -1518,8 +1515,8 @@ const _startRenderLoop = () => {
           vrPresentState.system.GetControllerState(1, localGamepadArray);
           if (!isNaN(localGamepadArray[0])) {
             rightGamepad.connected[0] = 1;
-
-            localMatrix.fromArray(localFloat32Array3);
+            
+            localMatrix.fromArray(localFloat32RightGamepadPoseArray);
             localMatrix.decompose(localVector, localQuaternion, localVector2);
             localVector.toArray(rightGamepad.position);
             localQuaternion.toArray(rightGamepad.orientation);
