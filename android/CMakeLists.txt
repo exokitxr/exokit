@@ -55,8 +55,8 @@ set_target_properties( opus PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../
 include_directories( SYSTEM ${CMAKE_SOURCE_DIR}/../node_modules/nan )
 include_directories( SYSTEM ${CMAKE_SOURCE_DIR}/../deps/exokit-bindings/util/include )
 include_directories( SYSTEM ${CMAKE_SOURCE_DIR}/../.node-gyp/11.6.0/include/node )
+include_directories( SYSTEM ${CMAKE_SOURCE_DIR}/../build/libexokit )
 include_directories( SYSTEM ${ANDROID_NDK}/sources/android/native_app_glue )
-
 
 # add lib dependencies
 target_link_libraries(native-main
