@@ -34,6 +34,7 @@ new Promise((accept, reject) => {
             new Promise((accept, reject) => {
               murmurhash3.murmur32(parentFile, (err, hashValue) => {
                 if (!err) {
+                  // console.log('parent file hash', JSON.stringify({parentFile, hashValue}));
                   accept(hashValue);
                 } else {
                   reject(err);
@@ -69,17 +70,17 @@ new Promise((accept, reject) => {
   console.log('AssetStat *assetStats;');
   console.log('size_t numAssetStats;');
   console.log('void initAssetStats() {');
-  console.log(` assetStats = (AssetStat *)malloc(sizeof(AssetStat) * ${assetStats.length});`);
-  console.log(` numAssetStats = ${assetStats.length};`);
+  console.log(`  assetStats = (AssetStat *)malloc(sizeof(AssetStat) * ${assetStats.length});`);
+  console.log(`  numAssetStats = ${assetStats.length};`);
   // console.log(` printf("initialize asset stats %d", numAssetStats); fflush(stdout);`);
   for (let i = 0; i < assetStats.length; i++) {
     const assetStat = assetStats[i];
     console.log(`  { // ${assetStat.path}`);
-    console.log(`    AssetStat *assetStat = &assetStats[${i}];`);
-    console.log(`    assetStat->name = "${assetStat.name}";`);
-    console.log(`    assetStat->key = 0x${assetStat.key.toString(16)};`);
-    console.log(`    assetStat->parentKey = 0x${assetStat.parentKey.toString(16)};`);
-    console.log(`    assetStat->size = ${assetStat.size};`);
+    console.log(`    AssetStat *as = &assetStats[${i}];`);
+    console.log(`    as->name = "${assetStat.name}";`);
+    console.log(`    as->key = 0x${assetStat.key.toString(16)};`);
+    console.log(`    as->parentKey = 0x${assetStat.parentKey.toString(16)};`);
+    console.log(`    as->size = ${assetStat.size};`);
     console.log(`  }`);
     // console.log(`  AssetStat("${assetStat.name}", 0x${assetStat.key.toString(16)}, 0x${assetStat.parentKey.toString(16)}, ${assetStat.size}), // ${assetStat.path}`);
   }
