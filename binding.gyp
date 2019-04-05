@@ -648,7 +648,6 @@
           ],
           'defines': [
             'ANDROID',
-            '__ANDROID__',
             'NOMINMAX',
             'WRAPPING_CEF_SHARED',
             'WEBRTC_POSIX',

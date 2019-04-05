@@ -77,7 +77,7 @@ Local<Object> makeVideo(Local<Value> imageDataCons) {
   return scope.Escape(exports);
 }
 
-#if !defined(__ANDROID__)
+#if !defined(ANDROID)
 Local<Object> makeAudio() {
   Isolate *isolate = Isolate::GetCurrent();
 
