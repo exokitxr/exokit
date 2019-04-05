@@ -20,7 +20,7 @@ rsync -a --copy-links node_modules/ ./android/app/assets/node_modules
 
 # mkdir -p build/libexokit
 pushd scripts
-./gen-assets-h.js $(pwd)/.. >../android/app/assets/index.bin
+./gen-assets-h.js $(pwd)/.. >../android/app/assets/index.bin 2>../android/app/assets/index.txt
 popd
 
 pushd android
