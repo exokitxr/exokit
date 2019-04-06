@@ -95,7 +95,7 @@ Local<Object> OVRSession::NewInstance()
 
 //=============================================================================
 OVRSession::OVRSession()
-: frameIndex(0), hmdMounted(false), session(nullptr)
+: frameIndex(0), session(nullptr)
 {
   SetupSession();
   this->hmdDesc = ovr_GetHmdDesc(*this->session);
@@ -411,16 +411,12 @@ NAN_METHOD(OVRSession::Submit)
 
   ovrSession session = *ObjectWrap::Unwrap<OVRSession>(info.Holder())->session;
   ovrSessionStatus sessionStatus;
-  ovrResult result = ovr_GetSessionStatus(session, &sessionStatus);
+  ovrResult result;
+  ovr_GetSessionStatus(session, &sessionStatus);
 
   if (sessionStatus.HmdMounted) {
-    if (ObjectWrap::Unwrap<OVRSession>(info.Holder())->hmdMounted == false) {
-      ObjectWrap::Unwrap<OVRSession>(info.Holder())->ResetSession();
-      session = *ObjectWrap::Unwrap<OVRSession>(info.Holder())->session;
-      ObjectWrap::Unwrap<OVRSession>(info.Holder())->hmdMounted = true;
-    }
-  } else {
-    ObjectWrap::Unwrap<OVRSession>(info.Holder())->hmdMounted = false;
+    ObjectWrap::Unwrap<OVRSession>(info.Holder())->ResetSession();
+    session = *ObjectWrap::Unwrap<OVRSession>(info.Holder())->session;
   }
 
   WebGLRenderingContext *gl = node::ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
