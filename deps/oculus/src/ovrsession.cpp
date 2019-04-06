@@ -129,72 +129,8 @@ NAN_METHOD(OVRSession::SetupSwapChain)
   // Configure Stereo settings.
   ovrHmdDesc *hmdDesc = &ObjectWrap::Unwrap<OVRSession>(info.Holder())->hmdDesc;
   *hmdDesc = ovr_GetHmdDesc(session);
-  GLuint *fboId = &ObjectWrap::Unwrap<OVRSession>(info.Holder())->fboId;
-  EyeSwapChain *eyes = &*ObjectWrap::Unwrap<OVRSession>(info.Holder())->eyes;
-  ovrSizei recommenedTex0Size = ovr_GetFovTextureSize(session, ovrEye_Left, hmdDesc->DefaultEyeFov[ovrEye_Left], 1);
-  ovrSizei recommenedTex1Size = ovr_GetFovTextureSize(session, ovrEye_Right, hmdDesc->DefaultEyeFov[ovrEye_Right], 1);
-  ovrSizei bufferSize;
+  ObjectWrap::Unwrap<OVRSession>(info.Holder())->SetupSessionSwapChain();
 
-  eyes[0].textureSize.w = recommenedTex0Size.w;
-  eyes[0].textureSize.h = recommenedTex0Size.h;
-  eyes[1].textureSize.w = recommenedTex1Size.w;
-  eyes[1].textureSize.h = recommenedTex1Size.h;
-
-  bufferSize.w  = recommenedTex0Size.w;
-  bufferSize.h = std::max(recommenedTex0Size.h, recommenedTex1Size.h);
-
-  // Make eye render buffers
-  for (int eye = 0; eye < 2; ++eye) {
-    ovrTextureSwapChainDesc desc = {};
-    desc.Type = ovrTexture_2D;
-    desc.ArraySize = 1;
-    desc.Format = OVR_FORMAT_R8G8B8A8_UNORM_SRGB;
-    desc.Width = bufferSize.w;
-    desc.Height = bufferSize.h;
-    desc.MipLevels = 1;
-    desc.SampleCount = 1;
-    desc.StaticImage = ovrFalse;
-
-    result = ovr_CreateTextureSwapChainGL(session, &desc, &eyes[eye].ColorTextureChain);
-    int length = 0;
-    ovr_GetTextureSwapChainLength(session, eyes[eye].ColorTextureChain, &length);
-
-    if (!OVR_SUCCESS(result)) {
-      std::cout << "Error creating Oculus GL Swap Chain" << std::endl;
-    } else {
-      for (int i = 0; i < length; ++i) {
-        GLuint textureId;
-        ovr_GetTextureSwapChainBufferGL(session, eyes[eye].ColorTextureChain, i, &textureId);
-        glBindTexture(GL_TEXTURE_2D, textureId);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-      }
-    }
-
-    desc.Format = OVR_FORMAT_D32_FLOAT;
-
-    result = ovr_CreateTextureSwapChainGL(session, &desc, &eyes[eye].DepthTextureChain);
-    ovr_GetTextureSwapChainLength(session, eyes[eye].DepthTextureChain, &length);
-
-    if (!OVR_SUCCESS(result)) {
-    } else {
-      for (int i = 0; i < length; ++i) {
-        GLuint textureId;
-        ovr_GetTextureSwapChainBufferGL(session, eyes[eye].DepthTextureChain, i, &textureId);
-        glBindTexture(GL_TEXTURE_2D, textureId);
-
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-      }
-    }
-
-    glGenFramebuffers(1, fboId);
-
-  }
 }
 
 NAN_METHOD(OVRSession::GetRecommendedRenderTargetSize)
