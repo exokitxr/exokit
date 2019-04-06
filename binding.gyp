@@ -626,9 +626,9 @@
             "<!(echo $TOOLCHAIN_LIB)",
             "<!(echo $TOOLCHAIN_LIB_64)",
             "<!(echo $TOOLCHAIN_LIB_CXX)",
-            "<(module_root_dir)/node_modules/native-canvas-deps/lib2/android",
+            "<(module_root_dir)/node_modules/native-canvas-deps/lib2/magicleap",
             "<(module_root_dir)/node_modules/native-audio-deps/lib2/magicleap",
-            "<(module_root_dir)/node_modules/native-video-deps/lib2/android",
+            "<(module_root_dir)/node_modules/native-video-deps/lib2/magicleap",
             "<(module_root_dir)/node_modules/native-webrtc-deps/lib/android",
           ],
           'libraries': [
