@@ -22,7 +22,7 @@ const replHistory = require('repl.history');
 const minimist = require('minimist');
 
 const {version} = require('../package.json');
-const {defaultEyeSeparation} = require('./constants.js');
+const {defaultEyeSeparation, maxNumTrackers} = require('./constants.js');
 const symbols = require('./symbols');
 const {THREE} = core;
 
@@ -328,7 +328,6 @@ nativeBindings.nativeCanvasRenderingContext2D.onconstruct = (ctx, canvas) => {
 };
 
 const zeroMatrix = new THREE.Matrix4();
-const maxNumTrackers = 8;
 const localFloat32PoseArray = zeroMatrix.toArray(new Float32Array(16*(1+2+maxNumTrackers)));
 const localFloat32HmdPoseArray = localFloat32PoseArray.slice(0*16, 1*16);
 const localFloat32GamepadPoseArrays = [

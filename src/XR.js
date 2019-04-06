@@ -4,6 +4,7 @@ const {defaultCanvasSize} = require('./constants');
 const GlobalContext = require('./GlobalContext');
 const THREE = require('../lib/three-min.js');
 const symbols = require('./symbols');
+const {maxNumTrackers} = require('./constants');
 const {_elementGetter, _elementSetter} = require('./utils');
 
 const localVector = new THREE.Vector3();
