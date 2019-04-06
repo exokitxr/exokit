@@ -233,10 +233,11 @@ void android_main(struct android_app *app) {
 
   __android_log_print(ANDROID_LOG_ERROR, "exokit", "main cwd 1 %lx", (unsigned long)app->activity);
   __android_log_print(ANDROID_LOG_ERROR, "exokit", "main cwd 2 '%s'", app->activity->internalDataPath);
+  int setenvResult = setenv("HOME", app->activity->internalDataPath, 1);
 
   // initAssetStats();
   
-  __android_log_print(ANDROID_LOG_ERROR, "exokit", "main cwd 3 %lx", (unsigned long)app);
+  __android_log_print(ANDROID_LOG_ERROR, "exokit", "main cwd 3 %x", setenvResult);
 
   jniOnload(app->activity->vm);
 
