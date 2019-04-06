@@ -115,32 +115,30 @@
 
     (async () => {
       console.log('request device');
-      const display = await navigator.xr.requestDevice();
-      console.log('request session');
-      const session = await display.requestSession({
-        exclusive: true,
-      });
-      display.session = session;
+      const [display] = await navigator.getVRDisplays();
 
-      console.log('request first frame');
-      session.requestAnimationFrame((timestamp, frame) => {
-        renderer.vr.setSession(session, {
-          frameOfReferenceType: 'stage',
-        });
+      if (display) {
+        console.log('request present');
+        await display.requestPresent([
+          {
+            source: renderer.domElement,
+          }
+        ]);
+        console.log('entered vr');
 
-        const viewport = session.baseLayer.getViewport(frame.views[0]);
-        const width = viewport.width;
-        const height = viewport.height;
+        const {renderWidth: width, renderHeight: height} = display.getEyeParameters('left');       
         renderer.setSize(width * 2, height);
 
         renderer.setAnimationLoop(null);
         renderer.vr.enabled = true;
         renderer.vr.setDevice(display);
         renderer.vr.setAnimationLoop(animate);
-
-        console.log('running!');
-      });
-    })();
+      } else {
+        console.log('no vr displays');
+      }
+    })().catch(err => {
+      console.warn(err.stack);
+    });
   </script>
   </body>
 </html>
