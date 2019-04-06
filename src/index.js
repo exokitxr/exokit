@@ -1752,7 +1752,7 @@ const _startRenderLoop = () => {
 
     // update media frames
     nativeBindings.nativeVideo.Video.updateAll();
-    nativeBindings.nativeBrowser.Browser.updateAll();
+    nativeBindings.nativeBrowser && nativeBindings.nativeBrowser.Browser.updateAll(); // XXX
     // update magic leap state
     if (mlPresentState.mlGlContext) {
       nativeBindings.nativeMl.Update(mlPresentState.mlContext, mlPresentState.mlGlContext);
