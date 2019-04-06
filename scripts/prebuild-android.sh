@@ -6,7 +6,7 @@ set -e
 
 # Preface.
 
-TOOLCHAIN="$PWD/../android-ndk-r19c/toolchain"
+TOOLCHAIN="$ANDROID_HOME/ndk-bundle/toolchain"
 cd "$(dirname "$0")"
 
 export TOOLCHAIN_USR="$TOOLCHAIN/sysroot/usr"
