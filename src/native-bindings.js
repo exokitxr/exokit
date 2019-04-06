@@ -20,6 +20,8 @@ for (const k in exokitNode) {
 }
 bindings.nativeWorker = WindowWorker;
 bindings.nativeVm = vmOne;
+const isAndroid = true; // XXX
+const glslVersion = isAndroid ? '300 es' : '330';
 const _decorateGlIntercepts = gl => {
   gl.createShader = (createShader => function(type) {
     const result = createShader.call(this, type);
@@ -28,9 +30,9 @@ const _decorateGlIntercepts = gl => {
   })(gl.createShader);
   gl.shaderSource = (shaderSource => function(shader, source) {
     if (shader.type === gl.VERTEX_SHADER) {
-      source = webGlToOpenGl.vertex(source);
+      source = webGlToOpenGl.vertex(source, glslVersion);
     } else if (shader.type === gl.FRAGMENT_SHADER) {
-      source = webGlToOpenGl.fragment(source);
+      source = webGlToOpenGl.fragment(source, glslVersion);
     }
     return shaderSource.call(this, shader, source);
   })(gl.shaderSource);
