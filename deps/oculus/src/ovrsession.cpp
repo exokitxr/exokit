@@ -208,7 +208,6 @@ NAN_METHOD(OVRSession::GetRecommendedRenderTargetSize)
   ovrSession session = *ObjectWrap::Unwrap<OVRSession>(info.Holder())->self_;
   ovrHmdDesc hmdDesc = ObjectWrap::Unwrap<OVRSession>(info.Holder())->hmdDesc;
 
-  // Oculus: Initialize Swap Chain
   ovrSizei leftEyeTextureSize = ovr_GetFovTextureSize(session, ovrEye_Left, hmdDesc.DefaultEyeFov[ovrEye_Left], 1);
   ovrSizei rightEyeTextureSize = ovr_GetFovTextureSize(session, ovrEye_Right, hmdDesc.DefaultEyeFov[ovrEye_Right], 1);
 
