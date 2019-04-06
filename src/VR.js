@@ -147,7 +147,6 @@ class Gamepad {
 
     const gamepad = GlobalContext.xrState.gamepads[index];
 
-    this.connected = false;
     this.mapping = 'standard';
     this.buttons = (() => {
       const result = Array(5);
@@ -160,6 +159,11 @@ class Gamepad {
     this.axes = gamepad.axes;
     this.hapticActuators = [new GamepadHapticActuator(index)];
   }
+
+  get connected() {
+    return GlobalContext.xrState.gamepads[this.index].connected[0] !== 0;
+  }
+  set connected(connected) {}
 
   /* copy(gamepad) {
     this.connected = gamepad.connected;
