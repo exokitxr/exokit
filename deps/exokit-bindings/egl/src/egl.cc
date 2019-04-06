@@ -187,6 +187,17 @@ NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool v
   EGLDisplay display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
 
   EGLint config_attribs[] = {
+#ifdef ANDROID
+    EGL_RED_SIZE, 8,
+    EGL_GREEN_SIZE, 8,
+    EGL_BLUE_SIZE, 8,
+    EGL_ALPHA_SIZE, 8, // need alpha for the multi-pass timewarp compositor
+    EGL_DEPTH_SIZE, 24,
+    EGL_STENCIL_SIZE, 8,
+    EGL_SAMPLES, 0,
+    EGL_NONE
+#endif
+#ifdef LUMIN
     EGL_RED_SIZE, 5,
     EGL_GREEN_SIZE, 6,
     EGL_BLUE_SIZE, 5,
@@ -194,6 +205,7 @@ NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool v
     EGL_DEPTH_SIZE, 24,
     EGL_STENCIL_SIZE, 8,
     EGL_NONE
+#endif
   };
   EGLConfig egl_config = nullptr;
   EGLint config_size = 0;
