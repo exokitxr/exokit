@@ -60,13 +60,13 @@ private:
   }
 
   void DestroySession() {
-    ovr_Destroy(*this->self_);
+    ovr_Destroy(*this->session);
     ovr_Shutdown();
   }
 
   void SetupSession() {
 
-    if (this->self_) {
+    if (this->session) {
       DestroySwapChain();
       DestroySession();
     }
@@ -90,7 +90,7 @@ private:
       return;
     }
 
-    this->self_ = session;
+    this->session = session;
   }
 
   void ResetSession() {
@@ -100,18 +100,18 @@ private:
   }
 
   void DestroySwapChain() {
-    ovr_DestroyTextureSwapChain(*this->self_, this->eyes[0].ColorTextureChain);
-    ovr_DestroyTextureSwapChain(*this->self_, this->eyes[0].DepthTextureChain);
-    ovr_DestroyTextureSwapChain(*this->self_, this->eyes[1].ColorTextureChain);
-    ovr_DestroyTextureSwapChain(*this->self_, this->eyes[1].DepthTextureChain);
+    ovr_DestroyTextureSwapChain(*this->session, this->eyes[0].ColorTextureChain);
+    ovr_DestroyTextureSwapChain(*this->session, this->eyes[0].DepthTextureChain);
+    ovr_DestroyTextureSwapChain(*this->session, this->eyes[1].ColorTextureChain);
+    ovr_DestroyTextureSwapChain(*this->session, this->eyes[1].DepthTextureChain);
 
     glDeleteFramebuffers(1, &this->fboId);
   }
 
   void SetupSwapChain() {
     ovrResult result;
-    ovrSizei recommenedTex0Size = ovr_GetFovTextureSize(*this->self_, ovrEye_Left, this->hmdDesc.DefaultEyeFov[ovrEye_Left], 1);
-    ovrSizei recommenedTex1Size = ovr_GetFovTextureSize(*this->self_, ovrEye_Right, this->hmdDesc.DefaultEyeFov[ovrEye_Right], 1);
+    ovrSizei recommenedTex0Size = ovr_GetFovTextureSize(*this->session, ovrEye_Left, this->hmdDesc.DefaultEyeFov[ovrEye_Left], 1);
+    ovrSizei recommenedTex1Size = ovr_GetFovTextureSize(*this->session, ovrEye_Right, this->hmdDesc.DefaultEyeFov[ovrEye_Right], 1);
     ovrSizei bufferSize;
 
     this->eyes[0].textureSize.w = recommenedTex0Size.w;
@@ -134,16 +134,16 @@ private:
       desc.SampleCount = 1;
       desc.StaticImage = ovrFalse;
 
-      result = ovr_CreateTextureSwapChainGL(*this->self_, &desc, &this->eyes[eye].ColorTextureChain);
+      result = ovr_CreateTextureSwapChainGL(*this->session, &desc, &this->eyes[eye].ColorTextureChain);
       int length = 0;
-      ovr_GetTextureSwapChainLength(*this->self_, this->eyes[eye].ColorTextureChain, &length);
+      ovr_GetTextureSwapChainLength(*this->session, this->eyes[eye].ColorTextureChain, &length);
 
       if (!OVR_SUCCESS(result)) {
         std::cout << "Error creating Oculus GL Swap Chain" << std::endl;
       } else {
         for (int i = 0; i < length; ++i) {
           GLuint textureId;
-          ovr_GetTextureSwapChainBufferGL(*this->self_, this->eyes[eye].ColorTextureChain, i, &textureId);
+          ovr_GetTextureSwapChainBufferGL(*this->session, this->eyes[eye].ColorTextureChain, i, &textureId);
           glBindTexture(GL_TEXTURE_2D, textureId);
           glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
           glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -154,14 +154,14 @@ private:
 
       desc.Format = OVR_FORMAT_D32_FLOAT;
 
-      result = ovr_CreateTextureSwapChainGL(*this->self_, &desc, &this->eyes[eye].DepthTextureChain);
-      ovr_GetTextureSwapChainLength(*this->self_, this->eyes[eye].DepthTextureChain, &length);
+      result = ovr_CreateTextureSwapChainGL(*this->session, &desc, &this->eyes[eye].DepthTextureChain);
+      ovr_GetTextureSwapChainLength(*this->session, this->eyes[eye].DepthTextureChain, &length);
 
       if (!OVR_SUCCESS(result)) {
       } else {
         for (int i = 0; i < length; ++i) {
           GLuint textureId;
-          ovr_GetTextureSwapChainBufferGL(*this->self_, this->eyes[eye].DepthTextureChain, i, &textureId);
+          ovr_GetTextureSwapChainBufferGL(*this->session, this->eyes[eye].DepthTextureChain, i, &textureId);
           glBindTexture(GL_TEXTURE_2D, textureId);
 
           glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -177,7 +177,7 @@ private:
   }
 
   /// Reference to wrapped ovrSession instance.
-  ovrSession * self_;
+  ovrSession * session;
   ovrHmdDesc hmdDesc;
   EyeSwapChain eyes[2];
   ovrPosef eyeRenderPoses[2];

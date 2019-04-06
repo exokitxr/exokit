@@ -95,10 +95,10 @@ Local<Object> OVRSession::NewInstance()
 
 //=============================================================================
 OVRSession::OVRSession()
-: frameIndex(0), hmdMounted(false), self_(nullptr)
+: frameIndex(0), hmdMounted(false), session(nullptr)
 {
   SetupSession();
-  this->hmdDesc = ovr_GetHmdDesc(*this->self_);
+  this->hmdDesc = ovr_GetHmdDesc(*this->session);
 }
 
 //=============================================================================
@@ -134,7 +134,7 @@ NAN_METHOD(OVRSession::GetRecommendedRenderTargetSize)
     return;
   }
 
-  ovrSession session = *ObjectWrap::Unwrap<OVRSession>(info.Holder())->self_;
+  ovrSession session = *ObjectWrap::Unwrap<OVRSession>(info.Holder())->session;
   ovrHmdDesc hmdDesc = ObjectWrap::Unwrap<OVRSession>(info.Holder())->hmdDesc;
 
   ovrSizei leftEyeTextureSize = ovr_GetFovTextureSize(session, ovrEye_Left, hmdDesc.DefaultEyeFov[ovrEye_Left], 1);
@@ -163,7 +163,7 @@ NAN_METHOD(OVRSession::GetPose) {
   }
 
   int *frameIndex = &ObjectWrap::Unwrap<OVRSession>(info.Holder())->frameIndex;
-  ovrSession session = *ObjectWrap::Unwrap<OVRSession>(info.Holder())->self_;
+  ovrSession session = *ObjectWrap::Unwrap<OVRSession>(info.Holder())->session;
   EyeSwapChain *eyes = &*ObjectWrap::Unwrap<OVRSession>(info.Holder())->eyes;
   ovrPosef *eyeRenderPoses = &*ObjectWrap::Unwrap<OVRSession>(info.Holder())->eyeRenderPoses;
   ovrHmdDesc hmdDesc = ObjectWrap::Unwrap<OVRSession>(info.Holder())->hmdDesc;
@@ -337,7 +337,7 @@ NAN_METHOD(OVRSession::GetControllersInputState) {
   Local<Float32Array> buttons = Local<Float32Array>::Cast(info[1]);
   buttons->Set(0, Number::New(Isolate::GetCurrent(), std::numeric_limits<float>::quiet_NaN()));
 
-  ovrSession session = *ObjectWrap::Unwrap<OVRSession>(info.Holder())->self_;
+  ovrSession session = *ObjectWrap::Unwrap<OVRSession>(info.Holder())->session;
   ovrInputState inputState;
   ovrControllerType controllerType = hand == 0 ? ovrControllerType_LTouch : ovrControllerType_RTouch;
 
@@ -409,14 +409,14 @@ NAN_METHOD(OVRSession::Submit)
     return;
   }
 
-  ovrSession session = *ObjectWrap::Unwrap<OVRSession>(info.Holder())->self_;
+  ovrSession session = *ObjectWrap::Unwrap<OVRSession>(info.Holder())->session;
   ovrSessionStatus sessionStatus;
   ovrResult result = ovr_GetSessionStatus(session, &sessionStatus);
 
   if (sessionStatus.HmdMounted) {
     if (ObjectWrap::Unwrap<OVRSession>(info.Holder())->hmdMounted == false) {
       ObjectWrap::Unwrap<OVRSession>(info.Holder())->ResetSession();
-      session = *ObjectWrap::Unwrap<OVRSession>(info.Holder())->self_;
+      session = *ObjectWrap::Unwrap<OVRSession>(info.Holder())->session;
       ObjectWrap::Unwrap<OVRSession>(info.Holder())->hmdMounted = true;
     }
   } else {
