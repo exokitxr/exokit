@@ -415,8 +415,13 @@ NAN_METHOD(OVRSession::Submit)
   ovr_GetSessionStatus(session, &sessionStatus);
 
   if (sessionStatus.HmdMounted) {
-    ObjectWrap::Unwrap<OVRSession>(info.Holder())->ResetSession();
-    session = *ObjectWrap::Unwrap<OVRSession>(info.Holder())->session;
+    if (ObjectWrap::Unwrap<OVRSession>(info.Holder())->hmdMounted == false) {
+      ObjectWrap::Unwrap<OVRSession>(info.Holder())->ResetSession();
+      session = *ObjectWrap::Unwrap<OVRSession>(info.Holder())->session;
+      ObjectWrap::Unwrap<OVRSession>(info.Holder())->hmdMounted = true;
+    }
+  } else {
+    ObjectWrap::Unwrap<OVRSession>(info.Holder())->hmdMounted = false;
   }
 
   WebGLRenderingContext *gl = node::ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));

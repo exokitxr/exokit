@@ -183,6 +183,7 @@ private:
   GLuint fboId;
   int frameIndex;
   double sensorSampleTime;
+  bool hmdMounted;
 };
 
 #endif
