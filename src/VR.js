@@ -623,12 +623,21 @@ function getGamepads(window) {
     magicLeapARDisplay.isPresenting
   ) {
     if (!gamepads) {
-      const idLeft = oculusVRDisplay.isPresenting ? oculusVRIdLeft : openVRId;
-      const idRight = oculusVRDisplay.isPresenting ? oculusVRIdRight : openVRId;
-      gamepads = [
-        new Gamepad('left', 0, idLeft),
-        new Gamepad('right', 1, idRight),
-      ];
+      gamepads = Array(2 + maxNumTrackers);
+      for (let i = 0; i < maxNumTrackers) {
+        let hand, id;
+        if (i === 0) {
+          hand = 'left';
+          id = oculusVRDisplay.isPresenting ? oculusVRIdLeft : openVRId;
+        } else if (i === 1) {
+          hand = 'right';
+          id = oculusVRDisplay.isPresenting ? oculusVRIdRight : openVRId;
+        } else {
+          hand = null;
+          id = openVRId;
+        }
+        gamepads[i] = new Gamepad(hand, i, id);
+      }
     }
     return gamepads;
   } else {
