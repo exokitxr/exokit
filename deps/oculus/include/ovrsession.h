@@ -80,9 +80,8 @@ private:
     ovr_Initialize(&initParams);
 
     ovrSession *session = (ovrSession *) malloc(sizeof(ovrSession));
-    ovrResult result;
     ovrGraphicsLuid luid;
-    result = ovr_Create(session, &luid);
+    ovrResult result = ovr_Create(session, &luid);
     if (OVR_FAILURE(result))
     {
       Nan::ThrowError("Error creating ovr session");
@@ -94,7 +93,6 @@ private:
   }
 
   void ResetSession() {
-    DestroySwapChain();
     SetupSession();
     SetupSwapChain();
   }
@@ -158,6 +156,7 @@ private:
       ovr_GetTextureSwapChainLength(*this->session, this->eyes[eye].DepthTextureChain, &length);
 
       if (!OVR_SUCCESS(result)) {
+        std::cout << "Error creating Oculus GL Swap Chain" << std::endl;
       } else {
         for (int i = 0; i < length; ++i) {
           GLuint textureId;
