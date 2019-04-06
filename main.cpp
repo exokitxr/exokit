@@ -10,12 +10,18 @@
 #include <map>
 #include <thread>
 #include <v8.h>
-#include <dirent.h>
+// #include <dirent.h>
+#ifdef ANDROID
 #include <android/log.h>
 #include <jni.h>
 #include <android/asset_manager_jni.h>
 #include <android_native_app_glue.h>
-// #include <exout>
+#endif
+#ifdef LUMIN
+#include <ml_logging.h>
+#include <ml_lifecycle.h>
+#include <ml_privileges.h>
+#endif
 
 using namespace v8;
 
