@@ -267,7 +267,7 @@ NAN_METHOD(IVRCompositor::RequestGetPoses) {
         }
       }
       for (unsigned int i = numTrackers; i < maxNumTrackers; i++) {
-        float *trackerArray = trackerArraysStart + numTrackers*16;
+        float *trackerArray = trackerArraysStart + i*16;
         trackerArray[0] = std::numeric_limits<float>::quiet_NaN();
       }
 
