@@ -62,7 +62,7 @@
     "mkdirp": "^0.5.1",
     "murmurhash-js": "^1.0.0",
     "nan": "^2.13.1",
-    "native-audio-deps": "github:ngokevin/node-native-audio-deps#android2",
+    "native-audio-deps": "0.0.57",
     "native-browser-deps": "0.0.16",
     "native-browser-deps-linux": "0.0.8",
     "native-browser-deps-macos": "0.0.1",
