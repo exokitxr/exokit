@@ -11,6 +11,7 @@
 #include <canvas-gradient.h>
 #include <canvas-pattern.h>
 #include <webgl.h>
+#include <AudioContext.h>
 #include <Video.h>
 #if _WIN32
 #include <leapmotion.h>
@@ -22,7 +23,6 @@
 // Stub out on Android for now until get libcef working on Android.
 #if !defined(ANDROID)
   #include <browser.h>
-  #include <AudioContext.h>
   #include <webrtc.h>
 #endif
 
