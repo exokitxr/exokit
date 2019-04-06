@@ -99,7 +99,6 @@ OVRSession::OVRSession()
 {
   SetupSession();
   this->hmdDesc = ovr_GetHmdDesc(*this->self_);
-  //SetupSwapChain();
 }
 
 //=============================================================================
@@ -124,13 +123,7 @@ NAN_METHOD(OVRSession::New)
 
 NAN_METHOD(OVRSession::SetupSwapChain)
 {
-  ovrResult result;
-  ovrSession session = *ObjectWrap::Unwrap<OVRSession>(info.Holder())->self_;
-  // Configure Stereo settings.
-  ovrHmdDesc *hmdDesc = &ObjectWrap::Unwrap<OVRSession>(info.Holder())->hmdDesc;
-  *hmdDesc = ovr_GetHmdDesc(session);
-  ObjectWrap::Unwrap<OVRSession>(info.Holder())->SetupSessionSwapChain();
-
+  ObjectWrap::Unwrap<OVRSession>(info.Holder())->SetupSwapChain();
 }
 
 NAN_METHOD(OVRSession::GetRecommendedRenderTargetSize)

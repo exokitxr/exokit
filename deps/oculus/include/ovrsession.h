@@ -100,7 +100,6 @@ private:
   }
 
   void DestroySwapChain() {
-    // Destroy
     ovr_DestroyTextureSwapChain(*this->self_, this->eyes[0].ColorTextureChain);
     ovr_DestroyTextureSwapChain(*this->self_, this->eyes[0].DepthTextureChain);
     ovr_DestroyTextureSwapChain(*this->self_, this->eyes[1].ColorTextureChain);
