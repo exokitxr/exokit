@@ -53,6 +53,12 @@ private:
     return the_constructor;
   }
 
+  static void ovrLogCallback(uintptr_t userData, int level, const char *message) {
+    if (level >= ovrLogLevel_Error) {
+      std::cout << "LibOVR: " << message << std::endl;
+    }
+  }
+
   void DestroySession() {
     ovr_Destroy(*this->self_);
     ovr_Shutdown();
@@ -67,7 +73,7 @@ private:
 
     ovrInitParams initParams = {
       ovrInit_RequestVersion | ovrInit_MixedRendering,
-      OVR_MINOR_VERSION, NULL, 0, 0
+      OVR_MINOR_VERSION, ovrLogCallback, 0, 0
     };
 
     // Reinitialize Oculus runtime.
