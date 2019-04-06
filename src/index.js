@@ -1554,7 +1554,7 @@ const _startRenderLoop = () => {
 
         // build tracker data
         const _loadTracker = i => {
-          const tracker = xrState.trackers[i];
+          const tracker = xrState.gamepads[2 + i];
           const trackerPoseArray = localFloat32TrackerPoseArrays[i];
           if (!isNaN(trackerPoseArray[0])) {
             tracker.connected[0] = true;
