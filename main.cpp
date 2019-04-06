@@ -232,7 +232,7 @@ void android_main(struct android_app *app) {
   std::thread stderrReaderThread([stderrReadFd]() -> void { pumpStderr(stderrReadFd); });
 
   __android_log_print(ANDROID_LOG_ERROR, "exokit", "main cwd 1 %lx", (unsigned long)app->activity);
-  __android_log_print(ANDROID_LOG_ERROR, "exokit", "main cwd 2 %lx", (unsigned long)app->activity->vm);
+  __android_log_print(ANDROID_LOG_ERROR, "exokit", "main cwd 2 '%s'", app->activity->internalDataPath);
 
   // initAssetStats();
   
