@@ -4,9 +4,14 @@
 
 namespace windowsystembase {
 
-const char *composeVsh = "\
-#version 330\n\
-\n\
+const char *composeVsh = ""
+#ifdef ANDROID
+"#version 300 es\n"
+#endif
+#ifdef LUMIN
+"#version 330\n"
+#endif
+"\n\
 in vec2 position;\n\
 in vec2 uv;\n\
 out vec2 vUv;\n\
@@ -16,9 +21,14 @@ void main() {\n\
   gl_Position = vec4(position.xy, 0., 1.);\n\
 }\n\
 ";
-const char *composeFsh = "\
-#version 330\n\
-\n\
+const char *composeFsh = ""
+#ifdef ANDROID
+"#version 300 es\n"
+#endif
+#ifdef LUMIN
+"#version 330\n"
+#endif
+"\n\
 in vec2 vUv;\n\
 out vec4 fragColor;\n\
 int texSamples = 4;\n\
@@ -43,9 +53,14 @@ void main() {\n\
 }\n\
 ";
 
-const char *planeVsh = "\
-#version 330\n\
-\n\
+const char *planeVsh = ""
+#ifdef ANDROID
+"#version 300 es\n"
+#endif
+#ifdef LUMIN
+"#version 330\n"
+#endif
+"\n\
 uniform mat4 modelViewMatrix;\n\
 uniform mat4 projectionMatrix;\n\
 in vec3 position;\n\
@@ -57,9 +72,14 @@ void main() {\n\
   gl_Position = projectionMatrix * modelViewMatrix * vec4(position.xy, 0., 1.);\n\
 }\n\
 ";
-const char *planeFsh = "\
-#version 330\n\
-\n\
+const char *planeFsh = ""
+#ifdef ANDROID
+"#version 300 es\n"
+#endif
+#ifdef LUMIN
+"#version 330\n"
+#endif
+"\n\
 in vec2 vUv;\n\
 out vec4 fragColor;\n\
 uniform sampler2D tex;\n\
