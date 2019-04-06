@@ -632,9 +632,6 @@
             "<(module_root_dir)/node_modules/native-webrtc-deps/lib/android",
           ],
           'libraries': [
-            "<!(echo $TOOLCHAIN_LIB)/aarch64-linux-android/libstdc++.a",
-            "<(module_root_dir)/node_modules/libnode.a-android/libnode.a",
-            #"<(module_root_dir)/node_modules/native-audio-deps/lib2/android/libLabSound.a",
             '-lskia',
             '-lavformat',
             '-lavcodec',
