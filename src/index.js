@@ -328,16 +328,16 @@ nativeBindings.nativeCanvasRenderingContext2D.onconstruct = (ctx, canvas) => {
 };
 
 const zeroMatrix = new THREE.Matrix4();
-const localFloat32PoseArray = zeroMatrix.toArray(new Float32Array(16*(1+2+maxNumTrackers)));
-const localFloat32HmdPoseArray = localFloat32PoseArray.slice(0*16, 1*16);
+const localFloat32PoseArray = new Float32Array(16*(1+2+maxNumTrackers));
+const localFloat32HmdPoseArray = new Float32Array(localFloat32PoseArray.buffer, localFloat32PoseArray.byteOffset + 0*Float32Array.BYTES_PER_ELEMENT*16, 16);
 const localFloat32GamepadPoseArrays = [
-  localFloat32PoseArray.slice(1*16, 2*16),
-  localFloat32PoseArray.slice(2*16, 3*16)
+  new Float32Array(localFloat32PoseArray.buffer, localFloat32PoseArray.byteOffset + 1*Float32Array.BYTES_PER_ELEMENT*16, 16),
+  new Float32Array(localFloat32PoseArray.buffer, localFloat32PoseArray.byteOffset + 2*Float32Array.BYTES_PER_ELEMENT*16, 16),
 ];
 const localFloat32TrackerPoseArrays = (() => {
   const result = Array(maxNumTrackers);
   for (let i = 0; i < maxNumTrackers; i++) {
-    result[i] = localFloat32PoseArray.slice((i+3)*16, (i+4)*16);
+    result[i] = new Float32Array(localFloat32PoseArray.buffer, localFloat32PoseArray.byteOffset + (3+i)*Float32Array.BYTES_PER_ELEMENT*16, 16);
   }
   return result;
 })();
