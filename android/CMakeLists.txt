@@ -31,6 +31,8 @@ set_target_properties( node PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../
 add_library( skia STATIC IMPORTED )
 set_target_properties( skia PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../node_modules/native-canvas-deps/lib2/android/libskia.a )
 
+add_library( labsound STATIC IMPORTED )
+set_target_properties( labsound PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../node_modules/native-audio-deps/lib2/magicleap/libLabSound.a )
 
 add_library( avformat STATIC IMPORTED )
 set_target_properties( avformat PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../node_modules/native-video-deps/lib2/android/libavformat.a )
@@ -65,6 +67,7 @@ target_link_libraries(native-main
     exokit
     node
     skia
+    labsound
     avformat
     avcodec
     avutil
