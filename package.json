@@ -82,7 +82,7 @@
     "repl.history": "^0.1.4",
     "rimraf": "^2.6.2",
     "unescape": "^1.0.1",
-    "vm-one": "0.0.35",
+    "vm-one": "0.0.36",
     "webgl-to-opengl": "0.0.15",
     "window-classlist": "0.0.4",
     "window-fetch": "0.0.10",
