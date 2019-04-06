@@ -586,7 +586,8 @@
             '<!@(ls -1 deps/exokit-bindings/videocontext/src/linux/*.cpp)',
             '<!@(ls -1 deps/exokit-bindings/windowsystem/src/*.cc)',
             '<!@(ls -1 deps/exokit-bindings/egl/src/*.cc)',
-            '<!@(ls -1 deps/exokit-bindings/webrtc/src/*.cc)'
+            '<!@(ls -1 deps/exokit-bindings/webrtc/src/*.cc)',
+            '<!@(ls -1 deps/oculus-mobile/src/*.cpp)'
           ],
           'include_dirs': [
             "<!(node -e \"console.log(require.resolve('nan').slice(0, -16))\")",
@@ -599,6 +600,7 @@
             # "<!(node -e \"console.log(require.resolve('native-browser-deps').slice(0, -9) + '/lib')\")",
             "<!(node -e \"console.log(require.resolve('native-webrtc-deps').slice(0, -9) + '/include')\")",
             "<!(node -e \"console.log(require.resolve('native-webrtc-deps').slice(0, -9) + '/include/webrtc')\")",
+            "<!(node -e \"console.log(require.resolve('native-oculus-mobile-deps').slice(0, -9) + '/include')\")",
             "<!(echo $TOOLCHAIN_LIB)",
             "<!(echo $TOOLCHAIN_INCLUDE_LIB)",
             "<!(echo $TOOLCHAIN_INCLUDE_SYSROOT)/EGL",
@@ -619,7 +621,8 @@
             '<(module_root_dir)/deps/exokit-bindings/videocontext/include',
             '<(module_root_dir)/deps/exokit-bindings/windowsystem/include',
             '<(module_root_dir)/deps/exokit-bindings/egl/include',
-            '<(module_root_dir)/deps/exokit-bindings/webrtc/include'
+            '<(module_root_dir)/deps/exokit-bindings/webrtc/include',
+            '<(module_root_dir)/deps/oculus-mobile/include'
           ],
           'library_dirs': [
             "<!(echo $TOOLCHAIN_USR)",
@@ -630,6 +633,7 @@
             "<(module_root_dir)/node_modules/native-audio-deps/lib2/magicleap",
             "<(module_root_dir)/node_modules/native-video-deps/lib2/magicleap",
             "<(module_root_dir)/node_modules/native-webrtc-deps/lib/android",
+            "<(module_root_dir)/node_modules/native-oculus-mobile-deps/lib/android"
           ],
           'libraries': [
             '-lskia',
@@ -642,6 +646,7 @@
             '-lswresample',
             '-lopus',
             # '-lwebrtc',
+            '-lvrapi'
           ],
           'defines': [
             'ANDROID',
