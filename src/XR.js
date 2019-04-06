@@ -94,7 +94,7 @@ class XRSession extends EventTarget {
     this._frameOfReference = new XRFrameOfReference();
     this._inputSources = (() => {
       const result = Array(2 + maxNumTrackers);
-      for (let i = 0; i < maxNumTrackers) {
+      for (let i = 0; i < maxNumTrackers; i++) {
         let hand, pointerOrigin;
         if (i === 0) {
           hand = 'left';

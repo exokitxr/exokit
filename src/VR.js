@@ -624,7 +624,7 @@ function getGamepads(window) {
   ) {
     if (!gamepads) {
       gamepads = Array(2 + maxNumTrackers);
-      for (let i = 0; i < maxNumTrackers) {
+      for (let i = 0; i < maxNumTrackers; i++) {
         let hand, id;
         if (i === 0) {
           hand = 'left';
