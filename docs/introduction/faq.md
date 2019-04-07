@@ -6,6 +6,8 @@ parent_section: introduction
 order: 14
 ---
 
+# COMING SOON
+
 ## What is Exokit?  
 
 ## How was Exokit started?
