@@ -12,7 +12,7 @@ examples:
 
 ## Overview
 
-This project **enables developers to build XR experiences using the same code that runs on the web**. Exokit engine is written on top of Node and emulates a web browser, providing native hooks for WebGL, WebXR, WebAudio, and other APIs used in immersive experiences.
+Exokit is an **engine that runs XR experiences made with regular web code**. It emulates a web browser on top of Node.js, providing native hooks for WebGL, WebXR, WebAudio, and other standard APIs for immersive experiences. It works with web pages and your favorite frameworks like A-Frame.
 
 :eyeglasses: **Exokit targets the following platforms**:
 * Desktop VR (Steam compatible)
