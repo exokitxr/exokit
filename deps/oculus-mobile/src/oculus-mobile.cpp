@@ -12,22 +12,10 @@
 
 namespace oculusmobile {
 
-ovrJava java;
 Nan::Persistent<v8::Function> oculusMobileContextConstructor;
 
 NAN_METHOD(OculusMobile_Init) {
   std::cout << "OculusMobile_Init 1" << std::endl;
-
-  java.Vm = androidApp->activity->vm;
-  java.ActivityObject = androidApp->activity->clazz;
-
-  const ovrInitParms initParms = vrapi_DefaultInitParms(&java);
-	int32_t initResult = vrapi_Initialize(&initParms);
-  if (initResult != VRAPI_INITIALIZE_SUCCESS) {
-    exerr << "VRAPI failed to initialize: " << initResult << std::endl;
-	}
-
-  std::cout << "OculusMobile_Init 2 " << initResult << std::endl;
 
   if (oculusMobileContextConstructor.IsEmpty()) {
     oculusMobileContextConstructor.Reset(OculusMobileContext::Initialize());

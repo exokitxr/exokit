@@ -6,7 +6,12 @@
 
 #include <defines.h>
 
+#include <android/native_window_jni.h>
+#include <android_native_app_glue.h>
+#include <exout>
+
 #include "VrApi.h"
+#include "VrApi_Types.h"
 #include "VrApi_Helpers.h"
 #include "VrApi_SystemUtils.h"
 #include "VrApi_Input.h"
@@ -17,7 +22,6 @@ extern struct android_app *androidApp;
 
 namespace oculusmobile {
 
-extern ovrJava java;
 extern Nan::Persistent<v8::Function> oculusMobileContextConstructor;
 
 /// inline IVRSystem *OculusMobile_Init( EVRInitError *peError, EVRApplicationType eApplicationType );
