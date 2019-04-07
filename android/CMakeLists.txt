@@ -21,12 +21,14 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -Wall -Werror")
 
 add_library(native-main SHARED ${CMAKE_SOURCE_DIR}/../main.cpp ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c)
 
-
 add_library( exokit STATIC IMPORTED )
 set_target_properties( exokit PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../build/libexokit/libexokit.a )
 
 add_library( node STATIC IMPORTED )
 set_target_properties( node PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../node_modules/libnode.a-android/libnode.a )
+
+add_library( vrapi SHARED IMPORTED )
+set_target_properties( vrapi PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../node_modules/native-oculus-mobile-deps/lib/android/libvrapi.so )
 
 add_library( skia STATIC IMPORTED )
 set_target_properties( skia PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../node_modules/native-canvas-deps/lib2/magicleap/libskia.a )
@@ -59,11 +61,12 @@ include_directories( SYSTEM ${ANDROID_NDK}/sources/android/native_app_glue )
 # add lib dependencies
 target_link_libraries(native-main
     android
+    log
     EGL
     GLESv1_CM
     GLESv2
     GLESv3
-    log
+    vrapi
     exokit
     node
     skia
