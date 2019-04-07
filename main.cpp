@@ -39,6 +39,8 @@ namespace node {
 
 #ifdef ANDROID
 
+struct android_app *androidApp;
+
 typedef struct AssetStatStruct {
   char name[256];
   uint32_t key;
@@ -50,8 +52,6 @@ typedef struct AssetStatStruct {
 extern "C" {
 void initAssetManager(AAssetManager *am);
 }
-
-ovrJava globalJava;
 
 JNIEnv *jniGetEnv(JavaVM *vm) {
   JNIEnv *env;
@@ -243,10 +243,8 @@ void android_main(struct android_app *app) {
   
   __android_log_print(ANDROID_LOG_ERROR, "exokit", "main cwd 3 %x", setenvResult);
 
+  androidApp = app;
   jniOnload(app->activity->vm);
-
-  globalJava.Vm = app->activity->vm;
-  globalJava.ActivityObject = app->activity->clazz;
 
   __android_log_print(ANDROID_LOG_ERROR, "exokit", "main cwd 4 %lx", (unsigned long)app);
 

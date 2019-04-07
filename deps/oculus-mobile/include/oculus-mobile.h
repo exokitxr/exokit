@@ -13,10 +13,11 @@
 
 using namespace v8;
 
-extern ovrJava globalJava;
+extern struct android_app *androidApp;
 
 namespace oculusmobile {
 
+extern ovrJava java;
 extern Nan::Persistent<v8::Function> oculusMobileContextConstructor;
 
 /// inline IVRSystem *OculusMobile_Init( EVRInitError *peError, EVRApplicationType eApplicationType );

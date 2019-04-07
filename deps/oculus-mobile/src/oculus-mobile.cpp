@@ -2,6 +2,7 @@
 
 #include <oculus-mobile.h>
 #include <oculus-context.h>
+#include <android_native_app_glue.h>
 
 #include <nan.h>
 #include <exout>
@@ -11,12 +12,16 @@
 
 namespace oculusmobile {
 
+ovrJava java;
 Nan::Persistent<v8::Function> oculusMobileContextConstructor;
 
 NAN_METHOD(OculusMobile_Init) {
   std::cout << "OculusMobile_Init 1" << std::endl;
 
-  const ovrInitParms initParms = vrapi_DefaultInitParms(&globalJava);
+  java.Vm = androidApp->activity->vm;
+  java.ActivityObject = androidApp->activity->clazz;
+
+  const ovrInitParms initParms = vrapi_DefaultInitParms(&java);
 	int32_t initResult = vrapi_Initialize(&initParms);
   if (initResult != VRAPI_INITIALIZE_SUCCESS) {
     exerr << "VRAPI failed to initialize: " << initResult << std::endl;
