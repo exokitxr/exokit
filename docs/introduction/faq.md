@@ -7,6 +7,9 @@ order: 14
 ---
 
 # COMING SOON
+<details>
+  <summary>Click to expand!</summary>
+  
 
 ## What is Exokit?  
 
@@ -61,3 +64,5 @@ order: 14
 ## What is the future of immersive-web standards?
 
 ## What is the future of XR?
+
+</details>
