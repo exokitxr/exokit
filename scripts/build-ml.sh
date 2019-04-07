@@ -25,7 +25,7 @@ export LUMIN=1
 export npm_config_arch=arm64
 
 if [ ! -d magicleap-js ]; then
-  git clone https://github.com/webmixedreality/magicleap-js
+  git clone https://github.com/exokitxr/magicleap-js
 # else
 #   pushd magicleap-js
 #   git pull --rebase

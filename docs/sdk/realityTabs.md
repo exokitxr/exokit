@@ -11,7 +11,7 @@ parent_section: sdk
 The earliest records of “reality tabs” are from an issue from March and a tweet from April 2018:
 
 <a href="https://twitter.com/webmixedreality/status/991035161797058560"><img style="display: block !important" src="https://i.imgur.com/2549u5A.png" width=auto, height=300 alt="Reality Tabs tweet April 2018"/></a>
-<a href="https://github.com/webmixedreality/exokit/issues/8"><img style="display: block !important" src="https://i.imgur.com/qaeyEKu.png" width=auto, height=300 alt="Reality Tabs mentioned in March 2018 github issue"/></a>
+<a href="https://github.com/exokitxr/exokit/issues/8"><img style="display: block !important" src="https://i.imgur.com/qaeyEKu.png" width=auto, height=300 alt="Reality Tabs mentioned in March 2018 github issue"/></a>
 
 In many ways, Reality Tabs is the natural progression from current web browser tabs:
 
@@ -47,4 +47,4 @@ You can use Reality Tabs for:
 
 ## Technical Explanation
 
-Reality Tabs are seperate user windows. Each Reality Tab renders at the same time in their own context before being composited into the display/headset/what have you. [Previously this was done synchornously](https://github.com/webmixedreality/exokit/pull/760), one window at a time, switching GL contexts to the correct one.
+Reality Tabs are seperate user windows. Each Reality Tab renders at the same time in their own context before being composited into the display/headset/what have you. [Previously this was done synchornously](https://github.com/exokitxr/exokit/pull/760), one window at a time, switching GL contexts to the correct one.

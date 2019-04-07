@@ -6,10 +6,10 @@ order: 1
 parent_section: sdk
 ---
 
-The main project repository is at [`webmixedreality/exokit`](https://github.com/webmixedreality/exokit). You can clone it the regular way:
+The main project repository is at [`exokitxr/exokit`](https://github.com/exokitxr/exokit). You can clone it the regular way:
 
 ```sh
-git clone https://github.com/webmixedreality/exokit.git
+git clone https://github.com/exokitxr/exokit.git
 ```
 
 > Note: Exokit Engine and Exokit Browser both run off of the same codebase.
@@ -32,7 +32,7 @@ build-essential wget python libglfw3-dev libglew-dev libfreetype6-dev libfontcon
 
 #### Notes
 
-1. Exokit's bindings code is a native module build using the [`binding.gyp` recipe](https://github.com/webmixedreality/exokit/blob/master/binding.gyp).
+1. Exokit's bindings code is a native module build using the [`binding.gyp` recipe](https://github.com/exokitxr/exokit/blob/master/binding.gyp).
 1. Exokit downloads and uses several prebuilt dependencies. They have been pre-compiled for all supported architectures and uploaded to npm. They self-extract themselves based off detected architecture.
 
 # Run Exokit Engine
@@ -100,7 +100,7 @@ node --inspect-brk .
 
 ## Contributing
 
-See something? Please do [file an issue](https://github.com/webmixedreality/exokit/issues)!
+See something? Please do [file an issue](https://github.com/exokitxr/exokit/issues)!
 
 Pull Requests are very much welcome as well.
 

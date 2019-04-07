@@ -3,7 +3,7 @@
 
 Interested in contributing? As an open source project, we'd appreciate any help
 and contributions! On top of the Exokit engine itself, you can also
-contribute to any [related projects](https://github.com/webmixedreality).
+contribute to any [related projects](https://github.com/exokitxr).
 
 
 # Join the Community on Slack
@@ -21,7 +21,7 @@ from your questions too.
 
 # File an Issue
 
-1. Search the [issue tracker](https://github.com/webmixedreality/exokit/issues) for similar issues.
+1. Search the [issue tracker](https://github.com/exokitxr/exokit/issues) for similar issues.
 2. Specify the version of Exokit in which the bug occurred.
 3. Specify information about your browser and system (e.g., "Exokit v0.0.420 on OS X")
 4. Describe the problem in detail (i.e., what happened and what you expected would happen).
@@ -29,9 +29,9 @@ from your questions too.
 
 # Contribute Code to Exokit
 
-[exokit]: https://github.com/webmixedreality/exokit/
-[easy]: https://github.com/webmixedreality/exokit/issues?q=is%3Aopen+is%3Aissue+label%3Aeasy
-[hard]: https://github.com/webmixedreality/exokit/issues?q=is%3Aopen+is%3Aissue+label%3Ahard
+[exokit]: https://github.com/exokitxr/exokit/
+[easy]: https://github.com/exokitxr/exokit/issues?q=is%3Aopen+is%3Aissue+label%3Aeasy
+[hard]: https://github.com/exokitxr/exokit/issues?q=is%3Aopen+is%3Aissue+label%3Ahard
 [pr]: https://www.digitalocean.com/community/tutorials/how-to-create-a-pull-request-on-github
 [ssh]: https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent/
 
@@ -39,7 +39,7 @@ Check out the [issues labeled *help wanted (easy)*][easy] or [*help wanted
 (hard)*][hard] for good issues to tackle. Here's how to submit a pull request (PR):
 
 1. Have a [GitHub account](https://github.com/join) with [SSH keys][ssh] set up.
-2. [Fork](https://github.com/webmixedreality/exokit/fork) the repository on GitHub.
+2. [Fork](https://github.com/exokitxr/exokit/fork) the repository on GitHub.
 3. Clone your fork of the repository locally (i.e., `git clone git@github.com:yourusername/exokit`).
 4. Create a branch to work in (i.e., `git checkout -b mybranch`).
 5. Make changes to your fork of the repository, commit them, and push them (i.e., `git add -A . && git commit -m 'My Changes (fixes #1234)' && git push origin mybranch`).
@@ -58,7 +58,7 @@ under the [MIT License](LICENSE).
 
 # Update Documentation
 
-If you catch a typo or error in the [documentation](https://github.com/webmixedreality/webmr-docs), we'd greatly appreciate a
+If you catch a typo or error in the [documentation](https://github.com/exokitxr/webmr-docs), we'd greatly appreciate a
 pull request.
 
 
@@ -83,7 +83,7 @@ Glitch and update the `src` URL.
 
 ## On GitHub
 
-1. Help respond to [newly-filed GitHub issues](https://github.com/webmixedreality/exokit/issues)
+1. Help respond to [newly-filed GitHub issues](https://github.com/exokitxr/exokit/issues)
 2. Redirect developers to [Stack Overflow][stackoverflow] if a question is filed rather than an issue.
 3. For extra points, cross-post and answer the question on Stack Overflow after redirecting!
 
@@ -94,6 +94,6 @@ We round up all the cool stuff happening with Exokit on the [blog](https://exoki
 # Spread the Word
 
 If you want to hold an event and talk about WebXR and Exokit, check out [the
-presentation kit](https://github.com/webmixedreality/exokit-presentation-kit).
+presentation kit](https://github.com/exokitxr/exokit-presentation-kit).
 
 Thanks so much for contributing and helping grow WebXR!

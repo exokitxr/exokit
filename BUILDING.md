@@ -10,7 +10,7 @@ Exokit is a node module. The core is written in Javascript, with native bindings
 
 ### Procedure
 1. open **Node.js command prompt**
-1. `git clone https://github.com/webmixedreality/exokit.git`
+1. `git clone https://github.com/exokitxr/exokit.git`
 1. run `npm install`
 
 ## MacOS
@@ -19,7 +19,7 @@ Exokit is a node module. The core is written in Javascript, with native bindings
 
 ### Procedure
 1. open **Terminal.app**
-1. `git clone https://github.com/webmixedreality/exokit.git`
+1. `git clone https://github.com/exokitxr/exokit.git`
 1. run `npm install`
 
 ## Linux
@@ -29,7 +29,7 @@ Exokit is a node module. The core is written in Javascript, with native bindings
 ### Procedure
 1. open **bash**
 1. install dependencies: `apt-get install -y build-essential wget python libglfw3-dev libglew-dev libfreetype6-dev libfontconfig1-dev uuid-dev libxcursor-dev libxinerama-dev libxi-dev libasound2-dev libexpat1-dev`
-1. `git clone https://github.com/webmixedreality/exokit.git`
+1. `git clone https://github.com/exokitxr/exokit.git`
 1. run `npm install`
 
 ## Magic Leap

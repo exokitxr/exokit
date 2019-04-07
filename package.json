@@ -22,7 +22,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/webmixedreality/exokit.git"
+    "url": "git+https://github.com/exokitxr/exokit.git"
   },
   "keywords": [
     "browser",
@@ -39,9 +39,9 @@
   "author": "Avaer Kazmer <a@modules.io>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/webmixedreality/exokit/issues"
+    "url": "https://github.com/exokitxr/exokit/issues"
   },
-  "homepage": "https://github.com/webmixedreality/exokit#readme",
+  "homepage": "https://github.com/exokitxr/exokit#readme",
   "dependencies": {
     "@rgrove/parse-xml": "^1.1.1",
     "bugsnag": "^2.4.3",
