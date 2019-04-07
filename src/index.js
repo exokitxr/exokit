@@ -336,12 +336,7 @@ const localFovArray = new Float32Array(4);
 const localGamepadArray = new Float32Array(24);
 
 // XXX oculus mobile
-const localPositionArray3 = new Float32Array(3);
-const localQuaternionArray4 = new Float32Array(4);
-const leftControllerPositionArray3 = new Float32Array(3);
-const leftControllerQuaternionArray4 = new Float32Array(4);
-const rightControllerPositionArray3 = new Float32Array(3);
-const rightControllerQuaternionArray4 = new Float32Array(4);
+const oculusMobilePoseFloat32Array = new Float32Array(16*(2+2+2));
 
 const handEntrySize = (1 + (5 * 5)) * (3 + 3);
 const transformArray = new Float32Array(7 * 2);
@@ -1498,18 +1493,13 @@ const _startRenderLoop = () => {
         timestamps.last = now;
       }
     } else if (oculusMobileVrPresentState.vrContext) {
-      oculusMobileVrPresentState.vrContext.GetPose(
-        localPositionArray3,   // hmd position
-        localQuaternionArray4, // hmd orientation
-        localFloat32Array,     // left eye view matrix
-        localFloat32Array2,    // left eye projection matrix
-        localFloat32Array3,    // right eye view matrix
-        localFloat32Array4,     // right eye projection matrix
-        leftControllerPositionArray3, // left controller position.
-        leftControllerQuaternionArray4, // left controller orientation.
-        rightControllerPositionArray3, // right controller position.
-        rightControllerQuaternionArray4 // right controller orientation.
+      const windowHandle = oculusMobileVrPresentState.glContext.getWindowHandle();
+      ooculusMobileVrPresentState.hasPose = culusMobileVrPresentState.vrContext.WaitGetPoses(
+        windowHandle,
+        oculusMobilePoseFloat32Array
       );
+
+      // XXX unpack oculusMobilePoseFloat32Array into xrState
     } else if (mlPresentState.mlGlContext) {
       mlPresentState.mlHasPose = await new Promise((accept, reject) => {
         mlPresentState.mlContext.RequestGetPoses(
