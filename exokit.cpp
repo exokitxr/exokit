@@ -12,6 +12,9 @@
 #ifdef OPENVR
 #include <openvr-bindings.h>
 #endif
+#ifdef ANDROID
+#include <oculus-mobile.h>
+#endif
 
 using namespace v8;
 
@@ -197,6 +200,11 @@ void InitExports(Local<Object> exports) {
 #if LEAPMOTION
   Local<Value> lm = makeLm();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeLm"), lm);
+#endif
+
+#ifdef ANDROID
+  Local<Value> oculusMobileVr = makeOculusMobileVr();
+  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeOculusMobileVr"), oculusMobileVr);
 #endif
 
 #if defined(LUMIN)
