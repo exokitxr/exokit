@@ -245,6 +245,9 @@ void android_main(struct android_app *app) {
 
   jniOnload(app->activity->vm);
 
+  globalJava.Vm = app->activity->vm;
+  globalJava.ActivityObject = app->activity->clazz;
+
   __android_log_print(ANDROID_LOG_ERROR, "exokit", "main cwd 4 %lx", (unsigned long)app);
 
   registerDlibs(node::dlibs);
