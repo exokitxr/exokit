@@ -14,7 +14,7 @@ This auto-detects your operating system and gives you the latest release. It inc
 
 ## Visual guide
 
- <video src="https://cdn.rawgit.com/webmixedreality/webmr-docs/master/website/static/media/exokitmediacopy/InstallVideo.mp4" width='100%' controls></video>
+ <video src="https://cdn.rawgit.com/exokitxr/webmr-docs/master/website/static/media/exokitmediacopy/InstallVideo.mp4" width='100%' controls></video>
 
 ## MacOS notes
 
@@ -26,8 +26,8 @@ You'll [need additional libraries installed](startDevelopment.html#linux-depende
 
 ## Alternate releases
 
-[GitHub Releases](https://github.com/webmixedreality/exokit/releases) has every alternate and past release.
+[GitHub Releases](https://github.com/exokitxr/exokit/releases) has every alternate and past release.
 
 > The Exokit installer just grabs the latest release from GitHub.
 
-The releases are automatically built on every version update of the [GitHub repository](https://github.com/webmixedreality/exokit).
+The releases are automatically built on every version update of the [GitHub repository](https://github.com/exokitxr/exokit).

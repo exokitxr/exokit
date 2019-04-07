@@ -10,7 +10,7 @@ examples: []
 
 ## Overview
 
- <img style="display: block !important" src="https://cdn.rawgit.com/webmixedreality/webmr-docs/media-upload/website/static/media/exokitmediacopy/architecture.jpg" alt="Diagram of Node on bottom, running a layer of javascript, linked to native bindings, and then a device/headset on top"/>
+ <img style="display: block !important" src="https://cdn.rawgit.com/exokitxr/webmr-docs/media-upload/website/static/media/exokitmediacopy/architecture.jpg" alt="Diagram of Node on bottom, running a layer of javascript, linked to native bindings, and then a device/headset on top"/>
 
 Exokit Engine is a Node module.
 

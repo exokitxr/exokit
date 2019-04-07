@@ -22,11 +22,11 @@ There are two main parts to the Exokit SDK:
 
 ### Web APIs
 
-> <img src="https://cdn.rawgit.com/webmixedreality/webmr-docs/media-upload/website/static/media/exokitmediacopy/sdk1.jpg" alt="SDK diagram 1"/>
+> <img src="https://cdn.rawgit.com/exokitxr/webmr-docs/media-upload/website/static/media/exokitmediacopy/sdk1.jpg" alt="SDK diagram 1"/>
 
 Exokit engine runs regular [HTML](https://en.wikipedia.org/wiki/HTML) sites.
 
-If the site uses [WebXR](https://immersive-web.github.io/webxr/), [WebGL](https://www.khronos.org/registry/webgl/specs/latest/1.0/), [WebAudio](https://www.w3.org/TR/webaudio/), and other multimedia web specifications, it should work on Exokit (if it doesn't, please [file a bug](https://github.com/webmixedreality/exokit/issues/new)!)
+If the site uses [WebXR](https://immersive-web.github.io/webxr/), [WebGL](https://www.khronos.org/registry/webgl/specs/latest/1.0/), [WebAudio](https://www.w3.org/TR/webaudio/), and other multimedia web specifications, it should work on Exokit (if it doesn't, please [file a bug](https://github.com/exokitxr/exokit/issues/new)!)
 
 This means existing web documentation applies to Exokit as well.
 
@@ -34,7 +34,7 @@ This means existing web documentation applies to Exokit as well.
 
 ## Native integrations
 
-> <img src="https://cdn.rawgit.com/webmixedreality/webmr-docs/media-upload/website/static/media/exokitmediacopy/sdk2.jpg" alt="SDK diagram 2"/>
+> <img src="https://cdn.rawgit.com/exokitxr/webmr-docs/media-upload/website/static/media/exokitmediacopy/sdk2.jpg" alt="SDK diagram 2"/>
 
 Exokit includes additional support for interfacing with hardware like Magic Leap and Leap Motion.
 

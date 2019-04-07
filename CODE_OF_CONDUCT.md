@@ -68,7 +68,7 @@ cool technology. You will find that people will be eager to assume good intent
 and forgive as long as you earn their trust.
 
 The enforcement policies listed above apply to all official Exokit venues;
-primarily the Exokit Slack channel and GitHub repositories under webmixedreality.
+primarily the Exokit Slack channel and GitHub repositories under exokitxr.
 For other projects adopting the Exokit Code of Conduct, please contact the
 maintainers of those projects for enforcement. If you wish to use this code of
 conduct for your own project, consider explicitly mentioning your moderation

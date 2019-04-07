@@ -10,7 +10,7 @@ examples: []
 
 ## Visual guide
 
-<video src="https://cdn.rawgit.com/webmixedreality/webmr-docs/master/website/static/media/exokitmediacopy/ExokitBrowserHowto.mp4" width='100%' controls></video>
+<video src="https://cdn.rawgit.com/exokitxr/webmr-docs/master/website/static/media/exokitmediacopy/ExokitBrowserHowto.mp4" width='100%' controls></video>
 
 ## Where do I get Exokit Engine?
 
@@ -32,7 +32,7 @@ Paste this in the command window and hit _enter_. Exokit should load the site.
 >
 > If Exokit sees that the site requested a `WebGLRenderingContext` for a `<canvas>`, it will open a window to render the contents.
 
- <img src="https://cdn.rawgit.com/webmixedreality/webmr-docs/media-upload/website/static/media/exokitmediacopy/runwebglsite.jpg" width=700, height=auto alt="Opening a site by entering the URL in the CLI"/>
+ <img src="https://cdn.rawgit.com/exokitxr/webmr-docs/media-upload/website/static/media/exokitmediacopy/runwebglsite.jpg" width=700, height=auto alt="Opening a site by entering the URL in the CLI"/>
 
 #### Notes
 
@@ -60,8 +60,8 @@ The site may also listen for regular keyboard/mouse events to create an XR sessi
 
 ## Create an engine example
 
-There's a full [WebXR example](https://github.com/webmixedreality/exokit/blob/master/examples/hello_xr.html) for you to play with on GitHub.
+There's a full [WebXR example](https://github.com/exokitxr/exokit/blob/master/examples/hello_xr.html) for you to play with on GitHub.
 
 You can see more Exokit Apps [here!](https://exokit.org/docs/exokitApps.html)
 
- <img src="https://cdn.rawgit.com/webmixedreality/webmr-docs/media-upload/website/static/media/exokitmediacopy/WebXRExample.jpg" alt="Gif of example running"/>
+ <img src="https://cdn.rawgit.com/exokitxr/webmr-docs/media-upload/website/static/media/exokitmediacopy/WebXRExample.jpg" alt="Gif of example running"/>

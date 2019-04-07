@@ -2,7 +2,7 @@
 #define MyAppShortName "Exokit"
 #define MyAppLCShortName "exokit"
 #define MyAppPublisher "WebMR"
-#define MyAppURL "https://github.com/webmixedreality/exokit"
+#define MyAppURL "https://github.com/exokitxr/exokit"
 #define MyAppExeName "exokit.cmd"
 #define MyIcon "exokit.ico"
 #define ProjectRoot ".."

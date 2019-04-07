@@ -66,7 +66,7 @@ This project **enables developers to build XR experiences using the same code th
 <a href="https://youtu.be/i0MXRCNkdB4"><img alt="Emukit" target="_blank" src="https://user-images.githubusercontent.com/29695350/55507623-a8f24200-561d-11e9-97a3-194b6b4a1d8b.gif" height="190" width="32%"></a>
 <a href="https://exokit.org/"><img alt="Various Exokit Apps" target="_blank" src="https://user-images.githubusercontent.com/29695350/55506701-ba3a4f00-561b-11e9-9e19-ba808bed7c5a.gif" height="190" width="32%"></a>
 
-*Find more examples at [the showcase](../../showcase), [on GitHub](https://github.com/webmixedreality/exokit/tree/master/examples), and on [YouTube](https://www.youtube.com/channel/UC87Q7_5ooY8FSLwOec52ZPQ).*
+*Find more examples at [the showcase](../../showcase), [on GitHub](https://github.com/exokitxr/exokit/tree/master/examples), and on [YouTube](https://www.youtube.com/channel/UC87Q7_5ooY8FSLwOec52ZPQ).*
 
 
 ## Getting Started
@@ -96,7 +96,7 @@ mldb log exokit:*
 ### Local Development
 
 ```sh
-git clone https://github.com/webmixedreality/exokit.git
+git clone https://github.com/exokitxr/exokit.git
 cd exokit
 npm install
 node . <url> # or node . -h for home
@@ -166,9 +166,9 @@ Exokit:
 3. Stay in Touch:
 - [Join our Slack](https://join.slack.com/t/exokit/shared_invite/enQtNDI3NjcxNzYwMDIxLWU2NmFmOTEzMzk4NWNiYjRhMjVkYzcyNjg5YjUyMzZkYWM1ZGI4M2IwYWZiMjNlMTJjMDlkM2U3Y2JiNTc2M2Q) for development.
 - [Join our Discord](https://discord.gg/Apk6cZN) for hanging out.
-- [Follow @webmixedreality on Twitter](https://twitter.com/webmixedreality) for updates.
+- [Follow @exokitxr on Twitter](https://twitter.com/exokitxr) for updates.
 
-4. Get involved! Check out the [Contributing Guide](https://github.com/webmixedreality/exokit/CONTRIBUTING.md) for how to get started.
+4. Get involved! Check out the [Contributing Guide](https://github.com/exokitxr/exokit/CONTRIBUTING.md) for how to get started.
 
 And it really helps to have dig into the fundamentals on JavaScript and
 three.js. Have fun!

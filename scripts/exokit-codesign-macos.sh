@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# TODO https://github.com/webmixedreality/exokit/issues/169
+# TODO https://github.com/exokitxr/exokit/issues/169
 if true || [ -z "${PFX_KEY}" ]
 then
   cp metadata/appdmg.json /tmp

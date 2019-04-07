@@ -36,7 +36,7 @@ This project enables developers to build XR experiences using the same code that
 
 Exokit Engine is primarily intended for AR/VR/Mixed Reality applications. It is _not_ based on another browser, specifically it is not a fork of Blink, Gecko, Webkit, or Trident.
 
-<img style="display: block !important" src="https://cdn.rawgit.com/webmixedreality/webmr-docs/media-upload/website/static/media/exokitmediacopy/exokitisnt.gif" width=300, height=auto alt="Cross out other browsers to make it clear this is not a fork"/>
+<img style="display: block !important" src="https://cdn.rawgit.com/exokitxr/webmr-docs/media-upload/website/static/media/exokitmediacopy/exokitisnt.gif" width=300, height=auto alt="Cross out other browsers to make it clear this is not a fork"/>
 
 ## Exokit is an Exobrowser.
 
@@ -44,7 +44,7 @@ Exokit Engine is primarily intended for AR/VR/Mixed Reality applications. It is 
 -	A web browser turned inside-out with its engine written in Javascript, so the browser is a site.
 - This site in turn is the browser; it has full access to bindings.
 
-<img style="display: block !important" src="https://cdn.rawgit.com/webmixedreality/webmr-docs/media-upload/website/static/media/exokitmediacopy/chrome%20breaking.gif" alt="Picture of a site flipped inside out, maybe an animal, so the native insides are flipped to the outside"/>
+<img style="display: block !important" src="https://cdn.rawgit.com/exokitxr/webmr-docs/media-upload/website/static/media/exokitmediacopy/chrome%20breaking.gif" alt="Picture of a site flipped inside out, maybe an animal, so the native insides are flipped to the outside"/>
 
 ## 2D Support
 
@@ -88,8 +88,8 @@ Exokit Browser is just Javascript with some C++ bindings to libraries, such as O
 
 Not 1.0. We need to improve site support and testing more until we call it.
 
-If you have a site that doesn't work, there's high chance it's a silly corner case. We encourage you to [file an issue](https://github.com/webmixedreality/exokit/issues/new) so we can have a look!
+If you have a site that doesn't work, there's high chance it's a silly corner case. We encourage you to [file an issue](https://github.com/exokitxr/exokit/issues/new) so we can have a look!
 
 ## Can I use it?
 
-Sure! It's [open source on GitHub](https://github.com/webmixedreality/exokit). You can also embed it since [it's a node module](https://github.com/webmixedreality/exokit/blob/master/package.json).
+Sure! It's [open source on GitHub](https://github.com/exokitxr/exokit). You can also embed it since [it's a node module](https://github.com/exokitxr/exokit/blob/master/package.json).

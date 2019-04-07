@@ -11,7 +11,7 @@
 	<key>CFBundleDisplayName</key>
 	<string>Exokit</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.webmixedreality.exokit</string>
+	<string>com.exokitxr.exokit</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>

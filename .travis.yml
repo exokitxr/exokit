@@ -26,7 +26,7 @@ matrix:
       file: exokit-linux.tar.gz
       body: Exokit git release
       on:
-        repo: webmixedreality/exokit
+        repo: exokitxr/exokit
         tags: true
       skip_cleanup: true
     - provider: releases
@@ -35,7 +35,7 @@ matrix:
       file: exokit-linux-bin.tar.gz
       body: Exokit git release
       on:
-        repo: webmixedreality/exokit
+        repo: exokitxr/exokit
         tags: true
       skip_cleanup: true
     - provider: releases
@@ -44,7 +44,7 @@ matrix:
       file: exokit-linux-full.tar.gz
       body: Exokit git release
       on:
-        repo: webmixedreality/exokit
+        repo: exokitxr/exokit
         tags: true
       skip_cleanup: true
   - os: osx
@@ -76,7 +76,7 @@ matrix:
       file: exokit-macos.tar.gz
       body: Exokit git release
       on:
-        repo: webmixedreality/exokit
+        repo: exokitxr/exokit
         tags: true
       skip_cleanup: true
     - provider: releases
@@ -85,7 +85,7 @@ matrix:
       file: exokit-macos-full.tar.gz
       body: Exokit git release
       on:
-        repo: webmixedreality/exokit
+        repo: exokitxr/exokit
         tags: true
       skip_cleanup: true
     - provider: releases
@@ -94,7 +94,7 @@ matrix:
       file: exokit-macos-x64.dmg
       body: Exokit macOS release
       on:
-        repo: webmixedreality/exokit
+        repo: exokitxr/exokit
         tags: true
       skip_cleanup: true
 notifications:
@@ -104,10 +104,10 @@ notifications:
     on_success: change
     on_failure: always
 after_success:
-  - wget https://raw.githubusercontent.com/webmixedreality/travis-ci-discord-webhook/master/send.sh
+  - wget https://raw.githubusercontent.com/exokitxr/travis-ci-discord-webhook/master/send.sh
   - chmod +x send.sh
   - ./send.sh success $WEBHOOK_URL
 after_failure:
-  - wget https://raw.githubusercontent.com/webmixedreality/travis-ci-discord-webhook/master/send.sh
+  - wget https://raw.githubusercontent.com/exokitxr/travis-ci-discord-webhook/master/send.sh
   - chmod +x send.sh
   - ./send.sh failure $WEBHOOK_URL

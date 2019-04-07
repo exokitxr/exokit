@@ -4,11 +4,11 @@
 
 <p align="center">
   <a href="https://join.slack.com/t/exokit/shared_invite/enQtNDI3NjcxNzYwMDIxLWU2NmFmOTEzMzk4NWNiYjRhMjVkYzcyNjg5YjUyMzZkYWM1ZGI4M2IwYWZiMjNlMTJjMDlkM2U3Y2JiNTc2M2Q"><img src="https://img.shields.io/badge/slack-join-green.svg?logo=slack&longCache=true&style=flat"></a>
-  <a href="https://github.com/webmixedreality/exokit/releases"><img src="https://img.shields.io/github/downloads/webmixedreality/exokit/total.svg"></a>
+  <a href="https://github.com/exokitxr/exokit/releases"><img src="https://img.shields.io/github/downloads/exokitxr/exokit/total.svg"></a>
   <a href="https://www.npmjs.com/package/exokit"><img src="https://img.shields.io/npm/v/exokit.svg"></a>
   <a href="https://travis-ci.org/modulesio/exokit-windows"><img src="https://travis-ci.org/modulesio/exokit-windows.svg?branch=master"></a>
   <a href="https://ci.appveyor.com/project/modulesio/exokit-windows"><img src="https://ci.appveyor.com/api/projects/status/32r7s2skrgm9ubva?svg=true"></a>  
-  <a href="https://twitter.com/webmixedreality"><img src="https://img.shields.io/twitter/follow/webmixedreality.svg?style=social"></a>
+  <a href="https://twitter.com/exokitxr"><img src="https://img.shields.io/twitter/follow/exokitxr.svg?style=social"></a>
 </p>
 
 <div align="center">
@@ -20,7 +20,7 @@
   &mdash;
   <a href="https://exokit.slack.com/join/shared_invite/enQtNDI3NjcxNzYwMDIxLWU2NmFmOTEzMzk4NWNiYjRhMjVkYzcyNjg5YjUyMzZkYWM1ZGI4M2IwYWZiMjNlMTJjMDlkM2U3Y2JiNTc2M2Q">Slack</a>
   &mdash;
-  <a href="https://twitter.com/webmixedreality">Twitter</a>
+  <a href="https://twitter.com/exokitxr">Twitter</a>
   &mdash;
   <a href="http://eepurl.com/dFiLMz">Email List</a>
 </div>
@@ -35,7 +35,7 @@
 <a href="https://youtu.be/i0MXRCNkdB4"><img alt="Emukit" target="_blank" src="https://user-images.githubusercontent.com/29695350/55507623-a8f24200-561d-11e9-97a3-194b6b4a1d8b.gif" height="190" width="32%"></a>
 <a href="https://exokit.org/"><img alt="Various Exokit Apps" target="_blank" src="https://user-images.githubusercontent.com/29695350/55506701-ba3a4f00-561b-11e9-9e19-ba808bed7c5a.gif" height="190" width="32%"></a>
 
-*Find more examples [here](https://github.com/webmixedreality/exokit/tree/master/examples) and on [YouTube](https://www.youtube.com/channel/UC87Q7_5ooY8FSLwOec52ZPQ).*
+*Find more examples [here](https://github.com/exokitxr/exokit/tree/master/examples) and on [YouTube](https://www.youtube.com/channel/UC87Q7_5ooY8FSLwOec52ZPQ).*
 
 
 ## Overview
@@ -153,7 +153,7 @@ Exokit runs on Windows, macOS, Linux (x64), Linux (ARM64), and Magic Leap (ARM64
 ## Local Development
 
 ```sh
-git clone https://github.com/webmixedreality/exokit.git
+git clone https://github.com/exokitxr/exokit.git
 cd exokit
 npm install
 node . <url> # or node . -h for home
@@ -185,7 +185,7 @@ For questions and support, [ask on StackOverflow](https://stackoverflow.com/ques
 
 - [Join our Slack](https://join.slack.com/t/exokit/shared_invite/enQtNDI3NjcxNzYwMDIxLWU2NmFmOTEzMzk4NWNiYjRhMjVkYzcyNjg5YjUyMzZkYWM1ZGI4M2IwYWZiMjNlMTJjMDlkM2U3Y2JiNTc2M2Q) for development.
 - [Join our Discord](https://discord.gg/Apk6cZN) for hanging out.
-- [Follow @webmixedreality on Twitter](https://twitter.com/webmixedreality) for updates.
+- [Follow @exokitxr on Twitter](https://twitter.com/exokitxr) for updates.
 
 
 ## Contributing
