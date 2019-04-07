@@ -37,6 +37,8 @@ namespace node {
   int Start(int argc, char* argv[]);
 }
 
+#ifdef ANDROID
+
 typedef struct AssetStatStruct {
   char name[256];
   uint32_t key;
@@ -48,6 +50,8 @@ typedef struct AssetStatStruct {
 extern "C" {
 void initAssetManager(AAssetManager *am);
 }
+
+ovrJava globalJava;
 
 JNIEnv *jniGetEnv(JavaVM *vm) {
   JNIEnv *env;
@@ -126,7 +130,7 @@ void jniOnload(JavaVM *vm) {
   // return JNI_VERSION_1_6;
 }
 
-// #include "build/libexokit/dlibs.h"
+#endif
 
 const char *LOG_TAG = "exokit";
 constexpr ssize_t STDIO_BUF_SIZE = 64 * 1024;
