@@ -600,7 +600,7 @@
             # "<!(node -e \"console.log(require.resolve('native-browser-deps').slice(0, -9) + '/lib')\")",
             "<!(node -e \"console.log(require.resolve('native-webrtc-deps').slice(0, -9) + '/include')\")",
             "<!(node -e \"console.log(require.resolve('native-webrtc-deps').slice(0, -9) + '/include/webrtc')\")",
-            "<!(node -e \"console.log(require.resolve('native-oculus-mobile-deps').slice(0, -9) + '/include')\")",
+            "<!(node -e \"console.log(require.resolve('native-oculus-mobile-deps').slice(0, -9) + '/lib/include')\")",
             "<!(echo $TOOLCHAIN_LIB)",
             "<!(echo $TOOLCHAIN_INCLUDE_LIB)",
             "<!(echo $TOOLCHAIN_INCLUDE_SYSROOT)/EGL",
