@@ -266,6 +266,7 @@ if (bindings.nativeOpenVR) {
 }
 
 GlobalContext.nativeOpenVR = bindings.nativeOpenVR;
+GlobalContext.nativeOculusMobileVr = bindings.nativeOculusMobileVr;
 GlobalContext.nativeMl = bindings.nativeMl;
 GlobalContext.nativeBrowser = bindings.nativeBrowser;
 GlobalContext.nativeOculusVR = bindings.nativeOculusVR;
