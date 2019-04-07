@@ -1732,9 +1732,13 @@ const _startRenderLoop = () => {
         timestamps.last = now;
       }
     } else if (oculusMobileVrPresentState.vrContext) {
-      oculusMobileVrPresentState.vrContext.GetPose(
-        localOculusMobileVrPoseFloat32Array,
+      const windowHandle = oculusMobileVrPresentState.glContext.getWindowHandle();
+      oculusMobileVrPresentState.hasPose = oculusMobileVrPresentState.vrContext.WaitGetPoses(
+        windowHandle,
+        localOculusMobileVrPoseFloat32Array
       );
+
+      // XXX unpack oculusMobilePoseFloat32Array into xrState
     } else if (mlPresentState.mlGlContext) {
       mlPresentState.mlHasPose = await new Promise((accept, reject) => {
         mlPresentState.mlContext.RequestGetPoses(
