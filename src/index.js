@@ -795,6 +795,8 @@ if (nativeBindings.nativeOculusMobileVr) {
 
         const vrContext = oculusMobileVrPresentState.vrContext = oculusMobileVrPresentState.vrContext || nativeBindings.nativeOculusMobileVr.OculusMobile_Init(context.getWindowHandle());
 
+        vrContext.SetupSwapChain(context);
+
         const {width: halfWidth, height} = vrContext.GetRecommendedRenderTargetSize();
         const MAX_TEXTURE_SIZE = 4096;
         const MAX_TEXTURE_SIZE_HALF = MAX_TEXTURE_SIZE/2;
@@ -1828,11 +1830,6 @@ const _startRenderLoop = () => {
           rightGamepad.connected[0] = 0;
         }
       }
-
-      /* vrPresentState.system.GetProjectionRaw(0, localFovArray);
-      for (let i = 0; i < localFovArray.length; i++) {
-        xrState.leftFov[i] = Math.atan(localFovArray[i]) / Math.PI * 180;
-      } */
     } else if (mlPresentState.mlGlContext) {
       mlPresentState.mlHasPose = await new Promise((accept, reject) => {
         mlPresentState.mlContext.RequestGetPoses(

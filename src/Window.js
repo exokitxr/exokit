@@ -1430,8 +1430,8 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     };
 
     const oculusMobileVrDevice = new XR.XRDevice('OculusMobileVR', window);
-    oculusMobileVrDevice.onrequestpresent = layers => nativeOculusMobileVr.requestPresent(layers);
-    oculusMobileVrDevice.onexitpresent = () => nativeOculusMobileVr.exitPresent();
+    oculusMobileVrDevice.onrequestpresent = layers => nativeOculusMobileVR.requestPresent(layers);
+    oculusMobileVrDevice.onexitpresent = () => nativeOculusMobileVR.exitPresent();
     oculusMobileVrDevice.onrequestanimationframe = _makeRequestAnimationFrame(window);
     oculusMobileVrDevice.oncancelanimationframe = window.cancelAnimationFrame;
     oculusMobileVrDevice.requestSession = (requestSession => function() {
