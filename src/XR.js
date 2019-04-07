@@ -24,6 +24,8 @@ class XR extends EventEmitter {
       return Promise.resolve(this._window[symbols.mrDisplaysSymbol].fakeVrDisplay);
     } else if ((name === 'VR' || name === null) && GlobalContext.nativeVr && GlobalContext.nativeVr.VR_IsHmdPresent()) {
       return Promise.resolve(this._window[symbols.mrDisplaysSymbol].xrDisplay);
+    } else if ((name === 'VR' || name === null) && GlobalContext.nativeOculusMobileVr && GlobalContext.nativeOculusMobileVr.OculusMobile_IsHmdPresent()) {
+      return Promise.resolve(this._window[symbols.mrDisplaysSymbol].oculusMobileVrDevice);
     } else if ((name === 'AR' || name === null) && GlobalContext.nativeMl && GlobalContext.nativeMl.IsPresent()) {
       return Promise.resolve(this._window[symbols.mrDisplaysSymbol].xmDisplay);
     } else {

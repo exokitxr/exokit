@@ -94,6 +94,7 @@ const {
     VideoDevice,
   },
   nativeVr,
+  nativeOculusMobileVr,
   nativeMl,
   nativeBrowser,
   nativeWindow,
@@ -477,6 +478,9 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       }
       if (nativeVr && nativeVr.VR_IsHmdPresent()) {
         result.push(window[symbols.mrDisplaysSymbol].vrDisplay);
+      }
+      if (nativeOculusMobileVr && nativeOculusMobileVr.OculusMobile_IsHmdPresent()) {
+        result.push(window[symbols.mrDisplaysSymbol].oculusMobileVrDisplay);
       }
       result.sort((a, b) => +b.isPresenting - +a.isPresenting);
       return result;
@@ -1333,6 +1337,33 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       GlobalContext.vrPresentState.layers = layers;
     };
 
+    const oculusMobileVrDisplay = new VRDisplay('OculusMobileVR');
+    _bindMRDisplay(oculusMobileVrDisplay);
+    oculusMobileVrDisplay.onrequestpresent = layers => nativeOculusMobileVR.requestPresent(layers);
+    oculusMobileVrDisplay.onexitpresent = () => nativeOculusMobileVR.exitPresent();
+    oculusMobileVrDisplay.onlayers = layers => {
+      GlobalContext.vrPresentState.layers = layers;
+    };
+
+    const oculusMobileVrDevice = new XR.XRDevice('OculusMobileVR');
+    oculusMobileVrDevice.onrequestpresent = layers => nativeOculusMobileVR.requestPresent(layers);
+    oculusMobileVrDevice.onexitpresent = () => nativeOculusMobileVR.exitPresent();
+    oculusMobileVrDevice.onrequestanimationframe = _makeRequestAnimationFrame(window);
+    oculusMobileVrDevice.oncancelanimationframe = window.cancelAnimationFrame;
+    oculusMobileVrDevice.requestSession = (requestSession => function() {
+      return requestSession.apply(this, arguments)
+        .then(session => {
+          oculusMobileVrDisplay.isPresenting = true;
+          session.once('end', () => {
+            oculusMobileVrDisplay.isPresenting = false;
+          });
+          return session;
+        });
+    })(oculusMobileVrDevice.requestSession);
+    oculusMobileVrDevice.onlayers = layers => {
+      GlobalContext.vrPresentState.layers = layers;
+    };
+
     const mlDisplay = new VRDisplay('AR');
     _bindMRDisplay(mlDisplay);
     mlDisplay.onrequestpresent = layers => nativeMl.requestPresent(layers);
@@ -1366,6 +1397,8 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       fakeVrDisplay,
       vrDisplay,
       xrDisplay,
+      oculusMobileVrDisplay,
+      oculusMobileVrDevice,
       mlDisplay,
       xmDisplay,
     };

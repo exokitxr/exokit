@@ -335,6 +335,14 @@ const localFloat32Array4 = new Float32Array(16);
 const localFovArray = new Float32Array(4);
 const localGamepadArray = new Float32Array(24);
 
+// XXX oculus mobile
+const localPositionArray3 = new Float32Array(3);
+const localQuaternionArray4 = new Float32Array(4);
+const leftControllerPositionArray3 = new Float32Array(3);
+const leftControllerQuaternionArray4 = new Float32Array(4);
+const rightControllerPositionArray3 = new Float32Array(3);
+const rightControllerQuaternionArray4 = new Float32Array(4);
+
 const handEntrySize = (1 + (5 * 5)) * (3 + 3);
 const transformArray = new Float32Array(7 * 2);
 const projectionArray = new Float32Array(16 * 2);
@@ -606,6 +614,167 @@ if (nativeBindings.nativeVr) {
     return Promise.resolve();
   };
 }
+
+const oculusMobileVrPresentState = {
+  vrContext: null,
+  isPresenting: false,
+  glContext: null,
+  msFbo: null,
+  msTex: null,
+  msDepthTex: null,
+  fbo: null,
+  tex: null,
+  depthTex: null,
+  cleanups: null,
+  hasPose: false,
+  lmContext: null,
+  layers: [],
+};
+GlobalContext.oculusMobileVrPresentState = oculusMobileVrPresentState;
+
+if (nativeBindings.nativeOculusMobileVr) {
+  nativeBindings.nativeOculusMobileVr.requestPresent = function (layers) {
+    const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
+    if (layer) {
+      const canvas = layer.source;
+      if (!oculusMobileVrPresentState.glContext) {
+        let context = canvas._context;
+        if (!(context && context.constructor && context.constructor.name === 'WebGLRenderingContext')) {
+          context = canvas.getContext('webgl');
+        }
+        const window = canvas.ownerDocument.defaultView;
+
+        const windowHandle = context.getWindowHandle();
+        nativeBindings.nativeWindow.setCurrentWindowContext(windowHandle);
+
+        // fps = VR_FPS;
+
+        const vrContext = oculusMobileVrPresentState.vrContext = oculusMobileVrPresentState.vrContext || nativeBindings.nativeOculusMobileVr.OculusMobile_Init();
+
+        vrContext.SetupSwapChain(context);
+        const {width: halfWidth, height} = vrContext.GetRecommendedRenderTargetSize();
+        const MAX_TEXTURE_SIZE = 4096;
+        const MAX_TEXTURE_SIZE_HALF = MAX_TEXTURE_SIZE/2;
+        if (halfWidth > MAX_TEXTURE_SIZE_HALF) {
+          const factor = halfWidth / MAX_TEXTURE_SIZE_HALF;
+          halfWidth = MAX_TEXTURE_SIZE_HALF;
+          height = Math.floor(height / factor);
+        }
+        const width = halfWidth * 2;
+        xrState.renderWidth[0] = halfWidth;
+        xrState.renderHeight[0] = height;
+
+        const cleanups = [];
+
+        const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeBindings.nativeWindow.createRenderTarget(context, width, height, 0, 0, 0, 0);
+
+        context.setDefaultFramebuffer(msFbo);
+
+        oculusMobileVrPresentState.isPresenting = true;
+        oculusMobileVrPresentState.vrContext = vrContext;
+        oculusMobileVrPresentState.glContext = context;
+        oculusMobileVrPresentState.msFbo = msFbo;
+        oculusMobileVrPresentState.msTex = msTex;
+        oculusMobileVrPresentState.msDepthTex = msDepthTex;
+        oculusMobileVrPresentState.fbo = fbo;
+        oculusMobileVrPresentState.tex = tex;
+        oculusMobileVrPresentState.depthTex = depthTex;
+        oculusMobileVrPresentState.cleanups = cleanups;
+
+        canvas.framebuffer = {
+          width,
+          height,
+          msFbo,
+          msTex,
+          msDepthTex,
+          fbo,
+          tex,
+          depthTex,
+        };
+
+        const _attribute = (name, value) => {
+          if (name === 'width' || name === 'height') {
+            nativeBindings.nativeWindow.setCurrentWindowContext(windowHandle);
+
+            nativeBindings.nativeWindow.resizeRenderTarget(context, canvas.width, canvas.height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
+          }
+        };
+        canvas.on('attribute', _attribute);
+        cleanups.push(() => {
+          canvas.removeListener('attribute', _attribute);
+        });
+
+        /* window.top.updateVrFrame({
+          renderWidth: xrState.renderWidth[0],
+          renderHeight: xrState.renderHeight[0],
+          force: true,
+        }); */
+
+        return canvas.framebuffer;
+      } else if (canvas.ownerDocument.framebuffer) {
+        const {width, height} = canvas;
+        const {msFbo, msTex, msDepthTex, fbo, tex, depthTex} = canvas.ownerDocument.framebuffer;
+        return {
+          width,
+          height,
+          msFbo,
+          msTex,
+          msDepthTex,
+          fbo,
+          tex,
+          depthTex,
+        };
+      } else {
+        /* const {width: halfWidth, height} = oculusMobileVrPresentState.vrContext.GetRecommendedRenderTargetSize();
+        const width = halfWidth * 2; */
+
+        const {msFbo, msTex, msDepthTex, fbo, tex, depthTex} = oculusMobileVrPresentState;
+        return {
+          width: xrState.renderWidth[0] * 2,
+          height: xrState.renderHeight[0],
+          msFbo,
+          msTex,
+          msDepthTex,
+          fbo,
+          tex,
+          depthTex,
+        };
+      }
+    } else {
+      throw new Error('no HTMLCanvasElement source provided');
+    }
+  };
+  nativeBindings.nativeOculusMobileVr.exitPresent = function() {
+    if (oculusMobileVrPresentState.isPresenting) {
+      nativeBindings.nativeOculusMobileVr.OculusMobile_Shutdown();
+
+      nativeBindings.nativeWindow.destroyRenderTarget(oculusMobileVrPresentState.msFbo, oculusMobileVrPresentState.msTex, oculusMobileVrPresentState.msDepthStencilTex);
+      nativeBindings.nativeWindow.destroyRenderTarget(oculusMobileVrPresentState.fbo, oculusMobileVrPresentState.tex, oculusMobileVrPresentState.msDepthTex);
+
+      const context = oculusMobileVrPresentState.glContext;
+      nativeBindings.nativeWindow.setCurrentWindowContext(context.getWindowHandle());
+      context.setDefaultFramebuffer(0);
+
+      for (let i = 0; i < oculusMobileVrPresentState.cleanups.length; i++) {
+        oculusMobileVrPresentState.cleanups[i]();
+      }
+
+      oculusMobileVrPresentState.isPresenting = false;
+      oculusMobileVrPresentState.vrContext = null;
+      oculusMobileVrPresentState.glContext = null;
+      oculusMobileVrPresentState.msFbo = null;
+      oculusMobileVrPresentState.msTex = null;
+      oculusMobileVrPresentState.msDepthTex = null;
+      oculusMobileVrPresentState.fbo = null;
+      oculusMobileVrPresentState.tex = null;
+      oculusMobileVrPresentState.depthTex = null;
+      oculusMobileVrPresentState.cleanups = null;
+    }
+
+    return Promise.resolve();
+  };
+}
+
 const mlPresentState = {
   mlContext: null,
   mlFbo: null,
@@ -620,6 +789,7 @@ const mlPresentState = {
   layers: [],
 };
 GlobalContext.mlPresentState = mlPresentState;
+
 if (nativeBindings.nativeMl) {
   mlPresentState.mlContext = new nativeBindings.nativeMl();
   nativeBindings.nativeMl.requestPresent = function(layers) {
@@ -1072,6 +1242,19 @@ const _startRenderLoop = () => {
             vrPresentState.hasPose = false;
 
             nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, vrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1), vrPresentState.glContext.canvas.height, xrState.renderWidth[0], xrState.renderHeight[0], true, false, false);
+          } else if (oculusMobileVrPresentState.glContext === context && oculusMobileVrPresentState.hasPose) {
+            if (oculusMobileVrPresentState.layers.length > 0) {
+              const {oculusMobileVrDisplay} = window[symbols.mrDisplaysSymbol];
+              _decorateModelViewProjections(oculusMobileVrPresentState.layers, vrDisplay, 2); // note: vrDisplay mirrors xrDisplay
+              nativeWindow.composeLayers(context, oculusMobileVrPresentState.fbo, oculusMobileVrPresentState.layers);
+            } else {
+              nativeWindow.blitFrameBuffer(context, oculusMobileVrPresentState.msFbo, oculusMobileVrPresentState.fbo, oculusMobileVrPresentState.glContext.canvas.width, oculusMobileVrPresentState.glContext.canvas.height, oculusMobileVrPresentState.glContext.canvas.width, oculusMobileVrPresentState.glContext.canvas.height, true, false, false);
+            }
+
+            oculusMobileVrPresentState.vrContext.Submit(context, oculusMobileVrPresentState.tex);
+            oculusMobileVrPresentState.hasPose = false;
+
+            nativeWindow.blitFrameBuffer(context, oculusMobileVrPresentState.fbo, 0, oculusMobileVrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1), oculusMobileVrPresentState.glContext.canvas.height, xrState.renderWidth[0], xrState.renderHeight[0], true, false, false);
           } else if (mlPresentState.mlGlContext === context && mlPresentState.mlHasPose) {
             if (mlPresentState.layers.length > 0) { // TODO: composition can be directly to the output texture array
               const {mlDisplay} = window[symbols.mrDisplaysSymbol];
@@ -1314,6 +1497,19 @@ const _startRenderLoop = () => {
         timestamps.total += diff;
         timestamps.last = now;
       }
+    } else if (oculusMobileVrPresentState.vrContext) {
+      oculusMobileVrPresentState.vrContext.GetPose(
+        localPositionArray3,   // hmd position
+        localQuaternionArray4, // hmd orientation
+        localFloat32Array,     // left eye view matrix
+        localFloat32Array2,    // left eye projection matrix
+        localFloat32Array3,    // right eye view matrix
+        localFloat32Array4,     // right eye projection matrix
+        leftControllerPositionArray3, // left controller position.
+        leftControllerQuaternionArray4, // left controller orientation.
+        rightControllerPositionArray3, // right controller position.
+        rightControllerQuaternionArray4 // right controller orientation.
+      );
     } else if (mlPresentState.mlGlContext) {
       mlPresentState.mlHasPose = await new Promise((accept, reject) => {
         mlPresentState.mlContext.RequestGetPoses(
@@ -1488,6 +1684,7 @@ const _startRenderLoop = () => {
     for (let i = 0; i < windows.length; i++) {
       const window = windows[i];
       window[symbols.mrDisplaysSymbol].xrDisplay.session && window[symbols.mrDisplaysSymbol].xrDisplay.session.update();
+      window[symbols.mrDisplaysSymbol].oculusMobileVrDevice.session && window[symbols.mrDisplaysSymbol].oculusMobileVrDevice.session.update();
       window[symbols.mrDisplaysSymbol].xmDisplay.session && window[symbols.mrDisplaysSymbol].xmDisplay.session.update();
     }
 

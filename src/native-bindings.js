@@ -266,6 +266,7 @@ if (bindings.nativeVr) {
 }
 
 GlobalContext.nativeVr = bindings.nativeVr;
+GlobalContext.nativeOculusMobileVr = bindings.nativeOculusMobileVr;
 GlobalContext.nativeMl = bindings.nativeMl;
 GlobalContext.nativeBrowser = bindings.nativeBrowser;
 
