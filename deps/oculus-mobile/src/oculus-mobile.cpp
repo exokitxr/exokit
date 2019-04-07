@@ -27,72 +27,18 @@ NAN_METHOD(OculusMobile_Init) {
   Local<Object> oculusMobileContextObj = localOculusMobileContextConstructor->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(argv)/sizeof(argv[0]), argv).ToLocalChecked(); */
   Local<Object> oculusMobileContextObj = localOculusMobileContextConstructor->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), 0, nullptr).ToLocalChecked();
   info.GetReturnValue().Set(oculusMobileContextObj);
-
-  /* if (info.Length() != 0)
-  {
-    Nan::ThrowError("Wrong number of arguments.");
-    return;
-  }
-
-  ovrSession *session = (ovrSession *) malloc(sizeof(ovrSession));
-  ovrResult result;
-  ovrGraphicsLuid luid;
-  result = ovr_Create(session, &luid);
-  if (OVR_FAILURE(result))
-  {
-    Nan::ThrowError("Error creating ovr session");
-    ovr_Shutdown();
-    return;
-  }
-
-  v8::Local<v8::Object> s = v8::Object::New(v8::Isolate::GetCurrent());
-  OVRSession::Init(s);
-
-  auto sessionResult = OVRSession::NewInstance(session);
-  info.GetReturnValue().Set(sessionResult); */
 }
 
 NAN_METHOD(OculusMobile_Shutdown) {
   std::cout << "OculusMobile_Shutdown" << std::endl;
 
   vrapi_Shutdown();
-  /* if (info.Length() != 0)
-  {
-    Nan::ThrowError("Wrong number of arguments.");
-    return;
-  }
-
-  ovrSession *session = (ovrSession *) malloc(sizeof(ovrSession));
-  ovrResult result;
-  ovrGraphicsLuid luid;
-  result = ovr_Create(session, &luid);
-  if (OVR_FAILURE(result))
-  {
-    Nan::ThrowError("Error creating ovr session");
-    ovr_Shutdown();
-    return;
-  }
-
-  v8::Local<v8::Object> s = v8::Object::New(v8::Isolate::GetCurrent());
-  OVRSession::Init(s);
-
-  auto sessionResult = OVRSession::NewInstance(session);
-  info.GetReturnValue().Set(sessionResult); */
 }
 
 NAN_METHOD(OculusMobile_IsHmdPresent) {
   std::cout << "OculusMobile_IsHmdPresent" << std::endl;
+
   info.GetReturnValue().Set(Nan::New<Boolean>(true));
-  /* bool returnValue = false;
-
-  ovr_Initialize(nullptr);
-
-  ovrHmdDesc desc = ovr_GetHmdDesc(nullptr);
-  if (desc.Type != ovrHmd_None) {
-    returnValue = true;
-  }
-
-  info.GetReturnValue().Set(Nan::New<Boolean>(returnValue)); */
 }
 
 }
