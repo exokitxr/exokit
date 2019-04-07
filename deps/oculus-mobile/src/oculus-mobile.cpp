@@ -1,20 +1,40 @@
+#ifdef ANDROID
+
 #include <oculus-mobile.h>
+#include <oculus-context.h>
 
 #include <nan.h>
-#include <iostream>
+#include <exout>
 
 #include <node.h>
 #include <v8.h>
 
-#include "VrApi.h"
-#include "VrApi_Helpers.h"
-#include "VrApi_SystemUtils.h"
-#include "VrApi_Input.h"
+namespace oculusmobile {
 
-using namespace v8;
+Nan::Persistent<v8::Function> oculusMobileContextConstructor;
 
 NAN_METHOD(OculusMobile_Init) {
-  std::cout << "OculusMobile_Init" << std::endl;
+  std::cout << "OculusMobile_Init 1" << std::endl;
+
+  const ovrInitParms initParms = vrapi_DefaultInitParms(&globalJava);
+	int32_t initResult = vrapi_Initialize(&initParms);
+  if (initResult != VRAPI_INITIALIZE_SUCCESS) {
+    exerr << "VRAPI failed to initialize: " << initResult << std::endl;
+	}
+
+  std::cout << "OculusMobile_Init 2 " << initResult << std::endl;
+
+  if (oculusMobileContextConstructor.IsEmpty()) {
+    oculusMobileContextConstructor.Reset(OculusMobileContext::Initialize());
+  }
+
+  Local<Function> localOculusMobileContextConstructor = Nan::New(oculusMobileContextConstructor);
+  /* Local<Value> argv[] = {
+  };
+  Local<Object> oculusMobileContextObj = localOculusMobileContextConstructor->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(argv)/sizeof(argv[0]), argv).ToLocalChecked(); */
+  Local<Object> oculusMobileContextObj = localOculusMobileContextConstructor->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), 0, nullptr).ToLocalChecked();
+  info.GetReturnValue().Set(oculusMobileContextObj);
+
   /* if (info.Length() != 0)
   {
     Nan::ThrowError("Wrong number of arguments.");
@@ -41,6 +61,8 @@ NAN_METHOD(OculusMobile_Init) {
 
 NAN_METHOD(OculusMobile_Shutdown) {
   std::cout << "OculusMobile_Shutdown" << std::endl;
+
+  vrapi_Shutdown();
   /* if (info.Length() != 0)
   {
     Nan::ThrowError("Wrong number of arguments.");
@@ -80,14 +102,18 @@ NAN_METHOD(OculusMobile_IsHmdPresent) {
   info.GetReturnValue().Set(Nan::New<Boolean>(returnValue)); */
 }
 
+}
+
 Local<Object> makeOculusMobileVr() {
   v8::EscapableHandleScope scope(Isolate::GetCurrent());
 
   Local<Object> exports = Object::New(Isolate::GetCurrent());
 
-  exports->Set(Nan::New("OculusMobile_Init").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(OculusMobile_Init)->GetFunction());
-  exports->Set(Nan::New("OculusMobile_Shutdown").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(OculusMobile_Shutdown)->GetFunction());
-  exports->Set(Nan::New("OculusMobile_IsHmdPresent").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(OculusMobile_IsHmdPresent)->GetFunction());
+  exports->Set(Nan::New("OculusMobile_Init").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(oculusmobile::OculusMobile_Init)->GetFunction());
+  exports->Set(Nan::New("OculusMobile_Shutdown").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(oculusmobile::OculusMobile_Shutdown)->GetFunction());
+  exports->Set(Nan::New("OculusMobile_IsHmdPresent").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(oculusmobile::OculusMobile_IsHmdPresent)->GetFunction());
 
   return scope.Escape(exports);
 }
+
+#endif
