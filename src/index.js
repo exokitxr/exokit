@@ -1403,7 +1403,7 @@ const _startRenderLoop = () => {
               nativeWindow.blitFrameBuffer(context, oculusMobileVrPresentState.msFbo, oculusMobileVrPresentState.fbo, oculusMobileVrPresentState.glContext.canvas.width, oculusMobileVrPresentState.glContext.canvas.height, oculusMobileVrPresentState.glContext.canvas.width, oculusMobileVrPresentState.glContext.canvas.height, true, false, false);
             }
 
-            oculusMobileVrPresentState.vrContext.Submit(context, oculusMobileVrPresentState.tex);
+            oculusMobileVrPresentState.vrContext.Submit(oculusMobileVrPresentState.glContext, oculusMobileVrPresentState.fbo, oculusMobileVrPresentState.glContext.canvas.width, oculusMobileVrPresentState.glContext.canvas.height);
             oculusMobileVrPresentState.hasPose = false;
           } else if (mlPresentState.mlGlContext === context && mlPresentState.mlHasPose) {
             if (mlPresentState.layers.length > 0) { // TODO: composition can be directly to the output texture array
