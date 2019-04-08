@@ -3,14 +3,14 @@
 
 #include <oculus-mobile.h>
 #include <oculus-math.h>
-#include <webgl.h>
 #include <egl.h>
+#include <webgl.h>
 
 namespace oculusmobile {
 
 extern ovrJava java;
 
-class OculusMobileContext : public Nan::ObjectWrap {
+class OculusMobileContext : public ObjectWrap {
 public:
   static Local<Function> Initialize();
 
