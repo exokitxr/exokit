@@ -13,6 +13,7 @@
 namespace oculusmobile {
 
 Nan::Persistent<v8::Function> oculusMobileContextConstructor;
+Nan::Persistent<v8::Object> oculusMobileContext;
 
 NAN_METHOD(OculusMobile_Init) {
   std::cout << "OculusMobile_Init 1" << std::endl;
@@ -26,11 +27,17 @@ NAN_METHOD(OculusMobile_Init) {
   };
   Local<Object> oculusMobileContextObj = localOculusMobileContextConstructor->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(argv)/sizeof(argv[0]), argv).ToLocalChecked(); */
   Local<Object> oculusMobileContextObj = localOculusMobileContextConstructor->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), 0, nullptr).ToLocalChecked();
+  oculusMobileContext.Reset(oculusMobileContextObj);
   info.GetReturnValue().Set(oculusMobileContextObj);
 }
 
 NAN_METHOD(OculusMobile_Shutdown) {
   std::cout << "OculusMobile_Shutdown" << std::endl;
+
+  Local<Object> oculusMobileContextObj = Nan::New(oculusMobileContext);
+  OculusMobileContext *omc = ObjectWrap::Unwrap<OculusMobileContext>(oculusMobileContextObj);
+  omc->Destroy();
+  oculusMobileContext.Reset();
 
   vrapi_Shutdown();
 }
