@@ -235,6 +235,7 @@ NAN_METHOD(OculusMobileContext::WaitGetPoses) {
 
   bool hasPose = oculusMobileContext->ovrState != nullptr;
   if (hasPose) {
+    oculusMobileContext->frameIndex++;
     const double predictedDisplayTime = vrapi_GetPredictedDisplayTime(oculusMobileContext->ovrState, oculusMobileContext->frameIndex);
     const ovrTracking2 &tracking = vrapi_GetPredictedTracking2(oculusMobileContext->ovrState, predictedDisplayTime);
 
@@ -293,7 +294,6 @@ NAN_METHOD(OculusMobileContext::WaitGetPoses) {
 
     // advance
     oculusMobileContext->tracking = tracking;
-    oculusMobileContext->frameIndex++;
     oculusMobileContext->displayTime = predictedDisplayTime;
   }
 
