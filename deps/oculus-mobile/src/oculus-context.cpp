@@ -21,6 +21,7 @@ OculusMobileContext::OculusMobileContext() :
 {
   {
     java.Vm = androidApp->activity->vm;
+    java.Env = androidJniEnv;
     java.ActivityObject = androidApp->activity->clazz;
 
     const ovrInitParms initParms = vrapi_DefaultInitParms(&java);

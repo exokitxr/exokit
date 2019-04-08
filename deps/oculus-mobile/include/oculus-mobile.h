@@ -19,6 +19,7 @@
 using namespace v8;
 
 extern struct android_app *androidApp;
+extern JNIEnv *androidJniEnv;
 
 namespace oculusmobile {
 

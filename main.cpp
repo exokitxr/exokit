@@ -40,6 +40,7 @@ namespace node {
 #ifdef ANDROID
 
 struct android_app *androidApp;
+JNIEnv *androidJniEnv;
 
 typedef struct AssetStatStruct {
   char name[256];
@@ -121,6 +122,9 @@ void jniOnload(JavaVM *vm) {
   __android_log_print(ANDROID_LOG_INFO, "exokit", "Got Java Asset Manager 1 %lx %lx", (unsigned long)am, (unsigned long)initAssetManager);
   initAssetManager(am);
   __android_log_print(ANDROID_LOG_INFO, "exokit", "Got Java Asset Manager 2 %lx %lx", (unsigned long)am, (unsigned long)initAssetManager);
+
+  androidJniEnv = env;
+  __android_log_print(ANDROID_LOG_INFO, "exokit", "Got JNI Env %lx", (unsigned long)androidJniEnv);
 
   /* vm->GetEnv((void**) &gJavaEnv, JNI_VERSION_1_6);
   jclass cls_Activity = gJavaEnv->FindClass("com/unity3d/player/UnityPlayer");
@@ -246,7 +250,7 @@ void android_main(struct android_app *app) {
   androidApp = app;
   jniOnload(app->activity->vm);
 
-  __android_log_print(ANDROID_LOG_ERROR, "exokit", "main cwd 4 %lx", (unsigned long)app);
+  __android_log_print(ANDROID_LOG_ERROR, "exokit", "main cwd 4 %lx", (unsigned long)androidApp);
 
   registerDlibs(node::dlibs);
 
