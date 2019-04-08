@@ -1498,7 +1498,46 @@ const _startRenderLoop = () => {
         oculusMobilePoseFloat32Array
       );
 
-      // XXX unpack oculusMobilePoseFloat32Array into xrState
+      // build hmd data
+      xrState.leftViewMatrix.set(new Float32Array(oculusMobilePoseFloat32Array.buffer, oculusMobilePoseFloat32Array.byteOffset + 0*Float32Array.BYTES_PER_ELEMENT*16, 16));
+      xrState.rightViewMatrix.set(new Float32Array(oculusMobilePoseFloat32Array.buffer, oculusMobilePoseFloat32Array.byteOffset + 1*Float32Array.BYTES_PER_ELEMENT*16, 16));
+      xrState.leftProjectionMatrix.set(new Float32Array(oculusMobilePoseFloat32Array.buffer, oculusMobilePoseFloat32Array.byteOffset + 2*Float32Array.BYTES_PER_ELEMENT*16, 16));
+      xrState.rightProjectionMatrix.set(new Float32Array(oculusMobilePoseFloat32Array.buffer, oculusMobilePoseFloat32Array.byteOffset + 3*Float32Array.BYTES_PER_ELEMENT*16, 16));
+
+      // build gamepads data
+      {
+        const leftGamepad = xrState.gamepads[0];
+        const gamepadFloat32Array = new Float32Array(oculusMobilePoseFloat32Array.buffer, oculusMobilePoseFloat32Array.byteOffset + 4*Float32Array.BYTES_PER_ELEMENT*16, 16);
+        if (!isNaN(gamepadFloat32Array[0])) {
+          leftGamepad.connected[0] = true;
+
+          localMatrix.fromArray(gamepadFloat32Array);
+          localMatrix.decompose(localVector, localQuaternion, localVector2);
+          localVector.toArray(leftGamepad.position);
+          localQuaternion.toArray(leftGamepad.orientation);
+        } else {
+          leftGamepad.connected[0] = 0;
+        }
+      }
+      {
+        const rightGamepad = xrState.gamepads[1];
+        const gamepadFloat32Array = new Float32Array(oculusMobilePoseFloat32Array.buffer, oculusMobilePoseFloat32Array.byteOffset + 5*Float32Array.BYTES_PER_ELEMENT*16, 16);
+        if (!isNaN(gamepadFloat32Array[0])) {
+          rightGamepad.connected[0] = true;
+
+          localMatrix.fromArray(gamepadFloat32Array);
+          localMatrix.decompose(localVector, localQuaternion, localVector2);
+          localVector.toArray(rightGamepad.position);
+          localQuaternion.toArray(rightGamepad.orientation);
+        } else {
+          rightGamepad.connected[0] = 0;
+        }
+      }
+
+      /* vrPresentState.system.GetProjectionRaw(0, localFovArray);
+      for (let i = 0; i < localFovArray.length; i++) {
+        xrState.leftFov[i] = Math.atan(localFovArray[i]) / Math.PI * 180;
+      } */
     } else if (mlPresentState.mlGlContext) {
       mlPresentState.mlHasPose = await new Promise((accept, reject) => {
         mlPresentState.mlContext.RequestGetPoses(
