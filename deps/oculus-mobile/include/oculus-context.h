@@ -32,7 +32,7 @@ public:
   ovrMobile *ovrState;
   bool running;
   ANativeWindow *androidNativeWindow;
-  ovrTextureSwapChain swapChains[2];
+  ovrTextureSwapChain *swapChains[2];
   int swapChainMetrics[2];
   int swapChainLength;
   int swapChainIndex;
