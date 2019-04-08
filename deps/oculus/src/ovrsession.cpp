@@ -474,14 +474,6 @@ NAN_METHOD(OVRSession::Submit)
     ovr_CommitTextureSwapChain(session, eyes[eye].ColorTextureChain);
     ovr_CommitTextureSwapChain(session, eyes[eye].DepthTextureChain);
 
-    if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
-      glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
-    }
-
-    if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
-      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
-    }
-
   }
 
   // Distortion, Present and flush/sync
@@ -503,4 +495,13 @@ NAN_METHOD(OVRSession::Submit)
   ovrLayerHeader* layers = &ld.Header;
   result = ovr_SubmitFrame(session, *frameIndex, nullptr, &layers, 1);
   *frameIndex += 1;
+
+  // Rebind previous framebuffers.
+  if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
+  }
+
+  if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
+  }
 }
