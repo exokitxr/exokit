@@ -10,9 +10,11 @@ OculusMobileContext::OculusMobileContext() :
   ovrState(nullptr),
   running(false),
   androidNativeWindow(nullptr),
-  swapChain(nullptr),
+  swapChainMetrics{0, 0},
   swapChainLength(0),
   swapChainIndex(0),
+  hasSwapChain(false),
+  fboId(0),
   frameIndex(0),
   displayTime(0),
   swapInterval(1)
@@ -90,7 +92,6 @@ Local<Function> OculusMobileContext::Initialize() {
   // prototype
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
   Nan::SetMethod(proto, "WaitGetPoses", WaitGetPoses);
-  Nan::SetMethod(proto, "CreateSwapChain", CreateSwapChain);
   Nan::SetMethod(proto, "Submit", Submit);
   Nan::SetMethod(proto, "GetRecommendedRenderTargetSize", GetRecommendedRenderTargetSize);
 
@@ -120,19 +121,47 @@ NAN_METHOD(OculusMobileContext::New) {
   info.GetReturnValue().Set(oculusMobileContextObj);
 }
 
-NAN_METHOD(OculusMobileContext::CreateSwapChain) {
-  Local<Object> oculusMobileContextObj = info.This();
+void OculusMobileContext::CreateSwapChain(WebGLRenderingContext *gl, int width, int height) {
+  OculusMobileContext *oculusMobileContext = this;
+  /* Local<Object> oculusMobileContextObj = info.This();
   OculusMobileContext *oculusMobileContext = ObjectWrap::Unwrap<OculusMobileContext>(oculusMobileContextObj);
   int width = TO_INT32(info[0]);
-  int height = TO_INT32(info[1]);
+  int height = TO_INT32(info[1]); */
 
-  oculusMobileContext->swapChain = vrapi_CreateTextureSwapChain3(VRAPI_TEXTURE_TYPE_2D, GL_RGBA8, width, height, 1, 3);
-  oculusMobileContext->swapChainLength = vrapi_GetTextureSwapChainLength(oculusMobileContext->swapChain); 
-  oculusMobileContext->swapChainIndex = 0;
+  // destroy old swap chain
+  if (oculusMobileContext->hasSwapChain) {
+    vrapi_DestroyTextureSwapChain(oculusMobileContext->swapChain);
+  }
 
-  // vrapi_DestroyTextureSwapChain(frameBuffer->ColorTextureSwapChain);
+  // create new swap chain
+  {
+    for (int eye = 0; eye < VRAPI_FRAME_LAYER_EYE_MAX; eye++) {
+      oculusMobileContext->swapChains[eye] = vrapi_CreateTextureSwapChain3(VRAPI_TEXTURE_TYPE_2D, GL_RGBA8, width, height, 1, 3);
+    }
+    oculusMobileContext->swapChainMetrics[0] = width;
+    oculusMobileContext->swapChainMetrics[1] = height;
+    oculusMobileContext->swapChainLength = vrapi_GetTextureSwapChainLength(oculusMobileContext->swapChain); 
+    oculusMobileContext->swapChainIndex = 0;
+    oculusMobileContext->hasSwapChain = true;
 
-  // const GLuint colorTexture = vrapi_GetTextureSwapChainHandle(frameBuffer->ColorTextureSwapChain, i);
+    for (int eye = 0; eye < VRAPI_FRAME_LAYER_EYE_MAX; eye++) {
+      for (int index = 0; index < oculusMobileContext->swapChainLength; index++) {
+        // Just clamp to edge. However, this requires manually clearing the border
+        // around the layer to clear the edge texels.
+        const GLuint colorTexture = vrapi_GetTextureSwapChainHandle(oculusMobileContext->swapChains[eye], index);
+        glBindTexture(GL_TEXTURE_2D, colorTexture);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      }
+    }
+  }
+
+  // create new framebuffer
+  if (oculusMobileContext->fboId == 0) {
+    glGenFramebuffers(1, &oculusMobileContext->fboId);
+  }
 }
 
 void OculusMobileContext::PollEvents(NATIVEwindow *windowHandle) {
@@ -281,11 +310,37 @@ NAN_METHOD(OculusMobileContext::GetRecommendedRenderTargetSize) {
 NAN_METHOD(OculusMobileContext::Submit) {
   Local<Object> oculusMobileContextObj = info.This();
   OculusMobileContext *oculusMobileContext = ObjectWrap::Unwrap<OculusMobileContext>(oculusMobileContextObj);
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
+  GLuint fboIdSource = TO_UINT32(info[1]);
+  int width = TO_INT32(info[2]);
+  int height = TO_INT32(info[3]);
+  int halfWidth = width/2;
+
+  if (!oculusMobileContext->hasSwapChain || halfWidth != oculusMobileContext->swapChainMetrics[0] || height != oculusMobileContext->swapChainMetrics[1]) {
+    oculusMobileContext->CreateSwapChain(gl, halfWidth, height);
+  }
+
+  glBindFramebuffer(GL_READ_FRAMEBUFFER, fboIdSource);
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, oculusMobileContext->fboId);
+  for (int eye = 0; eye < VRAPI_FRAME_LAYER_EYE_MAX; eye++) {
+    const GLuint colorTextureId = vrapi_GetTextureSwapChainHandle(oculusMobileContext->swapChains[eye], oculusMobileContext->swapChainIndex);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTextureId, 0);
+    // glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTextureId, 0);
+
+    glBlitFramebuffer(
+      eye == 0 ? 0 : halfWidth, 0,
+      eye == 0 ? halfWidth : halfWidth*2, height,
+      0, 0,
+      halfWidth, height,
+      GL_COLOR_BUFFER_BIT,
+      GL_LINEAR
+    );
+  }
 
   ovrLayerProjection2 layer = vrapi_DefaultLayerProjection2();
   layer.HeadPose = oculusMobileContext->tracking.HeadPose;
   for (int eye = 0; eye < VRAPI_FRAME_LAYER_EYE_MAX; eye++) {
-		layer.Textures[eye].ColorSwapChain = oculusMobileContext->swapChain;
+		layer.Textures[eye].ColorSwapChain = oculusMobileContext->swapChains[eye];
 		layer.Textures[eye].SwapChainIndex = oculusMobileContext->swapChainIndex;
 		layer.Textures[eye].TexCoordsFromTanAngles = ovrMatrix4f_TanAngleMatrixFromProjection(&oculusMobileContext->tracking.Eye[eye].ProjectionMatrix);
 	}
@@ -294,8 +349,7 @@ NAN_METHOD(OculusMobileContext::Submit) {
   const ovrLayerHeader2 *layers[] = {
     &layer.Header,
   };
-
-  ovrSubmitFrameDescription2 frameDesc = { 0 };
+  ovrSubmitFrameDescription2 frameDesc = {0};
   frameDesc.Flags = 0;
   frameDesc.SwapInterval = oculusMobileContext->swapInterval;
   frameDesc.FrameIndex = oculusMobileContext->frameIndex;
@@ -305,6 +359,28 @@ NAN_METHOD(OculusMobileContext::Submit) {
 
   // Hand over the eye images to the time warp.
   vrapi_SubmitFrame2(oculusMobileContext->ovrState, &frameDesc);
+
+  if (gl->HasTextureBinding(GL_TEXTURE_2D)) {
+    glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(GL_TEXTURE_2D));
+  }
+  if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
+  }
+  if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
+  }
+}
+
+void OculusMobileContext::Destroy() {
+  if (oculusMobileContext->hasSwapChain) {
+    for (int eye = 0; eye < VRAPI_FRAME_LAYER_EYE_MAX; eye++) {
+      vrapi_DestroyTextureSwapChain(oculusMobileContext->swapChains[eye]);
+    }
+  }
+
+  if (oculusMobileContext->fboId != 0) {
+    glDeleteFramebuffers(1, &oculusMobileContext->fboId);
+  }
 }
 
 }

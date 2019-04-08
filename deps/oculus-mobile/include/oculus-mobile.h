@@ -23,6 +23,7 @@ extern struct android_app *androidApp;
 namespace oculusmobile {
 
 extern Nan::Persistent<v8::Function> oculusMobileContextConstructor;
+extern Nan::Persistent<v8::Object> oculusMobileContext;
 
 /// inline IVRSystem *OculusMobile_Init( EVRInitError *peError, EVRApplicationType eApplicationType );
 NAN_METHOD(OculusMobile_Init);
