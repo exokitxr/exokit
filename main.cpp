@@ -7,6 +7,7 @@
 // #include <errno.h>
 #include <iostream>
 #include <string>
+#include <sstream>
 #include <map>
 #include <thread>
 #include <v8.h>
@@ -41,6 +42,7 @@ namespace node {
 
 struct android_app *androidApp;
 JNIEnv *androidJniEnv;
+std::vector<std::string> androidArgs;
 
 typedef struct AssetStatStruct {
   char name[256];
@@ -87,6 +89,8 @@ jobject jniGetContext(JNIEnv *env) {
   jobject context = env->CallObjectMethod(at, getApplication);
   return context;
 }
+
+
 void jniOnload(JavaVM *vm) {
   __android_log_print(ANDROID_LOG_INFO, "exokit", "on load 1");
 
@@ -126,12 +130,43 @@ void jniOnload(JavaVM *vm) {
   androidJniEnv = env;
   __android_log_print(ANDROID_LOG_INFO, "exokit", "Got JNI Env %lx", (unsigned long)androidJniEnv);
 
-  /* vm->GetEnv((void**) &gJavaEnv, JNI_VERSION_1_6);
-  jclass cls_Activity = gJavaEnv->FindClass("com/unity3d/player/UnityPlayer");
-  jfieldID fid_Activity = gJavaEnv->GetStaticFieldID(cls_Activity, "currentActivity","Landroid/app/Activity;");
-  jobject obj_Activity = gJavaEnv->GetStaticObjectField(cls_Activity, fid_Activity);
-  AAssetManager*  assetManager = AAssetManager_fromJava(    gJavaEnv, obj_Activity ); */
-  // return JNI_VERSION_1_6;
+  // parse args
+  // adb shell am start -n com.webmr.exokit/android.app.NativeActivity -e args "'lol zol'"
+  {
+    std::vector<std::string> &args = androidArgs;
+
+    jobject activity = androidApp->activity->clazz;
+    jmethodID get_intent_method = env->GetMethodID(env->GetObjectClass(activity), "getIntent", "()Landroid/content/Intent;");
+    jobject intent = env->CallObjectMethod(activity, get_intent_method);
+    jmethodID get_string_extra_method = env->GetMethodID(env->GetObjectClass(intent), "getStringExtra", "(Ljava/lang/String;)Ljava/lang/String;");
+    jvalue get_string_extra_args;
+    get_string_extra_args.l = env->NewStringUTF("args");
+    jstring extra_str = static_cast<jstring>(env->CallObjectMethodA(intent, get_string_extra_method, &get_string_extra_args));
+
+    std::string args_str;
+    if (extra_str) {
+      const char* extra_utf = env->GetStringUTFChars(extra_str, nullptr);
+      args_str = extra_utf;
+      env->ReleaseStringUTFChars(extra_str, extra_utf);
+      env->DeleteLocalRef(extra_str);
+    }
+
+    __android_log_print(ANDROID_LOG_INFO, "exokit", "got args 1 '%s'", args_str.c_str());
+
+    env->DeleteLocalRef(get_string_extra_args.l);
+    env->DeleteLocalRef(intent);
+
+    // split args_str
+    std::stringstream ss(args_str);
+    std::string arg;
+    while (std::getline(ss, arg, ' ')) {
+      if (!arg.empty()) {
+        __android_log_print(ANDROID_LOG_INFO, "exokit", "got args 2 %lx '%s'", args.size(), arg.c_str());
+
+        args.push_back(arg);
+      }
+    }
+  }
 }
 
 #endif
