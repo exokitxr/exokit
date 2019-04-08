@@ -1245,7 +1245,7 @@ const _startRenderLoop = () => {
               nativeWindow.blitFrameBuffer(context, oculusMobileVrPresentState.msFbo, oculusMobileVrPresentState.fbo, oculusMobileVrPresentState.glContext.canvas.width, oculusMobileVrPresentState.glContext.canvas.height, oculusMobileVrPresentState.glContext.canvas.width, oculusMobileVrPresentState.glContext.canvas.height, true, false, false);
             }
 
-            oculusMobileVrPresentState.vrContext.Submit(context, oculusMobileVrPresentState.tex);
+            oculusMobileVrPresentState.vrContext.Submit(oculusMobileVrPresentState.glContext, oculusMobileVrPresentState.fbo, oculusMobileVrPresentState.glContext.canvas.width, oculusMobileVrPresentState.glContext.canvas.height);
             oculusMobileVrPresentState.hasPose = false;
 
             // nativeWindow.blitFrameBuffer(context, oculusMobileVrPresentState.fbo, 0, oculusMobileVrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1), oculusMobileVrPresentState.glContext.canvas.height, xrState.renderWidth[0], xrState.renderHeight[0], true, false, false);
