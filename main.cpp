@@ -270,8 +270,7 @@ void android_main(struct android_app *app) {
   const char *experimentalWorkerString = "--experimental-worker";
   const char *dotString = "/package";
   const char *jsString = "/package/examples/tutorial.html";
-  // const char *eString = "-e";
-  // const char *consoleString = "const fs = require('fs'); console.log('run 1'); const l = []; fs.readdirSync('/package'); console.log('run 2'); console.log('run 3', l); let s = fs.readFileSync('/package/index.js', 'utf8'); console.log('got index 1'); console.log('got index 2', s); require('/package/index.js')";
+
   char argsString[4096];
   int i = 0;
 
@@ -290,21 +289,12 @@ void android_main(struct android_app *app) {
   strncpy(jsArg, jsString, sizeof(argsString) - i);
   i += strlen(jsString) + 1;
 
-  /* char *eArg = argsString + i;
-  strncpy(eArg, eString, sizeof(argsString) - i);
-  i += strlen(eString) + 1;
-  char *consoleArg = argsString + i;
-  strncpy(consoleArg, consoleString, sizeof(argsString) - i);
-  i += strlen(consoleString) + 1; */
-
   char *argv[] = {nodeArg, experimentalWorkerArg, dotArg, jsArg/*, eArg, consoleArg*/};
   size_t argc = sizeof(argv) / sizeof(argv[0]);
 
   for (int i = 0; i < argc; i++) {
     __android_log_print(ANDROID_LOG_ERROR, "exokit", "arg %d %s", i, argv[i]);
   }
-
-  // sleep(2);
 
   int result = node::Start(argc, argv);
 
