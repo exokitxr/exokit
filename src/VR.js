@@ -11,7 +11,6 @@ const localQuaternion = new THREE.Quaternion();
 const localMatrix = new THREE.Matrix4();
 const localMatrix2 = new THREE.Matrix4();
 const localViewMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
-var globalWindow;
 
 class VRPose {
   constructor() {
@@ -307,8 +306,6 @@ class VRDisplay extends EventEmitter {
 class FakeVRDisplay extends VRDisplay {
   constructor(window) {
     super('FAKE');
-
-    this.window = globalWindow = window;
 
     this.position = new THREE.Vector3();
     this.quaternion = new THREE.Quaternion();
@@ -607,7 +604,9 @@ class FakeVRDisplay extends VRDisplay {
 
 const createVRDisplay = () => new FakeVRDisplay();
 
-const getGamepads = (() => {
+const getGamepads = function(window) {
+
+  let globalWindow = window;
   let gamepads = null;
   // Gamepad Vendor IDs
   const oculusVRIdLeft = 'Oculus Touch (Left)';
@@ -628,7 +627,7 @@ const getGamepads = (() => {
     }
     return gamepads;
   };
-})();
+};
 GlobalContext.getGamepads = getGamepads;
 
 module.exports = {
