@@ -481,7 +481,6 @@ if (nativeBindings.nativeOculusVR) {
         const system = vrPresentState.system = vrPresentState.system || nativeBindings.nativeOculusVR.Oculus_Init();
         const lmContext = vrPresentState.lmContext || (nativeBindings.nativeLm && new nativeBindings.nativeLm());
 
-        system.SetupSwapChain(contexts[0]);
         const {width: halfWidth, height} = system.GetRecommendedRenderTargetSize();
         const MAX_TEXTURE_SIZE = 4096;
         const MAX_TEXTURE_SIZE_HALF = MAX_TEXTURE_SIZE/2;

@@ -55,7 +55,6 @@ NAN_MODULE_INIT(OVRSession::Init)
   Nan::SetPrototypeMethod(tpl, "GetControllersInputState", GetControllersInputState);
   Nan::SetPrototypeMethod(tpl, "GetPose", GetPose);
   Nan::SetPrototypeMethod(tpl, "Submit", Submit);
-  Nan::SetPrototypeMethod(tpl, "SetupSwapChain", SetupSwapChain);
   Nan::SetPrototypeMethod(tpl, "GetRecommendedRenderTargetSize", GetRecommendedRenderTargetSize);
 
   // Set a static constructor function to reference the `New` function template.
@@ -99,6 +98,7 @@ OVRSession::OVRSession()
 {
   SetupSession();
   this->hmdDesc = ovr_GetHmdDesc(*this->session);
+  SetupSwapChain();
 }
 
 //=============================================================================
@@ -119,11 +119,6 @@ NAN_METHOD(OVRSession::New)
   OVRSession *obj = new OVRSession();
   obj->Wrap(info.This());
   info.GetReturnValue().Set(info.This());
-}
-
-NAN_METHOD(OVRSession::SetupSwapChain)
-{
-  ObjectWrap::Unwrap<OVRSession>(info.Holder())->SetupSwapChain();
 }
 
 NAN_METHOD(OVRSession::GetRecommendedRenderTargetSize)
