@@ -1193,7 +1193,7 @@ const _startRenderLoop = () => {
 
             if (vrPresentState.oculusSystem) {
               nativeBindings.nativeWindow.setCurrentWindowContext(windowHandle);
-              vrPresentState.oculusSystem.Submit(context, vrPresentState.tex, vrPresentState.fbo, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height);
+              vrPresentState.oculusSystem.Submit(context, vrPresentState.fbo, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height);
             } else if (vrPresentState.compositor) {
               vrPresentState.compositor.Submit(context, vrPresentState.tex);
             }

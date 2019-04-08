@@ -397,7 +397,7 @@ NAN_METHOD(OVRSession::GetControllersInputState) {
 NAN_METHOD(OVRSession::Submit)
 {
 
-  if (info.Length() != 5)
+  if (info.Length() != 4)
   {
     Nan::ThrowError("Wrong number of arguments.");
     return;
@@ -425,10 +425,9 @@ NAN_METHOD(OVRSession::Submit)
   }
 
   WebGLRenderingContext *gl = node::ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
-  GLuint textureSource = info[1]->Uint32Value();
-  GLuint fboIdSource = info[2]->Uint32Value();
-  int width = info[3]->Uint32Value();
-  int height = info[4]->Uint32Value();
+  GLuint fboIdSource = info[1]->Uint32Value();
+  int width = info[2]->Uint32Value();
+  int height = info[3]->Uint32Value();
 
   ovrPosef *eyeRenderPoses = &*ObjectWrap::Unwrap<OVRSession>(info.Holder())->eyeRenderPoses;
   int *frameIndex = &ObjectWrap::Unwrap<OVRSession>(info.Holder())->frameIndex;
