@@ -1492,7 +1492,7 @@ const _startRenderLoop = () => {
       }
     } else if (oculusMobileVrPresentState.vrContext) {
       const windowHandle = oculusMobileVrPresentState.glContext.getWindowHandle();
-      ooculusMobileVrPresentState.hasPose = culusMobileVrPresentState.vrContext.WaitGetPoses(
+      oculusMobileVrPresentState.hasPose = oculusMobileVrPresentState.vrContext.WaitGetPoses(
         windowHandle,
         oculusMobilePoseFloat32Array
       );
