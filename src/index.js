@@ -788,7 +788,6 @@ if (nativeBindings.nativeOculusMobileVr) {
 
         const vrContext = oculusMobileVrPresentState.vrContext = oculusMobileVrPresentState.vrContext || nativeBindings.nativeOculusMobileVr.OculusMobile_Init();
 
-        vrContext.SetupSwapChain(context);
         const {width: halfWidth, height} = vrContext.GetRecommendedRenderTargetSize();
         const MAX_TEXTURE_SIZE = 4096;
         const MAX_TEXTURE_SIZE_HALF = MAX_TEXTURE_SIZE/2;
