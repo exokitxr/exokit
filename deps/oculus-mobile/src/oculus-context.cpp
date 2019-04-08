@@ -363,6 +363,8 @@ NAN_METHOD(OculusMobileContext::Submit) {
   // Hand over the eye images to the time warp.
   vrapi_SubmitFrame2(oculusMobileContext->ovrState, &frameDesc);
 
+  oculusMobileContext->swapChainIndex = (oculusMobileContext->swapChainIndex + 1) % oculusMobileContext->swapChainLength;
+
   if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D)) {
     glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D));
   }
