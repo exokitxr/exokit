@@ -622,7 +622,6 @@ const oculusMobileVrPresentState = {
   depthTex: null,
   cleanups: null,
   hasPose: false,
-  lmContext: null,
   layers: [],
 };
 GlobalContext.oculusMobileVrPresentState = oculusMobileVrPresentState;
