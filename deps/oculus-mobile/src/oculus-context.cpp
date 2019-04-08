@@ -130,7 +130,9 @@ void OculusMobileContext::CreateSwapChain(WebGLRenderingContext *gl, int width, 
 
   // destroy old swap chain
   if (oculusMobileContext->hasSwapChain) {
-    vrapi_DestroyTextureSwapChain(oculusMobileContext->swapChain);
+    for (int eye = 0; eye < VRAPI_FRAME_LAYER_EYE_MAX; eye++) {
+      vrapi_DestroyTextureSwapChain(oculusMobileContext->swapChains[eye]);
+    }
   }
 
   // create new swap chain
@@ -140,7 +142,7 @@ void OculusMobileContext::CreateSwapChain(WebGLRenderingContext *gl, int width, 
     }
     oculusMobileContext->swapChainMetrics[0] = width;
     oculusMobileContext->swapChainMetrics[1] = height;
-    oculusMobileContext->swapChainLength = vrapi_GetTextureSwapChainLength(oculusMobileContext->swapChain); 
+    oculusMobileContext->swapChainLength = vrapi_GetTextureSwapChainLength(oculusMobileContext->swapChains[0]);
     oculusMobileContext->swapChainIndex = 0;
     oculusMobileContext->hasSwapChain = true;
 
@@ -360,8 +362,8 @@ NAN_METHOD(OculusMobileContext::Submit) {
   // Hand over the eye images to the time warp.
   vrapi_SubmitFrame2(oculusMobileContext->ovrState, &frameDesc);
 
-  if (gl->HasTextureBinding(GL_TEXTURE_2D)) {
-    glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(GL_TEXTURE_2D));
+  if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D)) {
+    glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D));
   }
   if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
     glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
@@ -372,6 +374,8 @@ NAN_METHOD(OculusMobileContext::Submit) {
 }
 
 void OculusMobileContext::Destroy() {
+  OculusMobileContext *oculusMobileContext = this;
+
   if (oculusMobileContext->hasSwapChain) {
     for (int eye = 0; eye < VRAPI_FRAME_LAYER_EYE_MAX; eye++) {
       vrapi_DestroyTextureSwapChain(oculusMobileContext->swapChains[eye]);
