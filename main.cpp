@@ -1,10 +1,4 @@
 #include <unistd.h>
-// #include <stdio.h>
-// #include <fcntl.h>
-// #include <cstdlib>
-// #include <cstring>
-// #include <dlfcn.h>
-// #include <errno.h>
 #include <string>
 #include <map>
 #include <thread>
@@ -25,57 +19,6 @@ namespace node {
 
 const char *LOG_TAG = "exokit";
 constexpr ssize_t STDIO_BUF_SIZE = 64 * 1024;
-
-/* struct application_context_t {
-  int dummy_value;
-};
-enum DummyValue {
-  STOPPED = 0,
-  RUNNING,
-  PAUSED,
-};
-
-static void onNewInitArg(void* application_context) {
-  MLLifecycleInitArgList *args;
-  MLLifecycleGetInitArgList(&args);
-
-  ((struct application_context_t*)application_context)->dummy_value = DummyValue::RUNNING;
-  ML_LOG_TAG(Info, LOG_TAG, "%s: On new init arg called %x.", application_name, args);
-}
-
-static void onStop(void* application_context) {
-  ((struct application_context_t*)application_context)->dummy_value = DummyValue::STOPPED;
-  ML_LOG_TAG(Info, LOG_TAG, "%s: On stop called.", application_name);
-}
-
-static void onPause(void* application_context) {
-  ((struct application_context_t*)application_context)->dummy_value = DummyValue::PAUSED;
-  ML_LOG_TAG(Info, LOG_TAG, "%s: On pause called.", application_name);
-}
-
-static void onResume(void* application_context) {
-  ((struct application_context_t*)application_context)->dummy_value = DummyValue::RUNNING;
-  ML_LOG_TAG(Info, LOG_TAG, "%s: On resume called.", application_name);
-}
-
-static void onUnloadResources(void* application_context) {
-  ((struct application_context_t*)application_context)->dummy_value = DummyValue::STOPPED;
-  ML_LOG_TAG(Info, LOG_TAG, "%s: On unload resources called.", application_name);
-} */
-
-/* extern "C" {
-  void node_register_module_exokit(Local<Object> exports, Local<Value> module, Local<Context> context);
-  void node_register_module_vm_one(Local<Object> exports, Local<Value> module, Local<Context> context);
-  void node_register_module_raw_buffer(Local<Object> exports, Local<Value> module, Local<Context> context);
-  void node_register_module_child_process_thread(Local<Object> exports, Local<Value> module, Local<Context> context);
-}
-
-inline void registerDlibs(std::map<std::string, void *> &dlibs) {
-  dlibs["/package/build/Release/exokit.node"] = (void *)&node_register_module_exokit;
-  dlibs["/package/node_modules/vm-one/build/Release/vmOne.node"] = (void *)&node_register_module_vm_one;
-  dlibs["/package/node_modules/raw-buffer/build/Release/raw_buffer.node"] = (void *)&node_register_module_raw_buffer;
-  dlibs["/package/node_modules/child-process-thread/build/Release/child_process_thread.node"] = (void *)&node_register_module_child_process_thread;
-} */
 
 const MLPrivilegeID privileges[] = {
   MLPrivilegeID_LowLatencyLightwear,
@@ -213,70 +156,6 @@ int main(int argc, char **argv) {
       }
     }
   }
-
-  /* {
-    MLLifecycleCallbacks lifecycle_callbacks = {};
-    lifecycle_callbacks.on_new_initarg = onNewInitArg;
-    lifecycle_callbacks.on_stop = onStop;
-    lifecycle_callbacks.on_pause = onPause;
-    lifecycle_callbacks.on_resume = onResume;
-    lifecycle_callbacks.on_unload_resources = onUnloadResources;
-    application_context_t application_context;
-    MLResult lifecycle_status = MLLifecycleInit(&lifecycle_callbacks, (void*)&application_context);
-
-    MLResult result = MLLifecycleSetReadyIndication();
-    if (result == MLResult_Ok) {
-      ML_LOG(Info, "lifecycle ready!");
-    } else {
-      ML_LOG(Error, "failed to indicate lifecycle ready: %u", result);
-    }
-  }
-
-  {
-    ML_LOG(Info, "------------------------------test query");
-
-    const char *host = "google.com";
-    struct addrinfo hints, *res;
-    int errcode;
-    char addrstr[100];
-    void *ptr;
-
-    memset (&hints, 0, sizeof (hints));
-    // hints.ai_flags = AI_DEFAULT;
-    // hints.ai_family = PF_UNSPEC;
-    // hints.ai_socktype = SOCK_STREAM;
-    // hints.ai_flags |= AI_CANONNAME;
-
-    errcode = getaddrinfo(host, NULL, &hints, &res);
-    ML_LOG (Info, "Host: %s %x %s\n", host, errcode, gai_strerror(errcode));
-    if (errcode == 0) {
-      while (res)
-        {
-          inet_ntop (res->ai_family, res->ai_addr->sa_data, addrstr, 100);
-
-          switch (res->ai_family)
-            {
-            case AF_INET:
-              ptr = &((struct sockaddr_in *) res->ai_addr)->sin_addr;
-              break;
-            case AF_INET6:
-              ptr = &((struct sockaddr_in6 *) res->ai_addr)->sin6_addr;
-              break;
-            }
-          inet_ntop (res->ai_family, ptr, addrstr, 100);
-          ML_LOG(Info, "IPv%d address: %s (%s)", res->ai_family == PF_INET6 ? 6 : 4, addrstr, res->ai_canonname);
-          res = res->ai_next;
-        }
-    } else {
-      ML_LOG(Info, "failed to getaddrinfo %x", errcode);
-    }
-  }
-
-  ML_LOG(Info, "sleeping 1");
-
-  sleep(1000);
-
-  ML_LOG(Info, "sleeping 2"); */
 
   exout << "---------------------exokit start" << std::endl;
 
