@@ -28,7 +28,7 @@ add_library( node STATIC IMPORTED )
 set_target_properties( node PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../node_modules/libnode.a-android/libnode.a )
 
 add_library( vrapi SHARED IMPORTED )
-set_target_properties( vrapi PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../node_modules/native-oculus-mobile-deps/lib/android/libvrapi.so )
+set_target_properties( vrapi PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../node_modules/native-oculus-mobile-deps/lib/android/arm64-v8a/libvrapi.so )
 
 add_library( skia STATIC IMPORTED )
 set_target_properties( skia PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../node_modules/native-canvas-deps/lib2/magicleap/libskia.a )
