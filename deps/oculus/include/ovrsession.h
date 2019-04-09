@@ -52,7 +52,7 @@ private:
     return the_constructor;
   }
 
-  static void ovrLogCallback(uintptr_t userData, int level, const char *message) {
+  static void OculusVRLogCallback(uintptr_t userData, int level, const char *message) {
     if (level >= ovrLogLevel_Error) {
       std::cout << "LibOVR: " << message << std::endl;
     }

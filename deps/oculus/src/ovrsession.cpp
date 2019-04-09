@@ -524,7 +524,7 @@ void OVRSession::SetupSession() {
 
   ovrInitParams initParams = {
     ovrInit_RequestVersion | ovrInit_MixedRendering,
-    OVR_MINOR_VERSION, ovrLogCallback, 0, 0
+    OVR_MINOR_VERSION, OculusVRLogCallback, 0, 0
   };
 
   // Reinitialize Oculus runtime.
