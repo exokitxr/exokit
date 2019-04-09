@@ -18,16 +18,23 @@ Nan::Persistent<v8::Object> oculusMobileContext;
 NAN_METHOD(OculusMobile_Init) {
   std::cout << "OculusMobile_Init 1" << std::endl;
 
+  Local<Array> windowHandleArray = Local<Array>::Cast(info[0]);
+
   if (oculusMobileContextConstructor.IsEmpty()) {
     oculusMobileContextConstructor.Reset(OculusMobileContext::Initialize());
   }
 
   Local<Function> localOculusMobileContextConstructor = Nan::New(oculusMobileContextConstructor);
-  /* Local<Value> argv[] = {
+  Local<Value> argv[] = {
+    windowHandleArray,
   };
-  Local<Object> oculusMobileContextObj = localOculusMobileContextConstructor->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(argv)/sizeof(argv[0]), argv).ToLocalChecked(); */
-  Local<Object> oculusMobileContextObj = localOculusMobileContextConstructor->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), 0, nullptr).ToLocalChecked();
+  Local<Object> oculusMobileContextObj = localOculusMobileContextConstructor->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(argv)/sizeof(argv[0]), argv).ToLocalChecked();
+  // Local<Object> oculusMobileContextObj = localOculusMobileContextConstructor->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), 0, nullptr).ToLocalChecked();
   oculusMobileContext.Reset(oculusMobileContextObj);
+
+  OculusMobileContext *omc = ObjectWrap::Unwrap<OculusMobileContext>(oculusMobileContextObj);
+  omc->RequestPresent();
+
   info.GetReturnValue().Set(oculusMobileContextObj);
 }
 
