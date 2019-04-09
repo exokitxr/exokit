@@ -14,9 +14,10 @@ class OculusMobileContext : public ObjectWrap {
 public:
   static Local<Function> Initialize();
 
+  void RequestPresent();
   static void handleAppCmd(struct android_app *app, int32_t cmd);
   void CreateSwapChain(WebGLRenderingContext *gl, int width, int height);
-  void PollEvents(NATIVEwindow *windowHandle);
+  void PollEvents(bool wait);
 
   static NAN_METHOD(New);
   void Destroy();
@@ -25,10 +26,11 @@ public:
   static NAN_METHOD(Submit);
   static NAN_METHOD(GetRecommendedRenderTargetSize);
 
-  OculusMobileContext();
+  OculusMobileContext(NATIVEwindow *windowHandle);
   ~OculusMobileContext();
 
 // protected:
+  NATIVEwindow *windowHandle;
   ovrMobile *ovrState;
   bool running;
   ANativeWindow *androidNativeWindow;

@@ -6,7 +6,8 @@ namespace oculusmobile {
 
 ovrJava java;
 
-OculusMobileContext::OculusMobileContext() :
+OculusMobileContext::OculusMobileContext(NATIVEwindow *windowHandle) :
+  windowHandle(windowHandle),
   ovrState(nullptr),
   running(false),
   androidNativeWindow(nullptr),
@@ -101,8 +102,10 @@ Local<Function> OculusMobileContext::Initialize() {
 }
 
 NAN_METHOD(OculusMobileContext::New) {
+  NATIVEwindow *windowHandle = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+
   Local<Object> oculusMobileContextObj = info.This();
-  OculusMobileContext *oculusMobileContext = new OculusMobileContext();
+  OculusMobileContext *oculusMobileContext = new OculusMobileContext(windowHandle);
   oculusMobileContext->Wrap(oculusMobileContextObj);
 
   /* Local<Function> audioDestinationNodeConstructor = Local<Function>::Cast(JS_OBJ(audioContextObj->Get(JS_STR("constructor")))->Get(JS_STR("AudioDestinationNode")));
@@ -120,6 +123,14 @@ NAN_METHOD(OculusMobileContext::New) {
   audioContextObj->Set(JS_STR("listener"), audioListenerObj); */
 
   info.GetReturnValue().Set(oculusMobileContextObj);
+}
+
+void OculusMobileContext::RequestPresent() {
+  OculusMobileContext *oculusMobileContext = this;
+
+  while (oculusMobileContext->ovrState == nullptr) {
+    oculusMobileContext->PollEvents(true);
+  }
 }
 
 void OculusMobileContext::CreateSwapChain(WebGLRenderingContext *gl, int width, int height) {
@@ -167,14 +178,14 @@ void OculusMobileContext::CreateSwapChain(WebGLRenderingContext *gl, int width, 
   }
 }
 
-void OculusMobileContext::PollEvents(NATIVEwindow *windowHandle) {
+void OculusMobileContext::PollEvents(bool wait) {
   OculusMobileContext *oculusMobileContext = this;
 
   // Read all pending events.
   for (;;) {
     int events;
     struct android_poll_source *source;
-    if (ALooper_pollAll(0, NULL, &events, (void **)&source ) < 0) { // timeout counts as an error
+    if (ALooper_pollAll(wait ? -1 : 0, NULL, &events, (void **)&source ) < 0) { // timeout counts as an error
       break;
     }
 
@@ -192,8 +203,8 @@ void OculusMobileContext::PollEvents(NATIVEwindow *windowHandle) {
       parms.Flags |= VRAPI_MODE_FLAG_NATIVE_WINDOW;
 
       parms.WindowSurface = (unsigned long long)oculusMobileContext->androidNativeWindow;
-      parms.Display = (unsigned long long)windowHandle->display;
-      parms.ShareContext = (unsigned long long)windowHandle->context;
+      parms.Display = (unsigned long long)oculusMobileContext->windowHandle->display;
+      parms.ShareContext = (unsigned long long)oculusMobileContext->windowHandle->context;
 
       oculusMobileContext->ovrState = vrapi_EnterVrMode(&parms);
 
@@ -215,14 +226,17 @@ void OculusMobileContext::PollEvents(NATIVEwindow *windowHandle) {
       vrapi_LeaveVrMode(oculusMobileContext->ovrState);
       oculusMobileContext->ovrState = nullptr;
     }
+
+    if (wait) {
+      break;
+    }
   }
 }
 
 NAN_METHOD(OculusMobileContext::WaitGetPoses) {
   Local<Object> oculusMobileContextObj = info.This();
   OculusMobileContext *oculusMobileContext = ObjectWrap::Unwrap<OculusMobileContext>(oculusMobileContextObj);
-  NATIVEwindow *windowHandle = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  Local<Float32Array> float32Array = Local<Float32Array>::Cast(info[1]);
+  Local<Float32Array> float32Array = Local<Float32Array>::Cast(info[0]);
   float *float32ArrayData = (float *)((char *)float32Array->Buffer()->GetContents().Data() + float32Array->ByteOffset());
 
   int index = 0;
