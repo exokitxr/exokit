@@ -1291,11 +1291,9 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       display.onrequestanimationframe = _makeRequestAnimationFrame(window);
       display.oncancelanimationframe = window.cancelAnimationFrame;
       display.onvrdisplaypresentchange = () => {
-        process.nextTick(() => {
-          const e = new Event('vrdisplaypresentchange');
-          e.display = display;
-          window.dispatchEvent(e);
-        });
+        const e = new Event('vrdisplaypresentchange');
+        e.display = display;
+        window.dispatchEvent(e);
       };
     };
 
