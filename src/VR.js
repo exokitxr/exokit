@@ -274,7 +274,7 @@ class VRDisplay extends EventEmitter {
   requestAnimationFrame(fn) {
     if (this.onrequestanimationframe) {
       const animationFrame = this.onrequestanimationframe(timestamp => {
-        this._rafs.splice(animationFrame, 1);
+        this._rafs.splice(this._rafs.indexOf(animationFrame), 1);
         fn(timestamp);
       });
       this._rafs.push(animationFrame);
