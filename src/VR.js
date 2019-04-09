@@ -606,7 +606,6 @@ const createVRDisplay = () => new FakeVRDisplay();
 
 const getGamepads = function(window) {
 
-  let globalWindow = window;
   let gamepads = null;
   // Gamepad Vendor IDs
   const oculusVRIdLeft = 'Oculus Touch (Left)';
@@ -616,7 +615,7 @@ const getGamepads = function(window) {
   return function () {
     if (!GlobalContext.vrPresentState.isPresenting) { return []; }
     if (!gamepads) {
-      const oculusVRDisplay = globalWindow[symbols.mrDisplaysSymbol].oculusVRDisplay;
+      const oculusVRDisplay = window[symbols.mrDisplaysSymbol].oculusVRDisplay;
       const oculusPresenting = oculusVRDisplay && oculusVRDisplay.isPresenting;
       const idLeft = oculusPresenting ? oculusVRIdLeft : openVRId;
       const idRight = oculusPresenting ? oculusVRIdRight : openVRId;
