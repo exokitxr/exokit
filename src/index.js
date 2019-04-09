@@ -336,7 +336,7 @@ const localFovArray = new Float32Array(4);
 const localGamepadArray = new Float32Array(24);
 
 // XXX oculus mobile
-const oculusMobilePoseFloat32Array = new Float32Array(16*(2+2+2));
+const oculusMobilePoseFloat32Array = new Float32Array(3+4+1+4+16*(2+2+2));
 
 const handEntrySize = (1 + (5 * 5)) * (3 + 3);
 const transformArray = new Float32Array(7 * 2);
@@ -1498,10 +1498,27 @@ const _startRenderLoop = () => {
       );
 
       // build hmd data
-      xrState.leftViewMatrix.set(new Float32Array(oculusMobilePoseFloat32Array.buffer, oculusMobilePoseFloat32Array.byteOffset + 0*Float32Array.BYTES_PER_ELEMENT*16, 16));
-      xrState.rightViewMatrix.set(new Float32Array(oculusMobilePoseFloat32Array.buffer, oculusMobilePoseFloat32Array.byteOffset + 1*Float32Array.BYTES_PER_ELEMENT*16, 16));
-      xrState.leftProjectionMatrix.set(new Float32Array(oculusMobilePoseFloat32Array.buffer, oculusMobilePoseFloat32Array.byteOffset + 2*Float32Array.BYTES_PER_ELEMENT*16, 16));
-      xrState.rightProjectionMatrix.set(new Float32Array(oculusMobilePoseFloat32Array.buffer, oculusMobilePoseFloat32Array.byteOffset + 3*Float32Array.BYTES_PER_ELEMENT*16, 16));
+      let index = oculusMobilePoseFloat32Array.byteOffset;
+      xrState.position.set(new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 3));
+      index += 3*Float32Array.BYTES_PER_ELEMENT;
+      xrState.orientation.set(new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 4));
+      index += 4*Float32Array.BYTES_PER_ELEMENT;
+      const ipd = new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 1)[0];
+      xrState.leftOffset[0] = -ipd/2;
+      xrState.rightOffset[0] = ipd/2;
+      index += 1*Float32Array.BYTES_PER_ELEMENT;
+      const fov = new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 4);
+      xrState.leftFov.set(fov);
+      xrState.rightFov.set(fov);
+      index += 4*Float32Array.BYTES_PER_ELEMENT;
+      xrState.leftViewMatrix.set(new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 16));
+      index += 16*Float32Array.BYTES_PER_ELEMENT;
+      xrState.rightViewMatrix.set(new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 16));
+      index += 16*Float32Array.BYTES_PER_ELEMENT;
+      xrState.leftProjectionMatrix.set(new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 16));
+      index += 16*Float32Array.BYTES_PER_ELEMENT;
+      xrState.rightProjectionMatrix.set(new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 16));
+      index += 16*Float32Array.BYTES_PER_ELEMENT;
 
       // build gamepads data
       {

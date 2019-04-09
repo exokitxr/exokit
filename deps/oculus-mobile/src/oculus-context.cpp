@@ -224,14 +224,30 @@ NAN_METHOD(OculusMobileContext::WaitGetPoses) {
   NATIVEwindow *windowHandle = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   Local<Float32Array> float32Array = Local<Float32Array>::Cast(info[1]);
   float *float32ArrayData = (float *)((char *)float32Array->Buffer()->GetContents().Data() + float32Array->ByteOffset());
-  float *viewMatrixLeft = float32ArrayData + 0*16;
-  float *viewMatrixRight = float32ArrayData + 1*16;
-  float *projectionMatrixLeft = float32ArrayData + 2*16;
-  float *projectionMatrixRight = float32ArrayData + 3*16;
-  float *controllerMatrixLeft = float32ArrayData + 4*16;
-  float *controllerMatrixRight = float32ArrayData + 5*16;
 
-  oculusMobileContext->PollEvents(windowHandle);
+  int index = 0;
+  float *positionVector = float32ArrayData + index;
+  index += 3;
+  float *orientationQuaternion = float32ArrayData + index;
+  index += 4;
+  float *eyeIpd = float32ArrayData + index;
+  index += 1;
+  float *eyeFov = float32ArrayData + index;
+  index += 4;
+  float *viewMatrixLeft = float32ArrayData + index;
+  index += 16;
+  float *viewMatrixRight = float32ArrayData + index;
+  index += 16;
+  float *projectionMatrixLeft = float32ArrayData + index;
+  index += 16;
+  float *projectionMatrixRight = float32ArrayData + index;
+  index += 16;
+  float *controllerMatrixLeft = float32ArrayData + index;
+  index += 16;
+  float *controllerMatrixRight = float32ArrayData + index;
+  index += 16;
+
+  oculusMobileContext->PollEvents(false);
 
   bool hasPose = oculusMobileContext->ovrState != nullptr;
   if (hasPose) {
@@ -241,6 +257,13 @@ NAN_METHOD(OculusMobileContext::WaitGetPoses) {
 
     // headset
     {
+      memcpy(positionVector, &tracking.HeadPose.Pose.Position, sizeof(float)*3);
+      memcpy(orientationQuaternion, &tracking.HeadPose.Pose.Orientation, sizeof(float)*4);
+
+      eyeIpd[0] = vrapi_GetInterpupillaryDistance(&tracking);
+
+      ovrMatrix4f_ExtractFov(&tracking.Eye[0].ProjectionMatrix, &eyeFov[0], &eyeFov[1], &eyeFov[2], &eyeFov[3]);
+
       ovrMatrix4f eyeViewMatrixTransposed[2];
       eyeViewMatrixTransposed[0] = ovrMatrix4f_Transpose(&tracking.Eye[0].ViewMatrix);
       eyeViewMatrixTransposed[1] = ovrMatrix4f_Transpose(&tracking.Eye[1].ViewMatrix);
