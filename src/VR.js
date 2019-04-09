@@ -246,18 +246,18 @@ class VRDisplay extends EventEmitter {
   }
 
   requestPresent(layers) {
-    if (this.onrequestpresent) {
-      this.onrequestpresent(layers);
-    }
+    return Promise.resolve().then(() => {
+      if (this.onrequestpresent) {
+        this.onrequestpresent(layers);
+      }
 
-    if (this.onvrdisplaypresentchange && !this.isPresenting) {
-      this.isPresenting = true;
-      this.onvrdisplaypresentchange();
-    } else {
-      this.isPresenting = true;
-    }
-
-    return Promise.resolve();
+      if (this.onvrdisplaypresentchange && !this.isPresenting) {
+        this.isPresenting = true;
+        this.onvrdisplaypresentchange();
+      } else {
+        this.isPresenting = true;
+      }
+    });
   }
 
   exitPresent() {
@@ -380,32 +380,32 @@ class FakeVRDisplay extends VRDisplay {
   } */
 
   requestPresent(layers) {
-    GlobalContext.xrState.renderWidth[0] = this.window.innerWidth * this.window.devicePixelRatio / 2;
-    GlobalContext.xrState.renderHeight[0] = this.window.innerHeight * this.window.devicePixelRatio;
+    return Promise.resolve().then(() => {
+      GlobalContext.xrState.renderWidth[0] = this.window.innerWidth * this.window.devicePixelRatio / 2;
+      GlobalContext.xrState.renderHeight[0] = this.window.innerHeight * this.window.devicePixelRatio;
 
-    if (this.onrequestpresent) {
-      this.onrequestpresent(layers);
-    }
+      if (this.onrequestpresent) {
+        this.onrequestpresent(layers);
+      }
 
-    if (this.onvrdisplaypresentchange && !this.isPresenting) {
-      this.isPresenting = true;
-      this.onvrdisplaypresentchange();
-    } else {
-      this.isPresenting = true;
-    }
-
-    return Promise.resolve();
+      if (this.onvrdisplaypresentchange && !this.isPresenting) {
+        this.isPresenting = true;
+        this.onvrdisplaypresentchange();
+      } else {
+        this.isPresenting = true;
+      }
+    });
   }
 
   exitPresent() {
-    if (this.onvrdisplaypresentchange && this.isPresenting) {
-      this.isPresenting = false;
-      this.onvrdisplaypresentchange();
-    } else {
-      this.isPresenting = false;
-    }
-
-    return Promise.resolve();
+    return Promise.resolve().then(() => {
+      if (this.onvrdisplaypresentchange && this.isPresenting) {
+        this.isPresenting = false;
+        this.onvrdisplaypresentchange();
+      } else {
+        this.isPresenting = false;
+      }
+    });
   }
 
   requestSession({exclusive = true} = {}) {
