@@ -1360,9 +1360,10 @@ const _startRenderLoop = () => {
           context.flush();
         }
 
-        const isVisible = nativeWindow.isVisible(windowHandle) || vrPresentState.glContext === context || mlPresentState.mlGlContext === context;
+        const isVisible = nativeWindow.isVisible(windowHandle) || vrPresentState.glContext === context || oculusMobileVrPresentState.glContext === context || mlPresentState.mlGlContext === context;
         if (isVisible) {
           const window = context.canvas.ownerDocument.defaultView;
+
           if (vrPresentState.glContext === context && vrPresentState.oculusSystem && vrPresentState.hasPose) {
             if (vrPresentState.layers.length > 0) {
               const {openVRDisplay} = window[symbols.mrDisplaysSymbol];
