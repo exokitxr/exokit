@@ -500,3 +500,119 @@ NAN_METHOD(OVRSession::Submit)
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
   }
 }
+
+void OVRSession::DestroySession() {
+  ovr_Destroy(*this->session);
+  ovr_Shutdown();
+}
+
+void OVRSession::DestroySwapChain() {
+  ovr_DestroyTextureSwapChain(*this->session, this->eyes[0].ColorTextureChain);
+  ovr_DestroyTextureSwapChain(*this->session, this->eyes[0].DepthTextureChain);
+  ovr_DestroyTextureSwapChain(*this->session, this->eyes[1].ColorTextureChain);
+  ovr_DestroyTextureSwapChain(*this->session, this->eyes[1].DepthTextureChain);
+
+  glDeleteFramebuffers(1, &this->fboId);
+}
+
+void OVRSession::SetupSession() {
+
+  if (this->session) {
+    DestroySwapChain();
+    DestroySession();
+  }
+
+  ovrInitParams initParams = {
+    ovrInit_RequestVersion | ovrInit_MixedRendering,
+    OVR_MINOR_VERSION, ovrLogCallback, 0, 0
+  };
+
+  // Reinitialize Oculus runtime.
+  ovr_Initialize(&initParams);
+
+  ovrSession *session = (ovrSession *) malloc(sizeof(ovrSession));
+  ovrGraphicsLuid luid;
+  ovrResult result = ovr_Create(session, &luid);
+  if (OVR_FAILURE(result))
+  {
+    Nan::ThrowError("Error creating ovr session");
+    ovr_Shutdown();
+    return;
+  }
+
+  this->session = session;
+}
+
+void OVRSession::ResetSession() {
+  SetupSession();
+  SetupSwapChain();
+}
+
+void OVRSession::SetupSwapChain() {
+  ovrResult result;
+  ovrSizei recommenedTex0Size = ovr_GetFovTextureSize(*this->session, ovrEye_Left, this->hmdDesc.DefaultEyeFov[ovrEye_Left], 1);
+  ovrSizei recommenedTex1Size = ovr_GetFovTextureSize(*this->session, ovrEye_Right, this->hmdDesc.DefaultEyeFov[ovrEye_Right], 1);
+  ovrSizei bufferSize;
+
+  this->eyes[0].textureSize.w = recommenedTex0Size.w;
+  this->eyes[0].textureSize.h = recommenedTex0Size.h;
+  this->eyes[1].textureSize.w = recommenedTex1Size.w;
+  this->eyes[1].textureSize.h = recommenedTex1Size.h;
+
+  bufferSize.w  = recommenedTex0Size.w;
+  bufferSize.h = std::max(recommenedTex0Size.h, recommenedTex1Size.h);
+
+  // Make eye render buffers
+  for (int eye = 0; eye < 2; ++eye) {
+    ovrTextureSwapChainDesc desc = {};
+    desc.Type = ovrTexture_2D;
+    desc.ArraySize = 1;
+    desc.Format = OVR_FORMAT_R8G8B8A8_UNORM_SRGB;
+    desc.Width = bufferSize.w;
+    desc.Height = bufferSize.h;
+    desc.MipLevels = 1;
+    desc.SampleCount = 1;
+    desc.StaticImage = ovrFalse;
+
+    result = ovr_CreateTextureSwapChainGL(*this->session, &desc, &this->eyes[eye].ColorTextureChain);
+    int length = 0;
+    ovr_GetTextureSwapChainLength(*this->session, this->eyes[eye].ColorTextureChain, &length);
+
+    if (!OVR_SUCCESS(result)) {
+      std::cout << "Error creating Oculus GL Swap Chain" << std::endl;
+    } else {
+      for (int i = 0; i < length; ++i) {
+        GLuint textureId;
+        ovr_GetTextureSwapChainBufferGL(*this->session, this->eyes[eye].ColorTextureChain, i, &textureId);
+        glBindTexture(GL_TEXTURE_2D, textureId);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+      }
+    }
+
+    desc.Format = OVR_FORMAT_D32_FLOAT;
+
+    result = ovr_CreateTextureSwapChainGL(*this->session, &desc, &this->eyes[eye].DepthTextureChain);
+    ovr_GetTextureSwapChainLength(*this->session, this->eyes[eye].DepthTextureChain, &length);
+
+    if (!OVR_SUCCESS(result)) {
+      std::cout << "Error creating Oculus GL Swap Chain" << std::endl;
+    } else {
+      for (int i = 0; i < length; ++i) {
+        GLuint textureId;
+        ovr_GetTextureSwapChainBufferGL(*this->session, this->eyes[eye].DepthTextureChain, i, &textureId);
+        glBindTexture(GL_TEXTURE_2D, textureId);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+      }
+    }
+
+    glGenFramebuffers(1, &this->fboId);
+
+  }
+}
