@@ -207,6 +207,9 @@ void OculusMobileContext::PollEvents(bool wait) {
       parms.ShareContext = (unsigned long long)oculusMobileContext->windowHandle->context;
 
       oculusMobileContext->ovrState = vrapi_EnterVrMode(&parms);
+      if (vrapi_SetTrackingSpace(oculusMobileContext->ovrState, VRAPI_TRACKING_SPACE_STAGE) < 0) {
+        std::cerr << "failed to set tracking space" << std::endl;
+      }
 
       // If entering VR mode failed then the ANativeWindow was not valid.
       if (!oculusMobileContext->ovrState) {
