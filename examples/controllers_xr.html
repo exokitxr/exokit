@@ -1,0 +1,165 @@
+<html>
+  <head>
+   <meta charset="utf-8">
+   <meta http-equiv="X-UA-Compatible" content="IE=edge">
+   <meta name="viewport" content="width=device-width, initial-scale=1">
+   <meta name="theme-color" content="#008000"/>
+   <title>shooter_ml</title>
+    <style>
+      body {
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+  <h1>shooter_ml</h1>
+  <script src="three.js"></script>
+  <script>
+    let container, scene, camera, renderer, display, controllerMeshes;
+
+    const controllerMaterial = new THREE.MeshPhongMaterial({
+      color: 0x0000FF,
+    });
+    const controllerMaterialDown = new THREE.MeshPhongMaterial({
+      color: 0xFF0000,
+    });
+    const _makeControllerMesh = () => {
+      const controllerGeometry = new THREE.CylinderBufferGeometry(0.005, 0.005, 1, 3, 1)
+        .applyMatrix(new THREE.Matrix4().makeTranslation(0, 1/2, 0))
+        .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(
+          new THREE.Quaternion().setFromUnitVectors(
+            new THREE.Vector3(0, 1, 0),
+            new THREE.Vector3(0, 0, -1),
+          )
+        )); 
+      const mesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
+      mesh.matrixAutoUpdate = false;
+      mesh.frustumCulled = false;
+      return mesh;
+    };
+    const _getControllerIndex = inputSource => inputSource.handedness === 'left' ? 0 : 1;
+
+    function init() {
+      container = document.createElement('div');
+      document.body.appendChild(container);
+
+      scene = new THREE.Scene();
+      scene.matrixAutoUpdate = false;
+      // scene.background = new THREE.Color(0x3B3961);
+
+      camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+      // camera.position.set(0, 1, 0);
+      // camera.lookAt(new THREE.Vector3());
+      scene.add(camera);
+
+      const ambientLight = new THREE.AmbientLight(0x808080);
+      scene.add(ambientLight);
+
+      const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
+      directionalLight.position.set(1, 1, 1);
+      scene.add(directionalLight);
+
+      controllerMeshes = [
+        _makeControllerMesh(),
+        _makeControllerMesh(),
+      ];
+      controllerMeshes.forEach(controllerMesh => {
+        scene.add(controllerMesh);
+      });
+
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true,
+      });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      // window.browser.magicleap.RequestDepthPopulation(true);
+      // renderer.autoClearDepth = false;
+
+      container.appendChild(renderer.domElement);
+
+      renderer.setAnimationLoop(animate);
+    }
+
+    function animate(time, frame) {
+      console.log('animate 1');
+
+      const _updateGamepads = () => {
+        if (renderer.vr.enabled) {
+          for (let i = 0; i < controllerMeshes.length; i++) {
+            controllerMeshes[i].visible = false;
+          }
+
+          const inputSources = display.session.getInputSources();
+          const gamepads = navigator.getGamepads();
+          console.log('animate 2', inputSources.length, gamepads.length);
+          for (let i = 0; i < gamepads.length; i++) {
+            const gamepad = gamepads[i];
+            console.log('animate 3', i, gamepad.connected, gamepad.pose.position, gamepad.pose.orientation);
+          }
+          for (let i = 0; i < inputSources.length; i++) {
+            const inputSource = inputSources[i];
+            const pose = frame.getInputPose(inputSource);
+
+            const controllerIndex = _getControllerIndex(inputSource);
+            const controllerMesh = controllerMeshes[controllerIndex];
+            controllerMesh.matrix.fromArray(pose.targetRay.transformMatrix);
+            controllerMesh.matrix.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
+            controllerMesh.updateMatrixWorld(true);
+            controllerMesh.visible = true;
+          }
+        }
+      };
+      _updateGamepads();
+
+      renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
+    }
+
+    init();
+
+    (async () => {
+      console.log('request device');
+      display = await navigator.xr.requestDevice();
+      console.log('request session');
+      const session = await display.requestSession({
+        exclusive: true,
+      });
+      display.session = session;
+
+      session.onselectstart = e => {
+        const controllerIndex = _getControllerIndex(e.inputSource);
+        console.log('select start', controllerIndex);
+        const controllerMesh = controllerMeshes[controllerIndex];
+        controllerMesh.material = controllerMaterialDown;
+      };
+      session.onselectend = e => {
+        const controllerIndex = _getControllerIndex(e.inputSource);
+        console.log('select end', controllerIndex);
+        const controllerMesh = controllerMeshes[controllerIndex];
+        controllerMesh.material = controllerMaterial;
+      };
+
+      session.requestAnimationFrame((timestamp, frame) => {
+        renderer.vr.setSession(session, {
+          frameOfReferenceType: 'stage',
+        });
+
+        const viewport = session.baseLayer.getViewport(frame.views[0]);
+        const width = viewport.width;
+        const height = viewport.height;
+
+        renderer.setSize(width * 2, height);
+
+        renderer.setAnimationLoop(null);
+
+        renderer.vr.enabled = true;
+        renderer.vr.setDevice(display);
+        renderer.vr.setAnimationLoop(animate);
+
+        console.log('running!');
+      });
+    })();
+  </script>
+  </body>
+</html>
