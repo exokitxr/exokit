@@ -2,6 +2,8 @@
 
 Exokit is a node module. The core is written in Javascript, with native bindings to native functionality like OpenGL. It downloads prebuilt binaries for libraries, which are listed as dependenices.
 
+> Note: Using [nvm](https://github.com/creationix/nvm) makes it easy to manage multiple active node.js versions.
+
 ## Windows
 
 **Requirements**: Node.js 11.6.0, Python 2, Visual Studio 2015 or 2017
