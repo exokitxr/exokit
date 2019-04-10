@@ -258,8 +258,12 @@ NAN_METHOD(OculusMobileContext::WaitGetPoses) {
   index += 16;
   float *controllerMatrixLeft = float32ArrayData + index;
   index += 16;
+  float *controllerStateLeft = float32ArrayData + index;
+  index += 1;
   float *controllerMatrixRight = float32ArrayData + index;
   index += 16;
+  float *controllerStateRight = float32ArrayData + index;
+  index += 1;
 
   oculusMobileContext->PollEvents(false);
 
@@ -304,19 +308,23 @@ NAN_METHOD(OculusMobileContext::WaitGetPoses) {
               if (remoteCaps.ControllerCapabilities & ovrControllerCaps_LeftHand) {
                 ovrTracking tracking;
                 vrapi_GetInputTrackingState(oculusMobileContext->ovrState, capsHeader.DeviceID, predictedDisplayTime, &tracking);
-                const ovrPosef &pose = tracking.HeadPose.Pose;
-                const ovrVector3f &position = pose.Position;
-                const ovrQuatf &orientation = pose.Orientation;
-                const ovrMatrix4f &matrix = composeMatrix(position, orientation, ovrVector3f{1, 1, 1});
+                const ovrMatrix4f &matrix = vrapi_GetViewMatrixFromPose(&tracking.HeadPose.Pose);
                 memcpy(controllerMatrixLeft, &matrix.M[0][0], sizeof(float)*16);
-              } else if (remoteCaps.ControllerCapabilities & ovrControllerCaps_LeftHand) {
+
+                ovrInputStateTrackedRemote remoteState;
+                remoteState.Header.ControllerType = ovrControllerType_TrackedRemote;
+                vrapi_GetCurrentInputState(oculusMobileContext->ovrState, capsHeader.DeviceID, &remoteState.Header);
+                controllerStateLeft[0] = remoteState.Buttons & ovrButton_Trigger;
+              } else if (remoteCaps.ControllerCapabilities & (ovrControllerCaps_RightHand|ovrControllerCaps_ModelOculusGo)) {
                 ovrTracking tracking;
                 vrapi_GetInputTrackingState(oculusMobileContext->ovrState, capsHeader.DeviceID, predictedDisplayTime, &tracking);
-                const ovrPosef &pose = tracking.HeadPose.Pose;
-                const ovrVector3f &position = pose.Position;
-                const ovrQuatf &orientation = pose.Orientation;
-                const ovrMatrix4f &matrix = composeMatrix(position, orientation, ovrVector3f{1, 1, 1});
+                const ovrMatrix4f &matrix = vrapi_GetViewMatrixFromPose(&tracking.HeadPose.Pose);
                 memcpy(controllerMatrixRight, &matrix.M[0][0], sizeof(float)*16);
+
+                ovrInputStateTrackedRemote remoteState;
+                remoteState.Header.ControllerType = ovrControllerType_TrackedRemote;
+                vrapi_GetCurrentInputState(oculusMobileContext->ovrState, capsHeader.DeviceID, &remoteState.Header);
+                controllerStateRight[0] = remoteState.Buttons & ovrButton_Trigger;
               } else {
                 // not a hand
               }

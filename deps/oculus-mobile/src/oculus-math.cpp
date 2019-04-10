@@ -4,7 +4,7 @@
 
 namespace oculusmobile {
 
-ovrMatrix4f composeMatrix(const ovrVector3f &position, const ovrQuatf &quaternion, const ovrVector3f &scale) {
+/* ovrMatrix4f composeMatrix(const ovrVector3f &position, const ovrQuatf &quaternion, const ovrVector3f &scale) {
   ovrMatrix4f result;
 
   float	*te = (float *)&result.M[0][0]; // XXX row-major
@@ -38,7 +38,7 @@ ovrMatrix4f composeMatrix(const ovrVector3f &position, const ovrQuatf &quaternio
   te[ 15 ] = 1;
 
   return result;
-}
+} */
 
 }
 

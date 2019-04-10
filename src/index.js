@@ -336,7 +336,7 @@ const localFovArray = new Float32Array(4);
 const localGamepadArray = new Float32Array(24);
 
 // XXX oculus mobile
-const oculusMobilePoseFloat32Array = new Float32Array(3+4+1+4+16*(2+2+2));
+const oculusMobilePoseFloat32Array = new Float32Array(3+4+1+4+16*(2+2+2)+2);
 
 const handEntrySize = (1 + (5 * 5)) * (3 + 3);
 const transformArray = new Float32Array(7 * 2);
@@ -1525,7 +1525,10 @@ const _startRenderLoop = () => {
       // build gamepads data
       {
         const leftGamepad = xrState.gamepads[0];
-        const gamepadFloat32Array = new Float32Array(oculusMobilePoseFloat32Array.buffer, oculusMobilePoseFloat32Array.byteOffset + 4*Float32Array.BYTES_PER_ELEMENT*16, 16);
+        const gamepadFloat32Array = new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 16);
+        index += 16*Float32Array.BYTES_PER_ELEMENT;
+        const buttonsFloat32Array = new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 1);
+        index += 1*Float32Array.BYTES_PER_ELEMENT;
         if (!isNaN(gamepadFloat32Array[0])) {
           leftGamepad.connected[0] = true;
 
@@ -1533,13 +1536,18 @@ const _startRenderLoop = () => {
           localMatrix.decompose(localVector, localQuaternion, localVector2);
           localVector.toArray(leftGamepad.position);
           localQuaternion.toArray(leftGamepad.orientation);
+
+          leftGamepad.buttons[1].pressed[0] = buttonsFloat32Array[0]; // trigger
         } else {
           leftGamepad.connected[0] = 0;
         }
       }
       {
         const rightGamepad = xrState.gamepads[1];
-        const gamepadFloat32Array = new Float32Array(oculusMobilePoseFloat32Array.buffer, oculusMobilePoseFloat32Array.byteOffset + 5*Float32Array.BYTES_PER_ELEMENT*16, 16);
+        const gamepadFloat32Array = new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 16);
+        index += 16*Float32Array.BYTES_PER_ELEMENT;
+        const buttonsFloat32Array = new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 1);
+        index += 1*Float32Array.BYTES_PER_ELEMENT;
         if (!isNaN(gamepadFloat32Array[0])) {
           rightGamepad.connected[0] = true;
 
@@ -1547,6 +1555,8 @@ const _startRenderLoop = () => {
           localMatrix.decompose(localVector, localQuaternion, localVector2);
           localVector.toArray(rightGamepad.position);
           localQuaternion.toArray(rightGamepad.orientation);
+
+          rightGamepad.buttons[1].pressed[0] = buttonsFloat32Array[0]; // trigger
         } else {
           rightGamepad.connected[0] = 0;
         }
