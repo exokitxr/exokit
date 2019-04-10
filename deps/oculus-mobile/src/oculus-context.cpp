@@ -316,8 +316,13 @@ NAN_METHOD(OculusMobileContext::WaitGetPoses) {
               if (remoteCaps.ControllerCapabilities & ovrControllerCaps_LeftHand) {
                 ovrTracking tracking;
                 vrapi_GetInputTrackingState(oculusMobileContext->ovrState, capsHeader.DeviceID, predictedDisplayTime, &tracking);
-                const ovrMatrix4f &matrix = vrapi_GetViewMatrixFromPose(&tracking.HeadPose.Pose);
-                memcpy(controllerMatrixLeft, &matrix.M[0][0], sizeof(float)*16);
+                ovrVector3f pivot{-0.2, 1, 0};
+                ovrVector3f point{-0.2, 1, -0.2};
+                tracking.HeadPose.Pose.Position = ovrVector3f_RotateAboutPivot(&tracking.HeadPose.Pose.Orientation, &pivot, &point);
+                // const ovrMatrix4f &matrix = vrapi_GetViewMatrixFromPose(&tracking.HeadPose.Pose);
+                const ovrMatrix4f &matrix = vrapi_GetTransformFromPose(&tracking.HeadPose.Pose);
+                const ovrMatrix4f &matrix2 = ovrMatrix4f_Transpose(&matrix);
+                memcpy(controllerMatrixLeft, matrix2.M, sizeof(matrix2.M));
 
                 ovrInputStateTrackedRemote remoteState;
                 remoteState.Header.ControllerType = ovrControllerType_TrackedRemote;
@@ -326,8 +331,13 @@ NAN_METHOD(OculusMobileContext::WaitGetPoses) {
               } else if (remoteCaps.ControllerCapabilities & (ovrControllerCaps_RightHand|ovrControllerCaps_ModelOculusGo)) {
                 ovrTracking tracking;
                 vrapi_GetInputTrackingState(oculusMobileContext->ovrState, capsHeader.DeviceID, predictedDisplayTime, &tracking);
-                const ovrMatrix4f &matrix = vrapi_GetViewMatrixFromPose(&tracking.HeadPose.Pose);
-                memcpy(controllerMatrixRight, &matrix.M[0][0], sizeof(float)*16);
+                ovrVector3f pivot{0.2, 1, 0};
+                ovrVector3f point{0.2, 1, -0.2};
+                tracking.HeadPose.Pose.Position = ovrVector3f_RotateAboutPivot(&tracking.HeadPose.Pose.Orientation, &pivot, &point);
+                // const ovrMatrix4f &matrix = vrapi_GetViewMatrixFromPose(&tracking.HeadPose.Pose);
+                const ovrMatrix4f &matrix = vrapi_GetTransformFromPose(&tracking.HeadPose.Pose);
+                const ovrMatrix4f &matrix2 = ovrMatrix4f_Transpose(&matrix);
+                memcpy(controllerMatrixRight, matrix2.M, sizeof(matrix2.M));
 
                 ovrInputStateTrackedRemote remoteState;
                 remoteState.Header.ControllerType = ovrControllerType_TrackedRemote;
