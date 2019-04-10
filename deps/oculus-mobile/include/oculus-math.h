@@ -5,7 +5,7 @@
 
 namespace oculusmobile {
 
-ovrMatrix4f composeMatrix(const ovrVector3f &position, const ovrQuatf &quaternion, const ovrVector3f &scale);
+// ovrMatrix4f composeMatrix(const ovrVector3f &position, const ovrQuatf &quaternion, const ovrVector3f &scale);
 
 }
 
