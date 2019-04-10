@@ -236,6 +236,11 @@ void OculusMobileContext::PollEvents(bool wait) {
   }
 }
 
+bool isQuest() {
+  int	deviceType = vrapi_GetSystemPropertyInt(&java, VRAPI_SYS_PROP_DEVICE_TYPE);
+  return deviceType >= VRAPI_DEVICE_TYPE_OCULUSQUEST_START && deviceType <= VRAPI_DEVICE_TYPE_OCULUSQUEST_END;
+}
+
 NAN_METHOD(OculusMobileContext::WaitGetPoses) {
   Local<Object> oculusMobileContextObj = info.This();
   OculusMobileContext *oculusMobileContext = ObjectWrap::Unwrap<OculusMobileContext>(oculusMobileContextObj);
