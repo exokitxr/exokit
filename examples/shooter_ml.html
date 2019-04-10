@@ -192,7 +192,7 @@
             bullet.updateMatrix();
             bullet.updateMatrixWorld(true);
 
-            if (!bullet.hitTesting) {
+            if (display.session.requestHitTest && !bullet.hitTesting) {
               const startPosition = bullet.position.clone();
 
               display.session.requestHitTest(
