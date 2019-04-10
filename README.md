@@ -151,6 +151,7 @@ Exokit runs on Windows, macOS, Linux (x64), Linux (ARM64), and Magic Leap (ARM64
 - Leap Motion
 
 ## Local Development
+See full building instructions in [BUILDING.md](https://github.com/exokitxr/exokit/blob/master/BUILDING.md).
 
 ```sh
 git clone https://github.com/exokitxr/exokit.git
