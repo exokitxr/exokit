@@ -267,11 +267,11 @@ NAN_METHOD(OculusMobileContext::WaitGetPoses) {
   float *controllerMatrixLeft = float32ArrayData + index;
   index += 16;
   float *controllerStateLeft = float32ArrayData + index;
-  index += 1;
+  index += 5;
   float *controllerMatrixRight = float32ArrayData + index;
   index += 16;
   float *controllerStateRight = float32ArrayData + index;
-  index += 1;
+  index += 5;
 
   oculusMobileContext->PollEvents(false);
 
@@ -327,7 +327,11 @@ NAN_METHOD(OculusMobileContext::WaitGetPoses) {
                 ovrInputStateTrackedRemote remoteState;
                 remoteState.Header.ControllerType = ovrControllerType_TrackedRemote;
                 vrapi_GetCurrentInputState(oculusMobileContext->ovrState, capsHeader.DeviceID, &remoteState.Header);
-                controllerStateLeft[0] = remoteState.Buttons & ovrButton_Trigger;
+                controllerStateLeft[0] = remoteState.IndexTrigger;
+                controllerStateLeft[1] = remoteState.GripTrigger;
+                controllerStateLeft[2] = remoteState.TrackpadPosition.x;
+                controllerStateLeft[3] = remoteState.TrackpadPosition.y;
+                controllerStateLeft[4] = (remoteState.Buttons & ovrButton_Enter) ? 1 : (remoteState.TrackpadStatus ? 0.5 : 0);
               } else if (remoteCaps.ControllerCapabilities & (ovrControllerCaps_RightHand|ovrControllerCaps_ModelOculusGo)) {
                 ovrTracking tracking;
                 vrapi_GetInputTrackingState(oculusMobileContext->ovrState, capsHeader.DeviceID, predictedDisplayTime, &tracking);
@@ -342,7 +346,11 @@ NAN_METHOD(OculusMobileContext::WaitGetPoses) {
                 ovrInputStateTrackedRemote remoteState;
                 remoteState.Header.ControllerType = ovrControllerType_TrackedRemote;
                 vrapi_GetCurrentInputState(oculusMobileContext->ovrState, capsHeader.DeviceID, &remoteState.Header);
-                controllerStateRight[0] = remoteState.Buttons & ovrButton_Trigger;
+                controllerStateRight[0] = remoteState.IndexTrigger;
+                controllerStateRight[1] = remoteState.GripTrigger;
+                controllerStateRight[2] = remoteState.TrackpadPosition.x;
+                controllerStateRight[3] = remoteState.TrackpadPosition.y;
+                controllerStateRight[4] = (remoteState.Buttons & ovrButton_Enter) ? 1 : (remoteState.TrackpadStatus ? 0.5 : 0);
               } else {
                 // not a hand
               }
