@@ -20,6 +20,7 @@
 #include <AudioListener.h>
 #include <MediaStreamTrack.h>
 #include <MicrophoneMediaStream.h>
+#include <AudioDestinationGenericImpl.h>
 
 using namespace std;
 using namespace v8;
