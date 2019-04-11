@@ -22,6 +22,17 @@ AudioContext::AudioContext(float sampleRate) {
 AudioContext::~AudioContext() {}
 
 Local<Object> AudioContext::Initialize(Isolate *isolate, Local<Value> audioListenerCons, Local<Value> audioSourceNodeCons, Local<Value> audioDestinationNodeCons, Local<Value> gainNodeCons, Local<Value> analyserNodeCons, Local<Value> pannerNodeCons, Local<Value> audioBufferCons, Local<Value> audioBufferSourceNodeCons, Local<Value> audioProcessingEventCons, Local<Value> stereoPannerNodeCons, Local<Value> oscillatorNodeCons, Local<Value> scriptProcessorNodeCons, Local<Value> mediaStreamTrackCons, Local<Value> microphoneMediaStreamCons) {
+#if defined(ANDROID) || defined(LUMIN)
+  lab::SetGenericFunctions(
+    adgCreate,
+    adgDestroy,
+    adgStart,
+    adgStop,
+    adgStartRecording,
+    adgStopRecording
+  );
+#endif
+
   uv_async_init(uv_default_loop(), &threadAsync, RunInMainThread);
   uv_sem_init(&threadSemaphore, 0);
 
@@ -497,7 +508,7 @@ uv_sem_t threadSemaphore;
 
 }
 
-// XXX hack until we rebuild LabSound for android audio bindings support
+/* // XXX hack until we rebuild LabSound for android audio bindings support
 #ifdef ANDROID
 
 typedef int32_t MLResult;
@@ -519,4 +530,4 @@ MLResult MLAudioStartInput(MLHandle handle) { return 0; }
 MLResult MLAudioStopInput(MLHandle handle) { return 0; }
 }
 
-#endif
+#endif */
