@@ -9,10 +9,6 @@ include_directories( SYSTEM ${CMAKE_SOURCE_DIR}/../.node-gyp/11.6.0/include/node
 include_directories( SYSTEM ${CMAKE_SOURCE_DIR}/../build/libexokit )
 include_directories( SYSTEM ${ANDROID_NDK}/sources/android/native_app_glue )
 
-# set(OBOE_DIR ${CMAKE_SOURCE_DIR}/../deps/oculus-mobile/deps/oboe)
-# add_subdirectory(${OBOE_DIR} ./oboe)
-# include_directories(${OBOE_DIR}/include)
-
 add_library( exokit STATIC IMPORTED )
 set_target_properties( exokit PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../build/libexokit/libexokit.a )
 
@@ -27,9 +23,6 @@ set_target_properties( skia PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../
 
 add_library( labsound STATIC IMPORTED )
 set_target_properties( labsound PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../node_modules/native-audio-deps/lib2/magicleap/libLabSound.a )
-
-# add_library( oboe STATIC IMPORTED )
-# set_target_properties( oboe PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../node_modules/native-audio-deps/lib2/magicleap/liboboe.a )
 
 add_library( avformat STATIC IMPORTED )
 set_target_properties( avformat PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../node_modules/native-video-deps/lib2/magicleap/libavformat.a )
@@ -57,7 +50,6 @@ target_link_libraries(native-main
     GLESv2
     GLESv3
     vrapi
-    # oboe
     exokit
     node
     skia

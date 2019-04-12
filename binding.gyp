@@ -646,7 +646,6 @@
             '-lopus',
             '-lwebrtc',
             '-lvrapi',
-            # '-loboe'
           ],
           'defines': [
             'ANDROID',
