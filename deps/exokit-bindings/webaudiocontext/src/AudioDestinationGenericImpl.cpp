@@ -5,55 +5,23 @@ namespace webaudio {
 #ifdef ANDROID
 
 void processBuffers(AudioDestinationGenericImpl *audioDestination) {
-  while (audioDestination->outputBuffers.size() < 1) {
-    /* std::vector<float> &outputBuffer = audioDestination->outputBuffers.front();
-    int totalOutputFrames = outputBuffer.size() / 2 / sizeof(float);
-    int remainingOutputFrames = totalOutputFrames - audioDestination->outputIndex;
-    int currentFrames = std::min<int>(remainingOutputFrames, lab::AudioNode::ProcessingSizeInFrames);
-
-    if (audioDestination->isRecording()) {
-      if (audioDestination->inputBuffers.size() > 0) {
-        std::vector<float> &inputBuffer = audioDestination->inputBuffers.front();
-        int totalInputFrames = inputBuffer.size();
-        int remainingInputFrames = totalInputFrames - audioDestination->inputIndex;
-
-        currentFrames = std::min<int>(currentFrames, remainingInputFrames);
-      } else {
-        break;
-      }
-    } */
-
-    std::vector<float> *outputBuffer;
+  while (audioDestination->outputBuffers.size() == 0 || (audioDestination->isRecording() && audioDestination->inputBuffers.size() > 0)) {
     std::vector<float> *inputBuffer;
-    int inputIndex;
-    int numFrames;
-    std::vector<float> outputBufferCache;
     std::vector<float> inputBufferCache;
     if (audioDestination->isRecording()) {
       inputBuffer = &audioDestination->inputBuffers.front();
-      inputIndex = audioDestination->inputIndex;
-      numFrames = inputBuffer->size() - inputIndex;
     } else {
-      inputBufferCache.resize(outputBuffer->size());
+      inputBufferCache.resize(lab::AudioNode::ProcessingSizeInFrames);
       inputBuffer = &inputBufferCache;
-      inputIndex = 0;
-      numFrames = lab::AudioNode::ProcessingSizeInFrames;
     }
-    outputBufferCache.resize(numFrames * 2);
-    outputBuffer = &outputBufferCache;
+    std::vector<float> outputBuffer(lab::AudioNode::ProcessingSizeInFrames * 2);
 
-    audioDestination->render(numFrames, outputBuffer->data(), inputBuffer->data() + inputIndex);
+    audioDestination->render(lab::AudioNode::ProcessingSizeInFrames, outputBuffer.data(), inputBuffer->data());
 
-    audioDestination->outputBuffers.push_back(std::move(*outputBuffer));
+    audioDestination->outputBuffers.push_back(std::move(outputBuffer));
 
     if (audioDestination->isRecording()) {
-      audioDestination->inputIndex += numFrames;
-
-      int totalInputFrames = inputBuffer->size();
-      if (audioDestination->inputIndex >= totalInputFrames) {
-        audioDestination->inputBuffers.pop_front();
-        audioDestination->inputIndex = 0;
-      }
+      audioDestination->inputBuffers.pop_front();
     }
   }
 }
@@ -63,15 +31,19 @@ aaudio_data_callback_result_t outputCallback(AAudioStream *stream, void *userDat
 
   AudioDestinationGenericImpl *audioDestination = (AudioDestinationGenericImpl *)userData;
 
-  /* std::vector<float> outputBuffer(numFrames);
-  memcpy(outputBuffer.data(), audioData, numFrames*sizeof(float));
-
   {
     std::lock_guard<std::mutex> lock(audioDestination->mutex);
 
-    audioDestination->outputBuffers.push_back(outputBuffer);
+    std::vector<float> &outputBuffer = audioDestination->outputBuffers.front();
+    if (outputBuffer.size() > 0) {
+      memcpy(audioData, outputBuffer.data(), numFrames*sizeof(float));
+    } else {
+      memset(audioData, 0, numFrames*sizeof(float));
+    }
+    audioDestination->outputBuffers.pop_front();
+
     processBuffers(audioDestination);
-  } */
+  }
 }
 
 aaudio_data_callback_result_t inputCallback(AAudioStream *stream, void *userData, void *audioData, int32_t numFrames) {
