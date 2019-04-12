@@ -26,43 +26,53 @@ void processBuffers(AudioDestinationGenericImpl *audioDestination) {
   }
 }
 
-aaudio_data_callback_result_t outputCallback(AAudioStream *stream, void *userData, void *audioData, int32_t numFrames) {
-  // output needs data
+class OutputCallback : public oboe::AudioStreamCallback {
+public:
+  OutputCallback(AudioDestinationGenericImpl *audioDestination) : audioDestination(audioDestination) {}
 
-  AudioDestinationGenericImpl *audioDestination = (AudioDestinationGenericImpl *)userData;
+  oboe::DataCallbackResult onAudioReady(oboe::AudioStream *audioStream, void *audioData, int32_t numFrames) {
+    // output needs data
 
-  {
-    std::lock_guard<std::mutex> lock(audioDestination->mutex);
+    {
+      std::lock_guard<std::mutex> lock(audioDestination->mutex);
 
-    std::vector<float> &outputBuffer = audioDestination->outputBuffers.front();
-    if (outputBuffer.size() > 0) {
-      memcpy(audioData, outputBuffer.data(), numFrames*sizeof(float));
-    } else {
-      memset(audioData, 0, numFrames*sizeof(float));
+      std::vector<float> &outputBuffer = audioDestination->outputBuffers.front();
+      if (outputBuffer.size() > 0) {
+        memcpy(audioData, outputBuffer.data(), numFrames*sizeof(float));
+      } else {
+        memset(audioData, 0, numFrames*sizeof(float));
+      }
+      audioDestination->outputBuffers.pop_front();
+
+      processBuffers(audioDestination);
     }
-    audioDestination->outputBuffers.pop_front();
-
-    processBuffers(audioDestination);
   }
-}
 
-aaudio_data_callback_result_t inputCallback(AAudioStream *stream, void *userData, void *audioData, int32_t numFrames) {
-  // input has data
+  AudioDestinationGenericImpl *audioDestination;
+};
 
-  AudioDestinationGenericImpl *audioDestination = (AudioDestinationGenericImpl *)userData;
+class InputCallback : public oboe::AudioStreamCallback {
+public:
+  InputCallback(AudioDestinationGenericImpl *audioDestination) : audioDestination(audioDestination) {}
 
-  std::vector<float> inputBuffer(numFrames);
-  memcpy(inputBuffer.data(), audioData, numFrames*sizeof(float));
+  oboe::DataCallbackResult onAudioReady(oboe::AudioStream *audioStream, void *audioData, int32_t numFrames) {
+    // input has data
 
-  {
-    std::lock_guard<std::mutex> lock(audioDestination->mutex);
+    std::vector<float> inputBuffer(numFrames);
+    memcpy(inputBuffer.data(), audioData, numFrames*sizeof(float));
 
-    audioDestination->inputBuffers.push_back(std::move(inputBuffer));
-    processBuffers(audioDestination);
+    {
+      std::lock_guard<std::mutex> lock(audioDestination->mutex);
+
+      audioDestination->inputBuffers.push_back(std::move(inputBuffer));
+      processBuffers(audioDestination);
+    }
   }
-}
 
-void outputErrorCallback(AAudioStream *stream, void *userData, aaudio_result_t error) {
+  AudioDestinationGenericImpl *audioDestination;
+};
+
+/* void outputErrorCallback(AAudioStream *stream, void *userData, aaudio_result_t error) {
   // AudioDestinationGenericImpl *audioDestination = (AudioDestinationGenericImpl *)userData;
 
   std::cerr << "audio output error callback: " << error << std::endl;
@@ -72,80 +82,64 @@ void inputErrorCallback(AAudioStream *stream, void *userData, aaudio_result_t er
   // AudioDestinationGenericImpl *audioDestination = (AudioDestinationGenericImpl *)userData;
 
   std::cerr << "audio input error callback: " << error << std::endl;
-}
+} */
 
 AudioDestinationGenericImpl::AudioDestinationGenericImpl(float sampleRate, std::function<void(int numberOfFrames, void *outputBuffer, void *inputBuffer)> renderFn) {
   // output
   {
-    AAudioStreamBuilder *builder;
-    AAudio_createStreamBuilder(&builder);
+    oboe::AudioStreamBuilder builder;
 
-    AAudioStreamBuilder_setDirection(builder, AAUDIO_DIRECTION_OUTPUT);
-    AAudioStreamBuilder_setChannelCount(builder, 2);
-    AAudioStreamBuilder_setFormat(builder, AAUDIO_FORMAT_PCM_FLOAT);
-    AAudioStreamBuilder_setDataCallback(builder, outputCallback, this);
-    AAudioStreamBuilder_setFramesPerDataCallback(builder, lab::AudioNode::ProcessingSizeInFrames);
-    AAudioStreamBuilder_setErrorCallback(builder, outputErrorCallback, this);
+    builder.setDirection(oboe::Direction::Output);
+    // builder.setPerformanceMode(oboe::PerformanceMode::LowLatency);
+    // builder.setSharingMode(oboe::SharingMode::Exclusive);
+    builder.setFormat(oboe::AudioFormat::Float);
+    builder.setChannelCount(oboe::ChannelCount::Stereo);
+    builder.setFramesPerCallback(lab::AudioNode::ProcessingSizeInFrames);
+    builder.setCallback(new OutputCallback(this));
 
-    AAudioStreamBuilder_openStream(builder, &outputStream);
-
-    AAudioStreamBuilder_delete(builder);
+    builder.openStream(&outputStream);
   }
   // input
   {
-    AAudioStreamBuilder *builder;
-    AAudio_createStreamBuilder(&builder);
+    oboe::AudioStreamBuilder builder;
 
-    AAudioStreamBuilder_setDirection(builder, AAUDIO_DIRECTION_INPUT);
-    AAudioStreamBuilder_setChannelCount(builder, 1);
-    AAudioStreamBuilder_setFormat(builder, AAUDIO_FORMAT_PCM_FLOAT);
-    AAudioStreamBuilder_setDataCallback(builder, inputCallback, this);
-    AAudioStreamBuilder_setFramesPerDataCallback(builder, lab::AudioNode::ProcessingSizeInFrames);
-    AAudioStreamBuilder_setErrorCallback(builder, inputErrorCallback, this);
+    builder.setDirection(oboe::Direction::Input);
+    // builder.setPerformanceMode(oboe::PerformanceMode::LowLatency);
+    // builder.setSharingMode(oboe::SharingMode::Exclusive);
+    builder.setFormat(oboe::AudioFormat::Float);
+    builder.setChannelCount(oboe::ChannelCount::Mono);
+    builder.setFramesPerCallback(lab::AudioNode::ProcessingSizeInFrames);
+    builder.setCallback(new InputCallback(this));
 
-    AAudioStreamBuilder_openStream(builder, &inputStream);
-
-    AAudioStreamBuilder_delete(builder);
+    builder.openStream(&outputStream);
   }
 }
 
 AudioDestinationGenericImpl::~AudioDestinationGenericImpl() {
-  AAudioStream_close(outputStream);
-  AAudioStream_close(inputStream);
+  outputStream->close();
+  inputStream->close();
 }
 
 bool AudioDestinationGenericImpl::start() {
-  if (AAudioStream_requestStart(outputStream) == AAUDIO_OK) {
-    return true;
-  } else {
-    return false;
-  }
+  outputStream->requestStart();
+  return true;
 }
 
 bool AudioDestinationGenericImpl::stop() {
-  if (AAudioStream_requestStop(outputStream) == AAUDIO_OK) {
-    return true;
-  } else {
-    return false;
-  }
+  outputStream->requestStop();
+  return true;
 }
 
 bool AudioDestinationGenericImpl::startRecording() {
-  if (AAudioStream_requestStart(inputStream) == AAUDIO_OK) {
-    m_isRecording = true;
-    return true;
-  } else {
-    return false;
-  }
+  inputStream->requestStart();
+  m_isRecording = true;
+  return true;
 }
 
 bool AudioDestinationGenericImpl::stopRecording() {
-  if (AAudioStream_requestStart(inputStream) == AAUDIO_OK) {
-    m_isRecording = false;
-    return true;
-  } else {
-    return false;
-  }
+  inputStream->requestStop();
+  m_isRecording = false;
+  return true;
 }
 
 void AudioDestinationGenericImpl::render(int numberOfFrames, void *outputBuffer, void *inputBuffer) {

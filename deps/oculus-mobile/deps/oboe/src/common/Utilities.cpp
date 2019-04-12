@@ -19,7 +19,7 @@
 #include <unistd.h>
 #include <sstream>
 
-#ifdef __ANDROID__
+#ifdef ANDROID
 #include <sys/system_properties.h>
 #endif
 
@@ -200,7 +200,7 @@ const char* convertToText<AudioStream*>(AudioStream* stream) {
 }
 
 int getSdkVersion() {
-#ifdef __ANDROID__
+#ifdef ANDROID
     static int sCachedSdkVersion = -1;
     if (sCachedSdkVersion == -1) {
         char sdk[PROP_VALUE_MAX] = {0};
