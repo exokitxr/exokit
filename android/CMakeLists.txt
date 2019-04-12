@@ -3,6 +3,16 @@ cmake_minimum_required(VERSION 3.6.0)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -Wall -Werror")
 add_library(native-main SHARED ${CMAKE_SOURCE_DIR}/../main.cpp ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c)
 
+include_directories( SYSTEM ${CMAKE_SOURCE_DIR}/../node_modules/nan )
+include_directories( SYSTEM ${CMAKE_SOURCE_DIR}/../deps/exokit-bindings/util/include )
+include_directories( SYSTEM ${CMAKE_SOURCE_DIR}/../.node-gyp/11.6.0/include/node )
+include_directories( SYSTEM ${CMAKE_SOURCE_DIR}/../build/libexokit )
+include_directories( SYSTEM ${ANDROID_NDK}/sources/android/native_app_glue )
+
+set (OBOE_DIR ${CMAKE_SOURCE_DIR}/../deps/oculus-mobile/deps/oboe)
+add_subdirectory(${OBOE_DIR} ./oboe)
+include_directories(${OBOE_DIR}/include)
+
 add_library( exokit STATIC IMPORTED )
 set_target_properties( exokit PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../build/libexokit/libexokit.a )
 
@@ -32,13 +42,6 @@ add_library( swresample STATIC IMPORTED )
 set_target_properties( swresample PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../node_modules/native-video-deps/lib2/magicleap/libswresample.a )
 add_library( opus STATIC IMPORTED )
 set_target_properties( opus PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../node_modules/native-video-deps/lib2/magicleap/libopus.a )
-
-
-include_directories( SYSTEM ${CMAKE_SOURCE_DIR}/../node_modules/nan )
-include_directories( SYSTEM ${CMAKE_SOURCE_DIR}/../deps/exokit-bindings/util/include )
-include_directories( SYSTEM ${CMAKE_SOURCE_DIR}/../.node-gyp/11.6.0/include/node )
-include_directories( SYSTEM ${CMAKE_SOURCE_DIR}/../build/libexokit )
-include_directories( SYSTEM ${ANDROID_NDK}/sources/android/native_app_glue )
 
 # add lib dependencies
 target_link_libraries(native-main
