@@ -4,14 +4,14 @@
 #include <AudioContext.h>
 #include <functional>
 
-namespace webaudio {
-
 #ifdef ANDROID
-#include <aaudio/AAudio.h>
+#include <oboe/Oboe.h>
 #endif
 #ifdef LUMIN
 #include <ml_audio.h>
 #endif
+
+namespace webaudio {
 
 #ifdef ANDROID
 
@@ -29,8 +29,8 @@ public:
 
   std::mutex mutex;
 
-  AAudioStream *inputStream;
-  AAudioStream *outputStream;
+  oboe::AudioStream *inputStream;
+  oboe::AudioStream *outputStream;
   std::deque<std::vector<float>> outputBuffers;
   std::deque<std::vector<float>> inputBuffers;
   int outputIndex = 0;

@@ -24,7 +24,7 @@
 #include "common/OboeDebug.h"
 #include "oboe/Utilities.h"
 
-#ifdef __ANDROID__
+#ifdef ANDROID
 #include <sys/system_properties.h>
 #endif
 
