@@ -587,7 +587,11 @@
             '<!@(ls -1 deps/exokit-bindings/windowsystem/src/*.cc)',
             '<!@(ls -1 deps/exokit-bindings/egl/src/*.cc)',
             '<!@(ls -1 deps/exokit-bindings/webrtc/src/*.cc)',
-            '<!@(ls -1 deps/oculus-mobile/src/*.cpp)'
+            '<!@(ls -1 deps/oculus-mobile/src/*.cpp)',
+            '<!@(ls -1 deps/oculus-mobile/deps/oboe/src/common/*.cpp)',
+            '<!@(ls -1 deps/oculus-mobile/deps/oboe/src/fifo/*.cpp)',
+            '<!@(ls -1 deps/oculus-mobile/deps/oboe/src/opensles/*.cpp)',
+            '<!@(ls -1 deps/oculus-mobile/deps/oboe/src/aaudio/*.cpp)',
           ],
           'include_dirs': [
             "<!(node -e \"console.log(require.resolve('nan').slice(0, -16))\")",
@@ -622,7 +626,9 @@
             '<(module_root_dir)/deps/exokit-bindings/windowsystem/include',
             '<(module_root_dir)/deps/exokit-bindings/egl/include',
             '<(module_root_dir)/deps/exokit-bindings/webrtc/include',
-            '<(module_root_dir)/deps/oculus-mobile/include'
+            '<(module_root_dir)/deps/oculus-mobile/include',
+            '<(module_root_dir)/deps/oculus-mobile/deps/oboe/include',
+            '<(module_root_dir)/deps/oculus-mobile/deps/oboe/src',
           ],
           'library_dirs': [
             "<!(echo $TOOLCHAIN_USR)",
@@ -646,7 +652,8 @@
             '-lswresample',
             '-lopus',
             # '-lwebrtc',
-            '-lvrapi'
+            '-lvrapi',
+            # '-loboe'
           ],
           'defines': [
             'ANDROID',
