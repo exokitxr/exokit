@@ -15,6 +15,9 @@ namespace webaudio {
 
 #ifdef ANDROID
 
+class OutputCallback;
+class InputCallback;
+
 class AudioDestinationGenericImpl {
 public:
   AudioDestinationGenericImpl(float sampleRate, std::function<void(int numberOfFrames, void *outputBuffer, void *inputBuffer)> renderFn);
@@ -31,12 +34,32 @@ public:
 
   oboe::AudioStream *inputStream;
   oboe::AudioStream *outputStream;
+  OutputCallback *outputCallback;
+  InputCallback *inputCallback;
   std::deque<std::vector<float>> outputBuffers;
   std::deque<std::vector<float>> inputBuffers;
   int outputIndex = 0;
   int inputIndex = 0;
   std::function<void(int numberOfFrames, void *outputBuffer, void *inputBuffer)> renderFn;
   bool m_isRecording;
+};
+
+class OutputCallback : public oboe::AudioStreamCallback {
+public:
+  OutputCallback(AudioDestinationGenericImpl *audioDestination);
+
+  oboe::DataCallbackResult onAudioReady(oboe::AudioStream *audioStream, void *audioData, int32_t numFrames);
+
+  AudioDestinationGenericImpl *audioDestination;
+};
+
+class InputCallback : public oboe::AudioStreamCallback {
+public:
+  InputCallback(AudioDestinationGenericImpl *audioDestination);
+
+  oboe::DataCallbackResult onAudioReady(oboe::AudioStream *audioStream, void *audioData, int32_t numFrames);
+
+  AudioDestinationGenericImpl *audioDestination;
 };
 
 #endif
