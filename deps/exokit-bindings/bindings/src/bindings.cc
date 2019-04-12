@@ -134,6 +134,7 @@ Local<Object> makeBrowser() {
 
   return scope.Escape(exports);
 }
+#endif
 
 Local<Object> makeRtc() {
   Isolate *isolate = Isolate::GetCurrent();
@@ -146,4 +147,3 @@ Local<Object> makeRtc() {
 
   return scope.Escape(exports);
 }
-#endif

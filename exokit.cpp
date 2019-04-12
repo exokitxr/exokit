@@ -185,10 +185,10 @@ void InitExports(Local<Object> exports) {
 #if !defined(ANDROID)
   Local<Value> browser = makeBrowser();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeBrowser"), browser);
+#endif
 
   Local<Value> rtc = makeRtc();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeRtc"), rtc);
-#endif
 
   /* Local<Value> glfw = makeGlfw();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeGlfw"), glfw); */
