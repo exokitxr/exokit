@@ -26,51 +26,39 @@ void processBuffers(AudioDestinationGenericImpl *audioDestination) {
   }
 }
 
-class OutputCallback : public oboe::AudioStreamCallback {
-public:
-  OutputCallback(AudioDestinationGenericImpl *audioDestination) : audioDestination(audioDestination) {}
+OutputCallback::OutputCallback(AudioDestinationGenericImpl *audioDestination) : audioDestination(audioDestination) {}
+oboe::DataCallbackResult OutputCallback::onAudioReady(oboe::AudioStream *audioStream, void *audioData, int32_t numFrames) {
+  // output needs data
 
-  oboe::DataCallbackResult onAudioReady(oboe::AudioStream *audioStream, void *audioData, int32_t numFrames) {
-    // output needs data
+  {
+    std::lock_guard<std::mutex> lock(audioDestination->mutex);
 
-    {
-      std::lock_guard<std::mutex> lock(audioDestination->mutex);
-
-      std::vector<float> &outputBuffer = audioDestination->outputBuffers.front();
-      if (outputBuffer.size() > 0) {
-        memcpy(audioData, outputBuffer.data(), numFrames*sizeof(float));
-      } else {
-        memset(audioData, 0, numFrames*sizeof(float));
-      }
-      audioDestination->outputBuffers.pop_front();
-
-      processBuffers(audioDestination);
+    std::vector<float> &outputBuffer = audioDestination->outputBuffers.front();
+    if (outputBuffer.size() > 0) {
+      memcpy(audioData, outputBuffer.data(), numFrames*sizeof(float));
+    } else {
+      memset(audioData, 0, numFrames*sizeof(float));
     }
+    audioDestination->outputBuffers.pop_front();
+
+    processBuffers(audioDestination);
   }
+}
 
-  AudioDestinationGenericImpl *audioDestination;
-};
+InputCallback::InputCallback(AudioDestinationGenericImpl *audioDestination) : audioDestination(audioDestination) {}
+oboe::DataCallbackResult InputCallback::onAudioReady(oboe::AudioStream *audioStream, void *audioData, int32_t numFrames) {
+  // input has data
 
-class InputCallback : public oboe::AudioStreamCallback {
-public:
-  InputCallback(AudioDestinationGenericImpl *audioDestination) : audioDestination(audioDestination) {}
+  std::vector<float> inputBuffer(numFrames);
+  memcpy(inputBuffer.data(), audioData, numFrames*sizeof(float));
 
-  oboe::DataCallbackResult onAudioReady(oboe::AudioStream *audioStream, void *audioData, int32_t numFrames) {
-    // input has data
+  {
+    std::lock_guard<std::mutex> lock(audioDestination->mutex);
 
-    std::vector<float> inputBuffer(numFrames);
-    memcpy(inputBuffer.data(), audioData, numFrames*sizeof(float));
-
-    {
-      std::lock_guard<std::mutex> lock(audioDestination->mutex);
-
-      audioDestination->inputBuffers.push_back(std::move(inputBuffer));
-      processBuffers(audioDestination);
-    }
+    audioDestination->inputBuffers.push_back(std::move(inputBuffer));
+    processBuffers(audioDestination);
   }
-
-  AudioDestinationGenericImpl *audioDestination;
-};
+}
 
 /* void outputErrorCallback(AAudioStream *stream, void *userData, aaudio_result_t error) {
   // AudioDestinationGenericImpl *audioDestination = (AudioDestinationGenericImpl *)userData;
@@ -95,7 +83,8 @@ AudioDestinationGenericImpl::AudioDestinationGenericImpl(float sampleRate, std::
     builder.setFormat(oboe::AudioFormat::Float);
     builder.setChannelCount(oboe::ChannelCount::Stereo);
     builder.setFramesPerCallback(lab::AudioNode::ProcessingSizeInFrames);
-    builder.setCallback(new OutputCallback(this));
+    outputCallback = new OutputCallback(this);
+    builder.setCallback(outputCallback);
 
     builder.openStream(&outputStream);
   }
@@ -109,7 +98,8 @@ AudioDestinationGenericImpl::AudioDestinationGenericImpl(float sampleRate, std::
     builder.setFormat(oboe::AudioFormat::Float);
     builder.setChannelCount(oboe::ChannelCount::Mono);
     builder.setFramesPerCallback(lab::AudioNode::ProcessingSizeInFrames);
-    builder.setCallback(new InputCallback(this));
+    inputCallback = new InputCallback(this);
+    builder.setCallback(inputCallback);
 
     builder.openStream(&outputStream);
   }
@@ -118,6 +108,8 @@ AudioDestinationGenericImpl::AudioDestinationGenericImpl(float sampleRate, std::
 AudioDestinationGenericImpl::~AudioDestinationGenericImpl() {
   outputStream->close();
   inputStream->close();
+  delete outputCallback;
+  delete inputCallback;
 }
 
 bool AudioDestinationGenericImpl::start() {
