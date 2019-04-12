@@ -52,6 +52,7 @@ target_link_libraries(native-main
     GLESv2
     GLESv3
     vrapi
+    oboe
     exokit
     node
     skia
