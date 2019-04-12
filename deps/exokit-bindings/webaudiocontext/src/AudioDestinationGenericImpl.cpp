@@ -84,6 +84,7 @@ AudioDestinationGenericImpl::AudioDestinationGenericImpl(float sampleRate, std::
     AAudioStreamBuilder_setChannelCount(builder, 2);
     AAudioStreamBuilder_setFormat(builder, AAUDIO_FORMAT_PCM_FLOAT);
     AAudioStreamBuilder_setDataCallback(builder, outputCallback, this);
+    AAudioStreamBuilder_setFramesPerDataCallback(builder, lab::AudioNode::ProcessingSizeInFrames);
     AAudioStreamBuilder_setErrorCallback(builder, outputErrorCallback, this);
 
     AAudioStreamBuilder_openStream(builder, &outputStream);
@@ -99,6 +100,7 @@ AudioDestinationGenericImpl::AudioDestinationGenericImpl(float sampleRate, std::
     AAudioStreamBuilder_setChannelCount(builder, 1);
     AAudioStreamBuilder_setFormat(builder, AAUDIO_FORMAT_PCM_FLOAT);
     AAudioStreamBuilder_setDataCallback(builder, inputCallback, this);
+    AAudioStreamBuilder_setFramesPerDataCallback(builder, lab::AudioNode::ProcessingSizeInFrames);
     AAudioStreamBuilder_setErrorCallback(builder, inputErrorCallback, this);
 
     AAudioStreamBuilder_openStream(builder, &inputStream);
