@@ -46,7 +46,9 @@ set_target_properties( swresample PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DI
 add_library( opus STATIC IMPORTED )
 set_target_properties( opus PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../node_modules/native-video-deps/lib2/magicleap/libopus.a )
 
-# add lib dependencies
+add_library( webrtc STATIC IMPORTED )
+set_target_properties( webrtc PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../node_modules/native-webrtc-deps/lib/magicleap/libwebrtc.a )
+
 target_link_libraries(native-main
     android
     log
@@ -67,5 +69,6 @@ target_link_libraries(native-main
     swscale
     swresample
     opus
+    webrtc
     OpenSLES
 )

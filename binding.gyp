@@ -631,7 +631,7 @@
             "<(module_root_dir)/node_modules/native-canvas-deps/lib2/magicleap",
             "<(module_root_dir)/node_modules/native-audio-deps/lib2/magicleap",
             "<(module_root_dir)/node_modules/native-video-deps/lib2/magicleap",
-            "<(module_root_dir)/node_modules/native-webrtc-deps/lib/android",
+            "<(module_root_dir)/node_modules/native-webrtc-deps/lib/magicleap",
             "<(module_root_dir)/node_modules/native-oculus-mobile-deps/lib/android/arm64-v8a"
           ],
           'libraries': [
@@ -644,7 +644,7 @@
             '-lswscale',
             '-lswresample',
             '-lopus',
-            # '-lwebrtc',
+            '-lwebrtc',
             '-lvrapi',
             # '-loboe'
           ],
