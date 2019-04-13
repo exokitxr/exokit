@@ -364,9 +364,13 @@ class FakeVRDisplay extends VRDisplay {
     GlobalContext.xrState.rightProjectionMatrix.set(projectionMatrix);
   } */
 
-  requestPresent() {
+  requestPresent(layers) {
     GlobalContext.xrState.renderWidth[0] = this.window.innerWidth * this.window.devicePixelRatio / 2;
     GlobalContext.xrState.renderHeight[0] = this.window.innerHeight * this.window.devicePixelRatio;
+
+    if (this.onrequestpresent) {
+      this.onrequestpresent(layers);
+    }
 
     if (this.onvrdisplaypresentchange && !this.isPresenting) {
       this.isPresenting = true;
