@@ -2702,13 +2702,11 @@ function animate(time, frame) {
 const _bootFakeDisplay = async () => {
   fakeDisplay = _makeFakeDisplay();
   fakeDisplay.position.set(0, 1.6, 0);
-  // const canvas = renderer.domElement;
-  const session = await fakeDisplay.enter({
+  await fakeDisplay.enter({
     renderer,
     animate,
     layers,
   });
-  fakeDisplay.session = session;
 
   display = fakeDisplay;
 

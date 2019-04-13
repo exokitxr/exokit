@@ -27,8 +27,6 @@ window._makeFakeDisplay = () => {
       tex,
       depthTex,
     };
-
-    return session;
   };
 
   return fakeDisplay;
