@@ -1128,6 +1128,18 @@ const _startRenderLoop = () => {
   const TIMESTAMP_FRAMES = 100;
   // let lastFrameTime = Date.now();
 
+  const _isVisible = () => {
+    for (let i = 0; i < contexts.length; i++) {
+      const context = contexts[i];
+      const windowHandle = context.getWindowHandle();
+      const isVisible = (nativeBindings.nativeWindow && nativeBindings.nativeWindow.isVisible(windowHandle)) || (vrPresentState && (vrPresentState.glContext === context)) || (mlPresentState && (mlPresentState.mlGlContext === context));
+      if (isVisible) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   const _renderLoop = async () => {
     if (args.performance) {
       if (timestamps.frames >= TIMESTAMP_FRAMES) {
@@ -1549,14 +1561,24 @@ const _startRenderLoop = () => {
     }
 
     // wait for next frame
-    immediate = setImmediate(_renderLoop);
+    if (_isVisible()) {
+      loop = setImmediate(_renderLoop);
+      cancelLoop = clearImmediate;
+    } else {
+      loop = setTimeout(_renderLoop, 100);
+      cancelLoop = clearTimeout;
+    }
   };
-  let immediate = setImmediate(_renderLoop);
+  let loop = setImmediate(_renderLoop);
+  let cancelLoop = clearImmediate;
 
   return {
     stop() {
-      clearImmediate(immediate);
-      immediate = null;
+      if (cancelLoop) {
+        cancelLoop(loop);
+      }
+      loop = null;
+      cancelLoop = null;
     },
   };
 };
