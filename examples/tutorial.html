@@ -344,37 +344,66 @@
 
     (async () => {
       console.log('request device');
-      display = await navigator.xr.requestDevice();
 
-      if (display) {
-        console.log('request session');
-        const session = await display.requestSession({
-          exclusive: true,
-        });
-        display.session = session;
+      if (navigator.xr) {
+        display = await navigator.xr.requestDevice();
 
-        // console.log('request first frame');
-        session.requestAnimationFrame((timestamp, frame) => {
-          renderer.vr.setSession(session, {
-            frameOfReferenceType: 'stage',
+        if (display) {
+          console.log('request session');
+          const session = await display.requestSession({
+            exclusive: true,
           });
+          display.session = session;
 
-          const viewport = session.baseLayer.getViewport(frame.views[0]);
-          const width = viewport.width;
-          const height = viewport.height;
+          // console.log('request first frame');
+          session.requestAnimationFrame((timestamp, frame) => {
+            renderer.vr.setSession(session, {
+              frameOfReferenceType: 'stage',
+            });
 
+            const viewport = session.baseLayer.getViewport(frame.views[0]);
+            const width = viewport.width;
+            const height = viewport.height;
+
+            renderer.setSize(width * 2, height);
+
+            renderer.setAnimationLoop(null);
+
+            renderer.vr.enabled = true;
+            renderer.vr.setDevice(display);
+            renderer.vr.setAnimationLoop(animate);
+
+            console.log('running!');
+          });
+        } else {
+          console.log('no xr displays');
+          renderer.setAnimationLoop(animate);
+        }
+      } else { // WebVR
+        console.log('request device');
+        const displays = await navigator.getVRDisplays();
+        display = displays[0];
+
+        if (display) {
+          console.log('request present');
+          await display.requestPresent([
+            {
+              source: renderer.domElement,
+            }
+          ]);
+          console.log('entered vr');
+
+          const {renderWidth: width, renderHeight: height} = display.getEyeParameters('left');
           renderer.setSize(width * 2, height);
 
           renderer.setAnimationLoop(null);
-
           renderer.vr.enabled = true;
           renderer.vr.setDevice(display);
           renderer.vr.setAnimationLoop(animate);
-
-          console.log('running!');
-        });
-      } else {
-        renderer.setAnimationLoop(animate);
+        } else {
+          console.log('no vr displays');
+          renderer.setAnimationLoop(animate);
+        }
       }
     })()
       .catch(err => {

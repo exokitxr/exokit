@@ -202,6 +202,7 @@ class VRDisplay extends EventEmitter {
 
     this._frameData = new VRFrameData();
     this._rafs = [];
+    this._layers = [];
   }
 
   getFrameData(frameData) {
@@ -294,6 +295,17 @@ class VRDisplay extends EventEmitter {
   }
 
   submitFrame() {}
+  
+  get layers() {
+    return this._layers;
+  }
+  set layers(layers) {
+    this._layers = layers;
+
+    if (this.onlayers) {
+      this.onlayers(layers);
+    }
+  }
 
   destroy() {
     for (let i = 0; i < this._rafs.length; i++) {
@@ -334,7 +346,6 @@ class FakeVRDisplay extends VRDisplay {
       });
     };
 
-    this._layers = [];
     this._onends = [];
     this._lastPresseds = [false, false];
 
@@ -364,9 +375,13 @@ class FakeVRDisplay extends VRDisplay {
     GlobalContext.xrState.rightProjectionMatrix.set(projectionMatrix);
   } */
 
-  requestPresent() {
+  requestPresent(layers) {
     GlobalContext.xrState.renderWidth[0] = this.window.innerWidth * this.window.devicePixelRatio / 2;
     GlobalContext.xrState.renderHeight[0] = this.window.innerHeight * this.window.devicePixelRatio;
+
+    if (this.onrequestpresent) {
+      this.onrequestpresent(layers);
+    }
 
     if (this.onvrdisplaypresentchange && !this.isPresenting) {
       this.isPresenting = true;
@@ -379,7 +394,6 @@ class FakeVRDisplay extends VRDisplay {
   }
 
   exitPresent() {
-
     if (this.onvrdisplaypresentchange && this.isPresenting) {
       this.isPresenting = false;
       this.onvrdisplaypresentchange();
@@ -392,6 +406,9 @@ class FakeVRDisplay extends VRDisplay {
 
   requestSession({exclusive = true} = {}) {
     const self = this;
+
+    GlobalContext.xrState.renderWidth[0] = this.window.innerWidth * this.window.devicePixelRatio / 2;
+    GlobalContext.xrState.renderHeight[0] = this.window.innerHeight * this.window.devicePixelRatio;
 
     const session = {
       addEventListener(e, fn) {
@@ -500,17 +517,6 @@ class FakeVRDisplay extends VRDisplay {
 
   supportsSession() {
     return Promise.resolve(null);
-  }
-
-  get layers() {
-    return this._layers;
-  }
-  set layers(layers) {
-    this._layers = layers;
-
-    if (this.onlayers) {
-      this.onlayers(layers);
-    }
   }
 
   /* getFrameData(frameData) {

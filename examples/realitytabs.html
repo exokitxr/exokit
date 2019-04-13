@@ -900,7 +900,7 @@ for (let i = 0; i < controllerMeshes.length; i++) {
   scene.add(controllerMesh);
   controllerMeshes[i] = controllerMesh;
 }
-const _getControllerIndex = inputSource => inputSource.handedness === 'left' ? 0 : 1;
+const _getControllerIndex = gamepad => gamepad.hand === 'left' ? 0 : 1;
 
 // rig
 
@@ -1870,24 +1870,20 @@ function animate(time, frame) {
   const timeDiff = now - lastTime;
   const startTimeDiff = now - startTime;
 
-  const inputSources = display.session.getInputSources();
-  for (let i = 0; i < inputSources.length; i++) {
+  const gamepads = navigator.getGamepads();
+  for (let i = 0; i < gamepads.length; i++) {
+    const gamepad = gamepads[i];
     const moveTab = moves[i];
     const boxMesh = boxMeshes[i];
 
     if (moveTab) {
-      const inputSource = inputSources[i];
-      const pose = frame.getInputPose(inputSource);
       const {iframe} = moveTab;
 
-      const gamepads = navigator.getGamepads();
-      const gamepad = gamepads[i];
       const scrollFactor = scrollFactors[i];
       const scaleFactor = scaleFactors[i];
 
-      localMatrix
-        .fromArray(pose.targetRay.transformMatrix)
-        .decompose(localVector, localQuaternion, localVector2);
+      localVector.fromArray(gamepad.pose.position);
+      localQuaternion.fromArray(gamepad.pose.orientation);
       localVector
         .add(
           localVector2.set(0, 0, -scrollFactor)
@@ -1924,14 +1920,13 @@ function animate(time, frame) {
         controllerMeshes[i].visible = false;
       }
 
-      for (let i = 0; i < inputSources.length; i++) {
-        const inputSource = inputSources[i];
-        const pose = frame.getInputPose(inputSource);
+      for (let i = 0; i < gamepads.length; i++) {
+        const gamepad = gamepads[i];
 
-        const controllerIndex = _getControllerIndex(inputSource);
+        const controllerIndex = _getControllerIndex(gamepad);
         const controllerMesh = controllerMeshes[controllerIndex];
-        controllerMesh.matrix.fromArray(pose.targetRay.transformMatrix);
-        controllerMesh.matrix.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
+        controllerMesh.position.fromArray(gamepad.pose.position);
+        controllerMesh.quaternion.fromArray(gamepad.pose.orientation);
         controllerMesh.updateMatrixWorld(true);
         controllerMesh.visible = true;
       }
@@ -2301,12 +2296,8 @@ function animate(time, frame) {
                           const tab = tabs[menuMesh.listMesh.scrollIndex + j];
                           moves[i] = tab;
 
-                          const inputSources = display.session.getInputSources();
-                          const inputSource = inputSources[i];
-                          const pose = frame.getInputPose(inputSource);
-                          localMatrix
-                            .fromArray(pose.targetRay.transformMatrix)
-                            .decompose(localVector, localQuaternion, localVector2);
+                          localVector.fromArray(gamepad.pose.position);
+                          localQuaternion.fromArray(gamepad.pose.orientation);
                           const distance = localVector
                             .distanceTo(
                               localVector2
@@ -2521,11 +2512,7 @@ function animate(time, frame) {
 
   const _updateButtons = () => {
     if (display) {
-      const inputSources = display.session.getInputSources();
-      const gamepads = navigator.getGamepads();
-
-      for (let i = 0; i < inputSources.length; i++) {
-        const inputSource = inputSources[i];
+      for (let i = 0; i < gamepads.length; i++) {
         const gamepad = gamepads[i];
 
         {
@@ -2702,13 +2689,11 @@ function animate(time, frame) {
 const _bootFakeDisplay = async () => {
   fakeDisplay = _makeFakeDisplay();
   fakeDisplay.position.set(0, 1.6, 0);
-  // const canvas = renderer.domElement;
-  const session = await fakeDisplay.enter({
+  await fakeDisplay.enter({
     renderer,
     animate,
     layers,
   });
-  fakeDisplay.session = session;
 
   display = fakeDisplay;
 
@@ -2729,58 +2714,84 @@ const _bootFakeDisplay = async () => {
   console.log('loaded root in 2D');
 };
 (async () => {
-  if (navigator.xr && !query.fake) {
-    display = await navigator.xr.requestDevice();
+  if (!query.fake) {
+    if (navigator.xr) { // WebXR
+      display = await navigator.xr.requestDevice();
 
-    if (display) {
-      const session = await display.requestSession({
-        exclusive: true,
-      });
-      display.session = session;
-
-      session.layers = layers;
-
-      /* session.onselect = e => {
-        console.log('select'); // XXX
-      }; */
-
-      // console.log('request first frame');
-      session.requestAnimationFrame((timestamp, frame) => {
-        renderer.vr.setSession(session, {
-          frameOfReferenceType: 'stage',
+      if (display) {
+        const session = await display.requestSession({
+          exclusive: true,
         });
+        display.session = session;
 
-        const viewport = session.baseLayer.getViewport(frame.views[0]);
-        // const width = viewport.width;
-        const height = viewport.height;
-        const fullWidth = (() => {
-          let result = 0;
-          for (let i = 0; i < frame.views.length; i++) {
-            result += session.baseLayer.getViewport(frame.views[i]).width;
+        session.layers = layers;
+
+        // console.log('request first frame');
+        session.requestAnimationFrame((timestamp, frame) => {
+          renderer.vr.setSession(session, {
+            frameOfReferenceType: 'stage',
+          });
+
+          const viewport = session.baseLayer.getViewport(frame.views[0]);
+          // const width = viewport.width;
+          const height = viewport.height;
+          const fullWidth = (() => {
+            let result = 0;
+            for (let i = 0; i < frame.views.length; i++) {
+              result += session.baseLayer.getViewport(frame.views[i]).width;
+            }
+            return result;
+          })();
+
+          renderer.setSize(fullWidth, height);
+
+          renderer.setAnimationLoop(null);
+
+          renderer.vr.enabled = true;
+          renderer.vr.setDevice(display);
+          renderer.vr.setAnimationLoop(animate);
+
+          if (window.browser && window.browser.magicleap) {
+            window.browser.magicleap.RequestDepthPopulation(true);
+            renderer.autoClearDepth = false;
           }
-          return result;
-        })();
 
-        renderer.setSize(fullWidth, height);
+          _openUrl('tutorial.html');
+          _updateRigLists();
+
+          console.log('loaded root in XR');
+        });
+      } else {
+        console.log('no xr displays');
+        await _bootFakeDisplay();
+      }
+    } else { // WebVR
+      console.log('request device');
+      const displays = await navigator.getVRDisplays();
+      display = displays[0];
+
+      if (display) {
+        console.log('request present');
+        await display.requestPresent([
+          {
+            source: renderer.domElement,
+          }
+        ]);
+        console.log('entered vr');
+
+        display.layers = layers;
+
+        const {renderWidth: width, renderHeight: height} = display.getEyeParameters('left');
+        renderer.setSize(width * 2, height);
 
         renderer.setAnimationLoop(null);
-
         renderer.vr.enabled = true;
         renderer.vr.setDevice(display);
         renderer.vr.setAnimationLoop(animate);
-
-        if (window.browser && window.browser.magicleap) {
-          window.browser.magicleap.RequestDepthPopulation(true);
-          renderer.autoClearDepth = false;
-        }
-
-        _openUrl('tutorial.html');
-        _updateRigLists();
-
-        console.log('loaded root in XR');
-      });
-    } else {
-      await _bootFakeDisplay();
+      } else {
+        console.log('no vr displays');
+        await _bootFakeDisplay();
+      }
     }
   } else {
     await _bootFakeDisplay();

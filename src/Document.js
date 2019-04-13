@@ -208,22 +208,11 @@ function initDocument (document, window) {
     const displays = window.navigator.getVRDisplaysSync();
     if (displays.length > 0 && (!window[symbols.optionsSymbol].args || ['all', 'webvr'].includes(window[symbols.optionsSymbol].args.xr))) {
       const _initDisplays = () => {
-        if (!_tryEmitDisplay()) {
-          _delayFrames(() => {
-            _tryEmitDisplay();
-          }, 1);
-        }
-      };
-      const _tryEmitDisplay = () => {
         const presentingDisplay = displays.find(display => display.isPresenting);
-        if (presentingDisplay) {
-          if (presentingDisplay.constructor.name === 'FakeVRDisplay') {
-            _emitOneDisplay(presentingDisplay);
-          }
-          return true;
+        if (presentingDisplay && presentingDisplay.constructor.name === 'FakeVRDisplay') {
+          _emitOneDisplay(presentingDisplay);
         } else {
           _emitOneDisplay(displays[0]);
-          return false;
         }
       };
       const _emitOneDisplay = display => {
@@ -235,17 +224,15 @@ function initDocument (document, window) {
         if (n === 0) {
           fn();
         } else {
-          try {
-            window.requestAnimationFrame(() => {
-              _delayFrames(fn, n - 1);
-            });
-          } catch(err) {
-            console.log(err.stack);
-          }
+          window.requestAnimationFrame(() => {
+            _delayFrames(fn, n - 1);
+          });
         }
       };
       if (document.resources.resources.length === 0) {
-        _initDisplays();
+        _delayFrames(() => {
+          _initDisplays();
+        }, 2); // arbitary delay to give site time to bind events
       } else {
         const _update = () => {
           if (document.resources.resources.length === 0) {
