@@ -27,9 +27,6 @@ window._makeFakeDisplay = () => {
 
       renderer.vr.enabled = true;
       renderer.vr.setDevice(fakeDisplay);
-      renderer.vr.setSession(session, {
-        frameOfReferenceType: 'stage',
-      });
       renderer.vr.setAnimationLoop(animate);
     }
 
