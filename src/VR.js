@@ -202,6 +202,7 @@ class VRDisplay extends EventEmitter {
 
     this._frameData = new VRFrameData();
     this._rafs = [];
+    this._layers = [];
   }
 
   getFrameData(frameData) {
@@ -294,6 +295,17 @@ class VRDisplay extends EventEmitter {
   }
 
   submitFrame() {}
+  
+  get layers() {
+    return this._layers;
+  }
+  set layers(layers) {
+    this._layers = layers;
+
+    if (this.onlayers) {
+      this.onlayers(layers);
+    }
+  }
 
   destroy() {
     for (let i = 0; i < this._rafs.length; i++) {
@@ -334,7 +346,6 @@ class FakeVRDisplay extends VRDisplay {
       });
     };
 
-    this._layers = [];
     this._onends = [];
     this._lastPresseds = [false, false];
 
@@ -506,17 +517,6 @@ class FakeVRDisplay extends VRDisplay {
 
   supportsSession() {
     return Promise.resolve(null);
-  }
-
-  get layers() {
-    return this._layers;
-  }
-  set layers(layers) {
-    this._layers = layers;
-
-    if (this.onlayers) {
-      this.onlayers(layers);
-    }
   }
 
   /* getFrameData(frameData) {
