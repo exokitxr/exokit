@@ -379,7 +379,6 @@ class FakeVRDisplay extends VRDisplay {
   }
 
   exitPresent() {
-
     if (this.onvrdisplaypresentchange && this.isPresenting) {
       this.isPresenting = false;
       this.onvrdisplaypresentchange();
