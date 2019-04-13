@@ -28,6 +28,9 @@ void processBuffers(AudioDestinationGenericImpl *audioDestination) {
 
 OutputCallback::OutputCallback(AudioDestinationGenericImpl *audioDestination) : audioDestination(audioDestination) {}
 oboe::DataCallbackResult OutputCallback::onAudioReady(oboe::AudioStream *audioStream, void *audioData, int32_t numFrames) {
+  if (numFrames != lab::AudioNode::ProcessingSizeInFrames) {
+    std::cerr << "audio output: failed to match number of frames: " << numFrames << " " << lab::AudioNode::ProcessingSizeInFrames << std::endl;
+  }
   // output needs data
 
   {
@@ -47,6 +50,9 @@ oboe::DataCallbackResult OutputCallback::onAudioReady(oboe::AudioStream *audioSt
 
 InputCallback::InputCallback(AudioDestinationGenericImpl *audioDestination) : audioDestination(audioDestination) {}
 oboe::DataCallbackResult InputCallback::onAudioReady(oboe::AudioStream *audioStream, void *audioData, int32_t numFrames) {
+  if (numFrames != lab::AudioNode::ProcessingSizeInFrames) {
+    std::cerr << "audio input: failed to match number of frames: " << numFrames << " " << lab::AudioNode::ProcessingSizeInFrames << std::endl;
+  }
   // input has data
 
   std::vector<float> inputBuffer(numFrames);
@@ -86,7 +92,10 @@ AudioDestinationGenericImpl::AudioDestinationGenericImpl(float sampleRate, std::
     outputCallback = new OutputCallback(this);
     builder.setCallback(outputCallback);
 
-    builder.openStream(&outputStream);
+    oboe::Result result = builder.openStream(&outputStream);
+    if (result != oboe::Result::OK) {
+      std::cerr << "failed to open output stream: " << oboe::convertToText(result) << std::endl;
+    }
   }
   // input
   {
@@ -101,7 +110,10 @@ AudioDestinationGenericImpl::AudioDestinationGenericImpl(float sampleRate, std::
     inputCallback = new InputCallback(this);
     builder.setCallback(inputCallback);
 
-    builder.openStream(&outputStream);
+    oboe::Result result = builder.openStream(&inputStream);
+    if (result != oboe::Result::OK) {
+      std::cerr << "failed to open input stream: " << oboe::convertToText(result) << std::endl;
+    }
   }
 }
 
@@ -113,25 +125,41 @@ AudioDestinationGenericImpl::~AudioDestinationGenericImpl() {
 }
 
 bool AudioDestinationGenericImpl::start() {
-  outputStream->requestStart();
-  return true;
+  oboe::Result result = outputStream->requestStart();
+  if (result == oboe::Result::OK) {
+    return true;
+  } else {
+    return false;
+  }
 }
 
 bool AudioDestinationGenericImpl::stop() {
-  outputStream->requestStop();
-  return true;
+  oboe::Result result = outputStream->requestStop();
+  if (result == oboe::Result::OK) {
+    return true;
+  } else {
+    return false;
+  }
 }
 
 bool AudioDestinationGenericImpl::startRecording() {
-  inputStream->requestStart();
-  m_isRecording = true;
-  return true;
+  oboe::Result result = inputStream->requestStart();
+  if (result == oboe::Result::OK) {
+    m_isRecording = true;
+    return true;
+  } else {
+    return false;
+  }
 }
 
 bool AudioDestinationGenericImpl::stopRecording() {
-  inputStream->requestStop();
-  m_isRecording = false;
-  return true;
+  oboe::Result result = inputStream->requestStop();
+  if (result == oboe::Result::OK) {
+    m_isRecording = false;
+    return true;
+  } else {
+    return false;
+  }
 }
 
 void AudioDestinationGenericImpl::render(int numberOfFrames, void *outputBuffer, void *inputBuffer) {
