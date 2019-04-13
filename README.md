@@ -157,7 +157,7 @@ See full building instructions in [BUILDING.md](https://github.com/exokitxr/exok
 git clone https://github.com/exokitxr/exokit.git
 cd exokit
 npm install
-node --experimental-worker . <url> # or node . -h for home
+node --experimental-worker . <url> # or node --experimental-worker . -h for home
 ```
 
 ## Debugging
