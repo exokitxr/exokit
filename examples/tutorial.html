@@ -393,8 +393,6 @@
           ]);
           console.log('entered vr');
 
-          display.layers = layers;
-
           const {renderWidth: width, renderHeight: height} = display.getEyeParameters('left');
           renderer.setSize(width * 2, height);
 
@@ -404,6 +402,7 @@
           renderer.vr.setAnimationLoop(animate);
         } else {
           console.log('no vr displays');
+          renderer.setAnimationLoop(animate);
         }
       }
     })()
