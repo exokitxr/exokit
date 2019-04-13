@@ -886,7 +886,10 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       })(wsProxy.Server);
       return wsProxy;
     })(),
-    createRenderTarget: nativeWindow.createRenderTarget, // XXX needed for reality tabs fakeDisplay
+    createRenderTarget(context) { // XXX needed for reality tabs fakeDisplay
+      nativeWindow.setCurrentWindowContext(context.getWindowHandle());
+      return nativeWindow.createRenderTarget.apply(nativeWindow, arguments);
+    },
     magicleap: nativeMl ? {
       RequestMeshing() {
         const mesher = nativeMl.RequestMeshing(window);
