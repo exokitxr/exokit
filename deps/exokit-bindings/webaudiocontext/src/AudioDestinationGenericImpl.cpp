@@ -482,43 +482,6 @@ void adgDestroy(void *handle) {
   delete (AudioDestinationGenericImpl *)handle;
 }
 
-/* void AudioDestinationGeneric::configure()
-{
-    if (dac->getDeviceCount() < 1)
-    {
-        LOG_ERROR("No audio devices available");
-    }
-
-    dac->showWarnings(true);
-
-    RtAudio::StreamParameters outputParams;
-    outputParams.deviceId = dac->getDefaultOutputDevice();
-    outputParams.nChannels = 2;
-    outputParams.firstChannel = 0;
-
-	auto deviceInfo = dac->getDeviceInfo(outputParams.deviceId);
-	LOG("Using Default Audio Device: %s", deviceInfo.name.c_str());
-
-    RtAudio::StreamParameters inputParams;
-    inputParams.deviceId = dac->getDefaultInputDevice();
-    inputParams.nChannels = 1;
-    inputParams.firstChannel = 0;
-
-    unsigned int bufferFrames = AudioNode::ProcessingSizeInFrames;
-
-    RtAudio::StreamOptions options;
-    options.flags |= RTAUDIO_NONINTERLEAVED;
-
-    try
-    {
-        dac->openStream(&outputParams, &inputParams, RTAUDIO_FLOAT32, (unsigned int) m_sampleRate, &bufferFrames, &outputCallback, this, &options);
-    }
-    catch (RtAudioError & e)
-    {
-        e.printMessage();
-    }
-} */
-
 bool adgStart(void *handle) {
   return ((AudioDestinationGenericImpl *)handle)->start();
 }
