@@ -1,7 +1,7 @@
 #define MyAppName "Exokit"
 #define MyAppShortName "Exokit"
 #define MyAppLCShortName "exokit"
-#define MyAppPublisher "WebMR"
+#define MyAppPublisher "exokitXR"
 #define MyAppURL "https://github.com/exokitxr/exokit"
 #define MyAppExeName "exokit.cmd"
 #define MyIcon "exokit.ico"
@@ -36,7 +36,7 @@ ChangesEnvironment=yes
 DisableProgramGroupPage=yes
 ArchitecturesInstallIn64BitMode=x64 ia64
 UninstallDisplayIcon={app}\metadata\{#MyIcon}
-AppCopyright=Copyright (c) 2018 WebMR
+AppCopyright=Copyright (c) 2019 Exokit
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
