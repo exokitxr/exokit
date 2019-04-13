@@ -2729,58 +2729,83 @@ const _bootFakeDisplay = async () => {
   console.log('loaded root in 2D');
 };
 (async () => {
-  if (navigator.xr && !query.fake) {
-    display = await navigator.xr.requestDevice();
+  if (!query.fake) {
+    if (navigator.xr) { // WebXR
+      display = await navigator.xr.requestDevice();
 
-    if (display) {
-      const session = await display.requestSession({
-        exclusive: true,
-      });
-      display.session = session;
-
-      session.layers = layers;
-
-      /* session.onselect = e => {
-        console.log('select'); // XXX
-      }; */
-
-      // console.log('request first frame');
-      session.requestAnimationFrame((timestamp, frame) => {
-        renderer.vr.setSession(session, {
-          frameOfReferenceType: 'stage',
+      if (display) {
+        const session = await display.requestSession({
+          exclusive: true,
         });
+        display.session = session;
 
-        const viewport = session.baseLayer.getViewport(frame.views[0]);
-        // const width = viewport.width;
-        const height = viewport.height;
-        const fullWidth = (() => {
-          let result = 0;
-          for (let i = 0; i < frame.views.length; i++) {
-            result += session.baseLayer.getViewport(frame.views[i]).width;
+        session.layers = layers;
+
+        // console.log('request first frame');
+        session.requestAnimationFrame((timestamp, frame) => {
+          renderer.vr.setSession(session, {
+            frameOfReferenceType: 'stage',
+          });
+
+          const viewport = session.baseLayer.getViewport(frame.views[0]);
+          // const width = viewport.width;
+          const height = viewport.height;
+          const fullWidth = (() => {
+            let result = 0;
+            for (let i = 0; i < frame.views.length; i++) {
+              result += session.baseLayer.getViewport(frame.views[i]).width;
+            }
+            return result;
+          })();
+
+          renderer.setSize(fullWidth, height);
+
+          renderer.setAnimationLoop(null);
+
+          renderer.vr.enabled = true;
+          renderer.vr.setDevice(display);
+          renderer.vr.setAnimationLoop(animate);
+
+          if (window.browser && window.browser.magicleap) {
+            window.browser.magicleap.RequestDepthPopulation(true);
+            renderer.autoClearDepth = false;
           }
-          return result;
-        })();
 
-        renderer.setSize(fullWidth, height);
+          _openUrl('tutorial.html');
+          _updateRigLists();
+
+          console.log('loaded root in XR');
+        });
+      } else {
+        console.log('no xr displays');
+        await _bootFakeDisplay();
+      }
+    } else { // WebVR
+      console.log('request device');
+      const displays = await navigator.getVRDisplays();
+      display = displays[0];
+
+      if (display) {
+        console.log('request present');
+        await display.requestPresent([
+          {
+            source: renderer.domElement,
+          }
+        ]);
+        console.log('entered vr');
+
+        display.layers = layers;
+
+        const {renderWidth: width, renderHeight: height} = display.getEyeParameters('left');
+        renderer.setSize(width * 2, height);
 
         renderer.setAnimationLoop(null);
-
         renderer.vr.enabled = true;
         renderer.vr.setDevice(display);
         renderer.vr.setAnimationLoop(animate);
-
-        if (window.browser && window.browser.magicleap) {
-          window.browser.magicleap.RequestDepthPopulation(true);
-          renderer.autoClearDepth = false;
-        }
-
-        _openUrl('tutorial.html');
-        _updateRigLists();
-
-        console.log('loaded root in XR');
-      });
-    } else {
-      await _bootFakeDisplay();
+      } else {
+        console.log('no vr displays');
+      }
     }
   } else {
     await _bootFakeDisplay();
