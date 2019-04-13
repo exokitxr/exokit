@@ -2805,6 +2805,7 @@ const _bootFakeDisplay = async () => {
         renderer.vr.setAnimationLoop(animate);
       } else {
         console.log('no vr displays');
+        await _bootFakeDisplay();
       }
     }
   } else {
