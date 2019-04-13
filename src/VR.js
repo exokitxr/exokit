@@ -1,5 +1,6 @@
 const {EventEmitter} = require('events');
 const {Event} = require('./Event');
+const symbols = require('./symbols');
 const THREE = require('../lib/three-min.js');
 const {defaultCanvasSize, defaultEyeSeparation} = require('./constants.js');
 const GlobalContext = require('./GlobalContext');
@@ -67,10 +68,10 @@ class GamepadButton {
   }
 
   get value() {
-    return this._value[0] !== 0;
+    return this._value[0];
   }
   set value(value) {
-    this._value[0] = value ? 1 : 0;
+    this._value[0] = value;
   }
   get pressed() {
     return this._pressed[0] !== 0;
@@ -139,8 +140,8 @@ class GamepadHapticActuator {
   }
 }
 class Gamepad {
-  constructor(hand, index) {
-    this.id = 'OpenVR Gamepad';
+  constructor(hand, index, id) {
+    this.id = id;
     this.hand = hand;
     this.index = index;
 
@@ -317,8 +318,6 @@ class VRDisplay extends EventEmitter {
 class FakeVRDisplay extends VRDisplay {
   constructor(window) {
     super('FAKE');
-
-    this.window = window;
 
     this.position = new THREE.Vector3();
     this.quaternion = new THREE.Quaternion();
@@ -611,19 +610,29 @@ class FakeVRDisplay extends VRDisplay {
 
 const createVRDisplay = () => new FakeVRDisplay();
 
-const getGamepads = (() => {
-  let gamepads = null;
+const getGamepads = function(window) {
 
-  return () => {
+  let gamepads = null;
+  // Gamepad Vendor IDs
+  const oculusVRIdLeft = 'Oculus Touch (Left)';
+  const oculusVRIdRight = 'Oculus Touch (Right)';
+  const openVRId = 'OpenVR Gamepad';
+
+  return function () {
+    if (!GlobalContext.vrPresentState.isPresenting) { return []; }
     if (!gamepads) {
+      const oculusVRDisplay = window[symbols.mrDisplaysSymbol].oculusVRDisplay;
+      const oculusPresenting = oculusVRDisplay && oculusVRDisplay.isPresenting;
+      const idLeft = oculusPresenting ? oculusVRIdLeft : openVRId;
+      const idRight = oculusPresenting ? oculusVRIdRight : openVRId;
       gamepads = [
-        new Gamepad('left', 0),
-        new Gamepad('right', 1),
+        new Gamepad('left', 0, idLeft),
+        new Gamepad('right', 1, idRight),
       ];
     }
     return gamepads;
   };
-})();
+};
 GlobalContext.getGamepads = getGamepads;
 
 module.exports = {
@@ -635,5 +644,5 @@ module.exports = {
   Gamepad,
   GamepadButton,
   createVRDisplay,
-  getGamepads,
+  getGamepads
 };

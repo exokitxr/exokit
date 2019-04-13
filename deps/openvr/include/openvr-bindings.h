@@ -36,6 +36,6 @@ NAN_METHOD(VR_GetVRInitErrorAsEnglishDescription);
 /// VR_INTERFACE uint32_t VR_CALLTYPE VR_GetInitToken();
 NAN_METHOD(VR_GetInitToken);
 
-Local<Object> makeVr();
+Local<Object> makeOpenVR();
 
 #endif

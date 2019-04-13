@@ -19,13 +19,15 @@ class XR extends EventEmitter {
 
     this._window = window;
   }
-  requestDevice(name = null) {
+  requestDevice() {
     if (GlobalContext.fakeVrDisplayEnabled) {
       return Promise.resolve(this._window[symbols.mrDisplaysSymbol].fakeVrDisplay);
-    } else if ((name === 'VR' || name === null) && GlobalContext.nativeVr && GlobalContext.nativeVr.VR_IsHmdPresent()) {
-      return Promise.resolve(this._window[symbols.mrDisplaysSymbol].xrDisplay);
-    } else if ((name === 'AR' || name === null) && GlobalContext.nativeMl && GlobalContext.nativeMl.IsPresent()) {
-      return Promise.resolve(this._window[symbols.mrDisplaysSymbol].xmDisplay);
+    } else if (GlobalContext.nativeOculusVR && GlobalContext.nativeOculusVR.Oculus_IsHmdPresent()) {
+      return Promise.resolve(this._window[symbols.mrDisplaysSymbol].oculusVRDevice);
+    } else if (GlobalContext.nativeOpenVR && GlobalContext.nativeOpenVR.VR_IsHmdPresent()) {
+      return Promise.resolve(this._window[symbols.mrDisplaysSymbol].openVRDevice);
+    } else if (GlobalContext.nativeMl && GlobalContext.nativeMl.IsPresent()) {
+      return Promise.resolve(this._window[symbols.mrDisplaysSymbol].magicLeapARDevice);
     } else {
       return Promise.resolve(null);
     }
