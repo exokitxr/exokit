@@ -474,6 +474,8 @@ bool AudioDestinationGenericImpl::isRecording() {
 
 #endif
 
+#if defined(ANDROID) || defined(LUMIN)
+
 void *adgCreate(float sampleRate, std::function<void(int numberOfFrames, void *outputBuffer, void *inputBuffer)> renderFn) {
   return new AudioDestinationGenericImpl(sampleRate, renderFn);
 }
@@ -497,5 +499,7 @@ bool adgStartRecording(void *handle) {
 bool adgStopRecording(void *handle) {
   return ((AudioDestinationGenericImpl *)handle)->stopRecording();
 }
+
+#endif
 
 }
