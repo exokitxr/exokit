@@ -24,6 +24,8 @@ window._makeFakeDisplay = () => {
           source: canvas,
         },
       ]);
+      
+      fakeDisplay.layers = layers;
 
       renderer.vr.enabled = true;
       renderer.vr.setDevice(fakeDisplay);
