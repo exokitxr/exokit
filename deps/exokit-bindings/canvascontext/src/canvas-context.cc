@@ -480,13 +480,13 @@ NAN_SETTER(CanvasRenderingContext2D::StrokeStyleSetter) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
 
     CanvasGradient *canvasGradient = ObjectWrap::Unwrap<CanvasGradient>(Local<Object>::Cast(value));
-    context->fillPaint.setShader(canvasGradient->getShader());
+    context->strokePaint.setShader(canvasGradient->getShader());
     context->jsStrokeStyle.Reset(value);
   } else if (value->IsObject() && JS_OBJ(JS_OBJ(value)->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("CanvasPattern"))) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
 
     CanvasPattern *canvasPattern = ObjectWrap::Unwrap<CanvasPattern>(Local<Object>::Cast(value));
-    context->fillPaint.setShader(canvasPattern->getShader());
+    context->strokePaint.setShader(canvasPattern->getShader());
     context->jsStrokeStyle.Reset(value);
   } else {
     Nan::ThrowError("strokeStyle: invalid arguments");
