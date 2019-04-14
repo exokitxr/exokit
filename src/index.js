@@ -461,7 +461,7 @@ class XRState {
       };
     };
     this.gamepads = (() => {
-      const result = Array(2);
+      const result = Array(2+maxNumTrackers);
       for (let i = 0; i < result.length; i++) {
         result[i] = {
           connected: _makeTypedArray(Uint32Array, 1),
@@ -494,13 +494,6 @@ class XRState {
           })(),
           axes: _makeTypedArray(Float32Array, 10),
         };
-        result[i] = _makeGamepad();
-      }
-      return result;
-    })();
-    this.trackers = (() => {
-      const result = Array(maxNumTrackers);
-      for (let i = 0; i < result.length; i++) {
         result[i] = _makeGamepad();
       }
       return result;
