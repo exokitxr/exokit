@@ -610,7 +610,6 @@ class FakeVRDisplay extends VRDisplay {
 
 const createVRDisplay = () => new FakeVRDisplay();
 
-// Gamepad Vendor IDs
 const oculusVRIdLeft = 'Oculus Touch (Left)';
 const oculusVRIdRight = 'Oculus Touch (Right)';
 const openVRId = 'OpenVR Gamepad';
