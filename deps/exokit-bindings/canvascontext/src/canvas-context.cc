@@ -71,9 +71,20 @@ void rgbaToString(std::string& str, uint32_t c) {
       }
     } 
     char out[4096];
-    sprintf(out, "rgba(%d, %d, %d, %s)", r, g, b, outAlpha);
+    sprintf(out, "rgba(%d, %d, %d, %s)", r, g, b, (strcmp(outAlpha, "0.0") == 0) ? "0" : outAlpha);
     str = out;
   }
+}
+
+void ConfigureLooper(CanvasRenderingContext2D *context) {
+    canvas::web_color c = canvas::web_color::from_string(context->shadowColor.c_str());
+    uint32_t rgba = ((uint32_t)c.a << (8 * 3)) | ((uint32_t)c.r << (8 * 2)) | ((uint32_t)c.g << (8 * 1)) | ((uint32_t)c.b << (8 * 0));
+    rgbaToString(context->shadowColor, rgba);
+    if (rgba == 0x00000000) {
+      context->fillPaint.setDrawLooper(nullptr);
+    } else {
+      context->fillPaint.setDrawLooper(SkBlurDrawLooper::Make(rgba, context->shadowBlur, context->shadowOffsetX, context->shadowOffsetY));
+    }
 }
 
 Local<Object> CanvasRenderingContext2D::Initialize(Isolate *isolate, Local<Value> imageDataCons, Local<Value> canvasGradientCons, Local<Value> canvasPatternCons) {
@@ -482,25 +493,10 @@ NAN_SETTER(CanvasRenderingContext2D::StrokeStyleSetter) {
   }
 }
 
-void CanvasRenderingContext2D::Configure() {
-    Nan::Utf8String text(Nan::New(this->jsShadowColor));
-    std::string shadowColor(*text, text.length());
-
-    canvas::web_color c = canvas::web_color::from_string(shadowColor.c_str());
-    uint32_t rgba = ((uint32_t)c.a << (8 * 3)) | ((uint32_t)c.r << (8 * 2)) | ((uint32_t)c.g << (8 * 1)) | ((uint32_t)c.b << (8 * 0));
-    rgbaToString(shadowColor, rgba);
-    jsShadowColor.Reset(JS_STR(shadowColor.c_str()));
-    if (rgba == 0x00000000) {
-      this->fillPaint.setDrawLooper(nullptr);
-    } else {
-      this->fillPaint.setDrawLooper(SkBlurDrawLooper::Make(rgba, this->shadowBlur, this->shadowOffsetX, this->shadowOffsetY));
-    }
-}
-
 NAN_GETTER(CanvasRenderingContext2D::ShadowColorGetter) {
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
 
-  info.GetReturnValue().Set(Nan::New(context->jsShadowColor));
+  info.GetReturnValue().Set(JS_STR(context->shadowColor.c_str()));
 }
 
 NAN_SETTER(CanvasRenderingContext2D::ShadowColorSetter) {
@@ -508,8 +504,14 @@ NAN_SETTER(CanvasRenderingContext2D::ShadowColorSetter) {
 
   if (value->IsString()) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
-    context->jsShadowColor.Reset(value);
-    context->Configure();
+
+    Nan::Utf8String text(value);
+    std::string shadowColor(*text, text.length());
+
+    if (shadowColor != context->shadowColor) {
+      context->shadowColor = shadowColor;
+      ConfigureLooper(context);
+    }
   } else {
      Nan::ThrowError("shadowColor: invalid arguments");
   }
@@ -529,7 +531,7 @@ NAN_SETTER(CanvasRenderingContext2D::ShadowBlurSetter) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
     if (context->shadowBlur != TO_FLOAT(value)) {
       context->shadowBlur = TO_FLOAT(value);
-      context->Configure();
+      ConfigureLooper(context);
     }
   } else {
      Nan::ThrowError("shadowBlur: invalid arguments");
@@ -549,7 +551,7 @@ NAN_SETTER(CanvasRenderingContext2D::ShadowOffsetXSetter) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
     if (context->shadowOffsetX != TO_FLOAT(value)) {
       context->shadowOffsetX = TO_FLOAT(value);
-      context->Configure();
+      ConfigureLooper(context);
     }
   } else {
      Nan::ThrowError("shadowOffsetX: invalid arguments");
@@ -569,7 +571,7 @@ NAN_SETTER(CanvasRenderingContext2D::ShadowOffsetYSetter) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
     if (context->shadowOffsetY != TO_FLOAT(value)) {
       context->shadowOffsetY = TO_FLOAT(value);
-      context->Configure();
+      ConfigureLooper(context);
     }
   } else {
      Nan::ThrowError("shadowOffsetY: invalid arguments");
@@ -1573,7 +1575,7 @@ CanvasRenderingContext2D::CanvasRenderingContext2D() :
   clearPaint.setStyle(SkPaint::kFill_Style);
   clearPaint.setBlendMode(SkBlendMode::kSrc);
 
-  jsShadowColor.Reset(JS_STR("rgb(0, 0, 0, 0)"));
+  shadowColor = "rgba(0, 0, 0, 0)";
 }
 
 CanvasRenderingContext2D::~CanvasRenderingContext2D () {}

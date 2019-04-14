@@ -20,6 +20,8 @@
 #include <SkCanvas.h>
 #include <SkPath.h>
 #include <SkPaint.h>
+#include <SkDrawLooper.h>
+#include <SkBlurDrawLooper.h>
 #include <webglcontext/include/webgl.h>
 
 using namespace v8;
@@ -169,14 +171,13 @@ public:
 
 // protected:
 
-  void Configure();
-
   bool live;
   NATIVEwindow *windowHandle;
   GLuint tex;
   sk_sp<GrContext> grContext;
   sk_sp<SkSurface> surface;
   SkPath path;
+  std::string shadowColor;
   float shadowBlur;
   float shadowOffsetX;
   float shadowOffsetY;
@@ -187,7 +188,6 @@ public:
   std::string textAlign;
   TextBaseline textBaseline;
   Direction direction;
-  Nan::Persistent<Value> jsShadowColor;
   Nan::Persistent<Value> jsFillStyle;
   Nan::Persistent<Value> jsStrokeStyle;
 
