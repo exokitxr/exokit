@@ -82,8 +82,11 @@ void ConfigureLooper(CanvasRenderingContext2D *context) {
     rgbaToString(context->shadowColor, rgba);
     if (rgba == 0x00000000) {
       context->fillPaint.setDrawLooper(nullptr);
+      context->strokePaint.setDrawLooper(nullptr);
     } else {
-      context->fillPaint.setDrawLooper(SkBlurDrawLooper::Make(rgba, context->shadowBlur, context->shadowOffsetX, context->shadowOffsetY));
+      sk_sp<SkDrawLooper> looper = SkBlurDrawLooper::Make(rgba, context->shadowBlur, context->shadowOffsetX, context->shadowOffsetY);
+      context->fillPaint.setDrawLooper(looper);
+      context->strokePaint.setDrawLooper(looper);
     }
 }
 
@@ -297,7 +300,7 @@ void CanvasRenderingContext2D::ClearRect(float x, float y, float w, float h) {
   MAC_FLUSH();
 }
 
-float getFontBaseline(const SkPaint &paint, const TextBaseline &textBaseline, float lineHeight) {
+float getFontBaseline(const SkPaint &paint, const char* textBaseline, float lineHeight) {
   SkPaint::FontMetrics fontMetrics;
   paint.getFontMetrics(&fontMetrics);
 
@@ -307,38 +310,36 @@ float getFontBaseline(const SkPaint &paint, const TextBaseline &textBaseline, fl
   // If you changed the heuristic here, for consistency please also change it
   // in SimpleFontData::platformInit().
   // TODO(fserb): revisit this.
-  switch (textBaseline) {
-    case TextBaseline::TOP:
-      return fontMetrics.fAscent;
-    case TextBaseline::HANGING:
-      // According to
-      // http://wiki.apache.org/xmlgraphics-fop/LineLayout/AlignmentHandling
-      // "FOP (Formatting Objects Processor) puts the hanging baseline at 80% of
-      // the ascender height"
-      return fontMetrics.fAscent * 80.0f / 100.0f;
-    case TextBaseline::BOTTOM:
-    case TextBaseline::IDEOGRAPHIC:
-      return -fontMetrics.fDescent;
-    case TextBaseline::MIDDLE:
-      return -fontMetrics.fDescent + fontMetrics.fCapHeight * lineHeight / 2.0f;
-    case TextBaseline::ALPHABETIC:
-    default:
-      // Do nothing.
-      break;
+  if (textBaseline == kTextBaseline_TOP) {
+    return fontMetrics.fAscent;
+  } else if (textBaseline == kTextBaseline_HANGING) {
+    // According to
+    // http://wiki.apache.org/xmlgraphics-fop/LineLayout/AlignmentHandling
+    // "FOP (Formatting Objects Processor) puts the hanging baseline at 80% of
+    // the ascender height"
+    return fontMetrics.fAscent * 80.0f / 100.0f;
+  } else if (textBaseline == kTextBaseline_BOTTOM) {
+    return fontMetrics.fBottom;
+  } else if (textBaseline == kTextBaseline_IDEOGRAPHIC) {
+    return fontMetrics.fDescent;
+  } else if (textBaseline == kTextBaseline_MIDDLE) {
+    return -fontMetrics.fBottom;
+  } else if (textBaseline == kTextBaseline_ALPHABETIC) {
+    return 0;
   }
   return 0;
 }
 
 void CanvasRenderingContext2D::FillText(const std::string &text, float x, float y) {
-  // surface->getCanvas()->drawText(text.c_str(), text.length(), x, y - getFontBaseline(fillPaint, textBaseline, lineHeight), fillPaint);
-  surface->getCanvas()->drawText(text.c_str(), text.length(), x, y, fillPaint);
+  surface->getCanvas()->drawText(text.c_str(), text.length(), x, y - getFontBaseline(fillPaint, textBaseline, lineHeight), fillPaint);
+  //surface->getCanvas()->drawText(text.c_str(), text.length(), x, y, fillPaint);
   surface->getCanvas()->flush();
   MAC_FLUSH();
 }
 
 void CanvasRenderingContext2D::StrokeText(const std::string &text, float x, float y) {
-  // surface->getCanvas()->drawText(text.c_str(), text.length(), x, y - getFontBaseline(strokePaint, textBaseline, lineHeight), strokePaint);
-  surface->getCanvas()->drawText(text.c_str(), text.length(), x, y, strokePaint);
+  surface->getCanvas()->drawText(text.c_str(), text.length(), x, y - getFontBaseline(strokePaint, textBaseline, lineHeight), strokePaint);
+  //surface->getCanvas()->drawText(text.c_str(), text.length(), x, y, strokePaint);
   surface->getCanvas()->flush();
   MAC_FLUSH();
 }
@@ -407,6 +408,8 @@ NAN_METHOD(CanvasRenderingContext2D::New) {
   Nan::SetAccessor(ctxObj, JS_STR("textAlign"), TextAlignGetter, TextAlignSetter);
   Nan::SetAccessor(ctxObj, JS_STR("textBaseline"), TextBaselineGetter, TextBaselineSetter);
   Nan::SetAccessor(ctxObj, JS_STR("direction"), DirectionGetter, DirectionSetter);
+  Nan::SetAccessor(ctxObj, JS_STR("lineCap"), LineCapGetter, LineCapSetter);
+  Nan::SetAccessor(ctxObj, JS_STR("lineJoin"), LineJoinGetter, LineJoinSetter);
 
   ctxObj->Set(JS_STR("font"), JS_STR("10px sans-serif"));
 
@@ -623,7 +626,18 @@ NAN_SETTER(CanvasRenderingContext2D::FillStyleSetter) {
 }
 
 NAN_GETTER(CanvasRenderingContext2D::FontGetter) {
+  CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
   // nothing
+  SkTypeface *typeface = context->strokePaint.getTypeface();
+  if (typeface != nullptr) {
+    SkString familyName;
+    typeface->getFamilyName(&familyName);
+    int fontSize = (int)round(context->fillPaint.getTextSize());
+    std::string font(std::to_string(fontSize));
+    font.append("px ");
+    font.append(familyName.c_str());
+    info.GetReturnValue().Set(JS_STR(font.c_str()));
+  }
 }
 
 NAN_SETTER(CanvasRenderingContext2D::FontSetter) {
@@ -649,7 +663,13 @@ NAN_SETTER(CanvasRenderingContext2D::FontSetter) {
 }
 
 NAN_GETTER(CanvasRenderingContext2D::FontFamilyGetter) {
-  // nothing
+  CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+  SkTypeface *typeface = context->strokePaint.getTypeface();
+  if (typeface != nullptr) {
+    SkString familyName;
+    typeface->getFamilyName(&familyName);
+    info.GetReturnValue().Set(JS_STR(familyName.c_str()));
+  }
 }
 
 NAN_SETTER(CanvasRenderingContext2D::FontFamilySetter) {
@@ -671,7 +691,8 @@ NAN_SETTER(CanvasRenderingContext2D::FontFamilySetter) {
 }
 
 NAN_GETTER(CanvasRenderingContext2D::FontSizeGetter) {
-  // nothing
+  CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+  info.GetReturnValue().Set(JS_NUM(context->fillPaint.getTextSize()));
 }
 
 NAN_SETTER(CanvasRenderingContext2D::FontSizeSetter) {
@@ -690,7 +711,11 @@ NAN_SETTER(CanvasRenderingContext2D::FontSizeSetter) {
 }
 
 NAN_GETTER(CanvasRenderingContext2D::FontWeightGetter) {
-  // nothing
+  CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+  SkTypeface *typeface = context->strokePaint.getTypeface();
+  if (typeface != nullptr) {
+    info.GetReturnValue().Set(JS_INT(typeface->fontStyle().weight()));
+  }
 }
 
 NAN_SETTER(CanvasRenderingContext2D::FontWeightSetter) {
@@ -731,7 +756,9 @@ NAN_SETTER(CanvasRenderingContext2D::FontWeightSetter) {
 }
 
 NAN_GETTER(CanvasRenderingContext2D::LineHeightGetter) {
-  // nothing
+  CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+
+  info.GetReturnValue().Set(JS_NUM(context->lineHeight));
 }
 
 NAN_SETTER(CanvasRenderingContext2D::LineHeightSetter) {
@@ -739,9 +766,21 @@ NAN_SETTER(CanvasRenderingContext2D::LineHeightSetter) {
 
   if (value->IsNumber() || value->IsString()) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
-
-    double lineHeight = TO_DOUBLE(value);
-
+    double lineHeight = 1;
+    if (value->IsString()) {
+      Nan::Utf8String text(value);
+      std::string lineHeightString(*text, text.length());
+      if (lineHeightString == "normal") {
+        lineHeight = 1;
+      } else {
+        Nan::ThrowError("lineHeight: invalid arguments");
+      }
+    } else {
+      lineHeight = TO_DOUBLE(value);
+      if (lineHeight <= 0) {
+        Nan::ThrowError("lineHeight: invalid arguments");
+      }
+    }
     context->lineHeight = lineHeight;
   } else {
     Nan::ThrowError("lineHeight: invalid arguments");
@@ -749,7 +788,18 @@ NAN_SETTER(CanvasRenderingContext2D::LineHeightSetter) {
 }
 
 NAN_GETTER(CanvasRenderingContext2D::FontStyleGetter) {
-  // nothing
+  CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+  SkTypeface *typeface = context->strokePaint.getTypeface();
+  if (typeface != nullptr) {
+    switch (context->strokePaint.getStrokeCap()) {
+      case SkFontStyle::kItalic_Slant:
+        info.GetReturnValue().Set(JS_STR("italic")); break;
+      case SkFontStyle::kOblique_Slant:
+        info.GetReturnValue().Set(JS_STR("oblique")); break;
+      default:
+        info.GetReturnValue().Set(JS_STR("normal")); break;
+    }
+  }
 }
 
 NAN_SETTER(CanvasRenderingContext2D::FontStyleSetter) {
@@ -805,7 +855,8 @@ NAN_SETTER(CanvasRenderingContext2D::FontVariantSetter) {
 }
 
 NAN_GETTER(CanvasRenderingContext2D::TextAlignGetter) {
-  // nothing
+  CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+  info.GetReturnValue().Set(JS_STR(context->textAlign));
 }
 
 NAN_SETTER(CanvasRenderingContext2D::TextAlignSetter) {
@@ -819,30 +870,35 @@ NAN_SETTER(CanvasRenderingContext2D::TextAlignSetter) {
     if (textAlignString == "left") {
       context->strokePaint.setTextAlign(SkPaint::kLeft_Align);
       context->fillPaint.setTextAlign(SkPaint::kLeft_Align);
+      context->textAlign = kTextAlign_LEFT;
     } else if (textAlignString == "right") {
       context->strokePaint.setTextAlign(SkPaint::kRight_Align);
       context->fillPaint.setTextAlign(SkPaint::kRight_Align);
+      context->textAlign = kTextAlign_RIGHT;
     } else if (textAlignString == "center") {
       context->strokePaint.setTextAlign(SkPaint::kCenter_Align);
       context->fillPaint.setTextAlign(SkPaint::kCenter_Align);
+      context->textAlign = kTextAlign_CENTER;
     } else if (textAlignString == "start") {
-      if (context->direction == Direction::LEFT_TO_RIGHT) {
+      if (context->direction == kTextDirection_LEFT_TO_RIGHT) {
         context->strokePaint.setTextAlign(SkPaint::kLeft_Align);
         context->fillPaint.setTextAlign(SkPaint::kLeft_Align);
       } else {
         context->strokePaint.setTextAlign(SkPaint::kRight_Align);
         context->fillPaint.setTextAlign(SkPaint::kRight_Align);
       }
+      context->textAlign = kTextAlign_START;
     } else if (textAlignString == "end") {
-      if (context->direction == Direction::LEFT_TO_RIGHT) {
+      if (context->direction == kTextDirection_LEFT_TO_RIGHT) {
         context->strokePaint.setTextAlign(SkPaint::kRight_Align);
         context->fillPaint.setTextAlign(SkPaint::kRight_Align);
       } else {
         context->strokePaint.setTextAlign(SkPaint::kLeft_Align);
         context->fillPaint.setTextAlign(SkPaint::kLeft_Align);
       }
+      context->textAlign = kTextAlign_END;
     } else {
-      context->textAlign = "";
+      Nan::ThrowError("textAlign: invalid arguments");
     }
   } else {
     Nan::ThrowError("textAlign: invalid arguments");
@@ -850,7 +906,8 @@ NAN_SETTER(CanvasRenderingContext2D::TextAlignSetter) {
 }
 
 NAN_GETTER(CanvasRenderingContext2D::TextBaselineGetter) {
-  // nothing
+  CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+  info.GetReturnValue().Set(JS_STR(context->textBaseline));
 }
 
 NAN_SETTER(CanvasRenderingContext2D::TextBaselineSetter) {
@@ -862,17 +919,19 @@ NAN_SETTER(CanvasRenderingContext2D::TextBaselineSetter) {
     std::string textBaselineString(*text, text.length());
 
     if (textBaselineString == "top") {
-      context->textBaseline = TextBaseline::TOP;
+      context->textBaseline = kTextBaseline_TOP;
     } else if (textBaselineString == "hanging") {
-      context->textBaseline = TextBaseline::HANGING;
+      context->textBaseline = kTextBaseline_HANGING;
     } else if (textBaselineString == "alphabetic") {
-      context->textBaseline = TextBaseline::ALPHABETIC;
+      context->textBaseline = kTextBaseline_ALPHABETIC;
+    } else if (textBaselineString == "middle") {
+      context->textBaseline = kTextBaseline_MIDDLE;
     } else if (textBaselineString == "ideographic") {
-      context->textBaseline = TextBaseline::IDEOGRAPHIC;
+      context->textBaseline = kTextBaseline_IDEOGRAPHIC;
     } else if (textBaselineString == "bottom") {
-      context->textBaseline = TextBaseline::BOTTOM;
+      context->textBaseline = kTextBaseline_BOTTOM;
     } else {
-      context->textBaseline = TextBaseline::ALPHABETIC;
+      context->textBaseline = kTextBaseline_ALPHABETIC;
     }
   } else {
     Nan::ThrowError("textBaseline: invalid arguments");
@@ -880,7 +939,8 @@ NAN_SETTER(CanvasRenderingContext2D::TextBaselineSetter) {
 }
 
 NAN_GETTER(CanvasRenderingContext2D::DirectionGetter) {
-  // nothing
+  CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+  info.GetReturnValue().Set(JS_STR(context->direction));
 }
 
 NAN_SETTER(CanvasRenderingContext2D::DirectionSetter) {
@@ -892,14 +952,82 @@ NAN_SETTER(CanvasRenderingContext2D::DirectionSetter) {
     std::string direction(*text, text.length());
 
     if (direction == "ltr") {
-      context->direction = Direction::LEFT_TO_RIGHT;
+      context->direction = kTextDirection_LEFT_TO_RIGHT;
     } else if (direction == "rtl") {
-      context->direction = Direction::RIGHT_TO_LEFT;
+      context->direction = kTextDirection_RIGHT_TO_LEFT;
     } else {
-      context->direction = Direction::LEFT_TO_RIGHT;
+      context->direction = kTextDirection_LEFT_TO_RIGHT;
     }
   } else {
     Nan::ThrowError("direction: invalid arguments");
+  }
+}
+
+NAN_GETTER(CanvasRenderingContext2D::LineCapGetter) {
+    CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+    switch (context->strokePaint.getStrokeCap()) {
+      case SkPaint::kSquare_Cap:
+      info.GetReturnValue().Set(JS_STR("square")); break;
+      case SkPaint::kRound_Cap:
+      info.GetReturnValue().Set(JS_STR("round")); break;
+      default: 
+      info.GetReturnValue().Set(JS_STR("butt")); break;
+    }
+}
+
+NAN_SETTER(CanvasRenderingContext2D::LineCapSetter) {
+  // Nan::HandleScope scope;
+
+  if (value->IsString()) {
+    CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+    Nan::Utf8String text(value);
+    std::string lineCap(*text, text.length());
+
+    if (lineCap == "butt") {
+      context->strokePaint.setStrokeCap(SkPaint::kButt_Cap);
+    } else if (lineCap == "round") {
+      context->strokePaint.setStrokeCap(SkPaint::kRound_Cap);
+    } else if (lineCap == "square") {
+      context->strokePaint.setStrokeCap(SkPaint::kSquare_Cap);
+    } else {
+      Nan::ThrowError("lineCap: invalid arguments");
+    }
+  } else {
+    Nan::ThrowError("lineCap: invalid arguments");
+  }
+}
+
+NAN_GETTER(CanvasRenderingContext2D::LineJoinGetter) {
+    CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+    switch (context->strokePaint.getStrokeJoin()) {
+      case SkPaint::kBevel_Join:
+      info.GetReturnValue().Set(JS_STR("bevel")); break;
+      case SkPaint::kRound_Join:
+      info.GetReturnValue().Set(JS_STR("round")); break;
+      default: 
+      info.GetReturnValue().Set(JS_STR("miter")); break;
+    }
+}
+
+NAN_SETTER(CanvasRenderingContext2D::LineJoinSetter) {
+  // Nan::HandleScope scope;
+
+  if (value->IsString()) {
+    CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+    Nan::Utf8String text(value);
+    std::string lineJoin(*text, text.length());
+
+    if (lineJoin == "miter") {
+      context->strokePaint.setStrokeJoin(SkPaint::kMiter_Join);
+    } else if (lineJoin == "round") {
+      context->strokePaint.setStrokeJoin(SkPaint::kRound_Join);
+    } else if (lineJoin == "bevel") {
+      context->strokePaint.setStrokeJoin(SkPaint::kBevel_Join);
+    } else {
+      context->strokePaint.setStrokeJoin(SkPaint::kMiter_Join);
+    }
+  } else {
+    Nan::ThrowError("lineJoin: invalid arguments");
   }
 }
 
@@ -1556,11 +1684,16 @@ sk_sp<SkImage> CanvasRenderingContext2D::getImage(Local<Value> arg) {
 
 CanvasRenderingContext2D::CanvasRenderingContext2D() :
   live(true),
+  windowHandle(nullptr),
   tex(0),
   lineHeight(1),
+  shadowColor("rgba(0, 0, 0, 0)"),
   shadowBlur(0),
   shadowOffsetX(0),
-  shadowOffsetY(0)
+  shadowOffsetY(0),
+  textBaseline(kTextBaseline_ALPHABETIC),
+  textAlign(kTextAlign_START),
+  direction(kTextDirection_LEFT_TO_RIGHT)
 {
   // flipCanvasY(surface->getCanvas());
 
@@ -1580,8 +1713,6 @@ CanvasRenderingContext2D::CanvasRenderingContext2D() :
   clearPaint.setColor(0x0);
   clearPaint.setStyle(SkPaint::kFill_Style);
   clearPaint.setBlendMode(SkBlendMode::kSrc);
-
-  shadowColor = "rgba(0, 0, 0, 0)";
 }
 
 CanvasRenderingContext2D::~CanvasRenderingContext2D () {}
