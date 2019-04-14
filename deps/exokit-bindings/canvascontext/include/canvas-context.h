@@ -90,6 +90,14 @@ public:
   static NAN_SETTER(LineWidthSetter);
   static NAN_GETTER(StrokeStyleGetter);
   static NAN_SETTER(StrokeStyleSetter);
+  static NAN_GETTER(ShadowColorGetter);
+  static NAN_SETTER(ShadowColorSetter);
+  static NAN_GETTER(ShadowBlurGetter);
+  static NAN_SETTER(ShadowBlurSetter);
+  static NAN_GETTER(ShadowOffsetXGetter);
+  static NAN_SETTER(ShadowOffsetXSetter);
+  static NAN_GETTER(ShadowOffsetYGetter);
+  static NAN_SETTER(ShadowOffsetYSetter);
   static NAN_GETTER(FillStyleGetter);
   static NAN_SETTER(FillStyleSetter);
   static NAN_GETTER(FontGetter);
@@ -160,12 +168,18 @@ public:
   virtual ~CanvasRenderingContext2D();
 
 // protected:
+
+  void Configure();
+
   bool live;
   NATIVEwindow *windowHandle;
   GLuint tex;
   sk_sp<GrContext> grContext;
   sk_sp<SkSurface> surface;
   SkPath path;
+  float shadowBlur;
+  float shadowOffsetX;
+  float shadowOffsetY;
   SkPaint strokePaint;
   SkPaint fillPaint;
   SkPaint clearPaint;
@@ -173,6 +187,9 @@ public:
   std::string textAlign;
   TextBaseline textBaseline;
   Direction direction;
+  Nan::Persistent<Value> jsShadowColor;
+  Nan::Persistent<Value> jsFillStyle;
+  Nan::Persistent<Value> jsStrokeStyle;
 
   /* friend class Image;
   friend class ImageData;
