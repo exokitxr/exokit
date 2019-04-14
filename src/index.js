@@ -463,37 +463,6 @@ class XRState {
     this.gamepads = (() => {
       const result = Array(2+maxNumTrackers);
       for (let i = 0; i < result.length; i++) {
-        result[i] = {
-          connected: _makeTypedArray(Uint32Array, 1),
-          position: _makeTypedArray(Float32Array, 3),
-          orientation: (() => {
-            const result = _makeTypedArray(Float32Array, 4);
-            result[3] = 1;
-            return result;
-          })(),
-          direction: (() => { // derived
-            const result = _makeTypedArray(Float32Array, 4);
-            result[2] = -1;
-            return result;
-          })(),
-          transformMatrix: (() => { // derived
-            const result = _makeTypedArray(Float32Array, 16);
-            result.set(Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]));
-            return result;
-          })(),
-          buttons: (() => {
-            const result = Array(10);
-            for (let i = 0; i < result.length; i++) {
-              result[i] = {
-                pressed: _makeTypedArray(Uint32Array, 1),
-                touched: _makeTypedArray(Uint32Array, 1),
-                value: _makeTypedArray(Float32Array, 1)
-              };
-            }
-            return result;
-          })(),
-          axes: _makeTypedArray(Float32Array, 10),
-        };
         result[i] = _makeGamepad();
       }
       return result;
