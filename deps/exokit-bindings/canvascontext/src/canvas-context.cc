@@ -50,6 +50,32 @@ bool isImageValue(Local<Value> arg) {
   canvas->scale(1.0, -1.0);
 } */
 
+void rgbaToString(std::string& str, uint32_t c) {
+  uint32_t a = 0xFF & ((uint32_t)c >> (8 * 3));
+  uint32_t r = 0xFF & ((uint32_t)c >> (8 * 2));
+  uint32_t g = 0xFF & ((uint32_t)c >> (8 * 1));
+  uint32_t b = 0xFF & ((uint32_t)c >> (8 * 0));
+  if (a == 0xFF) {
+    char out[4096];
+    sprintf(out, "#%02x%02x%02x", r, g, b);
+    str = out;
+  } else {
+    double alpha = a / 255.0;
+    char outAlpha[4096];
+    sprintf(outAlpha, "%.15f", alpha);
+    char* end = outAlpha + strlen(outAlpha);
+    while (end > outAlpha && *(end - 1) == '0') {
+      end--;
+      if (end > outAlpha && *(end - 1) != '.') {
+        *end = '\0';
+      }
+    } 
+    char out[4096];
+    sprintf(out, "rgba(%d, %d, %d, %s)", r, g, b, outAlpha);
+    str = out;
+  }
+}
+
 Local<Object> CanvasRenderingContext2D::Initialize(Isolate *isolate, Local<Value> imageDataCons, Local<Value> canvasGradientCons, Local<Value> canvasPatternCons) {
   Nan::EscapableHandleScope scope;
 
@@ -350,6 +376,10 @@ NAN_METHOD(CanvasRenderingContext2D::New) {
   Nan::SetAccessor(ctxObj, JS_STR("lineWidth"), LineWidthGetter, LineWidthSetter);
   Nan::SetAccessor(ctxObj, JS_STR("strokeStyle"), StrokeStyleGetter, StrokeStyleSetter);
   Nan::SetAccessor(ctxObj, JS_STR("fillStyle"), FillStyleGetter, FillStyleSetter);
+  Nan::SetAccessor(ctxObj, JS_STR("shadowColor"), ShadowColorGetter, ShadowColorSetter);
+  Nan::SetAccessor(ctxObj, JS_STR("shadowBlur"), ShadowBlurGetter, ShadowBlurSetter);
+  Nan::SetAccessor(ctxObj, JS_STR("shadowOffsetX"), ShadowOffsetXGetter, ShadowOffsetXSetter);
+  Nan::SetAccessor(ctxObj, JS_STR("shadowOffsetY"), ShadowOffsetYGetter, ShadowOffsetYSetter);
   Nan::SetAccessor(ctxObj, JS_STR("font"), FontGetter, FontSetter);
   Nan::SetAccessor(ctxObj, JS_STR("fontFamily"), FontFamilyGetter, FontFamilySetter);
   Nan::SetAccessor(ctxObj, JS_STR("fontSize"), FontSizeGetter, FontSizeSetter);
@@ -360,6 +390,8 @@ NAN_METHOD(CanvasRenderingContext2D::New) {
   Nan::SetAccessor(ctxObj, JS_STR("textAlign"), TextAlignGetter, TextAlignSetter);
   Nan::SetAccessor(ctxObj, JS_STR("textBaseline"), TextBaselineGetter, TextBaselineSetter);
   Nan::SetAccessor(ctxObj, JS_STR("direction"), DirectionGetter, DirectionSetter);
+
+  ctxObj->Set(JS_STR("font"), JS_STR("10px sans-serif"));
 
   info.GetReturnValue().Set(ctxObj);
 }
@@ -413,7 +445,9 @@ NAN_SETTER(CanvasRenderingContext2D::LineWidthSetter) {
 }
 
 NAN_GETTER(CanvasRenderingContext2D::StrokeStyleGetter) {
-  // nothing
+  CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+
+  info.GetReturnValue().Set(Nan::New(context->jsStrokeStyle));
 }
 
 NAN_SETTER(CanvasRenderingContext2D::StrokeStyleSetter) {
@@ -426,25 +460,126 @@ NAN_SETTER(CanvasRenderingContext2D::StrokeStyleSetter) {
     std::string strokeStyle(*text, text.length());
 
     canvas::web_color webColor = canvas::web_color::from_string(strokeStyle.c_str());
-    context->strokePaint.setColor(((uint32_t)webColor.a << (8 * 3)) | ((uint32_t)webColor.r << (8 * 2)) | ((uint32_t)webColor.g << (8 * 1)) | ((uint32_t)webColor.b << (8 * 0)));
-    context->fillPaint.setShader(nullptr);
+    uint32_t rgba = ((uint32_t)webColor.a << (8 * 3)) | ((uint32_t)webColor.r << (8 * 2)) | ((uint32_t)webColor.g << (8 * 1)) | ((uint32_t)webColor.b << (8 * 0));
+    context->strokePaint.setColor(rgba);
+    context->strokePaint.setShader(nullptr);
+    rgbaToString(strokeStyle, rgba);
+    context->jsStrokeStyle.Reset(JS_STR(strokeStyle.c_str()));
   } else if (value->IsObject() && JS_OBJ(JS_OBJ(value)->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("CanvasGradient"))) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
 
     CanvasGradient *canvasGradient = ObjectWrap::Unwrap<CanvasGradient>(Local<Object>::Cast(value));
     context->fillPaint.setShader(canvasGradient->getShader());
+    context->jsStrokeStyle.Reset(value);
   } else if (value->IsObject() && JS_OBJ(JS_OBJ(value)->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("CanvasPattern"))) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
 
     CanvasPattern *canvasPattern = ObjectWrap::Unwrap<CanvasPattern>(Local<Object>::Cast(value));
     context->fillPaint.setShader(canvasPattern->getShader());
+    context->jsStrokeStyle.Reset(value);
   } else {
     Nan::ThrowError("strokeStyle: invalid arguments");
   }
 }
 
+void CanvasRenderingContext2D::Configure() {
+    Nan::Utf8String text(Nan::New(this->jsShadowColor));
+    std::string shadowColor(*text, text.length());
+
+    canvas::web_color c = canvas::web_color::from_string(shadowColor.c_str());
+    uint32_t rgba = ((uint32_t)c.a << (8 * 3)) | ((uint32_t)c.r << (8 * 2)) | ((uint32_t)c.g << (8 * 1)) | ((uint32_t)c.b << (8 * 0));
+    rgbaToString(shadowColor, rgba);
+    jsShadowColor.Reset(JS_STR(shadowColor.c_str()));
+    if (rgba == 0x00000000) {
+      this->fillPaint.setDrawLooper(nullptr);
+    } else {
+      this->fillPaint.setDrawLooper(SkBlurDrawLooper::Make(rgba, this->shadowBlur, this->shadowOffsetX, this->shadowOffsetY));
+    }
+}
+
+NAN_GETTER(CanvasRenderingContext2D::ShadowColorGetter) {
+  CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+
+  info.GetReturnValue().Set(Nan::New(context->jsShadowColor));
+}
+
+NAN_SETTER(CanvasRenderingContext2D::ShadowColorSetter) {
+  // Nan::HandleScope scope;
+
+  if (value->IsString()) {
+    CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+    context->jsShadowColor.Reset(value);
+    context->Configure();
+  } else {
+     Nan::ThrowError("shadowColor: invalid arguments");
+  }
+}
+
+
+NAN_GETTER(CanvasRenderingContext2D::ShadowBlurGetter) {
+  CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+
+  info.GetReturnValue().Set(JS_NUM(context->shadowBlur));
+}
+
+NAN_SETTER(CanvasRenderingContext2D::ShadowBlurSetter) {
+  // Nan::HandleScope scope;
+
+  if (value->IsNumber()) {
+    CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+    if (context->shadowBlur != TO_FLOAT(value)) {
+      context->shadowBlur = TO_FLOAT(value);
+      context->Configure();
+    }
+  } else {
+     Nan::ThrowError("shadowBlur: invalid arguments");
+  }
+}
+
+NAN_GETTER(CanvasRenderingContext2D::ShadowOffsetXGetter) {
+  CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+
+  info.GetReturnValue().Set(JS_NUM(context->shadowOffsetX));
+}
+
+NAN_SETTER(CanvasRenderingContext2D::ShadowOffsetXSetter) {
+  // Nan::HandleScope scope;
+
+  if (value->IsNumber()) {
+    CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+    if (context->shadowOffsetX != TO_FLOAT(value)) {
+      context->shadowOffsetX = TO_FLOAT(value);
+      context->Configure();
+    }
+  } else {
+     Nan::ThrowError("shadowOffsetX: invalid arguments");
+  }
+}
+
+NAN_GETTER(CanvasRenderingContext2D::ShadowOffsetYGetter) {
+  CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+
+  info.GetReturnValue().Set(JS_NUM(context->shadowOffsetY));
+}
+
+NAN_SETTER(CanvasRenderingContext2D::ShadowOffsetYSetter) {
+  // Nan::HandleScope scope;
+
+  if (value->IsNumber()) {
+    CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+    if (context->shadowOffsetY != TO_FLOAT(value)) {
+      context->shadowOffsetY = TO_FLOAT(value);
+      context->Configure();
+    }
+  } else {
+     Nan::ThrowError("shadowOffsetY: invalid arguments");
+  }
+}
+
 NAN_GETTER(CanvasRenderingContext2D::FillStyleGetter) {
-  // nothing
+  CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+
+  info.GetReturnValue().Set(Nan::New(context->jsFillStyle));
 }
 
 NAN_SETTER(CanvasRenderingContext2D::FillStyleSetter) {
@@ -457,18 +592,23 @@ NAN_SETTER(CanvasRenderingContext2D::FillStyleSetter) {
     std::string fillStyle(*text, text.length());
 
     canvas::web_color webColor = canvas::web_color::from_string(fillStyle.c_str());
-    context->fillPaint.setColor(((uint32_t)webColor.a << (8 * 3)) | ((uint32_t)webColor.r << (8 * 2)) | ((uint32_t)webColor.g << (8 * 1)) | ((uint32_t)webColor.b << (8 * 0)));
+    uint32_t rgba = ((uint32_t)webColor.a << (8 * 3)) | ((uint32_t)webColor.r << (8 * 2)) | ((uint32_t)webColor.g << (8 * 1)) | ((uint32_t)webColor.b << (8 * 0));
+    context->fillPaint.setColor(rgba);
     context->fillPaint.setShader(nullptr);
+    rgbaToString(fillStyle, rgba);
+    context->jsFillStyle.Reset(JS_STR(fillStyle.c_str()));
   } else if (value->IsObject() && JS_OBJ(JS_OBJ(value)->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("CanvasGradient"))) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
 
     CanvasGradient *canvasGradient = ObjectWrap::Unwrap<CanvasGradient>(Local<Object>::Cast(value));
     context->fillPaint.setShader(canvasGradient->getShader());
+    context->jsFillStyle.Reset(value);
   } else if (value->IsObject() && JS_OBJ(JS_OBJ(value)->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("CanvasPattern"))) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
 
     CanvasPattern *canvasPattern = ObjectWrap::Unwrap<CanvasPattern>(Local<Object>::Cast(value));
     context->fillPaint.setShader(canvasPattern->getShader());
+    context->jsFillStyle.Reset(value);
   } else {
      Nan::ThrowError("fillStyle: invalid arguments");
   }
@@ -1409,15 +1549,22 @@ sk_sp<SkImage> CanvasRenderingContext2D::getImage(Local<Value> arg) {
 CanvasRenderingContext2D::CanvasRenderingContext2D() :
   live(true),
   tex(0),
-  lineHeight(1)
+  lineHeight(1),
+  shadowBlur(0),
+  shadowOffsetX(0),
+  shadowOffsetY(0)
 {
   // flipCanvasY(surface->getCanvas());
 
+  jsStrokeStyle.Reset(JS_STR("#000000"));
   strokePaint.setTextSize(12);
+  strokePaint.setColor(0xff000000);
   strokePaint.setStyle(SkPaint::kStroke_Style);
   strokePaint.setBlendMode(SkBlendMode::kSrcOver);
 
+  jsFillStyle.Reset(JS_STR("#0000ff"));
   fillPaint.setTextSize(12);
+  fillPaint.setColor(0xff0000ff);
   fillPaint.setStyle(SkPaint::kFill_Style);
   fillPaint.setBlendMode(SkBlendMode::kSrcOver);
 
@@ -1425,6 +1572,8 @@ CanvasRenderingContext2D::CanvasRenderingContext2D() :
   clearPaint.setColor(0x0);
   clearPaint.setStyle(SkPaint::kFill_Style);
   clearPaint.setBlendMode(SkBlendMode::kSrc);
+
+  jsShadowColor.Reset(JS_STR("rgb(0, 0, 0, 0)"));
 }
 
 CanvasRenderingContext2D::~CanvasRenderingContext2D () {}
