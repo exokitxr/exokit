@@ -493,7 +493,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       GlobalContext.fakeVrDisplayEnabled = true;
       return window[symbols.mrDisplaysSymbol].fakeVrDisplay;
     },
-    getGamepads: getGamepads(window),
+    getGamepads: getGamepads.bind(null, window),
     clipboard:{
       read:() => Promise.resolve(), // Not implemented yet
       readText: () => new Promise(resolve => {

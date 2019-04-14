@@ -614,11 +614,9 @@ const createVRDisplay = () => new FakeVRDisplay();
 const oculusVRIdLeft = 'Oculus Touch (Left)';
 const oculusVRIdRight = 'Oculus Touch (Right)';
 const openVRId = 'OpenVR Gamepad';
-const getGamepads = window => {
-  let gamepads = null;
-
-  return function () {
-    if (!GlobalContext.vrPresentState.isPresenting) { return []; }
+let gamepads = null;
+function getGamepads(window) {
+  if (GlobalContext.vrPresentState.isPresenting || GlobalContext.mlPresentState.isPresenting) {
     if (!gamepads) {
       const oculusVRDisplay = window[symbols.mrDisplaysSymbol].oculusVRDisplay;
       const oculusPresenting = oculusVRDisplay && oculusVRDisplay.isPresenting;
@@ -630,7 +628,9 @@ const getGamepads = window => {
       ];
     }
     return gamepads;
-  };
+  } else {
+    return [];
+  }
 };
 GlobalContext.getGamepads = getGamepads;
 
