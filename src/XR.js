@@ -4,6 +4,7 @@ const {defaultCanvasSize} = require('./constants');
 const GlobalContext = require('./GlobalContext');
 const THREE = require('../lib/three-min.js');
 const symbols = require('./symbols');
+const {maxNumTrackers} = require('./constants');
 const {_elementGetter, _elementSetter} = require('./utils');
 
 const localVector = new THREE.Vector3();
@@ -91,10 +92,24 @@ class XRSession extends EventTarget {
 
     this._frame = new XRPresentationFrame(this);
     this._frameOfReference = new XRFrameOfReference();
-    this._inputSources = [
-      new XRInputSource('left', 'hand'),
-      new XRInputSource('right', 'hand'),
-    ];
+    this._inputSources = (() => {
+      const result = Array(2 + maxNumTrackers);
+      for (let i = 0; i < maxNumTrackers; i++) {
+        let hand, pointerOrigin;
+        if (i === 0) {
+          hand = 'left';
+          pointerOrigin = 'hand';
+        } else if (i === 1) {
+          hand = 'right';
+          pointerOrigin = 'hand';
+        } else {
+          hand = null;
+          pointerOrigin = 'tracker';
+        }
+        result[i] = new XRInputSource(hand, pointerOrigin, i);
+      }
+      return result;
+    })();
     this._lastPresseds = [false, false];
     this._rafs = [];
   }
@@ -469,18 +484,19 @@ class XRDevicePose {
 module.exports.XRDevicePose = XRDevicePose;
 
 class XRInputSource {
-  constructor(handedness = 'left', pointerOrigin = 'hand') {
+  constructor(handedness = 'left', pointerOrigin = 'hand', index = 0) {
     this.handedness = handedness;
     this.pointerOrigin = pointerOrigin;
+    this._index = index;
 
     this._pose = new XRInputPose();
-    const gamepad = GlobalContext.xrState.gamepads[handedness === 'left' ? 0 : 1];
+    const gamepad = GlobalContext.xrState.gamepads[index];
     this._pose.targetRay.origin.values = gamepad.position;
     this._pose.targetRay.direction.values = gamepad.direction;
     this._pose._localPointerMatrix = gamepad.transformMatrix;
   }
   get connected() {
-    return GlobalContext.xrState.gamepads[this.handedness === 'left' ? 0 : 1].connected[0] !== 0;
+    return GlobalContext.xrState.gamepads[this._index].connected[0] !== 0;
   }
   set connected(connected) {}
 }

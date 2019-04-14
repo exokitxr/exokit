@@ -2,7 +2,7 @@ const {EventEmitter} = require('events');
 const {Event} = require('./Event');
 const symbols = require('./symbols');
 const THREE = require('../lib/three-min.js');
-const {defaultCanvasSize, defaultEyeSeparation} = require('./constants.js');
+const {defaultCanvasSize, defaultEyeSeparation, maxNumTrackers} = require('./constants.js');
 const GlobalContext = require('./GlobalContext');
 
 const localVector = new THREE.Vector3();
@@ -147,7 +147,6 @@ class Gamepad {
 
     const gamepad = GlobalContext.xrState.gamepads[index];
 
-    this.connected = false;
     this.mapping = 'standard';
     this.buttons = (() => {
       const result = Array(5);
@@ -160,6 +159,11 @@ class Gamepad {
     this.axes = gamepad.axes;
     this.hapticActuators = [new GamepadHapticActuator(index)];
   }
+
+  get connected() {
+    return GlobalContext.xrState.gamepads[this.index].connected[0] !== 0;
+  }
+  set connected(connected) {}
 
   /* copy(gamepad) {
     this.connected = gamepad.connected;
@@ -616,19 +620,29 @@ const oculusVRIdRight = 'Oculus Touch (Right)';
 const openVRId = 'OpenVR Gamepad';
 let gamepads = null;
 function getGamepads(window) {
-  const {oculusVRDisplay, magicLeapARDisplay} = window[symbols.mrDisplaysSymbol];
+  const {oculusVRDisplay, openVRDisplay, magicLeapARDisplay} = window[symbols.mrDisplaysSymbol];
   if (
     GlobalContext.fakeVrDisplayEnabled ||
     oculusVRDisplay.isPresenting ||
+    openVRDisplay.isPresenting ||
     magicLeapARDisplay.isPresenting
   ) {
     if (!gamepads) {
-      const idLeft = oculusVRDisplay.isPresenting ? oculusVRIdLeft : openVRId;
-      const idRight = oculusVRDisplay.isPresenting ? oculusVRIdRight : openVRId;
-      gamepads = [
-        new Gamepad('left', 0, idLeft),
-        new Gamepad('right', 1, idRight),
-      ];
+      gamepads = Array(2 + maxNumTrackers);
+      for (let i = 0; i < gamepads.length; i++) {
+        let hand, id;
+        if (i === 0) {
+          hand = 'left';
+          id = oculusVRDisplay.isPresenting ? oculusVRIdLeft : openVRId;
+        } else if (i === 1) {
+          hand = 'right';
+          id = oculusVRDisplay.isPresenting ? oculusVRIdRight : openVRId;
+        } else {
+          hand = null;
+          id = openVRId;
+        }
+        gamepads[i] = new Gamepad(hand, i, id);
+      }
     }
     return gamepads;
   } else {

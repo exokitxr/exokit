@@ -197,8 +197,19 @@ NAN_METHOD(IVRCompositor::WaitGetPoses)
   }
 }
 
+void setPoseMatrix(float *dstMatrixArray, const vr::HmdMatrix34_t &srcMatrix) {
+  for (unsigned int v = 0; v < 4; v++) {
+    for (unsigned int u = 0; u < 3; u++) {
+      dstMatrixArray[v * 4 + u] = srcMatrix.m[u][v];
+    }
+  }
+  dstMatrixArray[0 * 4 + 3] = 0;
+  dstMatrixArray[1 * 4 + 3] = 0;
+  dstMatrixArray[2 * 4 + 3] = 0;
+  dstMatrixArray[3 * 4 + 3] = 1;
+}
 NAN_METHOD(IVRCompositor::RequestGetPoses) {
-  if (info.Length() != 5)
+  if (info.Length() != 3)
   {
     Nan::ThrowError("Wrong number of arguments.");
     return;
@@ -206,72 +217,58 @@ NAN_METHOD(IVRCompositor::RequestGetPoses) {
 
   IVRCompositor* obj = ObjectWrap::Unwrap<IVRCompositor>(info.Holder());
   IVRSystem* system = IVRSystem::Unwrap<IVRSystem>(Local<Object>::Cast(info[0]));
-  Local<Float32Array> hmdFloat32Array = Local<Float32Array>::Cast(info[1]);
-  Local<Float32Array> leftControllerFloat32Array = Local<Float32Array>::Cast(info[2]);
-  Local<Float32Array> rightControllerFloat32Array = Local<Float32Array>::Cast(info[3]);
-  Local<Function> cbFn = Local<Function>::Cast(info[4]);
+  Local<Float32Array> posesFloat32Array = Local<Float32Array>::Cast(info[1]);
+  Local<Function> cbFn = Local<Function>::Cast(info[2]);
 
-  float *hmdArray = (float *)((char *)hmdFloat32Array->Buffer()->GetContents().Data() + hmdFloat32Array->ByteOffset());
-  float *leftControllerArray = (float *)((char *)leftControllerFloat32Array->Buffer()->GetContents().Data() + leftControllerFloat32Array->ByteOffset());
-  float *rightControllerArray = (float *)((char *)rightControllerFloat32Array->Buffer()->GetContents().Data() + rightControllerFloat32Array->ByteOffset());
+  float *hmdArray = (float *)((char *)posesFloat32Array->Buffer()->GetContents().Data() + posesFloat32Array->ByteOffset());
+  float *leftControllerArray = hmdArray + 1*16;
+  float *rightControllerArray = hmdArray + 2*16;
+  float *trackerArraysStart = hmdArray + 3*16;
   VRPoseRes *vrPoseRes = new VRPoseRes(cbFn);
 
   {
     std::lock_guard<std::mutex> lock(vr::reqMutex);
 
-    vr::reqCbs.push_back([obj, system, hmdArray, leftControllerArray, rightControllerArray, vrPoseRes]() -> void {
+    vr::reqCbs.push_back([obj, system, hmdArray, leftControllerArray, rightControllerArray, trackerArraysStart, vrPoseRes]() -> void {
       TrackedDevicePoseArray trackedDevicePoseArray;
 	    obj->self_->WaitGetPoses(trackedDevicePoseArray.data(), static_cast<uint32_t>(trackedDevicePoseArray.size()), nullptr, 0);
 
-      memset(hmdArray, std::numeric_limits<float>::quiet_NaN(), 16);
-      memset(leftControllerArray, std::numeric_limits<float>::quiet_NaN(), 16);
-      memset(rightControllerArray, std::numeric_limits<float>::quiet_NaN(), 16);
+      const float identityMatrix[] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
+      memcpy(hmdArray, identityMatrix, sizeof(identityMatrix));
+      memcpy(leftControllerArray, identityMatrix, sizeof(identityMatrix));
+      memcpy(rightControllerArray, identityMatrix, sizeof(identityMatrix));
+
+      unsigned int numTrackers = 0;
+      const unsigned int maxNumTrackers = 8;
 
       for (unsigned int i = 0; i < trackedDevicePoseArray.size(); i++) {
         const vr::TrackedDevicePose_t &trackedDevicePose = trackedDevicePoseArray[i];
+
         if (trackedDevicePose.bPoseIsValid) {
           const vr::ETrackedDeviceClass deviceClass = system->self_->GetTrackedDeviceClass(i);
-          if (deviceClass == vr::TrackedDeviceClass_HMD) {
-            const vr::HmdMatrix34_t &matrix = trackedDevicePose.mDeviceToAbsoluteTracking;
 
-            for (unsigned int v = 0; v < 4; v++) {
-              for (unsigned int u = 0; u < 3; u++) {
-                hmdArray[v * 4 + u] = matrix.m[u][v];
-              }
-            }
-            hmdArray[0 * 4 + 3] = 0;
-            hmdArray[1 * 4 + 3] = 0;
-            hmdArray[2 * 4 + 3] = 0;
-            hmdArray[3 * 4 + 3] = 1;
+          if (deviceClass == vr::TrackedDeviceClass_HMD) {
+            setPoseMatrix(hmdArray, trackedDevicePose.mDeviceToAbsoluteTracking);
           } else if (deviceClass == vr::TrackedDeviceClass_Controller) {
             const vr::ETrackedControllerRole controllerRole = system->self_->GetControllerRoleForTrackedDeviceIndex(i);
+
             if (controllerRole == vr::TrackedControllerRole_LeftHand) {
-              const vr::HmdMatrix34_t &matrix = trackedDevicePose.mDeviceToAbsoluteTracking;
-
-              for (unsigned int v = 0; v < 4; v++) {
-                for (unsigned int u = 0; u < 3; u++) {
-                  leftControllerArray[v * 4 + u] = matrix.m[u][v];
-                }
-              }
-              leftControllerArray[0 * 4 + 3] = 0;
-              leftControllerArray[1 * 4 + 3] = 0;
-              leftControllerArray[2 * 4 + 3] = 0;
-              leftControllerArray[3 * 4 + 3] = 1;
+              setPoseMatrix(leftControllerArray, trackedDevicePose.mDeviceToAbsoluteTracking);
             } else if (controllerRole == vr::TrackedControllerRole_RightHand) {
-              const vr::HmdMatrix34_t &matrix = trackedDevicePose.mDeviceToAbsoluteTracking;
-
-              for (unsigned int v = 0; v < 4; v++) {
-                for (unsigned int u = 0; u < 3; u++) {
-                  rightControllerArray[v * 4 + u] = matrix.m[u][v];
-                }
-              }
-              rightControllerArray[0 * 4 + 3] = 0;
-              rightControllerArray[1 * 4 + 3] = 0;
-              rightControllerArray[2 * 4 + 3] = 0;
-              rightControllerArray[3 * 4 + 3] = 1;
+              setPoseMatrix(rightControllerArray, trackedDevicePose.mDeviceToAbsoluteTracking);
+            }
+          } else if (deviceClass == vr::TrackedDeviceClass_GenericTracker) {
+            if (numTrackers < maxNumTrackers) {
+              float *trackerArray = trackerArraysStart + numTrackers*16;
+              setPoseMatrix(trackerArray, trackedDevicePose.mDeviceToAbsoluteTracking);
+              numTrackers++;
             }
           }
         }
+      }
+      for (unsigned int i = numTrackers; i < maxNumTrackers; i++) {
+        float *trackerArray = trackerArraysStart + i*16;
+        trackerArray[0] = std::numeric_limits<float>::quiet_NaN();
       }
 
       {

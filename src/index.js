@@ -22,7 +22,7 @@ const replHistory = require('repl.history');
 const minimist = require('minimist');
 
 const {version} = require('../package.json');
-const {defaultEyeSeparation} = require('./constants.js');
+const {defaultEyeSeparation, maxNumTrackers} = require('./constants.js');
 const symbols = require('./symbols');
 const {THREE} = core;
 
@@ -328,10 +328,20 @@ nativeBindings.nativeCanvasRenderingContext2D.onconstruct = (ctx, canvas) => {
 };
 
 const zeroMatrix = new THREE.Matrix4();
-const localFloat32Array = zeroMatrix.toArray(new Float32Array(16));
-const localFloat32Array2 = zeroMatrix.toArray(new Float32Array(16));
-const localFloat32Array3 = zeroMatrix.toArray(new Float32Array(16));
-const localFloat32Array4 = new Float32Array(16);
+const localFloat32PoseArray = new Float32Array(16*(1+2+maxNumTrackers));
+const localFloat32HmdPoseArray = new Float32Array(localFloat32PoseArray.buffer, localFloat32PoseArray.byteOffset + 0*Float32Array.BYTES_PER_ELEMENT*16, 16);
+const localFloat32GamepadPoseArrays = [
+  new Float32Array(localFloat32PoseArray.buffer, localFloat32PoseArray.byteOffset + 1*Float32Array.BYTES_PER_ELEMENT*16, 16),
+  new Float32Array(localFloat32PoseArray.buffer, localFloat32PoseArray.byteOffset + 2*Float32Array.BYTES_PER_ELEMENT*16, 16),
+];
+const localFloat32TrackerPoseArrays = (() => {
+  const result = Array(maxNumTrackers);
+  for (let i = 0; i < maxNumTrackers; i++) {
+    result[i] = new Float32Array(localFloat32PoseArray.buffer, localFloat32PoseArray.byteOffset + (3+i)*Float32Array.BYTES_PER_ELEMENT*16, 16);
+  }
+  return result;
+})();
+const localFloat32MatrixArray = new Float32Array(16);
 const localFovArray = new Float32Array(4);
 const localGamepadArray = new Float32Array(24);
 
@@ -357,11 +367,6 @@ const localVector2 = new THREE.Vector3();
 const localQuaternion = new THREE.Quaternion();
 const localMatrix = new THREE.Matrix4();
 const localMatrix2 = new THREE.Matrix4();
-const _normalizeMatrixArray = float32Array => {
-  if (isNaN(float32Array[0])) {
-    zeroMatrix.toArray(float32Array);
-  }
-};
 
 const vrPresentState = {
   vrContext: null,
@@ -384,7 +389,7 @@ GlobalContext.vrPresentState = vrPresentState;
 
 class XRState {
   constructor() {
-    const sab = new SharedArrayBuffer(1024);
+    const sab = new SharedArrayBuffer(4*1024);
     let index = 0;
     const _makeTypedArray = (c, n) => {
       const result = new c(sab, index, n);
@@ -422,40 +427,43 @@ class XRState {
     this.leftFov.set(Float32Array.from([45, 45, 45, 45]));
     this.rightFov = _makeTypedArray(Float32Array, 4);
     this.rightFov.set(this.leftFov);
+    const _makeGamepad = () => {
+      return {
+        connected: _makeTypedArray(Uint32Array, 1),
+        position: _makeTypedArray(Float32Array, 3),
+        orientation: (() => {
+          const result = _makeTypedArray(Float32Array, 4);
+          result[3] = 1;
+          return result;
+        })(),
+        direction: (() => { // derived
+          const result = _makeTypedArray(Float32Array, 4);
+          result[2] = -1;
+          return result;
+        })(),
+        transformMatrix: (() => { // derived
+          const result = _makeTypedArray(Float32Array, 16);
+          result.set(Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]));
+          return result;
+        })(),
+        buttons: (() => {
+          const result = Array(5);
+          for (let i = 0; i < result.length; i++) {
+            result[i] = {
+              pressed: _makeTypedArray(Uint32Array, 1),
+              touched: _makeTypedArray(Uint32Array, 1),
+              value: _makeTypedArray(Float32Array, 1),
+            };
+          }
+          return result;
+        })(),
+        axes: _makeTypedArray(Float32Array, 10),
+      };
+    };
     this.gamepads = (() => {
-      const result = Array(2);
+      const result = Array(2+maxNumTrackers);
       for (let i = 0; i < result.length; i++) {
-        result[i] = {
-          connected: _makeTypedArray(Uint32Array, 1),
-          position: _makeTypedArray(Float32Array, 3),
-          orientation: (() => {
-            const result = _makeTypedArray(Float32Array, 4);
-            result[3] = 1;
-            return result;
-          })(),
-          direction: (() => { // derived
-            const result = _makeTypedArray(Float32Array, 4);
-            result[2] = -1;
-            return result;
-          })(),
-          transformMatrix: (() => { // derived
-            const result = _makeTypedArray(Float32Array, 16);
-            result.set(Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]));
-            return result;
-          })(),
-          buttons: (() => {
-            const result = Array(10);
-            for (let i = 0; i < result.length; i++) {
-              result[i] = {
-                pressed: _makeTypedArray(Uint32Array, 1),
-                touched: _makeTypedArray(Uint32Array, 1),
-                value: _makeTypedArray(Float32Array, 1)
-              };
-            }
-            return result;
-          })(),
-          axes: _makeTypedArray(Float32Array, 10),
-        };
+        result[i] = _makeGamepad();
       }
       return result;
     })();
@@ -1338,7 +1346,7 @@ const _startRenderLoop = () => {
           // Input
           vrPresentState.oculusSystem.GetControllersInputState(0, localGamepadArray);
 
-          leftGamepad.connected[0] = localGamepadArray[0] == 1;
+          leftGamepad.connected[0] = localGamepadArray[0];
 
           // Pressed
           leftGamepad.buttons[0].pressed[0] = localGamepadArray[3]; // thumbstick
@@ -1378,7 +1386,7 @@ const _startRenderLoop = () => {
           // Input
           vrPresentState.oculusSystem.GetControllersInputState(1, localGamepadArray);
 
-          rightGamepad.connected[0] = localGamepadArray[0] == 1;
+          rightGamepad.connected[0] = localGamepadArray[0];
 
           // pressed
           rightGamepad.buttons[0].pressed[0] = localGamepadArray[3]; // thumbstick
@@ -1402,22 +1410,14 @@ const _startRenderLoop = () => {
           rightGamepad.buttons[1].value[0] = localGamepadArray[5]; // trigger
           rightGamepad.buttons[2].value[0] = localGamepadArray[6]; // grip
         }
-
       } else if (vrPresentState.compositor) {
-
-        _normalizeMatrixArray(localFloat32Array);
-        _normalizeMatrixArray(localFloat32Array2);
-        _normalizeMatrixArray(localFloat32Array3);
-
         // wait for frame
         await new Promise((accept, reject) => {
-            vrPresentState.compositor.RequestGetPoses(
-              vrPresentState.system,
-              localFloat32Array, // hmd
-              localFloat32Array2, // left controller
-              localFloat32Array3, // right controller
-              accept
-            );
+          vrPresentState.compositor.RequestGetPoses(
+            vrPresentState.system,
+            localFloat32PoseArray, // hmd, controllers, trackers
+            accept
+          );
         });
         if (!immediate) {
           return;
@@ -1425,12 +1425,8 @@ const _startRenderLoop = () => {
 
         vrPresentState.hasPose = true;
 
-        _normalizeMatrixArray(localFloat32Array);
-        _normalizeMatrixArray(localFloat32Array2);
-        _normalizeMatrixArray(localFloat32Array3);
-
         // build xr state
-        const hmdMatrix = localMatrix.fromArray(localFloat32Array);
+        const hmdMatrix = localMatrix.fromArray(localFloat32HmdPoseArray);
 
         hmdMatrix.decompose(localVector, localQuaternion, localVector2);
         localVector.toArray(xrState.position);
@@ -1438,8 +1434,8 @@ const _startRenderLoop = () => {
 
         hmdMatrix.getInverse(hmdMatrix);
 
-        vrPresentState.system.GetEyeToHeadTransform(0, localFloat32Array4);
-        localMatrix2.fromArray(localFloat32Array4);
+        vrPresentState.system.GetEyeToHeadTransform(0, localFloat32MatrixArray);
+        localMatrix2.fromArray(localFloat32MatrixArray);
         localMatrix2.decompose(localVector, localQuaternion, localVector2);
         localVector.toArray(xrState.leftOffset);
         localMatrix2
@@ -1447,18 +1443,16 @@ const _startRenderLoop = () => {
           .multiply(hmdMatrix);
         localMatrix2.toArray(xrState.leftViewMatrix);
 
-        vrPresentState.system.GetProjectionMatrix(0, xrState.depthNear[0], xrState.depthFar[0], localFloat32Array4);
-        _normalizeMatrixArray(localFloat32Array4);
-        xrState.leftProjectionMatrix.set(localFloat32Array4);
+        vrPresentState.system.GetProjectionMatrix(0, xrState.depthNear[0], xrState.depthFar[0], localFloat32MatrixArray);
+        xrState.leftProjectionMatrix.set(localFloat32MatrixArray);
 
         vrPresentState.system.GetProjectionRaw(0, localFovArray);
         for (let i = 0; i < localFovArray.length; i++) {
           xrState.leftFov[i] = Math.atan(localFovArray[i]) / Math.PI * 180;
         }
 
-        vrPresentState.system.GetEyeToHeadTransform(1, localFloat32Array4);
-        _normalizeMatrixArray(localFloat32Array4);
-        localMatrix2.fromArray(localFloat32Array4);
+        vrPresentState.system.GetEyeToHeadTransform(1, localFloat32MatrixArray);
+        localMatrix2.fromArray(localFloat32MatrixArray);
         localMatrix2.decompose(localVector, localQuaternion, localVector2);
         localVector.toArray(xrState.rightOffset);
         localMatrix2
@@ -1466,9 +1460,8 @@ const _startRenderLoop = () => {
           .multiply(hmdMatrix);
         localMatrix2.toArray(xrState.rightViewMatrix);
 
-        vrPresentState.system.GetProjectionMatrix(1, xrState.depthNear[0], xrState.depthFar[0], localFloat32Array4);
-        _normalizeMatrixArray(localFloat32Array4);
-        xrState.rightProjectionMatrix.set(localFloat32Array4);
+        vrPresentState.system.GetProjectionMatrix(1, xrState.depthNear[0], xrState.depthFar[0], localFloat32MatrixArray);
+        xrState.rightProjectionMatrix.set(localFloat32MatrixArray);
 
         vrPresentState.system.GetProjectionRaw(1, localFovArray);
         for (let i = 0; i < localFovArray.length; i++) {
@@ -1476,74 +1469,65 @@ const _startRenderLoop = () => {
         }
 
         // build stage parameters
-        // vrPresentState.system.GetSeatedZeroPoseToStandingAbsoluteTrackingPose(localFloat32Array4);
-        // _normalizeMatrixArray(localFloat32Array4);
-        // stageParameters.sittingToStandingTransform.set(localFloat32Array4);
+        // vrPresentState.system.GetSeatedZeroPoseToStandingAbsoluteTrackingPose(localFloat32MatrixArray);
+        // stageParameters.sittingToStandingTransform.set(localFloat32MatrixArray);
 
         // build gamepads data
-        {
-          const leftGamepad = xrState.gamepads[0];
-          vrPresentState.system.GetControllerState(0, localGamepadArray);
-          if (!isNaN(localGamepadArray[0])) {
-            leftGamepad.connected[0] = true;
+        const _loadGamepad = i => {
+          const gamepad = xrState.gamepads[i];
+          if (vrPresentState.system.GetControllerState(i, localGamepadArray)) {
+            gamepad.connected[0] = 1;
 
-            localMatrix.fromArray(localFloat32Array2);
+            localMatrix.fromArray(localFloat32GamepadPoseArrays[i]);
             localMatrix.decompose(localVector, localQuaternion, localVector2);
-            localVector.toArray(leftGamepad.position);
-            localQuaternion.toArray(leftGamepad.orientation);
+            localVector.toArray(gamepad.position);
+            localQuaternion.toArray(gamepad.orientation);
 
-            leftGamepad.buttons[0].pressed[0] = localGamepadArray[4]; // pad
-            leftGamepad.buttons[1].pressed[0] = localGamepadArray[5]; // trigger
-            leftGamepad.buttons[2].pressed[0] = localGamepadArray[3]; // grip
-            leftGamepad.buttons[3].pressed[0] = localGamepadArray[2]; // menu
-            leftGamepad.buttons[4].pressed[0] = localGamepadArray[1]; // system
+            gamepad.buttons[0].pressed[0] = localGamepadArray[4]; // pad
+            gamepad.buttons[1].pressed[0] = localGamepadArray[5]; // trigger
+            gamepad.buttons[2].pressed[0] = localGamepadArray[3]; // grip
+            gamepad.buttons[3].pressed[0] = localGamepadArray[2]; // menu
+            gamepad.buttons[4].pressed[0] = localGamepadArray[1]; // system
 
-            leftGamepad.buttons[0].touched[0] = localGamepadArray[9]; // pad
-            leftGamepad.buttons[1].touched[0] = localGamepadArray[10]; // trigger
-            leftGamepad.buttons[2].touched[0] = localGamepadArray[8]; // grip
-            leftGamepad.buttons[3].touched[0] = localGamepadArray[7]; // menu
-            leftGamepad.buttons[4].touched[0] = localGamepadArray[6]; // system
+            gamepad.buttons[0].touched[0] = localGamepadArray[9]; // pad
+            gamepad.buttons[1].touched[0] = localGamepadArray[10]; // trigger
+            gamepad.buttons[2].touched[0] = localGamepadArray[8]; // grip
+            gamepad.buttons[3].touched[0] = localGamepadArray[7]; // menu
+            gamepad.buttons[4].touched[0] = localGamepadArray[6]; // system
 
             for (let i = 0; i < 10; i++) {
-              leftGamepad.axes[i] = localGamepadArray[11+i];
+              gamepad.axes[i] = localGamepadArray[11+i];
             }
-            leftGamepad.buttons[1].value[0] = leftGamepad.axes[2]; // trigger
+            gamepad.buttons[1].value[0] = gamepad.axes[2]; // trigger
           } else {
-            leftGamepad.connected[0] = 0;
+            gamepad.connected[0] = 0;
           }
-        }
+        };
+        _loadGamepad(0);
+        _loadGamepad(1);
 
-        {
-          const rightGamepad = xrState.gamepads[1];
-          vrPresentState.system.GetControllerState(1, localGamepadArray);
-          if (!isNaN(localGamepadArray[0])) {
-            rightGamepad.connected[0] = 1;
+        // build tracker data
+        const _loadTracker = i => {
+          const tracker = xrState.gamepads[2 + i];
+          const trackerPoseArray = localFloat32TrackerPoseArrays[i];
+          if (!isNaN(trackerPoseArray[0])) {
+            tracker.connected[0] = 1;
 
-            localMatrix.fromArray(localFloat32Array3);
+            localMatrix.fromArray(trackerPoseArray);
             localMatrix.decompose(localVector, localQuaternion, localVector2);
-            localVector.toArray(rightGamepad.position);
-            localQuaternion.toArray(rightGamepad.orientation);
-
-            rightGamepad.buttons[0].pressed[0] = localGamepadArray[4]; // pad
-            rightGamepad.buttons[1].pressed[0] = localGamepadArray[5]; // trigger
-            rightGamepad.buttons[2].pressed[0] = localGamepadArray[3]; // grip
-            rightGamepad.buttons[3].pressed[0] = localGamepadArray[2]; // menu
-            rightGamepad.buttons[4].pressed[0] = localGamepadArray[1]; // system
-
-            rightGamepad.buttons[0].touched[0] = localGamepadArray[9]; // pad
-            rightGamepad.buttons[1].touched[0] = localGamepadArray[10]; // trigger
-            rightGamepad.buttons[2].touched[0] = localGamepadArray[8]; // grip
-            rightGamepad.buttons[3].touched[0] = localGamepadArray[7]; // menu
-            rightGamepad.buttons[4].touched[0] = localGamepadArray[6]; // system
-
-            for (let i = 0; i < 10; i++) {
-              rightGamepad.axes[i] = localGamepadArray[11+i];
-            }
-            rightGamepad.buttons[1].value[0] = rightGamepad.axes[2]; // trigger
+            localVector.toArray(tracker.position);
+            localQuaternion.toArray(tracker.orientation);
           } else {
-            rightGamepad.connected[0] = 0;
+            tracker.connected[0] = 0;
           }
+        };
+        for (let i = 0; i < maxNumTrackers; i++) {
+          _loadTracker(i);
         }
+
+        /* if (vrPresentState.lmContext) { // XXX remove this binding
+          vrPresentState.lmContext.WaitGetPoses(handsArray);
+        } */
       }
 
       if (args.performance) {
