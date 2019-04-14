@@ -12,6 +12,7 @@ export AR="$TOOLCHAIN/bin/aarch64-linux-android-ar"
 
 cd "$(dirname "$0")/.."
 
+mkdir -p ./android/app/assets
 rsync -a --copy-links package.json ./android/app/assets/package.json
 rsync -a --copy-links src/ ./android/app/assets/src
 rsync -a --copy-links lib/ ./android/app/assets/lib
