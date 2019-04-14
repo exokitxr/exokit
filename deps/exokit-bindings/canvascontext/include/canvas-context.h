@@ -193,8 +193,6 @@ public:
   const char* textAlign;
   const char* textBaseline;
   const char* direction;
-  Nan::Persistent<Value> jsFillStyle;
-  Nan::Persistent<Value> jsStrokeStyle;
 
   /* friend class Image;
   friend class ImageData;
