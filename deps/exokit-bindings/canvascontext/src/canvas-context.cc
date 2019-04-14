@@ -465,9 +465,7 @@ NAN_SETTER(CanvasRenderingContext2D::LineWidthSetter) {
 }
 
 NAN_GETTER(CanvasRenderingContext2D::StrokeStyleGetter) {
-  CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
-
-  info.GetReturnValue().Set(Nan::New(context->jsStrokeStyle));
+  // nothing
 }
 
 NAN_SETTER(CanvasRenderingContext2D::StrokeStyleSetter) {
@@ -484,19 +482,16 @@ NAN_SETTER(CanvasRenderingContext2D::StrokeStyleSetter) {
     context->strokePaint.setColor(rgba);
     context->strokePaint.setShader(nullptr);
     rgbaToString(strokeStyle, rgba);
-    context->jsStrokeStyle.Reset(JS_STR(strokeStyle.c_str()));
   } else if (value->IsObject() && JS_OBJ(JS_OBJ(value)->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("CanvasGradient"))) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
 
     CanvasGradient *canvasGradient = ObjectWrap::Unwrap<CanvasGradient>(Local<Object>::Cast(value));
     context->strokePaint.setShader(canvasGradient->getShader());
-    context->jsStrokeStyle.Reset(value);
   } else if (value->IsObject() && JS_OBJ(JS_OBJ(value)->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("CanvasPattern"))) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
 
     CanvasPattern *canvasPattern = ObjectWrap::Unwrap<CanvasPattern>(Local<Object>::Cast(value));
     context->strokePaint.setShader(canvasPattern->getShader());
-    context->jsStrokeStyle.Reset(value);
   } else {
     Nan::ThrowError("strokeStyle: invalid arguments");
   }
@@ -588,9 +583,7 @@ NAN_SETTER(CanvasRenderingContext2D::ShadowOffsetYSetter) {
 }
 
 NAN_GETTER(CanvasRenderingContext2D::FillStyleGetter) {
-  CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
-
-  info.GetReturnValue().Set(Nan::New(context->jsFillStyle));
+  // nothing
 }
 
 NAN_SETTER(CanvasRenderingContext2D::FillStyleSetter) {
@@ -607,19 +600,16 @@ NAN_SETTER(CanvasRenderingContext2D::FillStyleSetter) {
     context->fillPaint.setColor(rgba);
     context->fillPaint.setShader(nullptr);
     rgbaToString(fillStyle, rgba);
-    context->jsFillStyle.Reset(JS_STR(fillStyle.c_str()));
   } else if (value->IsObject() && JS_OBJ(JS_OBJ(value)->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("CanvasGradient"))) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
 
     CanvasGradient *canvasGradient = ObjectWrap::Unwrap<CanvasGradient>(Local<Object>::Cast(value));
     context->fillPaint.setShader(canvasGradient->getShader());
-    context->jsFillStyle.Reset(value);
   } else if (value->IsObject() && JS_OBJ(JS_OBJ(value)->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("CanvasPattern"))) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
 
     CanvasPattern *canvasPattern = ObjectWrap::Unwrap<CanvasPattern>(Local<Object>::Cast(value));
     context->fillPaint.setShader(canvasPattern->getShader());
-    context->jsFillStyle.Reset(value);
   } else {
      Nan::ThrowError("fillStyle: invalid arguments");
   }
@@ -627,7 +617,6 @@ NAN_SETTER(CanvasRenderingContext2D::FillStyleSetter) {
 
 NAN_GETTER(CanvasRenderingContext2D::FontGetter) {
   CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
-  // nothing
   SkTypeface *typeface = context->strokePaint.getTypeface();
   if (typeface != nullptr) {
     SkString familyName;
@@ -1697,13 +1686,11 @@ CanvasRenderingContext2D::CanvasRenderingContext2D() :
 {
   // flipCanvasY(surface->getCanvas());
 
-  jsStrokeStyle.Reset(JS_STR("#000000"));
   strokePaint.setTextSize(12);
   strokePaint.setColor(0xff000000);
   strokePaint.setStyle(SkPaint::kStroke_Style);
   strokePaint.setBlendMode(SkBlendMode::kSrcOver);
 
-  jsFillStyle.Reset(JS_STR("#0000ff"));
   fillPaint.setTextSize(12);
   fillPaint.setColor(0xff0000ff);
   fillPaint.setStyle(SkPaint::kFill_Style);
