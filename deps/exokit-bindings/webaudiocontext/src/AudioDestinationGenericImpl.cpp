@@ -5,22 +5,22 @@ namespace webaudio {
 #ifdef ANDROID
 
 void processBuffers(AudioDestinationGenericImpl *audioDestination) {
-  while (audioDestination->outputBuffers.size() == 0 || (audioDestination->isRecording() && audioDestination->inputBuffers.size() > 0)) {
+  while (audioDestination->outputBuffers.size() == 0 || audioDestination->inputBuffers.size() > 0) {
+    std::vector<float> outputBuffer(lab::AudioNode::ProcessingSizeInFrames * 2);
     std::vector<float> *inputBuffer;
     std::vector<float> inputBufferCache;
-    if (audioDestination->isRecording()) {
+    if (audioDestination->inputBuffers.size() > 0) {
       inputBuffer = &audioDestination->inputBuffers.front();
     } else {
       inputBufferCache.resize(lab::AudioNode::ProcessingSizeInFrames);
       inputBuffer = &inputBufferCache;
     }
-    std::vector<float> outputBuffer(lab::AudioNode::ProcessingSizeInFrames * 2);
 
     audioDestination->render(lab::AudioNode::ProcessingSizeInFrames, outputBuffer.data(), inputBuffer->data());
 
     audioDestination->outputBuffers.push_back(std::move(outputBuffer));
 
-    if (audioDestination->isRecording()) {
+    if (audioDestination->inputBuffers.size() > 0) {
       audioDestination->inputBuffers.pop_front();
     }
   }
@@ -28,32 +28,39 @@ void processBuffers(AudioDestinationGenericImpl *audioDestination) {
 
 OutputCallback::OutputCallback(AudioDestinationGenericImpl *audioDestination) : audioDestination(audioDestination) {}
 oboe::DataCallbackResult OutputCallback::onAudioReady(oboe::AudioStream *audioStream, void *audioData, int32_t numFrames) {
+  // output needs data
+
   if (numFrames != lab::AudioNode::ProcessingSizeInFrames) {
     std::cerr << "audio output: failed to match number of frames: " << numFrames << " " << lab::AudioNode::ProcessingSizeInFrames << std::endl;
   }
-  // output needs data
 
   {
     std::lock_guard<std::mutex> lock(audioDestination->mutex);
 
-    std::vector<float> &outputBuffer = audioDestination->outputBuffers.front();
-    if (outputBuffer.size() > 0) {
-      memcpy(audioData, outputBuffer.data(), numFrames*sizeof(float));
-    } else {
-      memset(audioData, 0, numFrames*sizeof(float));
-    }
-    audioDestination->outputBuffers.pop_front();
-
     processBuffers(audioDestination);
+
+    if (audioDestination->outputBuffers.size() > 0) {
+      std::vector<float> &outputBuffer = audioDestination->outputBuffers.front();
+      for (int32_t i = 0; i < numFrames; i++) {
+        ((float *)audioData)[i*2] = outputBuffer[i];
+        ((float *)audioData)[i*2 + 1] = outputBuffer[numFrames + i];
+      }
+      audioDestination->outputBuffers.pop_front();
+    } else {
+      memset(audioData, 0, numFrames*2*sizeof(float));
+    }
   }
+
+  return oboe::DataCallbackResult::Continue;
 }
 
 InputCallback::InputCallback(AudioDestinationGenericImpl *audioDestination) : audioDestination(audioDestination) {}
 oboe::DataCallbackResult InputCallback::onAudioReady(oboe::AudioStream *audioStream, void *audioData, int32_t numFrames) {
+  // input has data
+
   if (numFrames != lab::AudioNode::ProcessingSizeInFrames) {
     std::cerr << "audio input: failed to match number of frames: " << numFrames << " " << lab::AudioNode::ProcessingSizeInFrames << std::endl;
   }
-  // input has data
 
   std::vector<float> inputBuffer(numFrames);
   memcpy(inputBuffer.data(), audioData, numFrames*sizeof(float));
@@ -64,6 +71,8 @@ oboe::DataCallbackResult InputCallback::onAudioReady(oboe::AudioStream *audioStr
     audioDestination->inputBuffers.push_back(std::move(inputBuffer));
     processBuffers(audioDestination);
   }
+
+  return oboe::DataCallbackResult::Continue;
 }
 
 /* void outputErrorCallback(AAudioStream *stream, void *userData, aaudio_result_t error) {
@@ -78,7 +87,9 @@ void inputErrorCallback(AAudioStream *stream, void *userData, aaudio_result_t er
   std::cerr << "audio input error callback: " << error << std::endl;
 } */
 
-AudioDestinationGenericImpl::AudioDestinationGenericImpl(float sampleRate, std::function<void(int numberOfFrames, void *outputBuffer, void *inputBuffer)> renderFn) {
+AudioDestinationGenericImpl::AudioDestinationGenericImpl(float sampleRate, std::function<void(int numberOfFrames, void *outputBuffer, void *inputBuffer)> renderFn) :
+  renderFn(renderFn)
+{
   // output
   {
     oboe::AudioStreamBuilder builder;
@@ -87,7 +98,9 @@ AudioDestinationGenericImpl::AudioDestinationGenericImpl(float sampleRate, std::
     // builder.setPerformanceMode(oboe::PerformanceMode::LowLatency);
     // builder.setSharingMode(oboe::SharingMode::Exclusive);
     builder.setFormat(oboe::AudioFormat::Float);
+    builder.setSampleRate(lab::DefaultSampleRate);
     builder.setChannelCount(oboe::ChannelCount::Stereo);
+    // builder.setBufferCapacityInFrames(lab::AudioNode::ProcessingSizeInFrames * 2);
     builder.setFramesPerCallback(lab::AudioNode::ProcessingSizeInFrames);
     outputCallback = new OutputCallback(this);
     builder.setCallback(outputCallback);
@@ -105,7 +118,9 @@ AudioDestinationGenericImpl::AudioDestinationGenericImpl(float sampleRate, std::
     // builder.setPerformanceMode(oboe::PerformanceMode::LowLatency);
     // builder.setSharingMode(oboe::SharingMode::Exclusive);
     builder.setFormat(oboe::AudioFormat::Float);
+    builder.setSampleRate(lab::DefaultSampleRate);
     builder.setChannelCount(oboe::ChannelCount::Mono);
+    // builder.setBufferCapacityInFrames(lab::AudioNode::ProcessingSizeInFrames * 2);
     builder.setFramesPerCallback(lab::AudioNode::ProcessingSizeInFrames);
     inputCallback = new InputCallback(this);
     builder.setCallback(inputCallback);
@@ -309,7 +324,8 @@ void inputBufferCallback(MLHandle handle, void *callback_context) {
   }
 }
 
-AudioDestinationGenericImpl::AudioDestinationGenericImpl(float sampleRate, std::function<void(int numberOfFrames, void *outputBuffer, void *inputBuffer)> renderFn) : renderFn(renderFn)
+AudioDestinationGenericImpl::AudioDestinationGenericImpl(float sampleRate, std::function<void(int numberOfFrames, void *outputBuffer, void *inputBuffer)> renderFn) :
+  renderFn(renderFn)
 {
     {
       outputAudioBufferFormat.bits_per_sample = 16;
