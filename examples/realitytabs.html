@@ -2070,7 +2070,7 @@ function animate(time, frame) {
 
                   const gamepads = navigator.getGamepads();
                   const gamepad = gamepads[i];
-                  if (gamepad.buttons[1].pressed) {
+                  if (gamepad && gamepad.buttons[1].pressed) {
                     const textX = x - cursorWidth;
                     let closestIndex = -1;
                     let closestDistance = Infinity;
@@ -2106,7 +2106,7 @@ function animate(time, frame) {
 
                   const gamepads = navigator.getGamepads();
                   const gamepad = gamepads[i];
-                  if (gamepad.buttons[1].pressed) {
+                  if (gamepad && gamepad.buttons[1].pressed) {
                     _closeRig();
                   }
 
@@ -2146,7 +2146,7 @@ function animate(time, frame) {
 
                 const gamepads = navigator.getGamepads();
                 const gamepad = gamepads[i];
-                if (gamepad.buttons[1].pressed) {
+                if (gamepad && gamepad.buttons[1].pressed) {
                   const optionX = Math.floor(x/(menuWidth*0.2));
                   if (optionX === 0) {
                     menuMesh.optionsMesh.d = 3;
@@ -2230,18 +2230,20 @@ function animate(time, frame) {
 
                         const gamepads = navigator.getGamepads();
                         const gamepad = gamepads[i];
-                        const pressed = gamepad.buttons[1].pressed;
-                        const lastPressed = lastPresseds[i];
-                        if (pressed && !lastPressed) {
-                          const tab = tabs[menuMesh.listMesh.scrollIndex + j];
-                          _closeTab(tab);
+                        if (gamepad) {
+                          const pressed = gamepad.buttons[1].pressed;
+                          const lastPressed = lastPresseds[i];
+                          if (pressed && !lastPressed) {
+                            const tab = tabs[menuMesh.listMesh.scrollIndex + j];
+                            _closeTab(tab);
 
-                          if (focusedTab === tab) {
-                            focusedTab = rig.menuMesh.urlMesh;
+                            if (focusedTab === tab) {
+                              focusedTab = rig.menuMesh.urlMesh;
+                            }
+
+                            rig.menuMesh.urlMesh.updateText();
+                            _updateRigLists();
                           }
-
-                          rig.menuMesh.urlMesh.updateText();
-                          _updateRigLists();
                         }
 
                         intersectionSpecs[i] = null;
@@ -2258,21 +2260,23 @@ function animate(time, frame) {
 
                         const gamepads = navigator.getGamepads();
                         const gamepad = gamepads[i];
-                        const pressed = gamepad.buttons[1].pressed;
-                        const lastPressed = lastPresseds[i];
-                        if (pressed && !lastPressed) {
-                          const tab = tabs[menuMesh.listMesh.scrollIndex + j];
-                          const {iframe} = tab;
-                          if (iframe.d === 3) {
-                            window.browser.devTools.requestDevTools(iframe.contentWindow, document)
-                              .then(devTools => {
-                                const {position, quaternion} = _getFrontOfCamera();
-                                // position.add(localVector.set(0, -0.3, 0).applyQuaternion(quaternion));
-                                _addTab(devTools.getIframe(), position, quaternion, undefined, 2);
-                              })
-                              .catch(err => {
-                                console.warn(err.stack);
-                              });
+                        if (gamepad) {
+                          const pressed = gamepad.buttons[1].pressed;
+                          const lastPressed = lastPresseds[i];
+                          if (pressed && !lastPressed) {
+                            const tab = tabs[menuMesh.listMesh.scrollIndex + j];
+                            const {iframe} = tab;
+                            if (iframe.d === 3) {
+                              window.browser.devTools.requestDevTools(iframe.contentWindow, document)
+                                .then(devTools => {
+                                  const {position, quaternion} = _getFrontOfCamera();
+                                  // position.add(localVector.set(0, -0.3, 0).applyQuaternion(quaternion));
+                                  _addTab(devTools.getIframe(), position, quaternion, undefined, 2);
+                                })
+                                .catch(err => {
+                                  console.warn(err.stack);
+                                });
+                            }
                           }
                         }
 
@@ -2290,23 +2294,25 @@ function animate(time, frame) {
 
                         const gamepads = navigator.getGamepads();
                         const gamepad = gamepads[i];
-                        const pressed = gamepad.buttons[1].pressed;
-                        const lastPressed = lastPresseds[i];
-                        if (pressed && !lastPressed) {
-                          const tab = tabs[menuMesh.listMesh.scrollIndex + j];
-                          moves[i] = tab;
+                        if (gamepad) {
+                          const pressed = gamepad.buttons[1].pressed;
+                          const lastPressed = lastPresseds[i];
+                          if (pressed && !lastPressed) {
+                            const tab = tabs[menuMesh.listMesh.scrollIndex + j];
+                            moves[i] = tab;
 
-                          localVector.fromArray(gamepad.pose.position);
-                          localQuaternion.fromArray(gamepad.pose.orientation);
-                          const distance = localVector
-                            .distanceTo(
-                              localVector2
-                                .fromArray(tab.iframe.xrOffset.position)
-                            );
-                          scrollFactors[i] = distance;
+                            localVector.fromArray(gamepad.pose.position);
+                            localQuaternion.fromArray(gamepad.pose.orientation);
+                            const distance = localVector
+                              .distanceTo(
+                                localVector2
+                                  .fromArray(tab.iframe.xrOffset.position)
+                              );
+                            scrollFactors[i] = distance;
 
-                          const scale = tab.iframe.xrOffset.scale[0];
-                          scaleFactors[i] = scale;
+                            const scale = tab.iframe.xrOffset.scale[0];
+                            scaleFactors[i] = scale;
+                          }
                         }
 
                         intersectionSpecs[i] = null;
@@ -2323,13 +2329,15 @@ function animate(time, frame) {
 
                         const gamepads = navigator.getGamepads();
                         const gamepad = gamepads[i];
-                        const pressed = gamepad.buttons[1].pressed;
-                        const lastPressed = lastPresseds[i];
-                        if (pressed && !lastPressed) {
-                          focusedTab = tabs[menuMesh.listMesh.scrollIndex + j];
+                        if (gamepad) {
+                          const pressed = gamepad.buttons[1].pressed;
+                          const lastPressed = lastPresseds[i];
+                          if (pressed && !lastPressed) {
+                            focusedTab = tabs[menuMesh.listMesh.scrollIndex + j];
 
-                          menuMesh.urlMesh.updateText();
-                          menuMesh.listMesh.updateList();
+                            menuMesh.urlMesh.updateText();
+                            menuMesh.listMesh.updateList();
+                          }
                         }
 
                         intersectionSpecs[i] = null;
@@ -2354,20 +2362,22 @@ function animate(time, frame) {
 
                       const gamepads = navigator.getGamepads();
                       const gamepad = gamepads[i];
-                      const pressed = gamepad.buttons[1].pressed;
-                      const lastPressed = lastPresseds[i];
-                      if (pressed && !lastPressed) {
-                        const link = localLinks[j];
-                        const {url} = link;
+                      if (gamepad) {
+                        const pressed = gamepad.buttons[1].pressed;
+                        const lastPressed = lastPresseds[i];
+                        if (pressed && !lastPressed) {
+                          const link = localLinks[j];
+                          const {url} = link;
 
-                        const {position, quaternion} = _getFrontOfCamera();
-                        _openUrl(url, position, quaternion, undefined, menuMesh.optionsMesh.d);
+                          const {position, quaternion} = _getFrontOfCamera();
+                          _openUrl(url, position, quaternion, undefined, menuMesh.optionsMesh.d);
 
-                        menuMesh.optionsMesh.list = 'tabs';
-                        menuMesh.optionsMesh.updateOptions();
-                        menuMesh.listMesh.scrollIndex = 0;
+                          menuMesh.optionsMesh.list = 'tabs';
+                          menuMesh.optionsMesh.updateOptions();
+                          menuMesh.listMesh.scrollIndex = 0;
 
-                        _updateRigLists();
+                          _updateRigLists();
+                        }
                       }
 
                       intersectionSpecs[i] = null;
@@ -2392,13 +2402,15 @@ function animate(time, frame) {
 
                         const gamepads = navigator.getGamepads();
                         const gamepad = gamepads[i];
-                        const pressed = gamepad.buttons[1].pressed;
-                        const lastPressed = lastPresseds[i];
-                        if (pressed && !lastPressed) {
-                          const server = localServers[j];
-                          const {name} = server;
+                        if (gamepad) {
+                          const pressed = gamepad.buttons[1].pressed;
+                          const lastPressed = lastPresseds[i];
+                          if (pressed && !lastPressed) {
+                            const server = localServers[j];
+                            const {name} = server;
 
-                          _openServer(`${registryUrl}/servers/${name}`, true);
+                            _openServer(`${registryUrl}/servers/${name}`, true);
+                          }
                         }
 
                         intersectionSpecs[i] = null;
@@ -2421,10 +2433,12 @@ function animate(time, frame) {
 
                         const gamepads = navigator.getGamepads();
                         const gamepad = gamepads[i];
-                        const pressed = gamepad.buttons[1].pressed;
-                        const lastPressed = lastPresseds[i];
-                        if (pressed && !lastPressed) {
-                          _closeServer();
+                        if (gamepad) {
+                          const pressed = gamepad.buttons[1].pressed;
+                          const lastPressed = lastPresseds[i];
+                          if (pressed && !lastPressed) {
+                            _closeServer();
+                          }
                         }
 
                         intersectionSpecs[i] = null;
@@ -2445,14 +2459,16 @@ function animate(time, frame) {
 
                 const gamepads = navigator.getGamepads();
                 const gamepad = gamepads[i];
-                const pressed = gamepad.buttons[1].pressed;
-                if (pressed) {
-                  const list = menuMesh.optionsMesh.list === 'tabs' ? tabs : links;
-                  menuMesh.listMesh.scrollIndex = Math.floor(yFactor*list.length);
-                  if (menuMesh.listMesh.scrollIndex >= list.length) {
-                    menuMesh.listMesh.scrollIndex = list.length;
+                if (gamepad) {
+                  const pressed = gamepad.buttons[1].pressed;
+                  if (pressed) {
+                    const list = menuMesh.optionsMesh.list === 'tabs' ? tabs : links;
+                    menuMesh.listMesh.scrollIndex = Math.floor(yFactor*list.length);
+                    if (menuMesh.listMesh.scrollIndex >= list.length) {
+                      menuMesh.listMesh.scrollIndex = list.length;
+                    }
+                    menuMesh.listMesh.updateList();
                   }
-                  menuMesh.listMesh.updateList();
                 }
 
                 intersectionSpecs[i] = null;
@@ -2475,37 +2491,40 @@ function animate(time, frame) {
       }
 
       const gamepad = navigator.getGamepads()[i];
-      lastPresseds[i] = gamepad.buttons[1].pressed;
+      if (gamepad) {
+        const pressed = gamepad.buttons[1].pressed;
+        const padPressed = gamepad.buttons[0].pressed;
+        const padTouched = gamepad.buttons[0].touched;
 
-      const padTouched = gamepad.buttons[0].touched;
-      const {axes} = gamepad;
-      const lastPadTouched = lastPadToucheds[i];
-      const lastAxis = lastAxes[i];
-      if (padTouched && lastPadTouched && rig.open && !moves[i]) {
-        const dx = axes[0] - lastAxis[0];
-        const dy = axes[1] - lastAxis[1];
+        const {axes} = gamepad;
+        const lastPadTouched = lastPadToucheds[i];
+        const lastAxis = lastAxes[i];
+        if (padTouched && lastPadTouched && rig.open && !moves[i]) {
+          const dx = axes[0] - lastAxis[0];
+          const dy = axes[1] - lastAxis[1];
 
-        rig.menuMesh.listMesh.updateWheel(dx*4, dy*4);
-      }
-      lastPadToucheds[i] = padTouched;
+          rig.menuMesh.listMesh.updateWheel(dx*4, dy*4);
+        }
 
-      const padPressed = gamepad.buttons[0].pressed;
-      if (padPressed && moves[i]) {
-        if (padPressed) {
-          if (gamepad.axes[1] > 0.5) {
-            scrollFactors[i] += 1/20;
-          } else if (gamepad.axes[1] < -0.5) {
-            scrollFactors[i] -= 1/20;
-          } else if (gamepad.axes[0] > 0.5) {
-            scaleFactors[i] = Math.min(scaleFactors[i] *= 1.02, 100);
-          } else if (gamepad.axes[0] < -0.5) {
-            scaleFactors[i] = Math.max(scaleFactors[i] /= 1.02, 0.01);
+        if (padPressed && moves[i]) {
+          if (padPressed) {
+            if (gamepad.axes[1] > 0.5) {
+              scrollFactors[i] += 1/20;
+            } else if (gamepad.axes[1] < -0.5) {
+              scrollFactors[i] -= 1/20;
+            } else if (gamepad.axes[0] > 0.5) {
+              scaleFactors[i] = Math.min(scaleFactors[i] *= 1.02, 100);
+            } else if (gamepad.axes[0] < -0.5) {
+              scaleFactors[i] = Math.max(scaleFactors[i] /= 1.02, 0.01);
+            }
           }
         }
-      }
 
-      lastAxis[0] = axes[0];
-      lastAxis[1] = axes[1];
+        lastPresseds[i] = pressed;
+        lastPadToucheds[i] = padTouched;
+        lastAxis[0] = axes[0];
+        lastAxis[1] = axes[1];
+      }
     }
   };
   _updateIntersections();
