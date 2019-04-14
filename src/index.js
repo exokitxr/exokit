@@ -354,7 +354,7 @@ const localPositionArray3 = new Float32Array(3);
 const localQuaternionArray4 = new Float32Array(4);
 
 // XXX oculus mobile
-const oculusMobilePoseFloat32Array = new Float32Array(3+4+1+4+16*(2+2+2)+2);
+const oculusMobilePoseFloat32Array = new Float32Array(3 + 4 + 1 + 4 + (16*2) + (16*2) + (16+5) + (16+5));
 
 const handEntrySize = (1 + (5 * 5)) * (3 + 3);
 const transformArray = new Float32Array(7 * 2);
