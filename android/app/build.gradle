@@ -45,13 +45,13 @@ android {
 }
 
 
-dependencies {
+/* dependencies {
     implementation 'com.google.vr:sdk-base:1.190.0'
 
     // Obj - a simple Wavefront OBJ file loader
     // https://github.com/javagl/Obj
     implementation 'de.javagl:obj:0.2.1'
-}
+} */
 
 android {
   sourceSets {
