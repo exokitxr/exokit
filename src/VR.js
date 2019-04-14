@@ -319,6 +319,7 @@ class FakeVRDisplay extends VRDisplay {
   constructor(window) {
     super('FAKE');
 
+    this.window = window;
     this.position = new THREE.Vector3();
     this.quaternion = new THREE.Quaternion();
     this.gamepads = [
