@@ -41,7 +41,7 @@ public:
   int outputIndex = 0;
   int inputIndex = 0;
   std::function<void(int numberOfFrames, void *outputBuffer, void *inputBuffer)> renderFn;
-  bool m_isRecording;
+  bool m_isRecording = false;
 };
 
 class OutputCallback : public oboe::AudioStreamCallback {
@@ -92,7 +92,7 @@ public:
   // std::vector<float> outputBuffer;
   // std::vector<float> inputBuffer;
   std::function<void(int numberOfFrames, void *outputBuffer, void *inputBuffer)> renderFn;
-  bool m_isRecording;
+  bool m_isRecording = false;
 };
 
 #endif
