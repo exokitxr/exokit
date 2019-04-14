@@ -493,7 +493,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       GlobalContext.fakeVrDisplayEnabled = true;
       return window[symbols.mrDisplaysSymbol].fakeVrDisplay;
     },
-    getGamepads: getGamepads(window),
+    getGamepads: getGamepads.bind(null, window),
     clipboard:{
       read:() => Promise.resolve(), // Not implemented yet
       readText: () => new Promise(resolve => {
@@ -1333,7 +1333,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       GlobalContext.vrPresentState.layers = layers;
     };
 
-    const openVRDevice = new XR.XRDevice('OpenVR');
+    const openVRDevice = new XR.XRDevice('OpenVR', window);
     openVRDevice.onrequestpresent = layers => nativeOpenVR.requestPresent(layers);
     openVRDevice.onexitpresent = () => nativeOpenVR.exitPresent();
     openVRDevice.onrequestanimationframe = _makeRequestAnimationFrame(window);
@@ -1352,7 +1352,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       GlobalContext.vrPresentState.layers = layers;
     };
 
-    const oculusVRDevice = new XR.XRDevice('OculusVR');
+    const oculusVRDevice = new XR.XRDevice('OculusVR', window);
     oculusVRDevice.onrequestpresent = layers => nativeOculusVR.requestPresent(layers);
     oculusVRDevice.onexitpresent = () => nativeOculusVR.exitPresent();
     oculusVRDevice.onrequestanimationframe = _makeRequestAnimationFrame(window);
@@ -1380,7 +1380,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       GlobalContext.mlPresentState.layers = layers;
     };
 
-    const magicLeapARDevice = new XR.XRDevice('AR');
+    const magicLeapARDevice = new XR.XRDevice('AR', window);
     magicLeapARDevice.onrequestpresent = layers => nativeMl.requestPresent(layers);
     magicLeapARDevice.onexitpresent = () => nativeMl.exitPresent();
     magicLeapARDevice.onrequestanimationframe = _makeRequestAnimationFrame(window);

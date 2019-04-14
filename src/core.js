@@ -1,93 +1,29 @@
-const events = require('events');
-const {EventEmitter} = events;
-const path = require('path');
-const fs = require('fs');
 const url = require('url');
-const http = require('http');
-const https = require('https');
-const ws = require('ws');
-const os = require('os');
-const util = require('util');
 const {URL} = url;
-const {TextEncoder, TextDecoder} = util;
-const {performance} = require('perf_hooks');
-
-const mkdirp = require('mkdirp');
 
 const {_makeWindowWithDocument} = require('./Window.js');
-const {FileReader} = require('./File.js');
-
-const {XMLHttpRequest: XMLHttpRequestBase, FormData} = require('window-xhr');
 
 const fetch = require('window-fetch');
-const {Request, Response, Headers, Blob} = fetch;
 
-const WebSocket = require('ws/lib/websocket');
-
-const nativeWorker = require('worker-native');
-
-const {LocalStorage} = require('node-localstorage');
-const indexedDB = require('fake-indexeddb');
-const parseXml = require('@rgrove/parse-xml');
 const THREE = require('../lib/three-min.js');
-const {
-  MRDisplay,
-  VRDisplay,
-  FakeVRDisplay,
-  VRFrameData,
-  VRPose,
-  VRStageParameters,
-  Gamepad,
-  GamepadButton,
-  getGamepads,
-} = require('./VR.js');
 
-const {defaultCanvasSize} = require('./constants');
 const GlobalContext = require('./GlobalContext');
 const symbols = require('./symbols');
-const {urls} = require('./urls');
 
-GlobalContext.args = {};
-GlobalContext.version = '';
-
-// Class imports.
-const {_parseDocument, _parseDocumentAst, Document, DocumentFragment, DocumentType, DOMImplementation, initDocument} = require('./Document');
 const {
   Element,
   HTMLElement,
-  HTMLBodyElement,
-  HTMLAnchorElement,
-  HTMLStyleElement,
-  HTMLScriptElement,
-  HTMLLinkElement,
-  HTMLImageElement,
-  HTMLAudioElement,
-  HTMLVideoElement,
-  HTMLSourceElement,
-  HTMLIFrameElement,
-  SVGElement,
-  HTMLCanvasElement,
-  HTMLTemplateElement,
-  createImageBitmap,
-  DOMRect,
-  DOMPoint,
   Node,
   NodeList,
   Text,
   Comment,
-  HTMLCollection,
 } = require('./DOM');
-const {CustomEvent, DragEvent, ErrorEvent, Event, EventTarget, KeyboardEvent, MessageEvent, MouseEvent, WheelEvent, PromiseRejectionEvent} = require('./Event');
-const {History} = require('./History');
-const {Location} = require('./Location');
-const {XMLHttpRequest} = require('./Network');
-const XR = require('./XR');
-const DevTools = require('./DevTools');
+const {Event, EventTarget} = require('./Event');
 const utils = require('./utils');
-const {_elementGetter, _elementSetter, _download} = utils;
+const {_download} = utils;
 
-const btoa = s => Buffer.from(s, 'binary').toString('base64');
-const atob = s => Buffer.from(s, 'base64').toString('binary');
+GlobalContext.args = {};
+GlobalContext.version = '';
 
 const maxParallelResources = 8;
 class Resource {

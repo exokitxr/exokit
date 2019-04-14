@@ -319,6 +319,7 @@ class FakeVRDisplay extends VRDisplay {
   constructor(window) {
     super('FAKE');
 
+    this.window = window;
     this.position = new THREE.Vector3();
     this.quaternion = new THREE.Quaternion();
     this.gamepads = [
@@ -610,28 +611,29 @@ class FakeVRDisplay extends VRDisplay {
 
 const createVRDisplay = () => new FakeVRDisplay();
 
-const getGamepads = function(window) {
-
-  let gamepads = null;
-  // Gamepad Vendor IDs
-  const oculusVRIdLeft = 'Oculus Touch (Left)';
-  const oculusVRIdRight = 'Oculus Touch (Right)';
-  const openVRId = 'OpenVR Gamepad';
-
-  return function () {
-    if (!GlobalContext.vrPresentState.isPresenting) { return []; }
+const oculusVRIdLeft = 'Oculus Touch (Left)';
+const oculusVRIdRight = 'Oculus Touch (Right)';
+const openVRId = 'OpenVR Gamepad';
+let gamepads = null;
+function getGamepads(window) {
+  const {oculusVRDisplay, magicLeapARDisplay} = window[symbols.mrDisplaysSymbol];
+  if (
+    GlobalContext.fakeVrDisplayEnabled ||
+    oculusVRDisplay.isPresenting ||
+    magicLeapARDisplay.isPresenting
+  ) {
     if (!gamepads) {
-      const oculusVRDisplay = window[symbols.mrDisplaysSymbol].oculusVRDisplay;
-      const oculusPresenting = oculusVRDisplay && oculusVRDisplay.isPresenting;
-      const idLeft = oculusPresenting ? oculusVRIdLeft : openVRId;
-      const idRight = oculusPresenting ? oculusVRIdRight : openVRId;
+      const idLeft = oculusVRDisplay.isPresenting ? oculusVRIdLeft : openVRId;
+      const idRight = oculusVRDisplay.isPresenting ? oculusVRIdRight : openVRId;
       gamepads = [
         new Gamepad('left', 0, idLeft),
         new Gamepad('right', 1, idRight),
       ];
     }
     return gamepads;
-  };
+  } else {
+    return [];
+  }
 };
 GlobalContext.getGamepads = getGamepads;
 

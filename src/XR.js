@@ -42,8 +42,9 @@ class XR extends EventEmitter {
 module.exports.XR = XR;
 
 class XRDevice {
-  constructor(name = 'VR') {
+  constructor(name, window) {
     this.name = name; // non-standard
+    this.window = window; // non-standard
     this.session = null; // non-standard
     
     this._layers = [];
@@ -154,7 +155,7 @@ class XRSession extends EventTarget {
     return Promise.resolve();
   }
   update() {
-    const gamepads = GlobalContext.getGamepads();
+    const gamepads = GlobalContext.getGamepads(this.device.window);
     
     for (let i = 0; i < gamepads.length; i++) {
       const gamepad = gamepads[i];
