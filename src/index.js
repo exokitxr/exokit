@@ -1411,10 +1411,6 @@ const _startRenderLoop = () => {
           rightGamepad.buttons[2].value[0] = localGamepadArray[6]; // grip
         }
       } else if (vrPresentState.compositor) {
-        _normalizeMatrixArray(localFloat32Array);
-        _normalizeMatrixArray(localFloat32Array2);
-        _normalizeMatrixArray(localFloat32Array3);
-
         // wait for frame
         await new Promise((accept, reject) => {
           vrPresentState.compositor.RequestGetPoses(
@@ -1428,10 +1424,6 @@ const _startRenderLoop = () => {
         }
 
         vrPresentState.hasPose = true;
-
-        _normalizeMatrixArray(localFloat32Array);
-        _normalizeMatrixArray(localFloat32Array2);
-        _normalizeMatrixArray(localFloat32Array3);
 
         // build xr state
         const hmdMatrix = localMatrix.fromArray(localFloat32HmdPoseArray);
