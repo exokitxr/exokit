@@ -1384,7 +1384,7 @@ const _startRenderLoop = () => {
           // Input
           vrPresentState.oculusSystem.GetControllersInputState(0, localGamepadArray);
 
-          leftGamepad.connected[0] = localGamepadArray[0] == 1;
+          leftGamepad.connected[0] = localGamepadArray[0];
 
           // Pressed
           leftGamepad.buttons[0].pressed[0] = localGamepadArray[3]; // thumbstick
@@ -1424,7 +1424,7 @@ const _startRenderLoop = () => {
           // Input
           vrPresentState.oculusSystem.GetControllersInputState(1, localGamepadArray);
 
-          rightGamepad.connected[0] = localGamepadArray[0] == 1;
+          rightGamepad.connected[0] = localGamepadArray[0];
 
           // pressed
           rightGamepad.buttons[0].pressed[0] = localGamepadArray[3]; // thumbstick
@@ -1522,7 +1522,7 @@ const _startRenderLoop = () => {
         const _loadGamepad = i => {
           const gamepad = xrState.gamepads[i];
           if (vrPresentState.system.GetControllerState(i, localGamepadArray)) {
-            gamepad.connected[0] = true;
+            gamepad.connected[0] = 1;
 
             localMatrix.fromArray(localFloat32GamepadPoseArrays[i]);
             localMatrix.decompose(localVector, localQuaternion, localVector2);
@@ -1557,14 +1557,14 @@ const _startRenderLoop = () => {
           const tracker = xrState.gamepads[2 + i];
           const trackerPoseArray = localFloat32TrackerPoseArrays[i];
           if (!isNaN(trackerPoseArray[0])) {
-            tracker.connected[0] = true;
+            tracker.connected[0] = 1;
 
             localMatrix.fromArray(trackerPoseArray);
             localMatrix.decompose(localVector, localQuaternion, localVector2);
             localVector.toArray(tracker.position);
             localQuaternion.toArray(tracker.orientation);
           } else {
-            tracker.connected[0] = false;
+            tracker.connected[0] = 0;
           }
         };
         for (let i = 0; i < maxNumTrackers; i++) {
