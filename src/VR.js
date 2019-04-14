@@ -614,11 +614,12 @@ const oculusVRIdRight = 'Oculus Touch (Right)';
 const openVRId = 'OpenVR Gamepad';
 let gamepads = null;
 function getGamepads(window) {
-  const {oculusVRDisplay, openVRDisplay, magicLeapARDisplay} = window[symbols.mrDisplaysSymbol];
+  const {oculusVRDisplay, openVRDisplay, oculusMobileVrDisplay, magicLeapARDisplay} = window[symbols.mrDisplaysSymbol];
   if (
     GlobalContext.fakeVrDisplayEnabled ||
     oculusVRDisplay.isPresenting ||
     openVRDisplay.isPresenting ||
+    oculusMobileVrDisplay.isPresenting ||
     magicLeapARDisplay.isPresenting
   ) {
     if (!gamepads) {
