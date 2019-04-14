@@ -1778,10 +1778,10 @@ const _startRenderLoop = () => {
           localQuaternion.toArray(leftGamepad.orientation);
 
           leftGamepad.buttons[1].value[0] = buttonsFloat32Array[0]; // trigger
-          leftGamepad.buttons[1].pressed[0] = rightGamepad.buttons[1].touched[0] = buttonsFloat32Array[0] ? 1 : 0;
+          leftGamepad.buttons[1].pressed[0] = leftGamepad.buttons[1].touched[0] = buttonsFloat32Array[0] ? 1 : 0;
 
           leftGamepad.buttons[2].value[0] = buttonsFloat32Array[1]; // grip
-          leftGamepad.buttons[2].pressed[0] = rightGamepad.buttons[2].touched[0] = buttonsFloat32Array[1] ? 1 : 0;
+          leftGamepad.buttons[2].pressed[0] = leftGamepad.buttons[2].touched[0] = buttonsFloat32Array[1] ? 1 : 0;
 
           leftGamepad.axes[0] = buttonsFloat32Array[2];
           leftGamepad.axes[1] = buttonsFloat32Array[3];
