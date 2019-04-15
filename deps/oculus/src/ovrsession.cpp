@@ -328,7 +328,7 @@ NAN_METHOD(OVRSession::GetControllersInputState) {
     return;
   }
 
-  uint32_t hand = TO_UINT32(info[0])
+  uint32_t hand = TO_UINT32(info[0]);
   Local<Float32Array> buttons = Local<Float32Array>::Cast(info[1]);
   buttons->Set(0, Number::New(Isolate::GetCurrent(), std::numeric_limits<float>::quiet_NaN()));
 
