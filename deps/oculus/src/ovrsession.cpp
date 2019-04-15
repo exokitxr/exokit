@@ -328,7 +328,7 @@ NAN_METHOD(OVRSession::GetControllersInputState) {
     return;
   }
 
-  uint32_t hand = info[0]->Uint32Value();
+  uint32_t hand = TO_UINT32(info[0])
   Local<Float32Array> buttons = Local<Float32Array>::Cast(info[1]);
   buttons->Set(0, Number::New(Isolate::GetCurrent(), std::numeric_limits<float>::quiet_NaN()));
 
@@ -420,9 +420,9 @@ NAN_METHOD(OVRSession::Submit)
   }
 
   WebGLRenderingContext *gl = node::ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
-  GLuint fboIdSource = info[1]->Uint32Value();
-  int width = info[2]->Uint32Value();
-  int height = info[3]->Uint32Value();
+  GLuint fboIdSource = TO_UINT32(info[1]);
+  int width = TO_INT32(info[2]);
+  int height = TO_UINT32(info[3]);
 
   ovrPosef *eyeRenderPoses = &*ObjectWrap::Unwrap<OVRSession>(info.Holder())->eyeRenderPoses;
   int *frameIndex = &ObjectWrap::Unwrap<OVRSession>(info.Holder())->frameIndex;
