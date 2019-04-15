@@ -37,7 +37,7 @@ Exokit Engine cuts the fat off of the old-school, deprecated browsers.
 
 With less overhead, and the power of Javascript, we achieve 2-3 times faster speeds compared to old-school browsers.
 
-Simply put, Exokit Engine does **less** work then Chrome and Firefox.
+Simply put, Exokit Engine does **less** work than Chrome and Firefox.
 
 Exokit Engine gives VR/AR developers back their maximum hardware performance.
 
