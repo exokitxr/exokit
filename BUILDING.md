@@ -36,7 +36,7 @@ Exokit is a node module. The core is written in Javascript, with native bindings
 
 ## Magic Leap
 
-**Requirements**: Windows Subsystem for Linux, Ubuntu Bash, Node.js 11.6.0 for Windows, Visual studio 2017, Python 2, Python 3
+**Requirements**: Windows Subsystem for Linux, Ubuntu Bash, Node.js 11.6.0 for Windows, Python 2, Python 3
 
 > *NOTE: Due to combined usage of Ubuntu and Windows tools, you must check out Exokit to somewhere reachable from both; the easiest way is to do your `git clone` inside Ubuntu bash, since for example Ubuntu can reach `C:\exokit` as `/mnt/c/exokit`. (included in instructions below)*
 
