@@ -40,9 +40,7 @@ Local<Object> makeOculusVR() {
   v8::EscapableHandleScope scope(Isolate::GetCurrent());
 
   Local<Object> exports = Object::New(Isolate::GetCurrent());
-
-  exports->Set(Nan::New("Oculus_Init").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(Oculus_Init)->GetFunction());
-  exports->Set(Nan::New("Oculus_IsHmdPresent").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(Oculus_IsHmdPresent)->GetFunction());
-
+  Nan::SetMethod(exports, "Oculus_Init", Oculus_Init);
+  Nan::SetMethod(exports, "Oculus_IsHmdPresent", Oculus_IsHmdPresent);
   return scope.Escape(exports);
 }
