@@ -372,6 +372,7 @@ const vrPresentState = {
   vrContext: null,
   isPresenting: false,
   system: null,
+  oculusSystem: null,
   compositor: null,
   glContext: null,
   msFbo: null,
