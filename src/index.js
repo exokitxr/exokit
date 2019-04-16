@@ -328,6 +328,10 @@ nativeBindings.nativeCanvasRenderingContext2D.onconstruct = (ctx, canvas) => {
 };
 
 const zeroMatrix = new THREE.Matrix4();
+const localFloat32Array = zeroMatrix.toArray(new Float32Array(16));
+const localFloat32Array2 = zeroMatrix.toArray(new Float32Array(16));
+const localFloat32Array3 = zeroMatrix.toArray(new Float32Array(16));
+const localFloat32Array4 = new Float32Array(16);
 const localFloat32PoseArray = new Float32Array(16*(1+2+maxNumTrackers));
 const localFloat32HmdPoseArray = new Float32Array(localFloat32PoseArray.buffer, localFloat32PoseArray.byteOffset + 0*Float32Array.BYTES_PER_ELEMENT*16, 16);
 const localFloat32GamepadPoseArrays = [
