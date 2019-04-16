@@ -41,12 +41,12 @@ public:
   ovrMobile *ovrState;
   bool running;
   ANativeWindow *androidNativeWindow;
-  SwapChain swapChain;
+  SwapChain swapChains[2];
   int swapChainMetrics[2];
   WebGLRenderingContext *swapChainGl;
   int swapChainLength;
   int swapChainIndex;
-  GLuint fbo;
+  GLuint fbos[2];
   GLuint msFbo;
   GLuint msColorTex;
   GLuint msDepthStencilTex;
