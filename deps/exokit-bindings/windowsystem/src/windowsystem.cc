@@ -541,7 +541,7 @@ NAN_METHOD(DestroyRenderTarget) {
 }
 
 void ComposeLayer(ComposeSpec *composeSpec, PlaneSpec *planeSpec, const LayerSpec &layer) {
-  if (layer.layerType == IFRAME_3D || layer.layerType == RAW_CANVAS) {
+  if (layer.layerType == LayerType::IFRAME_3D || layer.layerType == LayerType::RAW_CANVAS) {
     glBindVertexArray(composeSpec->composeVao);
     glUseProgram(composeSpec->composeProgram);
 
@@ -588,25 +588,26 @@ void ComposeLayer(ComposeSpec *composeSpec, PlaneSpec *planeSpec, const LayerSpe
 }
 
 void ComposeLayer(ComposeSpec *composeSpec, PlaneSpec *planeSpec, GLuint *fbos, const LayerSpec &layer) {
-  if (layer.layerType == IFRAME_3D || layer.layerType == RAW_CANVAS) {
+  if (layer.layerType == LayerType::IFRAME_3D || layer.layerType == LayerType::RAW_CANVAS) {
+    glBindVertexArray(composeSpec->composeVao);
+    glUseProgram(composeSpec->composeProgram);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, layer.msTex);
+    glUniform1i(composeSpec->msTexLocation, 0);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, layer.msDepthTex);
+    glUniform1i(composeSpec->msDepthTexLocation, 1);
+
+    glViewport(0, 0, layer.width/2, layer.height);
+    // glScissor(0, 0, width, height);
+
     for (size_t i = 0; i < 2; i++) {
       glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbos[i]);
 
-      glBindVertexArray(composeSpec->composeVao);
-      glUseProgram(composeSpec->composeProgram);
-
-      glActiveTexture(GL_TEXTURE0);
-      glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, layer.msTex);
-      glUniform1i(composeSpec->msTexLocation, 0);
-
-      glActiveTexture(GL_TEXTURE1);
-      glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, layer.msDepthTex);
-      glUniform1i(composeSpec->msDepthTexLocation, 1);
-
       glUniform4f(composeSpec->texSizeLocation, i*(layer.width/2), 0, layer.width/2, layer.height);
 
-      glViewport(0, 0, layer.width/2, layer.height);
-      // glScissor(0, 0, width, height);
       glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
     }
   } else {
@@ -752,7 +753,7 @@ NAN_METHOD(ComposeLayers) {
             int height = TO_INT32(JS_OBJ(framebufferObj->Get(JS_STR("canvas")))->Get(JS_STR("height")));
 
             layers.push_back(LayerSpec{
-              LayerType::IFRAME_3D,
+              layerType,
               width,
               height,
               msTex,
@@ -786,7 +787,7 @@ NAN_METHOD(ComposeLayers) {
             int height = TO_INT32(browserObj->Get(JS_STR("height")));
 
             layers.push_back(LayerSpec{
-              LayerType::IFRAME_2D,
+              layerType,
               width,
               height,
               0,
@@ -814,7 +815,7 @@ NAN_METHOD(ComposeLayers) {
             int height = TO_INT32(elementObj->Get(JS_STR("height")));
 
             layers.push_back(LayerSpec{
-              LayerType::RAW_CANVAS,
+              layerType,
               width,
               height,
               msTex,
