@@ -1,6 +1,8 @@
 #ifndef _OCULUS_MOBILE_H_
 #define _OCULUS_MOBILE_H_
 
+#include <unistd.h>
+
 #include <v8.h>
 #include <nan.h>
 

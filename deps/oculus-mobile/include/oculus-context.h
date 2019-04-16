@@ -10,11 +10,16 @@ namespace oculusmobile {
 
 extern ovrJava java;
 
+typedef struct SwapChain {
+  ovrTextureSwapChain *Color;
+  ovrTextureSwapChain *Depth;
+} EyeSwapChain;
+
 class OculusMobileContext : public ObjectWrap {
 public:
   static Local<Function> Initialize();
 
-  void RequestPresent(int width, int height);
+  void RequestPresent();
   static void handleAppCmd(struct android_app *app, int32_t cmd);
   void CreateSwapChain(WebGLRenderingContext *gl, int width, int height);
   void PollEvents(bool wait);
@@ -23,6 +28,7 @@ public:
   void Destroy();
 
   static NAN_METHOD(RequestPresent);
+  static NAN_METHOD(CreateSwapChain);
   static NAN_METHOD(WaitGetPoses);
   static NAN_METHOD(Submit);
   static NAN_METHOD(GetRecommendedRenderTargetSize);
@@ -35,11 +41,15 @@ public:
   ovrMobile *ovrState;
   bool running;
   ANativeWindow *androidNativeWindow;
-  ovrTextureSwapChain *swapChain;
+  SwapChain swapChain;
   int swapChainMetrics[2];
+  WebGLRenderingContext *swapChainGl;
   int swapChainLength;
   int swapChainIndex;
-  GLuint fboId;
+  GLuint fbo;
+  GLuint msFbo;
+  GLuint msColorTex;
+  GLuint msDepthStencilTex;
   ovrTracking2 tracking;
   long long frameIndex;
 	double displayTime;
