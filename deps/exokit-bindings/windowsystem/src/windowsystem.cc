@@ -541,7 +541,7 @@ NAN_METHOD(DestroyRenderTarget) {
 }
 
 void ComposeLayer(ComposeSpec *composeSpec, PlaneSpec *planeSpec, const LayerSpec &layer) {
-  if (layer.viewports[0] == nullptr) {
+  if (layer.layerType == IFRAME_3D || layer.layerType == RAW_CANVAS) {
     glBindVertexArray(composeSpec->composeVao);
     glUseProgram(composeSpec->composeProgram);
 
@@ -679,6 +679,7 @@ NAN_METHOD(ComposeLayers) {
             int height = TO_INT32(JS_OBJ(framebufferObj->Get(JS_STR("canvas")))->Get(JS_STR("height")));
 
             layers.push_back(LayerSpec{
+              LayerType::IFRAME_3D,
               width,
               height,
               msTex,
@@ -713,6 +714,7 @@ NAN_METHOD(ComposeLayers) {
             int height = TO_INT32(browserObj->Get(JS_STR("height")));
 
             layers.push_back(LayerSpec{
+              LayerType::IFRAME_2D,
               width,
               height,
               0,
@@ -744,6 +746,7 @@ NAN_METHOD(ComposeLayers) {
             int height = TO_INT32(elementObj->Get(JS_STR("height")));
 
             layers.push_back(LayerSpec{
+              LayerType::RAW_CANVAS,
               width,
               height,
               msTex,

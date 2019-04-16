@@ -27,6 +27,7 @@ enum class LayerType {
 
 class LayerSpec {
 public:
+  LayerType layerType;
   int width;
   int height;
   GLuint msTex;
