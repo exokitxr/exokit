@@ -10,7 +10,6 @@
 typedef struct SwapChain {
   ovrTextureSwapChain ColorTextureChain;
   ovrTextureSwapChain DepthTextureChain;
-  ovrSizei textureSize;
 } EyeSwapChain;
 
 namespace oculusvr {
@@ -40,6 +39,8 @@ private:
 
   // Node construction method for new instances.
   static NAN_METHOD(New);
+  static NAN_METHOD(CreateSwapChain);
+  static NAN_METHOD(ExitPresent);
   static NAN_METHOD(GetControllersInputState);
   static NAN_METHOD(GetPose);
   static NAN_METHOD(Submit);
@@ -58,18 +59,22 @@ private:
     }
   }
 
-  void DestroySession();
+  GLuint CreateSwapChain();
   void DestroySwapChain();
-  void SetupSession();
+  void DestroySession();
   void ResetSession();
-  void SetupSwapChain();
 
   /// Reference to wrapped ovrSession instance.
-  ovrSession * session;
+  ovrSession *session;
   ovrHmdDesc hmdDesc;
   EyeSwapChain swapChain;
   ovrPosef eyeRenderPoses[2];
-  GLuint fboId;
+  int swapChainMetrics[2];
+  WebGLRenderingContext *swapChainGl;
+  GLuint fbo;
+  GLuint msFbo;
+  GLuint msColorTex;
+  GLuint msDepthStencilTex;
   int frameIndex;
   double sensorSampleTime;
   bool hmdMounted;
