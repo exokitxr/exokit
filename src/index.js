@@ -1424,9 +1424,9 @@ const _startRenderLoop = () => {
             if (oculusMobileVrPresentState.layers.length > 0) {
               const {oculusMobileVrDisplay} = window[symbols.mrDisplaysSymbol];
               _decorateModelViewProjections(oculusMobileVrPresentState.layers, vrDisplay, 2); // note: vrDisplay mirrors xrDisplay
-              nativeWindow.composeLayers(context, oculusMobileVrPresentState.fbo, oculusMobileVrPresentState.layers);
+              nativeWindow.composeLayers(context, oculusMobileVrPresentState.fbos, oculusMobileVrPresentState.layers);
             } else {
-              nativeWindow.blitFrameBuffer(context, oculusMobileVrPresentState.msFbo, oculusMobileVrPresentState.fbo, oculusMobileVrPresentState.glContext.canvas.width, oculusMobileVrPresentState.glContext.canvas.height, oculusMobileVrPresentState.glContext.canvas.width, oculusMobileVrPresentState.glContext.canvas.height, true, false, false);
+              nativeWindow.blitFrameBuffer(context, oculusMobileVrPresentState.msFbo, oculusMobileVrPresentState.fbos, oculusMobileVrPresentState.glContext.canvas.width, oculusMobileVrPresentState.glContext.canvas.height, oculusMobileVrPresentState.glContext.canvas.width, oculusMobileVrPresentState.glContext.canvas.height, true, false, false);
             }
 
             oculusMobileVrPresentState.vrContext.Submit();
