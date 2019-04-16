@@ -593,57 +593,6 @@ void ComposeLayers(WebGLRenderingContext *gl, GLuint fbo, const std::vector<Laye
 
   glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 
-  /* // blit
-  for (size_t i = 0; i < layers.size(); i++) {
-    const LayerSpec &layer = layers[i];
-
-    if (layer.blit) {
-      glBindFramebuffer(GL_READ_FRAMEBUFFER, composeSpec->composeReadFbo);
-      glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, layer.msColorTex, 0);
-      glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, layer.msDepthTex, 0);
-
-      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, composeSpec->composeWriteFbo);
-      glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, layer.colorTex, 0);
-      glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, layer.depthTex, 0);
-
-      glBlitFramebuffer(
-        0, 0,
-        layer.width, layer.height,
-        0, 0,
-        layer.width, layer.height,
-        GL_COLOR_BUFFER_BIT,
-        GL_LINEAR);
-
-      glBlitFramebuffer(
-        0, 0,
-        layer.width, layer.height,
-        0, 0,
-        layer.width, layer.height,
-        GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT,
-        GL_NEAREST);
-
-      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
-    }
-  }
-
-  // render unblitted
-  for (size_t i = 0; i < layers.size(); i++) {
-    const LayerSpec &layer = layers[i];
-
-    if (!layer.blit) {
-      ComposeLayer(composeSpec, layer);
-    }
-  }
-
-  // render blitted
-  for (size_t i = 0; i < layers.size(); i++) {
-    const LayerSpec &layer = layers[i];
-
-    if (layer.blit) {
-      ComposeLayer(composeSpec, layer);
-    }
-  } */
-
   for (size_t i = 0; i < layers.size(); i++) {
     const LayerSpec &layer = layers[i];
     ComposeLayer(composeSpec, planeSpec, layer);
