@@ -8,7 +8,7 @@ Build targets :
 
 ## Windows
 
-**Requirements**: Node.js 11.6.0, Python 2, Visual Studio 2015 or 2017
+**Requirements**: [Node.js 11.6.0](https://nodejs.org/dist/v11.6.0/), Python 2, Visual Studio 2015 or 2017
 
 **Alternative requirements**: Node.js 11.6.0, as administrator: `npm install -g windows-build-tools`
 
