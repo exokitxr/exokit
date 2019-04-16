@@ -586,6 +586,8 @@ class FakeVRDisplay extends VRDisplay {
           localVector2.set(1, 1, 1)
         )
         .toArray(gamepad.pose._localPointerMatrix);
+
+      GlobalContext.xrState.gamepads[i].connected[0] = 1;
     }
 
     // emit gamepad events
