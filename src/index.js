@@ -492,6 +492,7 @@ if (nativeBindings.nativeOculusVR) {
         nativeBindings.nativeWindow.setCurrentWindowContext(windowHandle);
 
         // fps = VR_FPS;
+
         const system = vrPresentState.oculusSystem || nativeBindings.nativeOculusVR.Oculus_Init();
         const lmContext = vrPresentState.lmContext || (nativeBindings.nativeLm && new nativeBindings.nativeLm());
 
@@ -509,8 +510,7 @@ if (nativeBindings.nativeOculusVR) {
 
         const cleanups = [];
 
-        // XXX this framebuffer can be the actual oculus swap chain instead
-        const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeBindings.nativeWindow.createRenderTarget(context, width, height, 0, 0, 0, 0);
+        const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = system.CreateSwapChain(context, width, height);
 
         context.setDefaultFramebuffer(msFbo);
 
@@ -518,11 +518,7 @@ if (nativeBindings.nativeOculusVR) {
         vrPresentState.oculusSystem = system;
         vrPresentState.glContext = context;
         vrPresentState.msFbo = msFbo;
-        vrPresentState.msTex = msTex;
-        vrPresentState.msDepthTex = msDepthTex;
         vrPresentState.fbo = fbo;
-        vrPresentState.tex = tex;
-        vrPresentState.depthTex = depthTex;
         vrPresentState.cleanups = cleanups;
 
         vrPresentState.lmContext = lmContext;
@@ -541,8 +537,23 @@ if (nativeBindings.nativeOculusVR) {
         const _attribute = (name, value) => {
           if (name === 'width' || name === 'height') {
             nativeBindings.nativeWindow.setCurrentWindowContext(windowHandle);
+            
+            const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = system.CreateSwapChain(context, canvas.width, canvas.height);
+            context.setDefaultFramebuffer(msFbo);
+            vrPresentState.fbo = fbo;
+            vrPresentState.tex = tex;
+            vrPresentState.depthTex = depthTex;
+            vrPresentState.msFbo = msFbo;
+            vrPresentState.msTex = msTex;
+            vrPresentState.msDepthTex = msDepthTex;
+            canvas.framebuffer.fbo = fbo;
+            canvas.framebuffer.tex = tex;
+            canvas.framebuffer.depthTex = depthTex;
+            canvas.framebuffer.msFbo = msFbo;
+            canvas.framebuffer.msTex = msTex;
+            canvas.framebuffer.msDepthTex = msDepthTex;
 
-            nativeBindings.nativeWindow.resizeRenderTarget(context, canvas.width, canvas.height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
+            // nativeBindings.nativeWindow.resizeRenderTarget(context, canvas.width, canvas.height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
           }
         };
         canvas.on('attribute', _attribute);
@@ -1199,7 +1210,7 @@ const _startRenderLoop = () => {
         const isVisible = nativeWindow.isVisible(windowHandle) || vrPresentState.glContext === context || mlPresentState.mlGlContext === context;
         if (isVisible) {
           const window = context.canvas.ownerDocument.defaultView;
-          if (vrPresentState.glContext === context && vrPresentState.hasPose) {
+          if (vrPresentState.glContext === context && vrPresentState.oculusSystem && vrPresentState.hasPose) {
             if (vrPresentState.layers.length > 0) {
               const {openVRDisplay} = window[symbols.mrDisplaysSymbol];
               _decorateModelViewProjections(vrPresentState.layers, openVRDisplay, 2); // note: openVRDisplay mirrors openVRDevice
@@ -1208,7 +1219,7 @@ const _startRenderLoop = () => {
               nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, true, false, false);
             }
 
-            vrPresentState.oculusSystem.Submit(context);
+            vrPresentState.oculusSystem.Submit();
 
             vrPresentState.hasPose = false;
             nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, 0, vrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1), vrPresentState.glContext.canvas.height, xrState.renderWidth[0], xrState.renderHeight[0], true, false, false);
