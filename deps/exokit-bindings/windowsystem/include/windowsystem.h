@@ -34,7 +34,6 @@ public:
   GLuint msDepthTex;
   GLuint tex;
   GLuint depthTex;
-  float *viewports[2];
   float *modelView[2];
   float *projection[2];
 };
