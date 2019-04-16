@@ -480,7 +480,7 @@ if (nativeBindings.nativeOculusVR) {
     const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
     if (layer) {
       const canvas = layer.source;
-      if (!vrPresentState.glContext) {
+      if (vrPresentState.glContext !== canvas._context) {
         let context = canvas._context;
         if (!(context && context.constructor && context.constructor.name === 'WebGLRenderingContext')) {
           context = canvas.getContext('webgl');
