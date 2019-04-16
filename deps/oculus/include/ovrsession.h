@@ -67,7 +67,7 @@ private:
   /// Reference to wrapped ovrSession instance.
   ovrSession * session;
   ovrHmdDesc hmdDesc;
-  EyeSwapChain eyes[2];
+  EyeSwapChain swapChain;
   ovrPosef eyeRenderPoses[2];
   GLuint fboId;
   int frameIndex;

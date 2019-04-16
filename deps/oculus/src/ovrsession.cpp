@@ -159,7 +159,7 @@ NAN_METHOD(OVRSession::GetPose) {
 
   int *frameIndex = &ObjectWrap::Unwrap<OVRSession>(info.Holder())->frameIndex;
   ovrSession session = *ObjectWrap::Unwrap<OVRSession>(info.Holder())->session;
-  EyeSwapChain *eyes = &*ObjectWrap::Unwrap<OVRSession>(info.Holder())->eyes;
+  EyeSwapChain *swapChain = &ObjectWrap::Unwrap<OVRSession>(info.Holder())->swapChain;
   ovrPosef *eyeRenderPoses = &*ObjectWrap::Unwrap<OVRSession>(info.Holder())->eyeRenderPoses;
   ovrHmdDesc hmdDesc = ObjectWrap::Unwrap<OVRSession>(info.Holder())->hmdDesc;
   Local<Float32Array> position32Array = Local<Float32Array>::Cast(info[0]);
@@ -192,7 +192,7 @@ NAN_METHOD(OVRSession::GetPose) {
   {
     std::lock_guard<std::mutex> lock(oculusvr::reqMutex);
     oculusvr::reqCbs.push_back([
-      session, frameIndex, eyes, eyeRenderPoses, hmdDesc, positionArray, orientationArray, leftViewArray, leftProjectionArray,
+      session, frameIndex, swapChain, eyeRenderPoses, hmdDesc, positionArray, orientationArray, leftViewArray, leftProjectionArray,
       rightViewArray, rightProjectionArray, leftControllerPositionArray, leftControllerOrientationArray,
       rightControllerPositionArray, rightControllerOrientationArray, vrPoseRes]() -> void {
 
@@ -420,9 +420,6 @@ NAN_METHOD(OVRSession::Submit)
   }
 
   WebGLRenderingContext *gl = node::ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
-  GLuint fboIdSource = TO_UINT32(info[1]);
-  int width = TO_INT32(info[2]);
-  int height = TO_UINT32(info[3]);
 
   ovrPosef *eyeRenderPoses = &*ObjectWrap::Unwrap<OVRSession>(info.Holder())->eyeRenderPoses;
   int *frameIndex = &ObjectWrap::Unwrap<OVRSession>(info.Holder())->frameIndex;
@@ -430,46 +427,13 @@ NAN_METHOD(OVRSession::Submit)
 
   double sensorSampleTime = ObjectWrap::Unwrap<OVRSession>(info.Holder())->sensorSampleTime;
 
-  EyeSwapChain *eyes = ObjectWrap::Unwrap<OVRSession>(info.Holder())->eyes;
+  EyeSwapChain *swapChain = &ObjectWrap::Unwrap<OVRSession>(info.Holder())->swapChain;
   ovrHmdDesc hmdDesc = ObjectWrap::Unwrap<OVRSession>(info.Holder())->hmdDesc;
 
-  // Eye textures clear.
-  GLuint colorTextureId;
-  GLuint depthTextureId;
+  ovr_CommitTextureSwapChain(swapChain->ColorTextureChain);
+  ovr_CommitTextureSwapChain(swapChain->DepthTextureChain);
+
   ovrTimewarpProjectionDesc posTimewarpProjectionDesc = {};
-
-  for (int eye = 0; eye < 2; ++eye) {
-
-    {
-      int curIndex;
-      ovr_GetTextureSwapChainCurrentIndex(session, eyes[eye].ColorTextureChain, &curIndex);
-      ovr_GetTextureSwapChainBufferGL(session, eyes[eye].ColorTextureChain, curIndex, &colorTextureId);
-    }
-    {
-      int curIndex;
-      ovr_GetTextureSwapChainCurrentIndex(session, eyes[eye].DepthTextureChain, &curIndex);
-      ovr_GetTextureSwapChainBufferGL(session, eyes[eye].DepthTextureChain, curIndex, &depthTextureId);
-    }
-
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, fboIdSource);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fboId);
-
-    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTextureId, 0);
-    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTextureId, 0);
-
-    glBlitFramebuffer(
-      eye == 0 ? 0 : width/2, 0,
-      eye == 0 ? width/2 : width, height,
-      0, 0,
-      eyes[eye].textureSize.w, eyes[eye].textureSize.h,
-      GL_COLOR_BUFFER_BIT,
-      GL_LINEAR
-    );
-
-    ovr_CommitTextureSwapChain(session, eyes[eye].ColorTextureChain);
-    ovr_CommitTextureSwapChain(session, eyes[eye].DepthTextureChain);
-
-  }
 
   // Distortion, Present and flush/sync
   ovrLayerEyeFovDepth ld = {};
@@ -479,9 +443,23 @@ NAN_METHOD(OVRSession::Submit)
 
   for (int eye = 0; eye < 2; ++eye)
   {
-    ld.ColorTexture[eye] = eyes[eye].ColorTextureChain;
-    ld.DepthTexture[eye] = eyes[eye].DepthTextureChain;
-    ld.Viewport[eye]     = OVR::Recti(eyes[eye].textureSize);
+    ld.ColorTexture[eye] = swapChain->ColorTextureChain;
+    ld.DepthTexture[eye] = swapChain->DepthTextureChain;
+    {
+      OVR::Recti rect;
+      if (eye == 0) {
+        swapChain.Pos.x = 0;
+        swapChain.Pos.y = 0;
+        swapChain.Size.w = swapChain->textureSize.w/2;
+        swapChain.Size.h = swapChain->textureSize.h;
+      } else {
+        swapChain.Pos.x = swapChain->textureSize.w/2;
+        swapChain.Pos.y = 0;
+        swapChain.Size.w = swapChain->textureSize.w/2;
+        swapChain.Size.h = swapChain->textureSize.h;
+      }
+      ld.Viewport[eye] = rect;
+    }
     ld.Fov[eye]          = hmdDesc.DefaultEyeFov[eye];
     ld.RenderPose[eye]   = eyeRenderPoses[eye];
     ld.SensorSampleTime  = sensorSampleTime;
@@ -491,14 +469,14 @@ NAN_METHOD(OVRSession::Submit)
   result = ovr_SubmitFrame(session, *frameIndex, nullptr, &layers, 1);
   *frameIndex += 1;
 
-  // Rebind previous framebuffers.
+  /* // Rebind previous framebuffers.
   if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
     glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
   }
 
   if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
-  }
+  } */
 }
 
 void OVRSession::DestroySession() {
@@ -507,10 +485,8 @@ void OVRSession::DestroySession() {
 }
 
 void OVRSession::DestroySwapChain() {
-  ovr_DestroyTextureSwapChain(*this->session, this->eyes[0].ColorTextureChain);
-  ovr_DestroyTextureSwapChain(*this->session, this->eyes[0].DepthTextureChain);
-  ovr_DestroyTextureSwapChain(*this->session, this->eyes[1].ColorTextureChain);
-  ovr_DestroyTextureSwapChain(*this->session, this->eyes[1].DepthTextureChain);
+  ovr_DestroyTextureSwapChain(*this->session, this->swapChain.ColorTextureChain);
+  ovr_DestroyTextureSwapChain(*this->session, this->swapChain.DepthTextureChain);
 
   glDeleteFramebuffers(1, &this->fboId);
 }
@@ -549,70 +525,60 @@ void OVRSession::ResetSession() {
 }
 
 void OVRSession::SetupSwapChain() {
-  ovrResult result;
   ovrSizei recommenedTex0Size = ovr_GetFovTextureSize(*this->session, ovrEye_Left, this->hmdDesc.DefaultEyeFov[ovrEye_Left], 1);
   ovrSizei recommenedTex1Size = ovr_GetFovTextureSize(*this->session, ovrEye_Right, this->hmdDesc.DefaultEyeFov[ovrEye_Right], 1);
-  ovrSizei bufferSize;
 
-  this->eyes[0].textureSize.w = recommenedTex0Size.w;
-  this->eyes[0].textureSize.h = recommenedTex0Size.h;
-  this->eyes[1].textureSize.w = recommenedTex1Size.w;
-  this->eyes[1].textureSize.h = recommenedTex1Size.h;
+  this->swapChain.textureSize.w = recommenedTex0Size.w + recommenedTex1Size.w;
+  this->swapChain.textureSize.h = std::max(recommenedTex0Size.h, recommenedTex1Size.h);
 
-  bufferSize.w  = recommenedTex0Size.w;
-  bufferSize.h = std::max(recommenedTex0Size.h, recommenedTex1Size.h);
+  // Color swap chain
+  ovrTextureSwapChainDesc desc = {};
+  desc.Type = ovrTexture_2D;
+  desc.ArraySize = 1;
+  desc.Format = OVR_FORMAT_R8G8B8A8_UNORM_SRGB;
+  desc.Width = this->swapChain.textureSize.w;
+  desc.Height = this->swapChain.textureSize.h;
+  desc.MipLevels = 1;
+  desc.SampleCount = 1;
+  desc.StaticImage = ovrFalse;
 
-  // Make eye render buffers
-  for (int eye = 0; eye < 2; ++eye) {
-    ovrTextureSwapChainDesc desc = {};
-    desc.Type = ovrTexture_2D;
-    desc.ArraySize = 1;
-    desc.Format = OVR_FORMAT_R8G8B8A8_UNORM_SRGB;
-    desc.Width = bufferSize.w;
-    desc.Height = bufferSize.h;
-    desc.MipLevels = 1;
-    desc.SampleCount = 1;
-    desc.StaticImage = ovrFalse;
+  ovrResult result = ovr_CreateTextureSwapChainGL(*this->session, &desc, &this-swapChain.ColorTextureChain);
+  int length = 0;
+  ovr_GetTextureSwapChainLength(*this->session, this->swapChain.ColorTextureChain, &length);
 
-    result = ovr_CreateTextureSwapChainGL(*this->session, &desc, &this->eyes[eye].ColorTextureChain);
-    int length = 0;
-    ovr_GetTextureSwapChainLength(*this->session, this->eyes[eye].ColorTextureChain, &length);
-
-    if (!OVR_SUCCESS(result)) {
-      std::cout << "Error creating Oculus GL Swap Chain" << std::endl;
-    } else {
-      for (int i = 0; i < length; ++i) {
-        GLuint textureId;
-        ovr_GetTextureSwapChainBufferGL(*this->session, this->eyes[eye].ColorTextureChain, i, &textureId);
-        glBindTexture(GL_TEXTURE_2D, textureId);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-      }
+  if (!OVR_SUCCESS(result)) {
+    std::cout << "Error creating Oculus GL Color Swap Chain" << std::endl;
+  } else {
+    for (int i = 0; i < length; ++i) {
+      GLuint textureId;
+      ovr_GetTextureSwapChainBufferGL(*this->session, this->swapChain.ColorTextureChain, i, &textureId);
+      glBindTexture(GL_TEXTURE_2D, textureId);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     }
-
-    desc.Format = OVR_FORMAT_D32_FLOAT;
-
-    result = ovr_CreateTextureSwapChainGL(*this->session, &desc, &this->eyes[eye].DepthTextureChain);
-    ovr_GetTextureSwapChainLength(*this->session, this->eyes[eye].DepthTextureChain, &length);
-
-    if (!OVR_SUCCESS(result)) {
-      std::cout << "Error creating Oculus GL Swap Chain" << std::endl;
-    } else {
-      for (int i = 0; i < length; ++i) {
-        GLuint textureId;
-        ovr_GetTextureSwapChainBufferGL(*this->session, this->eyes[eye].DepthTextureChain, i, &textureId);
-        glBindTexture(GL_TEXTURE_2D, textureId);
-
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-      }
-    }
-
-    glGenFramebuffers(1, &this->fboId);
-
   }
+
+  // Depth swap chain
+  desc.Format = OVR_FORMAT_D32_FLOAT;
+
+  result = ovr_CreateTextureSwapChainGL(*this->session, &desc, &this->swapChain.DepthTextureChain);
+  ovr_GetTextureSwapChainLength(*this->session, this->swapChain.DepthTextureChain, &length);
+
+  if (!OVR_SUCCESS(result)) {
+    std::cout << "Error creating Oculus GL Depth Swap Chain" << std::endl;
+  } else {
+    for (int i = 0; i < length; ++i) {
+      GLuint textureId;
+      ovr_GetTextureSwapChainBufferGL(*this->session, this->swapChain.DepthTextureChain, i, &textureId);
+      glBindTexture(GL_TEXTURE_2D, textureId);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    }
+  }
+
+  glGenFramebuffers(1, &this->fboId);
 }
