@@ -18,6 +18,9 @@ Nan::Persistent<v8::Object> oculusMobileContext;
 NAN_METHOD(OculusMobile_Init) {
   std::cout << "OculusMobile_Init 1" << std::endl;
 
+  int width = TO_INT32(info[0]);
+  int height = TO_INT32(info[1]);
+
   Local<Array> windowHandleArray = Local<Array>::Cast(info[0]);
 
   if (oculusMobileContextConstructor.IsEmpty()) {
@@ -33,8 +36,6 @@ NAN_METHOD(OculusMobile_Init) {
   oculusMobileContext.Reset(oculusMobileContextObj);
 
   OculusMobileContext *omc = ObjectWrap::Unwrap<OculusMobileContext>(oculusMobileContextObj);
-  omc->RequestPresent();
-
   info.GetReturnValue().Set(oculusMobileContextObj);
 }
 

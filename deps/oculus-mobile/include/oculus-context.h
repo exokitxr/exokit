@@ -14,7 +14,7 @@ class OculusMobileContext : public ObjectWrap {
 public:
   static Local<Function> Initialize();
 
-  void RequestPresent();
+  void RequestPresent(int width, int height);
   static void handleAppCmd(struct android_app *app, int32_t cmd);
   void CreateSwapChain(WebGLRenderingContext *gl, int width, int height);
   void PollEvents(bool wait);
@@ -22,6 +22,7 @@ public:
   static NAN_METHOD(New);
   void Destroy();
 
+  static NAN_METHOD(RequestPresent);
   static NAN_METHOD(WaitGetPoses);
   static NAN_METHOD(Submit);
   static NAN_METHOD(GetRecommendedRenderTargetSize);
@@ -34,11 +35,10 @@ public:
   ovrMobile *ovrState;
   bool running;
   ANativeWindow *androidNativeWindow;
-  ovrTextureSwapChain *swapChains[2];
+  ovrTextureSwapChain *swapChain;
   int swapChainMetrics[2];
   int swapChainLength;
   int swapChainIndex;
-  bool hasSwapChain;
   GLuint fboId;
   ovrTracking2 tracking;
   long long frameIndex;
