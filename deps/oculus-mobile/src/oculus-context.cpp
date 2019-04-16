@@ -97,6 +97,7 @@ Local<Function> OculusMobileContext::Initialize() {
   // prototype
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
   Nan::SetMethod(proto, "RequestPresent", RequestPresent);
+  Nan::SetMethod(proto, "CreateSwapChain", CreateSwapChain);
   Nan::SetMethod(proto, "WaitGetPoses", WaitGetPoses);
   Nan::SetMethod(proto, "Submit", Submit);
   Nan::SetMethod(proto, "GetRecommendedRenderTargetSize", GetRecommendedRenderTargetSize);
@@ -308,6 +309,18 @@ NAN_METHOD(OculusMobileContext::CreateSwapChain) {
   int height = TO_INT32(info[2]);
 
   oculusMobileContext->CreateSwapChain(gl, width, height);
+
+  GLuint colorTex = 0;
+  GLuint depthStencilTex = 0;
+
+  Local<Array> array = Array::New(Isolate::GetCurrent(), 6);
+  array->Set(0, JS_INT(oculusMobileContext->fbo));
+  array->Set(1, JS_INT(colorTex));
+  array->Set(2, JS_INT(depthStencilTex));
+  array->Set(3, JS_INT(oculusMobileContext->msFbo));
+  array->Set(4, JS_INT(oculusMobileContext->msColorTex));
+  array->Set(5, JS_INT(oculusMobileContext->msDepthStencilTex));
+  info.GetReturnValue().Set(array);
 }
 
 NAN_METHOD(OculusMobileContext::WaitGetPoses) {
@@ -451,7 +464,7 @@ NAN_METHOD(OculusMobileContext::GetRecommendedRenderTargetSize) {
 
 NAN_METHOD(OculusMobileContext::Submit) {
   OculusMobileContext *oculusMobileContext = ObjectWrap::Unwrap<OculusMobileContext>(info.This());
-  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
+  // WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
 
   ovrLayerProjection2 layer = vrapi_DefaultLayerProjection2();
   layer.HeadPose = oculusMobileContext->tracking.HeadPose;
