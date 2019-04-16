@@ -651,6 +651,7 @@ void ComposeLayers(WebGLRenderingContext *gl, size_t numFbos, GLuint *fbos, cons
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbos[i]);
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
   }
+  // XXX if there is one layer, we can disable depth test/depth write
   if (numFbos == 1) {
     for (size_t i = 0; i < layers.size(); i++) {
       ComposeLayer(composeSpec, planeSpec, layers[i]);
