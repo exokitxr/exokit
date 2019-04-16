@@ -587,17 +587,77 @@ void ComposeLayer(ComposeSpec *composeSpec, PlaneSpec *planeSpec, const LayerSpe
   }
 }
 
-void ComposeLayers(WebGLRenderingContext *gl, GLuint fbo, const std::vector<LayerSpec> &layers) {
+void ComposeLayer(ComposeSpec *composeSpec, PlaneSpec *planeSpec, GLuint *fbos, const LayerSpec &layer) {
+  if (layer.layerType == IFRAME_3D || layer.layerType == RAW_CANVAS) {
+    for (size_t i = 0; i < 2; i++) {
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbos[i]);
+
+      glBindVertexArray(composeSpec->composeVao);
+      glUseProgram(composeSpec->composeProgram);
+
+      glActiveTexture(GL_TEXTURE0);
+      glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, layer.msTex);
+      glUniform1i(composeSpec->msTexLocation, 0);
+
+      glActiveTexture(GL_TEXTURE1);
+      glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, layer.msDepthTex);
+      glUniform1i(composeSpec->msDepthTexLocation, 1);
+
+      glUniform4f(composeSpec->texSizeLocation, i*(layer.width/2), 0, layer.width/2, layer.height);
+
+      glViewport(0, 0, layer.width/2, layer.height);
+      // glScissor(0, 0, width, height);
+      glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+    }
+  } else {
+    glBindVertexArray(planeSpec->planeVao);
+    glUseProgram(planeSpec->planeProgram);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, layer.tex);
+    glUniform1i(planeSpec->texLocation, 0);
+
+    {
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbos[0]);
+
+      glUniformMatrix4fv(planeSpec->modelViewMatrixLocation, 1, false, layer.modelView[0]);
+      glUniformMatrix4fv(planeSpec->projectionMatrixLocation, 1, false, layer.projection[0]);
+
+      // glViewport(layer.viewports[0][0], layer.viewports[0][1], layer.viewports[0][2], layer.viewports[0][3]);
+      glViewport(0, 0, layer.width/2, layer.height);
+      // glScissor(0, 0, width, height);
+      glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+    }
+    {
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbos[1]);
+
+      glUniformMatrix4fv(planeSpec->modelViewMatrixLocation, 1, false, layer.modelView[1]);
+      glUniformMatrix4fv(planeSpec->projectionMatrixLocation, 1, false, layer.projection[1]);
+
+      // glViewport(layer.viewports[1][0], layer.viewports[1][1], layer.viewports[1][2], layer.viewports[1][3]);
+      glViewport(layer.width/2, 0, layer.width/2, layer.height);
+      // glScissor(0, 0, width, height);
+      glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+    }
+  }
+}
+
+void ComposeLayers(WebGLRenderingContext *gl, size_t numFbos, GLuint *fbos, const std::vector<LayerSpec> &layers) {
   ComposeSpec *composeSpec = (ComposeSpec *)(gl->keys[GlKey::GL_KEY_COMPOSE]);
   PlaneSpec *planeSpec = (PlaneSpec *)(gl->keys[GlKey::GL_KEY_PLANE]);
 
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
-
-  glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
-
-  for (size_t i = 0; i < layers.size(); i++) {
-    const LayerSpec &layer = layers[i];
-    ComposeLayer(composeSpec, planeSpec, layer);
+  for (size_t i = 0; i < numFbos; i++) {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbos[i]);
+    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
+  }
+  if (numFbos == 1) {
+    for (size_t i = 0; i < layers.size(); i++) {
+      ComposeLayer(composeSpec, planeSpec, layers[i]);
+    }
+  } else {
+    for (size_t i = 0; i < layers.size(); i++) {
+      ComposeLayer(composeSpec, planeSpec, fbos, layers[i]);
+    }
   }
 
   if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
@@ -641,10 +701,21 @@ void ComposeLayers(WebGLRenderingContext *gl, GLuint fbo, const std::vector<Laye
 }
 
 NAN_METHOD(ComposeLayers) {
-  if (info[0]->IsObject() && info[1]->IsNumber() && info[2]->IsArray()) {
+  if (info[0]->IsObject() && (info[1]->IsNumber() || info[1]->IsArray()) && info[2]->IsArray()) {
     WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
-    GLuint fbo = TO_UINT32(info[1]);
     Local<Array> array = Local<Array>::Cast(info[2]);
+
+    size_t numFbos;
+    GLuint fbos[2];
+    if (info[1]->IsNumber()) {
+      fbos[0] = TO_UINT32(info[1]);
+      numFbos = 1;
+    } else {
+      Local<Array> fbosArray = Local<Array>::Cast(info[1]);
+      fbos[0] = TO_UINT32(fbosArray->Get(0));
+      fbos[1] = TO_UINT32(fbosArray->Get(1));
+      numFbos = 2;
+    }
 
     std::vector<LayerSpec> layers;
     layers.reserve(8);
@@ -766,7 +837,7 @@ NAN_METHOD(ComposeLayers) {
     }
 
     if (layers.size() > 0) {
-      ComposeLayers(gl, fbo, layers);
+      ComposeLayers(gl, numFbos, fbos, layers);
     }
   } else {
     Nan::ThrowError("WindowSystem::ComposeLayers: invalid arguments");
