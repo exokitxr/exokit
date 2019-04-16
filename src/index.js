@@ -448,7 +448,7 @@ class XRState {
           return result;
         })(),
         buttons: (() => {
-          const result = Array(5);
+          const result = Array(6);
           for (let i = 0; i < result.length; i++) {
             result[i] = {
               pressed: _makeTypedArray(Uint32Array, 1),
