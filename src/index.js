@@ -1206,12 +1206,20 @@ const _startRenderLoop = () => {
               nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, true, false, false);
             }
 
-            if (vrPresentState.oculusSystem) {
-              nativeBindings.nativeWindow.setCurrentWindowContext(windowHandle);
-              vrPresentState.oculusSystem.Submit(context);
-            } else if (vrPresentState.compositor) {
-              vrPresentState.compositor.Submit(context, vrPresentState.tex);
+            vrPresentState.oculusSystem.Submit(context);
+
+            vrPresentState.hasPose = false;
+            nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, 0, vrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1), vrPresentState.glContext.canvas.height, xrState.renderWidth[0], xrState.renderHeight[0], true, false, false);
+          } else if (vrPresentState.glContext === context && vrPresentState.system && vrPresentState.hasPose) {
+            if (vrPresentState.layers.length > 0) {
+              const {openVRDisplay} = window[symbols.mrDisplaysSymbol];
+              _decorateModelViewProjections(vrPresentState.layers, openVRDisplay, 2); // note: openVRDisplay mirrors openVRDevice
+              nativeWindow.composeLayers(context, vrPresentState.fbo, vrPresentState.layers);
+            } else {
+              nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, true, false, false);
             }
+
+            vrPresentState.compositor.Submit(context, vrPresentState.tex);
 
             vrPresentState.hasPose = false;
             nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, vrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1), vrPresentState.glContext.canvas.height, xrState.renderWidth[0], xrState.renderHeight[0], true, false, false);
