@@ -2029,7 +2029,7 @@ const _startRenderLoop = () => {
     nativeBindings.nativeBrowser && nativeBindings.nativeBrowser.Browser.updateAll(); // XXX unlock when oculus mobile supports it
     // update magic leap state
     if (mlPresentState.mlGlContext) {
-      nativeBindings.nativeMl.Update(mlPresentState.mlContext, mlPresentState.mlGlContext);
+      nativeBindings.nativeMl.Update(mlPresentState.mlContext);
       nativeBindings.nativeMl.Poll();
     }
     if (args.performance) {
