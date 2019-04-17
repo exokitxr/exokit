@@ -567,7 +567,7 @@ void ComposeLayer(WebGLRenderingContext *gl, const LayerSpec &layer) {
     // glScissor(0, 0, width, height);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
   } else {
-    PlaneGlShader *planeGlShader = getGlShader<ComposeGlShader>(gl);
+    PlaneGlShader *planeGlShader = getGlShader<PlaneGlShader>(gl);
 
     glBindVertexArray(planeGlShader->planeVao);
     glUseProgram(planeGlShader->planeProgram);
@@ -623,7 +623,7 @@ void ComposeLayer(WebGLRenderingContext *gl, GLuint *fbos, const LayerSpec &laye
       glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
     }
   } else {
-    PlaneGlShader *planeGlShader = getGlShader<ComposeGlShader>(gl);
+    PlaneGlShader *planeGlShader = getGlShader<PlaneGlShader>(gl);
 
     glBindVertexArray(planeGlShader->planeVao);
     glUseProgram(planeGlShader->planeProgram);
