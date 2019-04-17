@@ -2025,7 +2025,7 @@ const _startRenderLoop = () => {
 
     // update media frames
     nativeBindings.nativeVideo.Video.updateAll();
-    nativeBindings.nativeBrowser && nativeBindings.nativeBrowser.Browser.updateAll(); // XXX
+    nativeBindings.nativeBrowser && nativeBindings.nativeBrowser.Browser.updateAll(); // XXX unlock when oculus mobile supports it
     // update magic leap state
     if (mlPresentState.mlGlContext) {
       nativeBindings.nativeMl.Update(mlPresentState.mlContext, mlPresentState.mlGlContext);
