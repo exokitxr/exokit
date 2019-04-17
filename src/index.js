@@ -765,7 +765,7 @@ if (nativeBindings.nativeMl) {
     if (layer) {
       const canvas = layer.source;
 
-      if (mlPresentState.glContext !== canvas._context) {
+      if (mlPresentState.mlGlContext !== canvas._context) {
         let context = canvas._context;
         if (!(context && context.constructor && context.constructor.name === 'WebGLRenderingContext')) {
           context = canvas.getContext('webgl');
