@@ -2577,9 +2577,6 @@ NAN_METHOD(MLContext::InitLifecycle) {
       }
       
       uv_sem_post(&resSem);
-      
-      glGenFramebuffers(1, &application_context.mlContext->src_framebuffer_id);
-      glGenFramebuffers(1, &application_context.mlContext->dst_framebuffer_id);
 
       for (;;) {
         uv_sem_wait(&reqSem);
@@ -2623,9 +2620,6 @@ NAN_METHOD(MLContext::InitLifecycle) {
           break;
         }
       }
-      
-      glDeleteFramebuffers(1, &application_context.mlContext->src_framebuffer_id);
-      glDeleteFramebuffers(1, &application_context.mlContext->dst_framebuffer_id);
     });
 
     uv_async_init(uv_default_loop(), &eventsAsync, RunEventsInMainThread);
@@ -3164,6 +3158,71 @@ NAN_METHOD(MLContext::Exit) {
   ML_LOG(Info, "%s: MLContext exit end", application_name);
 }
 
+NAN_METHOD(MLContext::CreateSwapChain) {
+  MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
+  int width = TO_INT32(info[1]);
+  int height = TO_INT32(info[2]);
+
+  {
+    glGenFramebuffers(2, mlContext->fbos);
+
+    for (int i = 0; i < 2; i++) {
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mlContext->fbos[i]);
+
+      glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, mlContext->virtual_camera_array.color_id, 0, i);
+      glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, mlContext->virtual_camera_array.depth_id, 0, i);
+    }
+  }
+  {
+    glGenFramebuffers(1, &mlContext->msFbo);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mlContext->msFbo);
+
+    glGenTextures(1, &mlContext->msDepthStencilTex);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, mlContext->msDepthStencilTex);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
+    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_DEPTH24_STENCIL8, width, height, true);
+    // glFramebufferTexture2DMultisampleEXT(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, msDepthStencilTex, 0, 4);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, mlContext->msDepthStencilTex, 0);
+
+    glGenTextures(1, &mlContext->msColorTex);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, mlContext->msColorTex);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
+    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGBA8, width, height, true);
+    // glFramebufferTexture2DMultisampleEXT(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, msColorTex, 0, 4);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, mlContext->msColorTex, 0);
+
+    glClear(GL_DEPTH_BUFFER_BIT); // initialize to far depth
+  }
+
+  GLuint colorTex = 0;
+  GLuint depthStencilTex = 0;
+
+  Local<Array> array = Array::New(Isolate::GetCurrent(), 6);
+  Local<Array> fbosArray = Array::New(Isolate::GetCurrent(), 2);
+  fbosArray->Set(0, JS_INT(fbos[0]));
+  fbosArray->Set(1, JS_INT(fbos[1]));
+  array->Set(0, fbosArray);
+  array->Set(1, JS_INT(colorTex));
+  array->Set(2, JS_INT(depthStencilTex));
+  array->Set(3, JS_INT(msFbo));
+  array->Set(4, JS_INT(msColorTex));
+  array->Set(5, JS_INT(msDepthStencilTex));
+  info.GetReturnValue().Set(array);
+
+  /* if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
+  } */
+  if (gl->HasTextureBinding(GL_TEXTURE0, GL_TEXTURE_2D_MULTISAMPLE)) {
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, gl->GetTextureBinding(GL_TEXTURE0, GL_TEXTURE_2D_MULTISAMPLE));
+  } else {
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+  }
+  if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
+  }
+}
+
 /* NAN_METHOD(MLContext::WaitGetPoses) {
   if (info[0]->IsObject() && info[1]->IsNumber() && info[2]->IsNumber() && info[3]->IsNumber() && info[4]->IsFloat32Array() && info[5]->IsFloat32Array() && info[6]->IsFloat32Array()) {
     MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
@@ -3377,7 +3436,14 @@ NAN_METHOD(MLContext::RequestGetPoses) {
 
         bool frameOk = (result == MLResult_Ok);
         if (frameOk) {
-          GLuint fbo;
+          for (int i = 0; i < 2; i++) {
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mlContext->fbos[i]);
+
+            glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, mlContext->virtual_camera_array.color_id, 0, i);
+            glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, mlContext->virtual_camera_array.depth_id, 0, i);
+          }
+
+          /* GLuint fbo;
           glGenFramebuffers(1, &fbo);
           glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
           for (int i = 0; i < 2; i++) {
@@ -3389,8 +3455,8 @@ NAN_METHOD(MLContext::RequestGetPoses) {
             }
             glClear(GL_COLOR_BUFFER_BIT);
           }
-          glDeleteFramebuffers(1, &fbo);
-          
+          glDeleteFramebuffers(1, &fbo); */
+
           mlContext->TickFloor();
 
           // transform
@@ -3582,29 +3648,26 @@ NAN_METHOD(MLContext::SubmitFrame) {
 
   if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber()) {
     // WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
-    GLuint colorTex = TO_UINT32(info[0]);
+    /* GLuint colorTex = TO_UINT32(info[0]); // XXX don't need these arguments
     unsigned int width = TO_UINT32(info[1]);
-    unsigned int height = TO_UINT32(info[2]);
+    unsigned int height = TO_UINT32(info[2]); */
 
+    GLuint fbos[2] = mlContext->fbos;
     GLsync sync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 
     {
       std::lock_guard<std::mutex> lock(reqMutex);
       
-      reqCbs.push_back([colorTex, width, height, sync]() -> bool {
+      reqCbs.push_back([fbos, width, height, sync]() -> bool {
         const MLRectf &viewport = application_context.mlContext->virtual_camera_array.viewport;
         
         glWaitSync(sync, 0, GL_TIMEOUT_IGNORED);
         glDeleteSync(sync);
         
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, application_context.mlContext->src_framebuffer_id);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, application_context.mlContext->dst_framebuffer_id);
-        
-        glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, application_context.mlContext->msFbo);
 
         for (int i = 0; i < 2; i++) {
-          glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, application_context.mlContext->virtual_camera_array.color_id, 0, i);
-          // glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, application_context.mlContext->virtual_camera_array.depth_id, 0, i);
+          glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbos[i]);
 
           glBlitFramebuffer(i == 0 ? 0 : width/2, 0,
             i == 0 ? width/2 : width, height,

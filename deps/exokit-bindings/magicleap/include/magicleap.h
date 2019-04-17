@@ -288,6 +288,7 @@ public:
   static NAN_METHOD(DeinitLifecycle);
   static NAN_METHOD(Present);
   static NAN_METHOD(Exit);
+  static NAN_METHOD(CreateSwapChain);
   // static NAN_METHOD(WaitGetPoses);
   static NAN_METHOD(RequestGetPoses);
   static NAN_METHOD(PrepareFrame);
@@ -319,12 +320,16 @@ public:
   // tracking
   MLHandle graphics_client;
   MLGraphicsRenderTargetsInfo render_targets_info;
-  GLuint src_framebuffer_id;
-  GLuint dst_framebuffer_id;
   MLHandle frame_handle;
   MLHandle head_tracker;
   MLHeadTrackingStaticData head_static_data;
   MLGraphicsVirtualCameraInfoArray virtual_camera_array;
+
+  // fbos
+  GLuint fbos[2];
+  GLuint msFbo;
+  GLuint msColorTex;
+  GLuint msDepthStencilTex;
 
   // position
   std::mutex positionMutex;
