@@ -159,17 +159,6 @@ ComposeGlShader::ComposeGlShader() {
   static const uint16_t indices[] = {0, 2, 1, 2, 3, 1};
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->indexBuffer);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-  if (gl->HasVertexArrayBinding()) {
-    glBindVertexArray(gl->GetVertexArrayBinding());
-  } else {
-    glBindVertexArray(gl->defaultVao);
-  }
-  if (gl->HasBufferBinding(GL_ARRAY_BUFFER)) {
-    glBindBuffer(GL_ARRAY_BUFFER, gl->GetBufferBinding(GL_ARRAY_BUFFER));
-  } else {
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-  }
 }
 ComposeGlShader::~ComposeGlShader() {}
 
