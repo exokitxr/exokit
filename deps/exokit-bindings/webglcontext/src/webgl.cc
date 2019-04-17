@@ -4594,10 +4594,9 @@ NAN_METHOD(WebGLRenderingContext::GetParameter) {
       GLint numFormats;
       glGetIntegerv(GL_NUM_COMPRESSED_TEXTURE_FORMATS, &numFormats);
 
-      GLint* params = new GLint[numFormats];
-      glGetIntegerv(name, params);
-      info.GetReturnValue().Set(createTypedArray<Uint32Array>(numFormats, reinterpret_cast<GLuint*>(params)));
-      delete [] params;
+      unique_ptr<GLint[]> params(new GLint[numFormats]);
+      glGetIntegerv(name, params.get());
+      info.GetReturnValue().Set(createTypedArray<Uint32Array>(numFormats, params.get()));
       break;
     }
     case UNPACK_FLIP_Y_WEBGL: {
