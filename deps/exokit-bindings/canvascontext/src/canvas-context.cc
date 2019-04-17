@@ -1687,12 +1687,10 @@ CanvasRenderingContext2D::CanvasRenderingContext2D() :
   // flipCanvasY(surface->getCanvas());
 
   strokePaint.setTextSize(12);
-  strokePaint.setColor(0xff000000);
   strokePaint.setStyle(SkPaint::kStroke_Style);
   strokePaint.setBlendMode(SkBlendMode::kSrcOver);
 
   fillPaint.setTextSize(12);
-  fillPaint.setColor(0xff0000ff);
   fillPaint.setStyle(SkPaint::kFill_Style);
   fillPaint.setBlendMode(SkBlendMode::kSrcOver);
 
