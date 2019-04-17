@@ -105,7 +105,6 @@ OVRSession::OVRSession() :
   hmdMounted(true)
 {
   ResetSession();
-  this->hmdDesc = ovr_GetHmdDesc(*this->session);
 }
 
 //=============================================================================
@@ -510,6 +509,7 @@ void OVRSession::ResetSession() {
   }
 
   this->session = session;
+  this->hmdDesc = ovr_GetHmdDesc(*this->session);
   
   if (hadSwapChain) {
     CreateSwapChain();
