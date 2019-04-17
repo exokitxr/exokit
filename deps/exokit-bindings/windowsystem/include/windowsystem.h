@@ -38,8 +38,13 @@ public:
   float *projection[2];
 };
 
-class ComposeSpec {
+class ComposeGlShader : public GlShader {
 public:
+  GlShader();
+  virtual ~GlShader();
+
+  static const GlKey key = GlKey::GL_KEY_COMPOSE;
+
   GLuint composeVao;
   GLuint composeProgram;
   GLint positionLocation;
@@ -52,8 +57,13 @@ public:
   GLuint indexBuffer;
 };
 
-class PlaneSpec {
+class PlaneGlShader : public GlShader {
 public:
+  PlaneGlShader();
+  virtual ~PlaneGlShader();
+
+  static const GlKey key = GlKey::GL_KEY_PLANE;
+
   GLuint planeVao;
   GLuint planeProgram;
   GLint positionLocation;
@@ -66,7 +76,6 @@ public:
   GLuint indexBuffer;
 };
 
-void InitializeLocalGlState(WebGLRenderingContext *gl);
 bool CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint sharedColorTex, GLuint sharedDepthStencilTex, GLuint sharedMsColorTex, GLuint sharedMsDepthStencilTex, GLuint *pfbo, GLuint *pcolorTex, GLuint *pdepthStencilTex, GLuint *pmsFbo, GLuint *pmsColorTex, GLuint *pmsDepthStencilTex);
 NAN_METHOD(CreateRenderTarget);
 NAN_METHOD(ResizeRenderTarget);

@@ -1175,7 +1175,12 @@ WebGLRenderingContext::WebGLRenderingContext() :
   activeTexture(GL_TEXTURE0)
   {}
 
-WebGLRenderingContext::~WebGLRenderingContext() {}
+WebGLRenderingContext::~WebGLRenderingContext() {
+  for (auto iter = keys.begin(); iter != keys.end(); iter++) {
+    GlShader *glShader (GlShader *)iter->second;
+    delete glShader;
+  }
+}
 
 NAN_METHOD(WebGLRenderingContext::New) {
   WebGLRenderingContext *gl = new WebGLRenderingContext();

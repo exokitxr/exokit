@@ -247,8 +247,6 @@ NAN_METHOD(Create3D) {
     glGenTextures(sizeof(framebufferTextures)/sizeof(framebufferTextures[0]), framebufferTextures);
   }
 
-  windowsystembase::InitializeLocalGlState(gl);
-
   GLuint vao;
   glGenVertexArrays(1, &vao);
   glBindVertexArray(vao);

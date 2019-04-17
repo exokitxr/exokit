@@ -1210,8 +1210,6 @@ NAN_METHOD(Create3D) {
     glfwSetCursorEnterCallback(windowHandle, cursorEnterCB);
     glfwSetScrollCallback(windowHandle, scrollCB);
     
-    windowsystembase::InitializeLocalGlState(gl);
-    
     GLuint vao;
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);

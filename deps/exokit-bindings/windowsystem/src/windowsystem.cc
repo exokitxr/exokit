@@ -51,6 +51,128 @@ void main() {\n\
 }\n\
 ";
 
+ComposeGlShader::ComposeGlShader() {
+  glGenVertexArrays(1, &this->composeVao);
+
+  // vertex array
+  glBindVertexArray(this->composeVao);
+
+  // vertex shader
+  GLuint composeVertex = glCreateShader(GL_VERTEX_SHADER);
+  glShaderSource(composeVertex, 1, &composeVsh, NULL);
+  glCompileShader(composeVertex);
+  GLint success;
+  glGetShaderiv(composeVertex, GL_COMPILE_STATUS, &success);
+  if (!success) {
+    char infoLog[4096];
+    GLsizei length;
+    glGetShaderInfoLog(composeVertex, sizeof(infoLog), &length, infoLog);
+    infoLog[length] = '\0';
+    exout << "ML compose vertex shader compilation failed:\n" << infoLog << std::endl;
+    return;
+  };
+
+  // fragment shader
+  GLuint composeFragment = glCreateShader(GL_FRAGMENT_SHADER);
+  glShaderSource(composeFragment, 1, &composeFsh, NULL);
+  glCompileShader(composeFragment);
+  glGetShaderiv(composeFragment, GL_COMPILE_STATUS, &success);
+  if (!success) {
+    char infoLog[4096];
+    GLsizei length;
+    glGetShaderInfoLog(composeFragment, sizeof(infoLog), &length, infoLog);
+    infoLog[length] = '\0';
+    exout << "ML compose fragment shader compilation failed:\n" << infoLog << std::endl;
+    return;
+  };
+
+  // shader program
+  this->composeProgram = glCreateProgram();
+  glAttachShader(this->composeProgram, composeVertex);
+  glAttachShader(this->composeProgram, composeFragment);
+  glLinkProgram(this->composeProgram);
+  glGetProgramiv(this->composeProgram, GL_LINK_STATUS, &success);
+  if (!success) {
+    char infoLog[4096];
+    GLsizei length;
+    glGetShaderInfoLog(this->composeProgram, sizeof(infoLog), &length, infoLog);
+    infoLog[length] = '\0';
+    exout << "ML compose program linking failed\n" << infoLog << std::endl;
+    return;
+  }
+
+  this->positionLocation = glGetAttribLocation(this->composeProgram, "position");
+  if (this->positionLocation == -1) {
+    exout << "ML compose program failed to get attrib location for 'position'" << std::endl;
+    return;
+  }
+  this->uvLocation = glGetAttribLocation(this->composeProgram, "uv");
+  if (this->uvLocation == -1) {
+    exout << "ML compose program failed to get attrib location for 'uv'" << std::endl;
+    return;
+  }
+  this->msTexLocation = glGetUniformLocation(this->composeProgram, "msTex");
+  if (this->msTexLocation == -1) {
+    exout << "ML compose program failed to get uniform location for 'msTex'" << std::endl;
+    return;
+  }
+  this->msDepthTexLocation = glGetUniformLocation(this->composeProgram, "msDepthTex");
+  if (this->msDepthTexLocation == -1) {
+    exout << "ML compose program failed to get uniform location for 'msDepthTex'" << std::endl;
+    return;
+  }
+  this->texSizeLocation = glGetUniformLocation(this->composeProgram, "texSize");
+  if (this->texSizeLocation == -1) {
+    exout << "ML compose program failed to get uniform location for 'texSize'" << std::endl;
+    return;
+  }
+
+  // delete the shaders as they're linked into our program now and no longer necessery
+  glDeleteShader(composeVertex);
+  glDeleteShader(composeFragment);
+
+  glGenBuffers(1, &this->positionBuffer);
+  glBindBuffer(GL_ARRAY_BUFFER, this->positionBuffer);
+  static const float positions[] = {
+    -1.0f, 1.0f,
+    1.0f, 1.0f,
+    -1.0f, -1.0f,
+    1.0f, -1.0f,
+  };
+  glBufferData(GL_ARRAY_BUFFER, sizeof(positions), positions, GL_STATIC_DRAW);
+  glEnableVertexAttribArray(this->positionLocation);
+  glVertexAttribPointer(this->positionLocation, 2, GL_FLOAT, false, 0, 0);
+
+  glGenBuffers(1, &this->uvBuffer);
+  glBindBuffer(GL_ARRAY_BUFFER, this->uvBuffer);
+  static const float uvs[] = {
+    0.0f, 1.0f,
+    1.0f, 1.0f,
+    0.0f, 0.0f,
+    1.0f, 0.0f,
+  };
+  glBufferData(GL_ARRAY_BUFFER, sizeof(uvs), uvs, GL_STATIC_DRAW);
+  glEnableVertexAttribArray(this->uvLocation);
+  glVertexAttribPointer(this->uvLocation, 2, GL_FLOAT, false, 0, 0);
+
+  glGenBuffers(1, &this->indexBuffer);
+  static const uint16_t indices[] = {0, 2, 1, 2, 3, 1};
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->indexBuffer);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+  if (gl->HasVertexArrayBinding()) {
+    glBindVertexArray(gl->GetVertexArrayBinding());
+  } else {
+    glBindVertexArray(gl->defaultVao);
+  }
+  if (gl->HasBufferBinding(GL_ARRAY_BUFFER)) {
+    glBindBuffer(GL_ARRAY_BUFFER, gl->GetBufferBinding(GL_ARRAY_BUFFER));
+  } else {
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+  }
+}
+ComposeGlShader::~ComposeGlShader() {}
+
 const char *planeVsh = ""
 #ifdef ANDROID
 "#version 300 es\n"
@@ -85,248 +207,116 @@ void main() {\n\
 }\n\
 ";
 
-void InitializeLocalGlState(WebGLRenderingContext *gl) {
-  // compose
-  {
-    ComposeSpec *composeSpec = new ComposeSpec();
+PlaneGlShader::PlaneGlShader() {
+  glGenVertexArrays(1, &this->planeVao);
 
-    glGenVertexArrays(1, & composeSpec->composeVao);
+  // vertex array
+  glBindVertexArray(this->planeVao);
 
-    // vertex array
-    glBindVertexArray(composeSpec->composeVao);
+  // vertex shader
+  GLuint planeVertex = glCreateShader(GL_VERTEX_SHADER);
+  glShaderSource(planeVertex, 1, &planeVsh, NULL);
+  glCompileShader(planeVertex);
+  GLint success;
+  glGetShaderiv(planeVertex, GL_COMPILE_STATUS, &success);
+  if (!success) {
+    char infoLog[4096];
+    GLsizei length;
+    glGetShaderInfoLog(planeVertex, sizeof(infoLog), &length, infoLog);
+    infoLog[length] = '\0';
+    exout << "plane vertex shader compilation failed:\n" << infoLog << std::endl;
+    return;
+  };
 
-    // vertex shader
-    GLuint composeVertex = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(composeVertex, 1, &composeVsh, NULL);
-    glCompileShader(composeVertex);
-    GLint success;
-    glGetShaderiv(composeVertex, GL_COMPILE_STATUS, &success);
-    if (!success) {
-      char infoLog[4096];
-      GLsizei length;
-      glGetShaderInfoLog(composeVertex, sizeof(infoLog), &length, infoLog);
-      infoLog[length] = '\0';
-      exout << "ML compose vertex shader compilation failed:\n" << infoLog << std::endl;
-      return;
-    };
+  // fragment shader
+  GLuint planeFragment = glCreateShader(GL_FRAGMENT_SHADER);
+  glShaderSource(planeFragment, 1, &planeFsh, NULL);
+  glCompileShader(planeFragment);
+  glGetShaderiv(planeFragment, GL_COMPILE_STATUS, &success);
+  if (!success) {
+    char infoLog[4096];
+    GLsizei length;
+    glGetShaderInfoLog(planeFragment, sizeof(infoLog), &length, infoLog);
+    infoLog[length] = '\0';
+    exout << "plane fragment shader compilation failed:\n" << infoLog << std::endl;
+    return;
+  };
 
-    // fragment shader
-    GLuint composeFragment = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(composeFragment, 1, &composeFsh, NULL);
-    glCompileShader(composeFragment);
-    glGetShaderiv(composeFragment, GL_COMPILE_STATUS, &success);
-    if (!success) {
-      char infoLog[4096];
-      GLsizei length;
-      glGetShaderInfoLog(composeFragment, sizeof(infoLog), &length, infoLog);
-      infoLog[length] = '\0';
-      exout << "ML compose fragment shader compilation failed:\n" << infoLog << std::endl;
-      return;
-    };
-
-    // shader program
-    composeSpec->composeProgram = glCreateProgram();
-    glAttachShader(composeSpec->composeProgram, composeVertex);
-    glAttachShader(composeSpec->composeProgram, composeFragment);
-    glLinkProgram(composeSpec->composeProgram);
-    glGetProgramiv(composeSpec->composeProgram, GL_LINK_STATUS, &success);
-    if (!success) {
-      char infoLog[4096];
-      GLsizei length;
-      glGetShaderInfoLog(composeSpec->composeProgram, sizeof(infoLog), &length, infoLog);
-      infoLog[length] = '\0';
-      exout << "ML compose program linking failed\n" << infoLog << std::endl;
-      return;
-    }
-
-    composeSpec->positionLocation = glGetAttribLocation(composeSpec->composeProgram, "position");
-    if (composeSpec->positionLocation == -1) {
-      exout << "ML compose program failed to get attrib location for 'position'" << std::endl;
-      return;
-    }
-    composeSpec->uvLocation = glGetAttribLocation(composeSpec->composeProgram, "uv");
-    if (composeSpec->uvLocation == -1) {
-      exout << "ML compose program failed to get attrib location for 'uv'" << std::endl;
-      return;
-    }
-    composeSpec->msTexLocation = glGetUniformLocation(composeSpec->composeProgram, "msTex");
-    if (composeSpec->msTexLocation == -1) {
-      exout << "ML compose program failed to get uniform location for 'msTex'" << std::endl;
-      return;
-    }
-    composeSpec->msDepthTexLocation = glGetUniformLocation(composeSpec->composeProgram, "msDepthTex");
-    if (composeSpec->msDepthTexLocation == -1) {
-      exout << "ML compose program failed to get uniform location for 'msDepthTex'" << std::endl;
-      return;
-    }
-    composeSpec->texSizeLocation = glGetUniformLocation(composeSpec->composeProgram, "texSize");
-    if (composeSpec->texSizeLocation == -1) {
-      exout << "ML compose program failed to get uniform location for 'texSize'" << std::endl;
-      return;
-    }
-
-    // delete the shaders as they're linked into our program now and no longer necessery
-    glDeleteShader(composeVertex);
-    glDeleteShader(composeFragment);
-
-    glGenBuffers(1, &composeSpec->positionBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, composeSpec->positionBuffer);
-    static const float positions[] = {
-      -1.0f, 1.0f,
-      1.0f, 1.0f,
-      -1.0f, -1.0f,
-      1.0f, -1.0f,
-    };
-    glBufferData(GL_ARRAY_BUFFER, sizeof(positions), positions, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(composeSpec->positionLocation);
-    glVertexAttribPointer(composeSpec->positionLocation, 2, GL_FLOAT, false, 0, 0);
-
-    glGenBuffers(1, &composeSpec->uvBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, composeSpec->uvBuffer);
-    static const float uvs[] = {
-      0.0f, 1.0f,
-      1.0f, 1.0f,
-      0.0f, 0.0f,
-      1.0f, 0.0f,
-    };
-    glBufferData(GL_ARRAY_BUFFER, sizeof(uvs), uvs, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(composeSpec->uvLocation);
-    glVertexAttribPointer(composeSpec->uvLocation, 2, GL_FLOAT, false, 0, 0);
-
-    glGenBuffers(1, &composeSpec->indexBuffer);
-    static const uint16_t indices[] = {0, 2, 1, 2, 3, 1};
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, composeSpec->indexBuffer);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-    gl->keys[GlKey::GL_KEY_COMPOSE] = composeSpec;
+  // shader program
+  this->planeProgram = glCreateProgram();
+  glAttachShader(this->planeProgram, planeVertex);
+  glAttachShader(this->planeProgram, planeFragment);
+  glLinkProgram(this->planeProgram);
+  glGetProgramiv(this->planeProgram, GL_LINK_STATUS, &success);
+  if (!success) {
+    char infoLog[4096];
+    GLsizei length;
+    glGetShaderInfoLog(this->planeProgram, sizeof(infoLog), &length, infoLog);
+    infoLog[length] = '\0';
+    exout << "plane program linking failed\n" << infoLog << std::endl;
+    return;
   }
 
-  // plane
-  {
-    PlaneSpec *planeSpec = new PlaneSpec();
-
-    glGenVertexArrays(1, &planeSpec->planeVao);
-
-    // vertex array
-    glBindVertexArray(planeSpec->planeVao);
-
-    // vertex shader
-    GLuint planeVertex = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(planeVertex, 1, &planeVsh, NULL);
-    glCompileShader(planeVertex);
-    GLint success;
-    glGetShaderiv(planeVertex, GL_COMPILE_STATUS, &success);
-    if (!success) {
-      char infoLog[4096];
-      GLsizei length;
-      glGetShaderInfoLog(planeVertex, sizeof(infoLog), &length, infoLog);
-      infoLog[length] = '\0';
-      exout << "plane vertex shader compilation failed:\n" << infoLog << std::endl;
-      return;
-    };
-
-    // fragment shader
-    GLuint planeFragment = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(planeFragment, 1, &planeFsh, NULL);
-    glCompileShader(planeFragment);
-    glGetShaderiv(planeFragment, GL_COMPILE_STATUS, &success);
-    if (!success) {
-      char infoLog[4096];
-      GLsizei length;
-      glGetShaderInfoLog(planeFragment, sizeof(infoLog), &length, infoLog);
-      infoLog[length] = '\0';
-      exout << "plane fragment shader compilation failed:\n" << infoLog << std::endl;
-      return;
-    };
-
-    // shader program
-    planeSpec->planeProgram = glCreateProgram();
-    glAttachShader(planeSpec->planeProgram, planeVertex);
-    glAttachShader(planeSpec->planeProgram, planeFragment);
-    glLinkProgram(planeSpec->planeProgram);
-    glGetProgramiv(planeSpec->planeProgram, GL_LINK_STATUS, &success);
-    if (!success) {
-      char infoLog[4096];
-      GLsizei length;
-      glGetShaderInfoLog(planeSpec->planeProgram, sizeof(infoLog), &length, infoLog);
-      infoLog[length] = '\0';
-      exout << "plane program linking failed\n" << infoLog << std::endl;
-      return;
-    }
-
-    planeSpec->positionLocation = glGetAttribLocation(planeSpec->planeProgram, "position");
-    if (planeSpec->positionLocation == -1) {
-      exout << "plane program failed to get attrib location for 'position'" << std::endl;
-      return;
-    }
-    planeSpec->uvLocation = glGetAttribLocation(planeSpec->planeProgram, "uv");
-    if (planeSpec->uvLocation == -1) {
-      exout << "plane program failed to get attrib location for 'uv'" << std::endl;
-      return;
-    }
-    planeSpec->modelViewMatrixLocation = glGetUniformLocation(planeSpec->planeProgram, "modelViewMatrix");
-    if (planeSpec->modelViewMatrixLocation == -1) {
-      exout << "plane program failed to get uniform location for 'modelViewMatrix'" << std::endl;
-      return;
-    }
-    planeSpec->projectionMatrixLocation = glGetUniformLocation(planeSpec->planeProgram, "projectionMatrix");
-    if (planeSpec->projectionMatrixLocation == -1) {
-      exout << "plane program failed to get uniform location for 'projectionMatrix'" << std::endl;
-      return;
-    }
-    planeSpec->texLocation = glGetUniformLocation(planeSpec->planeProgram, "tex");
-    if (planeSpec->texLocation == -1) {
-      exout << "plane program failed to get uniform location for 'tex'" << std::endl;
-      return;
-    }
-
-    // delete the shaders as they're linked into our program now and no longer necessery
-    glDeleteShader(planeVertex);
-    glDeleteShader(planeFragment);
-
-    glGenBuffers(1, &planeSpec->positionBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, planeSpec->positionBuffer);
-    static const float positions[] = {
-      -1.0f, 1.0f,
-      1.0f, 1.0f,
-      -1.0f, -1.0f,
-      1.0f, -1.0f,
-    };
-    glBufferData(GL_ARRAY_BUFFER, sizeof(positions), positions, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(planeSpec->positionLocation);
-    glVertexAttribPointer(planeSpec->positionLocation, 2, GL_FLOAT, false, 0, 0);
-
-    glGenBuffers(1, &planeSpec->uvBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, planeSpec->uvBuffer);
-    static const float uvs[] = {
-      0.0f, 0.0f,
-      1.0f, 0.0f,
-      0.0f, 1.0f,
-      1.0f, 1.0f,
-    };
-    glBufferData(GL_ARRAY_BUFFER, sizeof(uvs), uvs, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(planeSpec->uvLocation);
-    glVertexAttribPointer(planeSpec->uvLocation, 2, GL_FLOAT, false, 0, 0);
-
-    glGenBuffers(1, &planeSpec->indexBuffer);
-    static const uint16_t indices[] = {0, 2, 1, 2, 3, 1};
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, planeSpec->indexBuffer);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-    gl->keys[GlKey::GL_KEY_PLANE] = planeSpec;
+  this->positionLocation = glGetAttribLocation(this->planeProgram, "position");
+  if (this->positionLocation == -1) {
+    exout << "plane program failed to get attrib location for 'position'" << std::endl;
+    return;
+  }
+  this->uvLocation = glGetAttribLocation(this->planeProgram, "uv");
+  if (this->uvLocation == -1) {
+    exout << "plane program failed to get attrib location for 'uv'" << std::endl;
+    return;
+  }
+  this->modelViewMatrixLocation = glGetUniformLocation(this->planeProgram, "modelViewMatrix");
+  if (this->modelViewMatrixLocation == -1) {
+    exout << "plane program failed to get uniform location for 'modelViewMatrix'" << std::endl;
+    return;
+  }
+  this->projectionMatrixLocation = glGetUniformLocation(this->planeProgram, "projectionMatrix");
+  if (this->projectionMatrixLocation == -1) {
+    exout << "plane program failed to get uniform location for 'projectionMatrix'" << std::endl;
+    return;
+  }
+  this->texLocation = glGetUniformLocation(this->planeProgram, "tex");
+  if (this->texLocation == -1) {
+    exout << "plane program failed to get uniform location for 'tex'" << std::endl;
+    return;
   }
 
-  if (gl->HasVertexArrayBinding()) {
-    glBindVertexArray(gl->GetVertexArrayBinding());
-  } else {
-    glBindVertexArray(gl->defaultVao);
-  }
-  if (gl->HasBufferBinding(GL_ARRAY_BUFFER)) {
-    glBindBuffer(GL_ARRAY_BUFFER, gl->GetBufferBinding(GL_ARRAY_BUFFER));
-  } else {
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-  }
+  // delete the shaders as they're linked into our program now and no longer necessery
+  glDeleteShader(planeVertex);
+  glDeleteShader(planeFragment);
+
+  glGenBuffers(1, &this->positionBuffer);
+  glBindBuffer(GL_ARRAY_BUFFER, this->positionBuffer);
+  static const float positions[] = {
+    -1.0f, 1.0f,
+    1.0f, 1.0f,
+    -1.0f, -1.0f,
+    1.0f, -1.0f,
+  };
+  glBufferData(GL_ARRAY_BUFFER, sizeof(positions), positions, GL_STATIC_DRAW);
+  glEnableVertexAttribArray(this->positionLocation);
+  glVertexAttribPointer(this->positionLocation, 2, GL_FLOAT, false, 0, 0);
+
+  glGenBuffers(1, &this->uvBuffer);
+  glBindBuffer(GL_ARRAY_BUFFER, this->uvBuffer);
+  static const float uvs[] = {
+    0.0f, 0.0f,
+    1.0f, 0.0f,
+    0.0f, 1.0f,
+    1.0f, 1.0f,
+  };
+  glBufferData(GL_ARRAY_BUFFER, sizeof(uvs), uvs, GL_STATIC_DRAW);
+  glEnableVertexAttribArray(this->uvLocation);
+  glVertexAttribPointer(this->uvLocation, 2, GL_FLOAT, false, 0, 0);
+
+  glGenBuffers(1, &this->indexBuffer);
+  static const uint16_t indices[] = {0, 2, 1, 2, 3, 1};
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->indexBuffer);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 }
+PlaneGlShader::~PlaneGlShader() {}
 
 constexpr GLint MAX_TEXTURE_SIZE = 4096;
 bool CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint sharedColorTex, GLuint sharedDepthStencilTex, GLuint sharedMsColorTex, GLuint sharedMsDepthStencilTex, GLuint *pfbo, GLuint *pcolorTex, GLuint *pdepthStencilTex, GLuint *pmsFbo, GLuint *pmsColorTex, GLuint *pmsDepthStencilTex) {
@@ -540,35 +530,66 @@ NAN_METHOD(DestroyRenderTarget) {
   }
 }
 
-void ComposeLayer(ComposeSpec *composeSpec, PlaneSpec *planeSpec, const LayerSpec &layer) {
+template <typename T>
+T *getGlShader(WebGLRenderingContext *gl) {
+  const GlKey &key = T::key;
+  auto iter = gl->keys.find(key);
+  if (iter != gl->keys.end()) {
+    return (T *)iter->second;
+  } else {
+    T *t = new T();
+
+    {
+      if (gl->HasVertexArrayBinding()) {
+        glBindVertexArray(gl->GetVertexArrayBinding());
+      } else {
+        glBindVertexArray(gl->defaultVao);
+      }
+      if (gl->HasBufferBinding(GL_ARRAY_BUFFER)) {
+        glBindBuffer(GL_ARRAY_BUFFER, gl->GetBufferBinding(GL_ARRAY_BUFFER));
+      } else {
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+      }
+    }
+
+    gl->keys[key] = t;
+    return t;
+  }
+}
+
+void ComposeLayer(WebGLRenderingContext *gl, const LayerSpec &layer) {
   if (layer.layerType == LayerType::IFRAME_3D || layer.layerType == LayerType::RAW_CANVAS) {
-    glBindVertexArray(composeSpec->composeVao);
-    glUseProgram(composeSpec->composeProgram);
+    ComposeGlShader *composeGlShader = getGlShader<ComposeGlShader>(gl);
+
+    glBindVertexArray(composeGlShader->composeVao);
+    glUseProgram(composeGlShader->composeProgram);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, layer.msTex);
-    glUniform1i(composeSpec->msTexLocation, 0);
+    glUniform1i(composeGlShader->msTexLocation, 0);
 
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, layer.msDepthTex);
-    glUniform1i(composeSpec->msDepthTexLocation, 1);
+    glUniform1i(composeGlShader->msDepthTexLocation, 1);
 
-    glUniform4f(composeSpec->texSizeLocation, 0, 0, layer.width, layer.height);
+    glUniform4f(composeGlShader->texSizeLocation, 0, 0, layer.width, layer.height);
 
     glViewport(0, 0, layer.width, layer.height);
     // glScissor(0, 0, width, height);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
   } else {
-    glBindVertexArray(planeSpec->planeVao);
-    glUseProgram(planeSpec->planeProgram);
+    PlaneGlShader *planeGlShader = getGlShader<ComposeGlShader>(gl);
+
+    glBindVertexArray(planeGlShader->planeVao);
+    glUseProgram(planeGlShader->planeProgram);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, layer.tex);
-    glUniform1i(planeSpec->texLocation, 0);
+    glUniform1i(planeGlShader->texLocation, 0);
 
     {
-      glUniformMatrix4fv(planeSpec->modelViewMatrixLocation, 1, false, layer.modelView[0]);
-      glUniformMatrix4fv(planeSpec->projectionMatrixLocation, 1, false, layer.projection[0]);
+      glUniformMatrix4fv(planeGlShader->modelViewMatrixLocation, 1, false, layer.modelView[0]);
+      glUniformMatrix4fv(planeGlShader->projectionMatrixLocation, 1, false, layer.projection[0]);
 
       // glViewport(layer.viewports[0][0], layer.viewports[0][1], layer.viewports[0][2], layer.viewports[0][3]);
       glViewport(0, 0, layer.width/2, layer.height);
@@ -576,8 +597,8 @@ void ComposeLayer(ComposeSpec *composeSpec, PlaneSpec *planeSpec, const LayerSpe
       glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
     }
     {
-      glUniformMatrix4fv(planeSpec->modelViewMatrixLocation, 1, false, layer.modelView[1]);
-      glUniformMatrix4fv(planeSpec->projectionMatrixLocation, 1, false, layer.projection[1]);
+      glUniformMatrix4fv(planeGlShader->modelViewMatrixLocation, 1, false, layer.modelView[1]);
+      glUniformMatrix4fv(planeGlShader->projectionMatrixLocation, 1, false, layer.projection[1]);
 
       // glViewport(layer.viewports[1][0], layer.viewports[1][1], layer.viewports[1][2], layer.viewports[1][3]);
       glViewport(layer.width/2, 0, layer.width/2, layer.height);
@@ -587,18 +608,20 @@ void ComposeLayer(ComposeSpec *composeSpec, PlaneSpec *planeSpec, const LayerSpe
   }
 }
 
-void ComposeLayer(ComposeSpec *composeSpec, PlaneSpec *planeSpec, GLuint *fbos, const LayerSpec &layer) {
+void ComposeLayer(WebGLRenderingContext *gl, GLuint *fbos, const LayerSpec &layer) {
   if (layer.layerType == LayerType::IFRAME_3D || layer.layerType == LayerType::RAW_CANVAS) {
-    glBindVertexArray(composeSpec->composeVao);
-    glUseProgram(composeSpec->composeProgram);
+    ComposeGlShader *composeGlShader = getGlShader<ComposeGlShader>(gl);
+
+    glBindVertexArray(composeGlShader->composeVao);
+    glUseProgram(composeGlShader->composeProgram);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, layer.msTex);
-    glUniform1i(composeSpec->msTexLocation, 0);
+    glUniform1i(composeGlShader->msTexLocation, 0);
 
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, layer.msDepthTex);
-    glUniform1i(composeSpec->msDepthTexLocation, 1);
+    glUniform1i(composeGlShader->msDepthTexLocation, 1);
 
     glViewport(0, 0, layer.width/2, layer.height);
     // glScissor(0, 0, width, height);
@@ -606,11 +629,13 @@ void ComposeLayer(ComposeSpec *composeSpec, PlaneSpec *planeSpec, GLuint *fbos, 
     for (size_t i = 0; i < 2; i++) {
       glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbos[i]);
 
-      glUniform4f(composeSpec->texSizeLocation, i*(layer.width/2), 0, layer.width/2, layer.height);
+      glUniform4f(composeGlShader->texSizeLocation, i*(layer.width/2), 0, layer.width/2, layer.height);
 
       glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
     }
   } else {
+    PlaneGlShader *planeGlShader = getGlShader<ComposeGlShader>(gl);
+
     glBindVertexArray(planeSpec->planeVao);
     glUseProgram(planeSpec->planeProgram);
 
@@ -644,9 +669,6 @@ void ComposeLayer(ComposeSpec *composeSpec, PlaneSpec *planeSpec, GLuint *fbos, 
 }
 
 void ComposeLayers(WebGLRenderingContext *gl, size_t numFbos, GLuint *fbos, const std::vector<LayerSpec> &layers) {
-  ComposeSpec *composeSpec = (ComposeSpec *)(gl->keys[GlKey::GL_KEY_COMPOSE]);
-  PlaneSpec *planeSpec = (PlaneSpec *)(gl->keys[GlKey::GL_KEY_PLANE]);
-
   for (size_t i = 0; i < numFbos; i++) {
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbos[i]);
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
@@ -654,11 +676,11 @@ void ComposeLayers(WebGLRenderingContext *gl, size_t numFbos, GLuint *fbos, cons
   // XXX if there is one layer, we can disable depth test/depth write
   if (numFbos == 1) {
     for (size_t i = 0; i < layers.size(); i++) {
-      ComposeLayer(composeSpec, planeSpec, layers[i]);
+      ComposeLayer(gl, layers[i]);
     }
   } else {
     for (size_t i = 0; i < layers.size(); i++) {
-      ComposeLayer(composeSpec, planeSpec, fbos, layers[i]);
+      ComposeLayer(gl, fbos, layers[i]);
     }
   }
 

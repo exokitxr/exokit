@@ -85,6 +85,11 @@ enum GlKey {
   GL_KEY_PLANE,
 };
 
+class GlShader {
+public:
+  virtual ~GlShader() = 0;
+};
+
 void flipImageData(char *dstData, char *srcData, size_t width, size_t height, size_t pixelSize);
 
 class ViewportState {
