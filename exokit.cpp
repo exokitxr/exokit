@@ -221,12 +221,14 @@ void InitExports(Local<Object> exports) {
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeMl"), ml);
 #endif
 
-#if !defined(ANDROID) && !defined(LUMIN)
-#define NATIVE_ANALYTICS true
+#if defined(ANDROID)
+#define NATIVE_PLATFORM "android"
+#elif defined(LUMIN)
+#define NATIVE_PLATFORM "lumin"
 #else
-#define NATIVE_ANALYTICS false
+#define NATIVE_PLATFORM ""
 #endif
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeAnalytics"), JS_BOOL(NATIVE_ANALYTICS));
+  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativePlatform"), JS_STR(NATIVE_PLATFORM));
 
   uintptr_t initFunctionAddress = (uintptr_t)InitExports;
   Local<Array> initFunctionAddressArray = Nan::New<Array>(2);

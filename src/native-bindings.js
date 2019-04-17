@@ -20,7 +20,7 @@ for (const k in exokitNode) {
 }
 bindings.nativeWorker = WindowWorker;
 bindings.nativeVm = vmOne;
-const isAndroid = true; // XXX
+const isAndroid = bindings.nativePlatform === 'android';
 const glslVersion = isAndroid ? '300 es' : '330';
 const _decorateGlIntercepts = gl => {
   gl.createShader = (createShader => function(type) {

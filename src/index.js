@@ -2380,7 +2380,7 @@ const _start = () => {
 };
 
 if (require.main === module) {
-  if (nativeBindings.nativeAnalytics) {
+  if (!nativeBindings.nativePlatform) { // not a mobile platform
     require(path.join(__dirname, 'bugsnag'));
     require('fault-zone').registerHandler((stack, stackLen) => {
       const message = new Buffer(stack, 0, stackLen).toString('utf8');
