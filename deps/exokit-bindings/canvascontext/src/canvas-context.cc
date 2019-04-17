@@ -839,7 +839,7 @@ NAN_SETTER(CanvasRenderingContext2D::FontVariantSetter) {
   if (value->IsString()) {
     // TODO
   } else {
-    Nan::ThrowError("fontStyle: invalid arguments");
+    Nan::ThrowError("fontVariant: invalid arguments");
   }
 }
 
