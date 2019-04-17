@@ -625,18 +625,18 @@ void ComposeLayer(WebGLRenderingContext *gl, GLuint *fbos, const LayerSpec &laye
   } else {
     PlaneGlShader *planeGlShader = getGlShader<ComposeGlShader>(gl);
 
-    glBindVertexArray(planeSpec->planeVao);
-    glUseProgram(planeSpec->planeProgram);
+    glBindVertexArray(planeGlShader->planeVao);
+    glUseProgram(planeGlShader->planeProgram);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, layer.tex);
-    glUniform1i(planeSpec->texLocation, 0);
+    glUniform1i(planeGlShader->texLocation, 0);
 
     {
       glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbos[0]);
 
-      glUniformMatrix4fv(planeSpec->modelViewMatrixLocation, 1, false, layer.modelView[0]);
-      glUniformMatrix4fv(planeSpec->projectionMatrixLocation, 1, false, layer.projection[0]);
+      glUniformMatrix4fv(planeGlShader->modelViewMatrixLocation, 1, false, layer.modelView[0]);
+      glUniformMatrix4fv(planeGlShader->projectionMatrixLocation, 1, false, layer.projection[0]);
 
       // glViewport(layer.viewports[0][0], layer.viewports[0][1], layer.viewports[0][2], layer.viewports[0][3]);
       glViewport(0, 0, layer.width/2, layer.height);
@@ -646,8 +646,8 @@ void ComposeLayer(WebGLRenderingContext *gl, GLuint *fbos, const LayerSpec &laye
     {
       glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbos[1]);
 
-      glUniformMatrix4fv(planeSpec->modelViewMatrixLocation, 1, false, layer.modelView[1]);
-      glUniformMatrix4fv(planeSpec->projectionMatrixLocation, 1, false, layer.projection[1]);
+      glUniformMatrix4fv(planeGlShader->modelViewMatrixLocation, 1, false, layer.modelView[1]);
+      glUniformMatrix4fv(planeGlShader->projectionMatrixLocation, 1, false, layer.projection[1]);
 
       // glViewport(layer.viewports[1][0], layer.viewports[1][1], layer.viewports[1][2], layer.viewports[1][3]);
       glViewport(layer.width/2, 0, layer.width/2, layer.height);
