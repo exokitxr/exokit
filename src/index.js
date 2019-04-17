@@ -1846,12 +1846,12 @@ const _startRenderLoop = () => {
         return;
       }
 
-      mlPresentState.mlContext.PrepareFrame(
+      /* mlPresentState.mlContext.PrepareFrame(
         mlPresentState.mlGlContext,
         mlPresentState.mlMsFbo,
         xrState.renderWidth[0]*2,
         xrState.renderHeight[0],
-      );
+      ); */
 
       if (args.performance) {
         const now = Date.now();

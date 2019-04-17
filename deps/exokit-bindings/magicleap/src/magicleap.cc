@@ -1915,7 +1915,7 @@ Local<Object> MLContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "GetSize", GetSize);
   Nan::SetMethod(proto, "SetContentTexture", SetContentTexture);
   Nan::SetMethod(proto, "RequestGetPoses", RequestGetPoses);
-  Nan::SetMethod(proto, "PrepareFrame", PrepareFrame);
+  // Nan::SetMethod(proto, "PrepareFrame", PrepareFrame);
   Nan::SetMethod(proto, "SubmitFrame", SubmitFrame);
 
   Local<Function> ctorFn = Nan::GetFunction(ctor).ToLocalChecked();
@@ -3454,7 +3454,7 @@ NAN_METHOD(MLContext::RequestGetPoses) {
   }
 }
 
-NAN_METHOD(MLContext::PrepareFrame) {
+/* NAN_METHOD(MLContext::PrepareFrame) {
   if (info[0]->IsObject() && info[1]->IsNumber() && info[2]->IsNumber() && info[3]->IsNumber()) {
     if (depthEnabled) {
       MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
@@ -3538,7 +3538,7 @@ NAN_METHOD(MLContext::PrepareFrame) {
   } else {
     Nan::ThrowError("MLContext::PrepareFrame: invalid arguments");
   }
-}
+} */
 
 NAN_METHOD(MLContext::SubmitFrame) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
