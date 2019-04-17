@@ -136,8 +136,9 @@ NAN_METHOD(OVRSession::GetRecommendedRenderTargetSize)
     return;
   }
 
-  ovrSession session = *ObjectWrap::Unwrap<OVRSession>(info.Holder())->session;
-  ovrHmdDesc hmdDesc = ObjectWrap::Unwrap<OVRSession>(info.Holder())->hmdDesc;
+  OVRSession *s = ObjectWrap::Unwrap<OVRSession>(info.Holder());
+  ovrSession &session = *s->session;
+  ovrHmdDesc &hmdDesc = s->hmdDesc;
 
   ovrSizei leftEyeTextureSize = ovr_GetFovTextureSize(session, ovrEye_Left, hmdDesc.DefaultEyeFov[ovrEye_Left], 1);
   ovrSizei rightEyeTextureSize = ovr_GetFovTextureSize(session, ovrEye_Right, hmdDesc.DefaultEyeFov[ovrEye_Right], 1);
