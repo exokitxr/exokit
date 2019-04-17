@@ -511,7 +511,11 @@ if (nativeBindings.nativeOculusVR) {
         vrPresentState.oculusSystem = system;
         vrPresentState.glContext = context;
         vrPresentState.msFbo = msFbo;
+        vrPresentState.msTex = msTex;	
+        vrPresentState.msDepthTex = msDepthTex;
         vrPresentState.fbo = fbo;
+        vrPresentState.tex = tex;	
+        vrPresentState.depthTex = depthTex;
         vrPresentState.cleanups = cleanups;
 
         vrPresentState.lmContext = lmContext;
