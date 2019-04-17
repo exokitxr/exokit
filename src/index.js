@@ -1248,8 +1248,6 @@ const _startRenderLoop = () => {
 
             mlPresentState.mlContext.SubmitFrame(mlPresentState.mlTex, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height);
             mlPresentState.mlHasPose = false;
-
-            // nativeWindow.blitFrameBuffer(context, mlPresentState.mlFbo, 0, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, xrState.renderWidth[0], xrState.renderHeight[0],, true, false, false);
           } else if (fakePresentState.layers.length > 0) {
             const {fakeVrDisplay} = window[symbols.mrDisplaysSymbol];
             _decorateModelViewProjections(fakePresentState.layers, fakeVrDisplay, 1);
