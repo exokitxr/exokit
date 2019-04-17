@@ -36,6 +36,8 @@ void unregisterGLObj(GLuint obj); */
 
 #define JS_GL_CONSTANT(name) JS_GL_SET_CONSTANT(#name, GL_ ## name)
 
+GlShader::~GlShader() {}
+
 template<NAN_METHOD(F)>
 NAN_METHOD(glCallWrap) {
   Local<Object> glObj = info.This();
