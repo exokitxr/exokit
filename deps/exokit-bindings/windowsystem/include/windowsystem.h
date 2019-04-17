@@ -40,8 +40,8 @@ public:
 
 class ComposeGlShader : public GlShader {
 public:
-  GlShader();
-  virtual ~GlShader();
+  ComposeGlShader();
+  virtual ~ComposeGlShader();
 
   static const GlKey key = GlKey::GL_KEY_COMPOSE;
 
