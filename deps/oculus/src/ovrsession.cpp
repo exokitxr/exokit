@@ -412,14 +412,10 @@ NAN_METHOD(OVRSession::Submit)
   ovrSessionStatus sessionStatus;
   ovr_GetSessionStatus(*session->session, &sessionStatus);
 
-  if (sessionStatus.HmdMounted) {
-    if (ObjectWrap::Unwrap<OVRSession>(info.Holder())->hmdMounted == false) {
-      session->ResetSession();
-      session->hmdMounted = true;
-    }
-  } else {
-    session->hmdMounted = false;
+  if (sessionStatus.HmdMounted && !session->hmdMounted) {
+    session->ResetSession();
   }
+  session->hmdMounted = sessionStatus.HmdMounted;
 
   ovr_CommitTextureSwapChain(*session->session, session->swapChain.ColorTextureChain);
   ovr_CommitTextureSwapChain(*session->session, session->swapChain.DepthTextureChain);
