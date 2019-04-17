@@ -1718,7 +1718,7 @@ window.addEventListener('mousemove', e => {
       localEuler.x = Math.min(Math.max(localEuler.x, -Math.PI/2), Math.PI/2);
       fakeDisplay.quaternion.setFromEuler(localEuler);
 
-      // fakeDisplay.update();
+      fakeDisplay.pushUpdate();
     // }
   }
 });
@@ -2619,7 +2619,7 @@ function animate(time, frame) {
             localVector.copy(velocity)
               .applyEuler(localEuler)
           );
-          // fakeDisplay.update();
+          fakeDisplay.pushUpdate();
         // }
       // }
     }
@@ -2668,23 +2668,6 @@ function animate(time, frame) {
   };
   _updateMp();
 
-  /* const _updateFakeDisplay = () => {
-    if (fakeDisplay) {
-      const factor = startTimeDiff/1000 % (Math.PI*2);
-
-      fakeDisplay.position.set(0, 1.6, 0);
-      fakeDisplay.quaternion.setFromRotationMatrix(
-        new THREE.Matrix4().lookAt(
-          fakeDisplay.position,
-          new THREE.Vector3(0, 1.6, -1),
-          new THREE.Vector3(0, 1, 0)
-        )
-      );
-      fakeDisplay.update();
-    }
-  };
-  _updateFakeDisplay(); */
-
   lastTime = now;
 }
 
@@ -2693,6 +2676,8 @@ function animate(time, frame) {
 const _bootFakeDisplay = async () => {
   fakeDisplay = _makeFakeDisplay();
   fakeDisplay.position.set(0, 1.6, 0);
+  fakeDisplay.pushUpdate();
+
   await fakeDisplay.enter({
     renderer,
     animate,

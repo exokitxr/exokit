@@ -1292,9 +1292,6 @@ const _startRenderLoop = () => {
       timestamps.last = now;
     }
 
-    if (fakePresentState.fakeVrDisplay) {
-      fakePresentState.fakeVrDisplay.waitGetPoses();
-    }
     if (vrPresentState.isPresenting) {
       if (args.performance) {
         const now = Date.now();
@@ -1697,6 +1694,7 @@ const _startRenderLoop = () => {
       }
     }
 
+    // XXX this only needs to happen at the top level
     // compute derived gamepads data
     for (let i = 0; i < xrState.gamepads.length; i++) {
       const gamepad = xrState.gamepads[i];
@@ -1713,6 +1711,7 @@ const _startRenderLoop = () => {
     }
 
     // poll xr device events
+    fakePresentState.fakeVrDisplay && fakePresentState.fakeVrDisplay.update();
     for (let i = 0; i < windows.length; i++) {
       const window = windows[i];
       window[symbols.mrDisplaysSymbol].oculusVRDevice.session && window[symbols.mrDisplaysSymbol].oculusVRDevice.session.update();
