@@ -43,7 +43,7 @@ public:
   ComposeGlShader();
   virtual ~ComposeGlShader();
 
-  static const GlKey key = GlKey::GL_KEY_COMPOSE;
+  static GlKey key;
 
   GLuint composeVao;
   GLuint composeProgram;
@@ -62,7 +62,7 @@ public:
   PlaneGlShader();
   virtual ~PlaneGlShader();
 
-  static const GlKey key = GlKey::GL_KEY_PLANE;
+  static GlKey key;
 
   GLuint planeVao;
   GLuint planeProgram;

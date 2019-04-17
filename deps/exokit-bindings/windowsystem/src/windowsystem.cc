@@ -161,6 +161,7 @@ ComposeGlShader::ComposeGlShader() {
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 }
 ComposeGlShader::~ComposeGlShader() {}
+GlKey ComposeGlShader::key = GlKey::GL_KEY_COMPOSE;
 
 const char *planeVsh = ""
 #ifdef ANDROID
@@ -306,6 +307,7 @@ PlaneGlShader::PlaneGlShader() {
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 }
 PlaneGlShader::~PlaneGlShader() {}
+GlKey PlaneGlShader::key = GlKey::GL_KEY_PLANE;
 
 constexpr GLint MAX_TEXTURE_SIZE = 4096;
 bool CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint sharedColorTex, GLuint sharedDepthStencilTex, GLuint sharedMsColorTex, GLuint sharedMsDepthStencilTex, GLuint *pfbo, GLuint *pcolorTex, GLuint *pdepthStencilTex, GLuint *pmsFbo, GLuint *pmsColorTex, GLuint *pmsDepthStencilTex) {
