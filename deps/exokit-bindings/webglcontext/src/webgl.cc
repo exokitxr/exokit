@@ -4626,10 +4626,7 @@ NAN_METHOD(WebGLRenderingContext::GetParameter) {
     {
       GLint64 elementIndex = -1;
       glGetInteger64v(GL_MAX_ELEMENT_INDEX, &elementIndex);
-      if (glGetError() == GL_NO_ERROR) {
-        info.GetReturnValue().Set(JS_INT((GLuint)elementIndex));
-      }
-      else info.GetReturnValue().Set(JS_INT((GLuint)-1));
+      info.GetReturnValue().Set(JS_INT((GLuint)elementIndex));
       break;
     }
     default: {
