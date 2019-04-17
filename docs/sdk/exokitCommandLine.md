@@ -2,7 +2,7 @@
 title: Command Line
 type: sdk
 layout: docs
-order: 2
+order: 3
 parent_section: sdk
 ---
 
