@@ -9,4 +9,3 @@ CMakeCache.txt
 .localStorage
 .node-gyp
 /app
-*.sw[jklmnop]
