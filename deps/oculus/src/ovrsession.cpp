@@ -491,7 +491,7 @@ void OVRSession::ResetSession() {
   if (hadSwapChain) {
     DestroySwapChain();
   }
-  if (this->session) {
+  if (this->session != nullptr) {
     DestroySession();
   }
 
