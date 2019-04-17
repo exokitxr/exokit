@@ -97,6 +97,9 @@ Local<Object> OVRSession::NewInstance()
 //=============================================================================
 OVRSession::OVRSession() :
   session(nullptr),
+  swapChainValid(false),
+  swapChainMetrics{0, 0},
+  fboMetrics{0, 0},
   fbo(0),
   msFbo(0),
   msColorTex(0),
@@ -448,21 +451,7 @@ NAN_METHOD(OVRSession::Submit)
   ovr_SubmitFrame(*session->session, session->frameIndex, nullptr, layers, sizeof(layers)/sizeof(layers[0]));
   session->frameIndex++;
   
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, session->fbo);
-  {
-    int curIndex;	
-    ovr_GetTextureSwapChainCurrentIndex(*session->session, session->swapChain.ColorTextureChain, &curIndex);
-    GLuint colorTex;
-    ovr_GetTextureSwapChainBufferGL(*session->session, session->swapChain.ColorTextureChain, curIndex, &colorTex);
-    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
-  }
-  {
-    int curIndex;	
-    ovr_GetTextureSwapChainCurrentIndex(*session->session, session->swapChain.DepthTextureChain, &curIndex);
-    GLuint depthStencilTex;
-    ovr_GetTextureSwapChainBufferGL(*session->session, session->swapChain.DepthTextureChain, curIndex, &depthStencilTex);
-    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthStencilTex, 0);
-  }
+  session->AttachFbos();
 
   // Rebind previous framebuffers.
   if (session->swapChainGl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
@@ -482,7 +471,7 @@ void OVRSession::DestroySession() {
 
 void OVRSession::ResetSession() {
 
-  bool hadSwapChain = this->fbo != 0;
+  bool hadSwapChain = this->swapChainValid;
   if (hadSwapChain) {
     DestroySwapChain();
   }
@@ -512,13 +501,13 @@ void OVRSession::ResetSession() {
   this->hmdDesc = ovr_GetHmdDesc(*this->session);
   
   if (hadSwapChain) {
-    CreateSwapChain();
+    ResetSwapChain();
   }
 }
 
-void OVRSession::CreateSwapChain() {
-  if (this->fbo != 0) {
-    this->DestroySwapChain();
+void OVRSession::ResetSwapChain() {
+  if (this->swapChainValid) {
+    DestroySwapChain();
   }
 
   // Color swap chain
@@ -571,25 +560,23 @@ void OVRSession::CreateSwapChain() {
     }
   }
 
-  glGenFramebuffers(1, &this->fbo);
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, this->fbo);
-  {
-    int curIndex;	
-    ovr_GetTextureSwapChainCurrentIndex(*this->session, this->swapChain.ColorTextureChain, &curIndex);
-    GLuint colorTex;
-    ovr_GetTextureSwapChainBufferGL(*this->session, this->swapChain.ColorTextureChain, curIndex, &colorTex);
-    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
-  }
-  {
-    int curIndex;	
-    ovr_GetTextureSwapChainCurrentIndex(*this->session, this->swapChain.DepthTextureChain, &curIndex);
-    GLuint depthStencilTex;
-    ovr_GetTextureSwapChainBufferGL(*this->session, this->swapChain.DepthTextureChain, curIndex, &depthStencilTex);
-    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthStencilTex, 0);
-  }
+  EnsureFbos();
+  AttachFbos();
+  
+  this->swapChainValid = true;
+}
 
-  {  
+void OVRSession::EnsureFbos() {
+  if (fbo == 0) {
+    glGenFramebuffers(1, &fbo);
     glGenFramebuffers(1, &msFbo);
+  }
+  if (this->swapChainMetrics[0] != this->fboMetrics[0] || this->swapChainMetrics[1] != this->fboMetrics[1]) {
+    if (msColorTex) {
+      glDeleteTextures(1, &msColorTex);
+      glDeleteTextures(1, &msDepthStencilTex);
+    }
+    
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, msFbo);
 
     glGenTextures(1, &msDepthStencilTex);
@@ -607,6 +594,43 @@ void OVRSession::CreateSwapChain() {
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, msColorTex, 0);
     
     glClear(GL_DEPTH_BUFFER_BIT); // initialize to far depth
+    
+    this->fboMetrics[0] = this->swapChainMetrics[0];
+    this->fboMetrics[1] = this->swapChainMetrics[1];
+
+    if (this->swapChainGl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, this->swapChainGl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
+    } else {
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, this->swapChainGl->defaultFramebuffer);
+    }
+    if (this->swapChainGl->HasTextureBinding(this->swapChainGl->activeTexture, GL_TEXTURE_2D)) {
+      glBindTexture(GL_TEXTURE_2D, this->swapChainGl->GetTextureBinding(this->swapChainGl->activeTexture, GL_TEXTURE_2D));
+    } else {
+      glBindTexture(GL_TEXTURE_2D, 0);
+    }
+    if (this->swapChainGl->HasTextureBinding(this->swapChainGl->activeTexture, GL_TEXTURE_2D_MULTISAMPLE)) {
+      glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, this->swapChainGl->GetTextureBinding(this->swapChainGl->activeTexture, GL_TEXTURE_2D_MULTISAMPLE));
+    } else {
+      glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+    }
+  }
+}
+
+void OVRSession::AttachFbos() {
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, this->fbo);
+  {
+    int curIndex;	
+    ovr_GetTextureSwapChainCurrentIndex(*this->session, this->swapChain.ColorTextureChain, &curIndex);
+    GLuint colorTex;
+    ovr_GetTextureSwapChainBufferGL(*this->session, this->swapChain.ColorTextureChain, curIndex, &colorTex);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
+  }
+  {
+    int curIndex;	
+    ovr_GetTextureSwapChainCurrentIndex(*this->session, this->swapChain.DepthTextureChain, &curIndex);
+    GLuint depthStencilTex;
+    ovr_GetTextureSwapChainBufferGL(*this->session, this->swapChain.DepthTextureChain, curIndex, &depthStencilTex);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthStencilTex, 0);
   }
 
   if (this->swapChainGl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
@@ -614,30 +638,13 @@ void OVRSession::CreateSwapChain() {
   } else {
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, this->swapChainGl->defaultFramebuffer);
   }
-  if (this->swapChainGl->HasTextureBinding(this->swapChainGl->activeTexture, GL_TEXTURE_2D)) {
-    glBindTexture(GL_TEXTURE_2D, this->swapChainGl->GetTextureBinding(this->swapChainGl->activeTexture, GL_TEXTURE_2D));
-  } else {
-    glBindTexture(GL_TEXTURE_2D, 0);
-  }
-  if (this->swapChainGl->HasTextureBinding(this->swapChainGl->activeTexture, GL_TEXTURE_2D_MULTISAMPLE)) {
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, this->swapChainGl->GetTextureBinding(this->swapChainGl->activeTexture, GL_TEXTURE_2D_MULTISAMPLE));
-  } else {
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
-  }
 }
 
 void OVRSession::DestroySwapChain() {
   ovr_DestroyTextureSwapChain(*this->session, this->swapChain.ColorTextureChain);
   ovr_DestroyTextureSwapChain(*this->session, this->swapChain.DepthTextureChain);
-
-  glDeleteFramebuffers(1, &this->fbo);
-  this->fbo = 0;
-  glDeleteFramebuffers(1, &this->msFbo);
-  this->msFbo = 0;
-  glDeleteTextures(1, &this->msColorTex);
-  this->msColorTex = 0;
-  glDeleteTextures(1, &this->msDepthStencilTex);
-  this->msDepthStencilTex = 0;
+  
+  this->swapChainValid = false;
 }
 
 NAN_METHOD(OVRSession::CreateSwapChain) {
@@ -674,7 +681,7 @@ NAN_METHOD(OVRSession::CreateSwapChain) {
   session->swapChainMetrics[0] = width;
   session->swapChainMetrics[1] = height;
   
-  session->CreateSwapChain();
+  session->ResetSwapChain();
   
   GLuint colorTex = 0;
   GLuint depthStencilTex = 0;
@@ -694,4 +701,11 @@ NAN_METHOD(OVRSession::ExitPresent) {
   
   ovr_DestroyTextureSwapChain(*session->session, session->swapChain.ColorTextureChain);
   ovr_DestroyTextureSwapChain(*session->session, session->swapChain.DepthTextureChain);
+  
+  if (session->fbo != 0) {
+    glDeleteFramebuffers(1, &session->fbo);
+    glDeleteFramebuffers(1, &session->msFbo);
+    glDeleteTextures(1, &session->msColorTex);
+    glDeleteTextures(1, &session->msDepthStencilTex);
+  }
 }

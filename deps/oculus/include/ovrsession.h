@@ -59,7 +59,9 @@ private:
     }
   }
 
-  void CreateSwapChain();
+  void ResetSwapChain();
+  void EnsureFbos();
+  void AttachFbos();
   void DestroySwapChain();
   void DestroySession();
   void ResetSession();
@@ -68,8 +70,10 @@ private:
   ovrSession *session;
   ovrHmdDesc hmdDesc;
   EyeSwapChain swapChain;
+  bool swapChainValid;
   ovrPosef eyeRenderPoses[2];
   int swapChainMetrics[2];
+  int fboMetrics[2];
   WebGLRenderingContext *swapChainGl;
   GLuint fbo;
   GLuint msFbo;
