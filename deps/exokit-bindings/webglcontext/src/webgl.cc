@@ -1177,7 +1177,7 @@ WebGLRenderingContext::WebGLRenderingContext() :
 
 WebGLRenderingContext::~WebGLRenderingContext() {
   for (auto iter = keys.begin(); iter != keys.end(); iter++) {
-    GlShader *glShader (GlShader *)iter->second;
+    GlShader *glShader = (GlShader *)iter->second;
     delete glShader;
   }
 }
