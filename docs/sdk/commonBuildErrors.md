@@ -10,7 +10,7 @@ This doc covers common errors when building the Exokit engine and their solution
 
 ### `Error: Cannot find module './build/Release/vm_one.node'`
 
-There was a build failure that was ignored and node_modules contains the failure. Wipe node_modules and try to build again.
+There was a build failure that was ignored and `node_modules` contains the failure. Wipe `node_modules` and try to build again.
 
 ```sh
 rm -rf node_modules
