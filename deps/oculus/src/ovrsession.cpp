@@ -524,7 +524,7 @@ void OVRSession::ResetSession() {
   }
 }
 
-GLuint OVRSession::CreateSwapChain() {
+void OVRSession::CreateSwapChain() {
   if (this->fbo != 0) {
     this->DestroySwapChain();
   }

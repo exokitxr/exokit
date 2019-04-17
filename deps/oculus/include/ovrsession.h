@@ -59,7 +59,7 @@ private:
     }
   }
 
-  GLuint CreateSwapChain();
+  void CreateSwapChain();
   void DestroySwapChain();
   void DestroySession();
   void ResetSession();
