@@ -449,7 +449,7 @@ NAN_METHOD(OVRSession::Submit)
     &ld.Header,
   };
   ovr_SubmitFrame(*session->session, session->frameIndex, nullptr, layers, sizeof(layers)/sizeof(layers[0]));
-  session->frameIndex += 1;
+  session->frameIndex++;
   
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, session->fbo);
   {
