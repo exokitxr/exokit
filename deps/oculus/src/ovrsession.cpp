@@ -101,7 +101,8 @@ OVRSession::OVRSession() :
   msFbo(0),
   msColorTex(0),
   msDepthStencilTex(0),
-  frameIndex(0)
+  frameIndex(0),
+  hmdMounted(true)
 {
   ResetSession();
   this->hmdDesc = ovr_GetHmdDesc(*this->session);
