@@ -4454,6 +4454,7 @@ NAN_METHOD(WebGLRenderingContext::GetParameter) {
     case GL_MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS:
     case GL_MAX_UNIFORM_BLOCK_SIZE:
     case GL_MAX_UNIFORM_BUFFER_BINDINGS:
+    case GL_MAX_VARYING_COMPONENTS:
     case GL_MAX_VERTEX_OUTPUT_COMPONENTS:
     case GL_MAX_VERTEX_UNIFORM_BLOCKS:
     case GL_MAX_VERTEX_UNIFORM_COMPONENTS:
@@ -4463,18 +4464,6 @@ NAN_METHOD(WebGLRenderingContext::GetParameter) {
       GLint param;
       glGetIntegerv(name, &param);
       info.GetReturnValue().Set(JS_INT(param));
-      break;
-    }
-    case GL_MAX_VARYING_COMPONENTS:
-    {
-      // return an int
-      GLint param;
-      glGetIntegerv(GL_MAX_VARYING_VECTORS, &param);
-      if (param >= 0) {
-        info.GetReturnValue().Set(JS_INT(4*param));
-      } else {
-        info.GetReturnValue().Set(JS_INT(param));
-      }
       break;
     }
     case GL_DEPTH_CLEAR_VALUE:
