@@ -8,6 +8,9 @@
 #include <oboe/Oboe.h>
 #endif
 #ifdef LUMIN
+extern "C" {
+#include <libswresample/swresample.h>
+}
 #include <ml_audio.h>
 #endif
 
@@ -89,6 +92,8 @@ public:
   std::deque<std::vector<float>> inputBuffers;
   int outputIndex = 0;
   int inputIndex = 0;
+  struct SwrContext *output_swr_ctx;
+  struct SwrContext *input_swr_ctx;
   // std::vector<float> outputBuffer;
   // std::vector<float> inputBuffer;
   std::function<void(int numberOfFrames, void *outputBuffer, void *inputBuffer)> renderFn;

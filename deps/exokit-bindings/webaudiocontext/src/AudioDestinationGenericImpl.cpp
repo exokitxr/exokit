@@ -197,7 +197,7 @@ void processBuffers(AudioDestinationGenericImpl *audioDestination) {
       MLAudioBuffer &outputMlBuffer = audioDestination->outputMlBuffers.front();
       int totalOutputFrames = outputMlBuffer.size / 2 / sizeof(int16_t);
       int remainingOutputFrames = totalOutputFrames - audioDestination->outputIndex;
-      int currentFrames = std::min<int>(remainingOutputFrames, AudioNode::ProcessingSizeInFrames);
+      int currentFrames = std::min<int>(remainingOutputFrames, lab::AudioNode::ProcessingSizeInFrames);
 
       if (audioDestination->isRecording()) {
         if (audioDestination->inputMlBuffers.size() > 0) {
@@ -426,8 +426,8 @@ AudioDestinationGenericImpl::AudioDestinationGenericImpl(float sampleRate, std::
 }
 
 AudioDestinationGenericImpl::~AudioDestinationGenericImpl() {
-  swr_free(&audioDestinationGenericImpl->output_swr_ctx);
-  swr_free(&audioDestinationGenericImpl->input_swr_ctx);
+  swr_free(&output_swr_ctx);
+  swr_free(&input_swr_ctx);
     // dac.release(); // XXX
     /* if (dac.isStreamOpen())
         dac.closeStream(); */
