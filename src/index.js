@@ -645,8 +645,6 @@ if (nativeBindings.nativeOpenVR) {
 
         const cleanups = [];
 
-        system.RequestPresent(context, width, height); // XXX use this instead of the below swap chain
-
         const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeBindings.nativeWindow.createRenderTarget(context, width, height, 0, 0, 0, 0);
 
         context.setDefaultFramebuffer(msFbo);
