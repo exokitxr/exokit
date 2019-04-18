@@ -511,10 +511,10 @@ if (nativeBindings.nativeOculusVR) {
         vrPresentState.oculusSystem = system;
         vrPresentState.glContext = context;
         vrPresentState.msFbo = msFbo;
-        vrPresentState.msTex = msTex;	
+        vrPresentState.msTex = msTex;
         vrPresentState.msDepthTex = msDepthTex;
         vrPresentState.fbo = fbo;
-        vrPresentState.tex = tex;	
+        vrPresentState.tex = tex;
         vrPresentState.depthTex = depthTex;
         vrPresentState.cleanups = cleanups;
 
@@ -549,8 +549,6 @@ if (nativeBindings.nativeOculusVR) {
             canvas.framebuffer.msFbo = msFbo;
             canvas.framebuffer.msTex = msTex;
             canvas.framebuffer.msDepthTex = msDepthTex;
-
-            // nativeBindings.nativeWindow.resizeRenderTarget(context, canvas.width, canvas.height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
           }
         };
         canvas.on('attribute', _attribute);
