@@ -1299,7 +1299,6 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     fakeVrDisplay.onrequestpresent = layers => {
       if (!GlobalContext.fakePresentState.fakeVrDisplay) {
         GlobalContext.fakePresentState.fakeVrDisplay = fakeVrDisplay;
-        fakeVrDisplay.waitGetPoses();
       }
 
       const [{source: canvas}] = layers;

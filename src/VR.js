@@ -545,7 +545,7 @@ class FakeVRDisplay extends VRDisplay {
     return result;
   }
 
-  waitGetPoses() {
+  pushUpdate() {
     // update hmd
     this.position.toArray(GlobalContext.xrState.position);
     this.quaternion.toArray(GlobalContext.xrState.orientation);
@@ -557,17 +557,7 @@ class FakeVRDisplay extends VRDisplay {
     )
      .getInverse(localMatrix)
      .toArray(GlobalContext.xrState.leftViewMatrix);
-
     GlobalContext.xrState.rightViewMatrix.set(GlobalContext.xrState.leftViewMatrix);
-
-    /* localMatrix.compose(
-      localVector.copy(this.position)
-        .add(localVector2.set(0.1, 0, 0).applyQuaternion(this.quaternion)),
-      this.quaternion,
-      localVector2.set(1, 1, 1)
-    )
-     .getInverse(localMatrix)
-     .toArray(GlobalContext.xrState.rightViewMatrix); */
 
     // update gamepads
     for (let i = 0; i < this.gamepads.length; i++) {
@@ -577,7 +567,7 @@ class FakeVRDisplay extends VRDisplay {
           localVector2.set(-0.3 + i*0.6, -0.3, 0)
             .applyQuaternion(this.quaternion)
         ).toArray(gamepad.pose.position);
-      this.quaternion.toArray(gamepad.pose.orientation);
+      this.quaternion.toArray(gamepad.pose.orientation); // XXX updates xrState
 
       localMatrix2
         .compose(
@@ -589,7 +579,9 @@ class FakeVRDisplay extends VRDisplay {
 
       GlobalContext.xrState.gamepads[i].connected[0] = 1;
     }
+  }
 
+  update() {
     // emit gamepad events
     for (let i = 0; i < this.gamepads.length; i++) {
       const gamepad = this.gamepads[i];
