@@ -20,6 +20,8 @@
 #include <SkCanvas.h>
 #include <SkPath.h>
 #include <SkPaint.h>
+#include <SkDrawLooper.h>
+#include <SkBlurDrawLooper.h>
 #include <webglcontext/include/webgl.h>
 
 using namespace v8;
@@ -31,18 +33,19 @@ class ImageBitmap;
 class Path2D;
 class CanvasGradient;
 
-enum class TextBaseline {
-  TOP,
-  HANGING,
-  MIDDLE,
-  ALPHABETIC,
-  IDEOGRAPHIC,
-  BOTTOM,
-};
-enum class Direction {
-  LEFT_TO_RIGHT,
-  RIGHT_TO_LEFT,
-};
+static const char* kTextBaseline_TOP = "top";
+static const char* kTextBaseline_HANGING = "hanging";
+static const char* kTextBaseline_MIDDLE = "middle";
+static const char* kTextBaseline_ALPHABETIC = "alphabetic";
+static const char* kTextBaseline_IDEOGRAPHIC = "ideographic";
+static const char* kTextBaseline_BOTTOM = "bottom";
+static const char* kTextDirection_LEFT_TO_RIGHT = "ltr";
+static const char* kTextDirection_RIGHT_TO_LEFT = "rtl";
+static const char* kTextAlign_LEFT = "left";
+static const char* kTextAlign_RIGHT = "right";
+static const char* kTextAlign_CENTER = "center";
+static const char* kTextAlign_START = "start";
+static const char* kTextAlign_END = "end";
 
 class CanvasRenderingContext2D : public ObjectWrap {
 public:
@@ -90,6 +93,14 @@ public:
   static NAN_SETTER(LineWidthSetter);
   static NAN_GETTER(StrokeStyleGetter);
   static NAN_SETTER(StrokeStyleSetter);
+  static NAN_GETTER(ShadowColorGetter);
+  static NAN_SETTER(ShadowColorSetter);
+  static NAN_GETTER(ShadowBlurGetter);
+  static NAN_SETTER(ShadowBlurSetter);
+  static NAN_GETTER(ShadowOffsetXGetter);
+  static NAN_SETTER(ShadowOffsetXSetter);
+  static NAN_GETTER(ShadowOffsetYGetter);
+  static NAN_SETTER(ShadowOffsetYSetter);
   static NAN_GETTER(FillStyleGetter);
   static NAN_SETTER(FillStyleSetter);
   static NAN_GETTER(FontGetter);
@@ -112,6 +123,10 @@ public:
   static NAN_SETTER(TextBaselineSetter);
   static NAN_GETTER(DirectionGetter);
   static NAN_SETTER(DirectionSetter);
+  static NAN_GETTER(LineCapGetter);
+  static NAN_SETTER(LineCapSetter);
+  static NAN_GETTER(LineJoinGetter);
+  static NAN_SETTER(LineJoinSetter);
   static NAN_METHOD(Scale);
   static NAN_METHOD(Rotate);
   static NAN_METHOD(Translate);
@@ -160,19 +175,24 @@ public:
   virtual ~CanvasRenderingContext2D();
 
 // protected:
+
   bool live;
   NATIVEwindow *windowHandle;
   GLuint tex;
   sk_sp<GrContext> grContext;
   sk_sp<SkSurface> surface;
   SkPath path;
+  std::string shadowColor;
+  float shadowBlur;
+  float shadowOffsetX;
+  float shadowOffsetY;
   SkPaint strokePaint;
   SkPaint fillPaint;
   SkPaint clearPaint;
   float lineHeight;
-  std::string textAlign;
-  TextBaseline textBaseline;
-  Direction direction;
+  const char* textAlign;
+  const char* textBaseline;
+  const char* direction;
 
   /* friend class Image;
   friend class ImageData;
