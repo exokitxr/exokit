@@ -480,12 +480,13 @@ if (nativeBindings.nativeOculusVR) {
     const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
     if (layer) {
       const canvas = layer.source;
-      if (vrPresentState.glContext !== canvas._context) {
+      const window = canvas.ownerDocument.defaultView;
+
+      if (!vrPresentState.glContext || (vrPresentState.glContext.canvas.ownerDocument.defaultView === window && vrPresentState.glContext !== canvas._context)) {
         let context = canvas._context;
         if (!(context && context.constructor && context.constructor.name === 'WebGLRenderingContext')) {
           context = canvas.getContext('webgl');
         }
-        const window = canvas.ownerDocument.defaultView;
 
         const windowHandle = context.getWindowHandle();
         nativeBindings.nativeWindow.setCurrentWindowContext(windowHandle);
@@ -597,13 +598,13 @@ if (nativeBindings.nativeOpenVR) {
     const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
     if (layer) {
       const canvas = layer.source;
+      const window = canvas.ownerDocument.defaultView;
 
-      if (vrPresentState.glContext !== canvas._context) {
+      if (!vrPresentState.glContext || (vrPresentState.glContext.canvas.ownerDocument.defaultView === window && vrPresentState.glContext !== canvas._context)) {
         let context = canvas._context;
         if (!(context && context.constructor && context.constructor.name === 'WebGLRenderingContext')) {
           context = canvas.getContext('webgl');
         }
-        const window = canvas.ownerDocument.defaultView;
 
         const windowHandle = context.getWindowHandle();
         nativeBindings.nativeWindow.setCurrentWindowContext(windowHandle);
@@ -764,8 +765,9 @@ if (nativeBindings.nativeMl) {
     const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
     if (layer) {
       const canvas = layer.source;
+      const window = canvas.ownerDocument.defaultView;
 
-      if (mlPresentState.mlGlContext !== canvas._context) {
+      if (!mlPresentState.mlGlContext || (mlPresentState.mlGlContext.canvas.ownerDocument.defaultView === window && mlPresentState.mlGlContext !== canvas._context)) {
         let context = canvas._context;
         if (!(context && context.constructor && context.constructor.name === 'WebGLRenderingContext')) {
           context = canvas.getContext('webgl');
