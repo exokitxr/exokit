@@ -1,13 +1,14 @@
 const path = require('path');
 
-const exokitNode = (() => {
+/* const exokitNode = (() => {
   const oldCwd = process.cwd();
   const nodeModulesDir = path.resolve(path.dirname(require.resolve('native-graphics-deps')), '..');
   process.chdir(nodeModulesDir);
   const exokitNode = require(path.join(__dirname, '..', 'build', 'Release', 'exokit.node'));
   process.chdir(oldCwd);
   return exokitNode;
-})();
+})(); */
+const exokitNode = require(path.join(__dirname, '..', 'build', 'Release', 'exokit.node'));
 const WindowWorker = require('window-worker');
 const vmOne = require('vm-one');
 const webGlToOpenGl = require('webgl-to-opengl');
@@ -19,6 +20,8 @@ for (const k in exokitNode) {
 }
 bindings.nativeWorker = WindowWorker;
 bindings.nativeVm = vmOne;
+const isAndroid = bindings.nativePlatform === 'android';
+const glslVersion = isAndroid ? '300 es' : '330';
 const _decorateGlIntercepts = gl => {
   gl.createShader = (createShader => function(type) {
     const result = createShader.call(this, type);
@@ -27,9 +30,9 @@ const _decorateGlIntercepts = gl => {
   })(gl.createShader);
   gl.shaderSource = (shaderSource => function(shader, source) {
     if (shader.type === gl.VERTEX_SHADER) {
-      source = webGlToOpenGl.vertex(source);
+      source = webGlToOpenGl.vertex(source, glslVersion);
     } else if (shader.type === gl.FRAGMENT_SHADER) {
-      source = webGlToOpenGl.fragment(source);
+      source = webGlToOpenGl.fragment(source, glslVersion);
     }
     return shaderSource.call(this, shader, source);
   })(gl.shaderSource);
@@ -263,6 +266,7 @@ if (bindings.nativeOpenVR) {
 }
 
 GlobalContext.nativeOpenVR = bindings.nativeOpenVR;
+GlobalContext.nativeOculusMobileVr = bindings.nativeOculusMobileVr;
 GlobalContext.nativeMl = bindings.nativeMl;
 GlobalContext.nativeBrowser = bindings.nativeBrowser;
 GlobalContext.nativeOculusVR = bindings.nativeOculusVR;

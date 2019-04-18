@@ -27,6 +27,8 @@ class XR extends EventEmitter {
       return Promise.resolve(this._window[symbols.mrDisplaysSymbol].oculusVRDevice);
     } else if (GlobalContext.nativeOpenVR && GlobalContext.nativeOpenVR.VR_IsHmdPresent()) {
       return Promise.resolve(this._window[symbols.mrDisplaysSymbol].openVRDevice);
+    } else if (GlobalContext.nativeOculusMobileVr && GlobalContext.nativeOculusMobileVr.OculusMobile_IsHmdPresent()) {
+      return Promise.resolve(this._window[symbols.mrDisplaysSymbol].oculusMobileVrDevice);
     } else if (GlobalContext.nativeMl && GlobalContext.nativeMl.IsPresent()) {
       return Promise.resolve(this._window[symbols.mrDisplaysSymbol].magicLeapARDevice);
     } else {

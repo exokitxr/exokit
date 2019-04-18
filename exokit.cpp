@@ -12,6 +12,9 @@
 #ifdef OPENVR
 #include <openvr-bindings.h>
 #endif
+#ifdef ANDROID
+#include <oculus-mobile.h>
+#endif
 
 #ifdef OCULUSVR
 #include <oculus-bindings.h>
@@ -179,8 +182,10 @@ void InitExports(Local<Object> exports) {
   Local<Value> video = makeVideo(imageData);
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeVideo"), video);
 
+#if !defined(ANDROID)
   Local<Value> browser = makeBrowser();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeBrowser"), browser);
+#endif
 
   Local<Value> rtc = makeRtc();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeRtc"), rtc);
@@ -206,17 +211,24 @@ void InitExports(Local<Object> exports) {
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeLm"), lm);
 #endif
 
+#ifdef ANDROID
+  Local<Value> oculusMobileVr = makeOculusMobileVr();
+  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeOculusMobileVr"), oculusMobileVr);
+#endif
+
 #if defined(LUMIN)
   Local<Value> ml = makeMl();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeMl"), ml);
 #endif
 
-#ifndef LUMIN
-#define NATIVE_ANALYTICS true
+#if defined(ANDROID)
+#define NATIVE_PLATFORM "android"
+#elif defined(LUMIN)
+#define NATIVE_PLATFORM "lumin"
 #else
-#define NATIVE_ANALYTICS false
+#define NATIVE_PLATFORM ""
 #endif
-  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeAnalytics"), JS_BOOL(NATIVE_ANALYTICS));
+  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativePlatform"), JS_STR(NATIVE_PLATFORM));
 
   uintptr_t initFunctionAddress = (uintptr_t)InitExports;
   Local<Array> initFunctionAddressArray = Nan::New<Array>(2);
@@ -231,7 +243,7 @@ void Init(Local<Object> exports) {
 
 }
 
-#ifndef LUMIN
+#if !defined(ANDROID) && !defined(LUMIN)
 NODE_MODULE(NODE_GYP_MODULE_NAME, exokit::Init)
 #else
 extern "C" {

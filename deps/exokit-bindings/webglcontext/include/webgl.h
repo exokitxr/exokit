@@ -10,7 +10,7 @@
 
 #include <nan.h>
 
-#if defined(LUMIN) || defined(__ANDROID__)
+#if defined(ANDROID) || defined(LUMIN)
 #ifndef GL_GLEXT_PROTOTYPES
 #define GL_GLEXT_PROTOTYPES
 #endif
@@ -71,7 +71,7 @@
 
 #include <defines.h>
 
-#if !defined(LUMIN) && !defined(__ANDROID__)
+#if !defined(ANDROID) && !defined(LUMIN)
 #include <glfw/include/glfw.h>
 #else
 #include <egl/include/egl.h>

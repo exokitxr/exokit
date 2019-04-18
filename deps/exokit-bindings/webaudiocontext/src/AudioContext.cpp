@@ -22,6 +22,17 @@ AudioContext::AudioContext(float sampleRate) {
 AudioContext::~AudioContext() {}
 
 Local<Object> AudioContext::Initialize(Isolate *isolate, Local<Value> audioListenerCons, Local<Value> audioSourceNodeCons, Local<Value> audioDestinationNodeCons, Local<Value> gainNodeCons, Local<Value> analyserNodeCons, Local<Value> pannerNodeCons, Local<Value> audioBufferCons, Local<Value> audioBufferSourceNodeCons, Local<Value> audioProcessingEventCons, Local<Value> stereoPannerNodeCons, Local<Value> oscillatorNodeCons, Local<Value> scriptProcessorNodeCons, Local<Value> mediaStreamTrackCons, Local<Value> microphoneMediaStreamCons) {
+#if defined(ANDROID) || defined(LUMIN)
+  lab::SetGenericFunctions(
+    adgCreate,
+    adgDestroy,
+    adgStart,
+    adgStop,
+    adgStartRecording,
+    adgStopRecording
+  );
+#endif
+
   uv_async_init(uv_default_loop(), &threadAsync, RunInMainThread);
   uv_sem_init(&threadSemaphore, 0);
 
@@ -496,3 +507,27 @@ uv_async_t threadAsync;
 uv_sem_t threadSemaphore;
 
 }
+
+/* // XXX hack until we rebuild LabSound for android audio bindings support
+#ifdef ANDROID
+
+typedef int32_t MLResult;
+typedef uint64_t MLHandle;
+typedef void MLAudioBuffer;
+typedef void MLAudioBufferFormat;
+typedef void (*MLAudioBufferCallback)(MLHandle handle, void *callback_context);
+
+extern "C" {
+MLResult MLAudioCreateSoundWithOutputStream(const MLAudioBufferFormat *format, uint32_t buffer_size, MLAudioBufferCallback callback, void *callback_context, MLHandle *out_handle) { return 0; }
+MLResult MLAudioCreateInputFromVoiceComm(const MLAudioBufferFormat *format, uint32_t buffer_size, MLAudioBufferCallback callback, void *callback_context, MLHandle *out_handle) { return 0; }
+MLResult MLAudioReleaseOutputStreamBuffer(MLHandle handle) { return 0; }
+MLResult MLAudioReleaseInputStreamBuffer(MLHandle handle) { return 0; }
+MLResult MLAudioGetOutputStreamBuffer(MLHandle handle, MLAudioBuffer *out_buf) { return 0; }
+MLResult MLAudioGetInputStreamBuffer(MLHandle handle, MLAudioBuffer *out_buf) { return 0; }
+MLResult MLAudioStartSound(MLHandle handle) { return 0; }
+MLResult MLAudioStopSound(MLHandle handle) { return 0; }
+MLResult MLAudioStartInput(MLHandle handle) { return 0; }
+MLResult MLAudioStopInput(MLHandle handle) { return 0; }
+}
+
+#endif */

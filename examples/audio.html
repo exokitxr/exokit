@@ -9,7 +9,7 @@
   <body>
   <script src="three.js"></script>
   <script>
-    let container, scene, camera, renderer, display, controllerMeshes;
+    let container, scene, camera, renderer, display/*, controllerMeshes*/;
     let audio = null;
 
     const controllerGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.01);
@@ -50,13 +50,13 @@
       directionalLight.position.set(1, 1, 1);
       scene.add(directionalLight);
 
-      controllerMeshes = [
+      /* controllerMeshes = [
         _makeControllerMesh(-0.1),
         _makeControllerMesh(0.1),
       ];
       controllerMeshes.forEach(controllerMesh => {
         scene.add(controllerMesh);
-      });
+      }); */
 
       renderer = new THREE.WebGLRenderer({
         antialias: true,
@@ -74,7 +74,7 @@
     }
 
     function animate(time, frame) {
-      if (renderer.vr.enabled) {
+      /* if (renderer.vr.enabled) {
         for (let i = 0; i < controllerMeshes.length; i++) {
           controllerMeshes[i].visible = false;
         }
@@ -90,7 +90,7 @@
           controllerMesh.updateMatrixWorld(true);
           controllerMesh.visible = true;
         }
-      }
+      } */
 
       renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
     }
@@ -115,7 +115,7 @@
     };
     audio.src = 'ohno.mp3';
 
-    /* (async () => {
+    (async () => {
       console.log('request device');
       display = await navigator.xr.requestDevice();
       console.log('request session');
@@ -132,7 +132,7 @@
 
         console.log('running!');
       });
-    })(); */
+    })();
   </script>
   </body>
 </html>

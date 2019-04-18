@@ -94,6 +94,7 @@ const {
     VideoDevice,
   },
   nativeOpenVR,
+  nativeOculusMobileVr,
   nativeMl,
   nativeBrowser,
   nativeWindow,
@@ -473,17 +474,20 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       if (GlobalContext.fakeVrDisplayEnabled) {
         result.push(window[symbols.mrDisplaysSymbol].fakeVrDisplay);
       }
-      if (nativeMl && nativeMl.IsPresent()) {
-        result.push(window[symbols.mrDisplaysSymbol].mlDisplay);
-      }
 
       // Oculus runtime takes precedence over OpenVR for Oculus headsets.
       if (nativeOculusVR && nativeOculusVR.Oculus_IsHmdPresent()) {
         result.push(window[symbols.mrDisplaysSymbol].oculusVRDisplay);
-      } else {
-        if (nativeOpenVR && nativeOpenVR.VR_IsHmdPresent()) {
-          result.push(window[symbols.mrDisplaysSymbol].openVRDisplay);
-        }
+      } else if (nativeOpenVR && nativeOpenVR.VR_IsHmdPresent()) {
+        result.push(window[symbols.mrDisplaysSymbol].openVRDisplay);
+      }
+
+      if (nativeOculusMobileVr && nativeOculusMobileVr.OculusMobile_IsHmdPresent()) {
+        result.push(window[symbols.mrDisplaysSymbol].oculusMobileVrDisplay);
+      }
+
+      if (nativeMl && nativeMl.IsPresent()) {
+        result.push(window[symbols.mrDisplaysSymbol].mlDisplay);
       }
 
       result.sort((a, b) => +b.isPresenting - +a.isPresenting);
@@ -1287,11 +1291,9 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       display.onrequestanimationframe = _makeRequestAnimationFrame(window);
       display.oncancelanimationframe = window.cancelAnimationFrame;
       display.onvrdisplaypresentchange = () => {
-        process.nextTick(() => {
-          const e = new Event('vrdisplaypresentchange');
-          e.display = display;
-          window.dispatchEvent(e);
-        });
+        const e = new Event('vrdisplaypresentchange');
+        e.display = display;
+        window.dispatchEvent(e);
       };
     };
 
@@ -1370,6 +1372,33 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       GlobalContext.vrPresentState.layers = layers;
     };
 
+    const oculusMobileVrDisplay = new VRDisplay('OculusMobileVR');
+    _bindMRDisplay(oculusMobileVrDisplay);
+    oculusMobileVrDisplay.onrequestpresent = layers => nativeOculusMobileVr.requestPresent(layers);
+    oculusMobileVrDisplay.onexitpresent = () => nativeOculusMobileVr.exitPresent();
+    oculusMobileVrDisplay.onlayers = layers => {
+      GlobalContext.vrPresentState.layers = layers;
+    };
+
+    const oculusMobileVrDevice = new XR.XRDevice('OculusMobileVR', window);
+    oculusMobileVrDevice.onrequestpresent = layers => nativeOculusMobileVr.requestPresent(layers);
+    oculusMobileVrDevice.onexitpresent = () => nativeOculusMobileVr.exitPresent();
+    oculusMobileVrDevice.onrequestanimationframe = _makeRequestAnimationFrame(window);
+    oculusMobileVrDevice.oncancelanimationframe = window.cancelAnimationFrame;
+    oculusMobileVrDevice.requestSession = (requestSession => function() {
+      return requestSession.apply(this, arguments)
+        .then(session => {
+          oculusMobileVrDisplay.isPresenting = true;
+          session.once('end', () => {
+            oculusMobileVrDisplay.isPresenting = false;
+          });
+          return session;
+        });
+    })(oculusMobileVrDevice.requestSession);
+    oculusMobileVrDevice.onlayers = layers => {
+      GlobalContext.vrPresentState.layers = layers;
+    };
+
     const magicLeapARDisplay = new VRDisplay('AR');
     _bindMRDisplay(magicLeapARDisplay);
     magicLeapARDisplay.onrequestpresent = layers => nativeMl.requestPresent(layers);
@@ -1405,6 +1434,8 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
       oculusVRDisplay,
       openVRDevice,
       oculusVRDevice,
+      oculusMobileVrDisplay,
+      oculusMobileVrDevice,
       magicLeapARDisplay,
       magicLeapARDevice,
     };

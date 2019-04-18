@@ -13,8 +13,11 @@
 #include <webgl.h>
 #include <AudioContext.h>
 #include <Video.h>
-#include <browser.h>
 #include <webrtc.h>
+// Stub out on Android for now until get libcef working on Android.
+#if !defined(ANDROID)
+  #include <browser.h>
+#endif
 #if _WIN32
 #include <leapmotion.h>
 #endif
