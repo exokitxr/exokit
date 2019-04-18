@@ -780,13 +780,13 @@ if (nativeBindings.nativeOculusMobileVr) {
     const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
     if (layer) {
       const canvas = layer.source;
+      const window = canvas.ownerDocument.defaultView;
 
-      if (!oculusMobileVrPresentState.glContext || oculusMobileVrPresentState.glContext !== canvas._context) {
+      if (!oculusMobileVrPresentState.glContext || (oculusMobileVrPresentState.glContext.canvas.ownerDocument.defaultView === window && oculusMobileVrPresentState.glContext !== canvas._context)) {
         let context = canvas._context;
         if (!(context && context.constructor && context.constructor.name === 'WebGLRenderingContext')) {
           context = canvas.getContext('webgl');
         }
-        const window = canvas.ownerDocument.defaultView;
 
         const windowHandle = context.getWindowHandle();
         nativeBindings.nativeWindow.setCurrentWindowContext(windowHandle);
