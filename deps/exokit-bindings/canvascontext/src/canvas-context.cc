@@ -79,7 +79,6 @@ void rgbaToString(std::string& str, uint32_t c) {
 void ConfigureLooper(CanvasRenderingContext2D *context) {
     canvas::web_color c = canvas::web_color::from_string(context->shadowColor.c_str());
     uint32_t rgba = ((uint32_t)c.a << (8 * 3)) | ((uint32_t)c.r << (8 * 2)) | ((uint32_t)c.g << (8 * 1)) | ((uint32_t)c.b << (8 * 0));
-    rgbaToString(context->shadowColor, rgba);
     if (rgba == 0x00000000) {
       context->fillPaint.setDrawLooper(nullptr);
       context->strokePaint.setDrawLooper(nullptr);
