@@ -780,7 +780,8 @@ if (nativeBindings.nativeOculusMobileVr) {
     const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
     if (layer) {
       const canvas = layer.source;
-      if (oculusMobileVrPresentState.glContext !== canvas._context) {
+
+      if (!oculusMobileVrPresentState.glContext || oculusMobileVrPresentState.glContext !== canvas._context) {
         let context = canvas._context;
         if (!(context && context.constructor && context.constructor.name === 'WebGLRenderingContext')) {
           context = canvas.getContext('webgl');
