@@ -475,13 +475,10 @@ NAN_SETTER(CanvasRenderingContext2D::StrokeStyleSetter) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
 
     Nan::Utf8String text(value);
-    std::string strokeStyle(*text, text.length());
-
-    canvas::web_color webColor = canvas::web_color::from_string(strokeStyle.c_str());
+    canvas::web_color webColor = canvas::web_color::from_string(*text);
     uint32_t rgba = ((uint32_t)webColor.a << (8 * 3)) | ((uint32_t)webColor.r << (8 * 2)) | ((uint32_t)webColor.g << (8 * 1)) | ((uint32_t)webColor.b << (8 * 0));
     context->strokePaint.setColor(rgba);
     context->strokePaint.setShader(nullptr);
-    rgbaToString(strokeStyle, rgba);
   } else if (value->IsObject() && JS_OBJ(JS_OBJ(value)->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("CanvasGradient"))) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
 
@@ -593,13 +590,10 @@ NAN_SETTER(CanvasRenderingContext2D::FillStyleSetter) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
 
     Nan::Utf8String text(value);
-    std::string fillStyle(*text, text.length());
-
-    canvas::web_color webColor = canvas::web_color::from_string(fillStyle.c_str());
+    canvas::web_color webColor = canvas::web_color::from_string(*text);
     uint32_t rgba = ((uint32_t)webColor.a << (8 * 3)) | ((uint32_t)webColor.r << (8 * 2)) | ((uint32_t)webColor.g << (8 * 1)) | ((uint32_t)webColor.b << (8 * 0));
     context->fillPaint.setColor(rgba);
     context->fillPaint.setShader(nullptr);
-    rgbaToString(fillStyle, rgba);
   } else if (value->IsObject() && JS_OBJ(JS_OBJ(value)->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("CanvasGradient"))) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
 
