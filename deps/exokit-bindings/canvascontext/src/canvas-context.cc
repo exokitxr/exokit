@@ -755,22 +755,22 @@ NAN_SETTER(CanvasRenderingContext2D::LineHeightSetter) {
 
   if (value->IsNumber() || value->IsString()) {
     CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
-    double lineHeight = 1;
-    if (value->IsString()) {
-      Nan::Utf8String text(value);
-      std::string lineHeightString(*text, text.length());
-      if (lineHeightString == "normal") {
-        lineHeight = 1;
+    if (value->IsNumber()) {
+      double lineHeight = TO_DOUBLE(value);
+      if (lineHeight > 0) {
+        context->lineHeight = lineHeight;
       } else {
         Nan::ThrowError("lineHeight: invalid arguments");
       }
     } else {
-      lineHeight = TO_DOUBLE(value);
-      if (lineHeight <= 0) {
+      Nan::Utf8String text(value);
+      std::string lineHeightString(*text, text.length());
+      if (lineHeightString == "normal") {
+        context->lineHeight = 1;
+      } else {
         Nan::ThrowError("lineHeight: invalid arguments");
       }
     }
-    context->lineHeight = lineHeight;
   } else {
     Nan::ThrowError("lineHeight: invalid arguments");
   }
