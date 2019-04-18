@@ -4441,7 +4441,6 @@ NAN_METHOD(WebGLRenderingContext::GetParameter) {
     case GL_MAX_COMBINED_FRAGMENT_UNIFORM_COMPONENTS:
     case GL_MAX_COMBINED_UNIFORM_BLOCKS:
     case GL_MAX_COMBINED_VERTEX_UNIFORM_COMPONENTS:
-    case GL_MAX_ELEMENT_INDEX:
     case GL_MAX_ELEMENTS_INDICES:
     case GL_MAX_ELEMENTS_VERTICES:
     case GL_MAX_FRAGMENT_INPUT_COMPONENTS:
@@ -4449,7 +4448,6 @@ NAN_METHOD(WebGLRenderingContext::GetParameter) {
     case GL_MAX_FRAGMENT_UNIFORM_COMPONENTS:
     case GL_MAX_PROGRAM_TEXEL_OFFSET:
     case GL_MAX_SAMPLES:
-    case GL_MAX_SERVER_WAIT_TIMEOUT:
     case GL_MAX_TEXTURE_LOD_BIAS:
     case GL_MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS:
     case GL_MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS:
@@ -4512,11 +4510,7 @@ NAN_METHOD(WebGLRenderingContext::GetParameter) {
       // return a int32[2]
       GLint params[2];
       glGetIntegerv(name, params);
-
-      Local<Array> arr = Nan::New<Array>(2);
-      arr->Set(0,JS_INT(params[0]));
-      arr->Set(1,JS_INT(params[1]));
-      info.GetReturnValue().Set(arr);
+      info.GetReturnValue().Set(createTypedArray<Int32Array>(2, params));
       break;
     }
     case GL_SCISSOR_BOX:
@@ -4525,13 +4519,7 @@ NAN_METHOD(WebGLRenderingContext::GetParameter) {
       // return a int32[4]
       GLint params[4];
       glGetIntegerv(name, params);
-
-      Local<Array> arr = Nan::New<Array>(4);
-      arr->Set(0,JS_INT(params[0]));
-      arr->Set(1,JS_INT(params[1]));
-      arr->Set(2,JS_INT(params[2]));
-      arr->Set(3,JS_INT(params[3]));
-      info.GetReturnValue().Set(arr);
+      info.GetReturnValue().Set(createTypedArray<Int32Array>(4, params));
       break;
     }
     case GL_ALIASED_LINE_WIDTH_RANGE:
@@ -4541,11 +4529,7 @@ NAN_METHOD(WebGLRenderingContext::GetParameter) {
       // return a float[2]
       GLfloat params[2];
       glGetFloatv(name, params);
-
-      Local<Array> arr = Nan::New<Array>(2);
-      arr->Set(0,JS_FLOAT(params[0]));
-      arr->Set(1,JS_FLOAT(params[1]));
-      info.GetReturnValue().Set(arr);
+      info.GetReturnValue().Set(createTypedArray<Float32Array>(2, params));
       break;
     }
     case GL_BLEND_COLOR:
@@ -4554,13 +4538,7 @@ NAN_METHOD(WebGLRenderingContext::GetParameter) {
       // return a float[4]
       GLfloat params[4];
       glGetFloatv(name, params);
-
-      Local<Array> arr = Nan::New<Array>(4);
-      arr->Set(0,JS_FLOAT(params[0]));
-      arr->Set(1,JS_FLOAT(params[1]));
-      arr->Set(2,JS_FLOAT(params[2]));
-      arr->Set(3,JS_FLOAT(params[3]));
-      info.GetReturnValue().Set(arr);
+      info.GetReturnValue().Set(createTypedArray<Float32Array>(4, params));
       break;
     }
     case GL_COLOR_WRITEMASK:
@@ -4607,12 +4585,7 @@ NAN_METHOD(WebGLRenderingContext::GetParameter) {
 
       unique_ptr<GLint[]> params(new GLint[numFormats]);
       glGetIntegerv(name, params.get());
-
-      Local<Array> arr = Nan::New<Array>(numFormats);
-      for (size_t i = 0; i < numFormats; i++) {
-        arr->Set(i, JS_INT(params[i]));
-      }
-      info.GetReturnValue().Set(arr);
+      info.GetReturnValue().Set(createTypedArray<Uint32Array>(numFormats, (uint32_t *)params.get()));
       break;
     }
     case UNPACK_FLIP_Y_WEBGL: {
@@ -4629,6 +4602,19 @@ NAN_METHOD(WebGLRenderingContext::GetParameter) {
       GLboolean params;
       glGetBooleanv(name, &params);
       info.GetReturnValue().Set(JS_BOOL(gl->premultiplyAlpha));
+      break;
+    }
+    case MAX_CLIENT_WAIT_TIMEOUT_WEBGL:
+    case GL_MAX_SERVER_WAIT_TIMEOUT:
+    {
+      info.GetReturnValue().Set(JS_INT(0));
+      break;
+    }
+    case GL_MAX_ELEMENT_INDEX:
+    {
+      GLint64 elementIndex = -1;
+      glGetInteger64v(GL_MAX_ELEMENT_INDEX, &elementIndex);
+      info.GetReturnValue().Set(JS_INT((GLuint)elementIndex));
       break;
     }
     default: {
@@ -4828,14 +4814,9 @@ NAN_METHOD(WebGLRenderingContext::GetVertexAttrib) {
       info.GetReturnValue().Set(JS_INT(value));
       break;
     case GL_CURRENT_VERTEX_ATTRIB: {
-      float vextex_attribs[4];
-      glGetVertexAttribfv(index, pname, vextex_attribs);
-      Local<Array> arr = Nan::New<Array>(4);
-      arr->Set(0,JS_FLOAT(vextex_attribs[0]));
-      arr->Set(1,JS_FLOAT(vextex_attribs[1]));
-      arr->Set(2,JS_FLOAT(vextex_attribs[2]));
-      arr->Set(3,JS_FLOAT(vextex_attribs[3]));
-      info.GetReturnValue().Set(arr);
+      float vertex_attribs[4];
+      glGetVertexAttribfv(index, pname, vertex_attribs);
+      info.GetReturnValue().Set(createTypedArray<Float32Array>(4, vertex_attribs));
       break;
     }
     default:
