@@ -797,8 +797,6 @@ if (nativeBindings.nativeOculusMobileVr) {
 
         const vrContext = oculusMobileVrPresentState.vrContext || nativeBindings.nativeOculusMobileVr.OculusMobile_Init(context.getWindowHandle());
 
-        vrContext.SetupSwapChain(context);
-
         const {width: halfWidth, height} = vrContext.GetRecommendedRenderTargetSize();
         const width = halfWidth * 2;
         xrState.renderWidth[0] = halfWidth;
