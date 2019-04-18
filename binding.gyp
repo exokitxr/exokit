@@ -542,7 +542,7 @@
             "<(module_root_dir)/node_modules/native-audio-deps/lib2/magicleap",
             "<(module_root_dir)/node_modules/native-video-deps/lib2/magicleap",
             "<(module_root_dir)/node_modules/native-browser-deps-magicleap/lib5/magicleap",
-            "<(module_root_dir)/node_modules/native-webrtc-deps/lib/magicleap",
+            "<(module_root_dir)/node_modules/native-webrtc-deps/lib2/magicleap",
           ],
           'libraries': [
             '-lskia',
@@ -637,7 +637,7 @@
             "<(module_root_dir)/node_modules/native-canvas-deps/lib2/magicleap",
             "<(module_root_dir)/node_modules/native-audio-deps/lib2/magicleap",
             "<(module_root_dir)/node_modules/native-video-deps/lib2/magicleap",
-            "<(module_root_dir)/node_modules/native-webrtc-deps/lib/magicleap",
+            "<(module_root_dir)/node_modules/native-webrtc-deps/lib2/magicleap",
             "<(module_root_dir)/node_modules/native-oculus-mobile-deps/lib/android/arm64-v8a"
           ],
           'libraries': [
