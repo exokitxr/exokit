@@ -1,0 +1,281 @@
+<!doctype html>
+<html>
+  <head>
+    <style>
+      body {
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <script src="three.js"></script>
+    <script src="OrbitControls.js"></script>
+    <script>
+ window.ScreenQuad = (() => {
+
+      const defaultQuad = new THREE.PlaneBufferGeometry(2, 2, window.innerWidth, window.innerHeight);
+      const vertexShader = `\
+        varying vec3 vViewPosition;
+        varying vec2 vUv;
+        varying float vZDiff;
+        uniform sampler2D dTexture;
+        uniform mat4 initialProjectionMatrixInverse;
+        uniform mat4 initialProjectionMatrix;
+        uniform vec4 plane;
+        void main() {
+          vec2 xy = (position.xy + 1.0) / 2.0; //in [0,1] range
+          float z_b = texture2D(dTexture, xy).r;
+          float z_n = 2.0 * z_b - 1.0;
+          float zNear = initialProjectionMatrix[3][2] / (initialProjectionMatrix[2][2] - 1.0);
+          float zFar = initialProjectionMatrix[3][2] / (initialProjectionMatrix[2][2] + 1.0);
+          float z_e = -(2.0 * zNear * zFar / (zFar + zNear - z_n * (zFar - zNear)));
+          float zOrig = z_e;
+          vec4 offset = initialProjectionMatrix * vec4(0.0, 0.0, z_e, 1.0);
+          vec4 worldPosOrig = initialProjectionMatrixInverse * vec4(position.xy, offset.z/offset.w, 1.0);
+          float zNew = worldPosOrig.z/worldPosOrig.w;
+          vec4 worldPosNew = modelMatrix * worldPosOrig;
+          vec4 viewPosNew = viewMatrix * worldPosNew;
+
+          gl_Position = projectionMatrix * viewPosNew;
+          vViewPosition = -worldPosNew.xyz;
+          vUv = uv;
+          vZDiff = abs(zNew - zOrig);
+        }
+      `;
+      const fragmentShader = `\
+        varying vec3 vViewPosition;
+        varying vec2 vUv;
+        varying float vZDiff;
+        uniform float numTextures;
+        uniform sampler2D uTexture;
+        uniform sampler2D dTexture;
+        uniform vec4 plane;
+        void main() {
+          if (vZDiff < 0.0001 && dot(vViewPosition, plane.xyz) <= plane.w) {
+            /* vec4 c = texture2D(uTexture, vUv);
+            float dc = (1.0 - texture2D(dTexture, vUv).r) * 20.0;
+            gl_FragColor = vec4(vec3(dc) * c.rgb, c.a); */
+            gl_FragColor = texture2D(uTexture, vUv);
+          } else {
+            discard;
+          }
+        }
+      `;
+
+      function ScreenQuad( params ){
+
+        params = params || {};
+
+        THREE.Mesh.apply( this, [ defaultQuad , new THREE.ShaderMaterial({
+
+          uniforms:{
+            numTextures: {
+              type: 'f',
+              value: undefined !== params.numTextures ? params.numTextures : 1
+            },
+            uTexture: {
+              type:'t',
+              value: undefined !== params.texture ? params.texture : null
+            },
+            dTexture: {
+              type:'t',
+              value: undefined !== params.depthTexture ? params.depthTexture : null
+            },
+            initialProjectionMatrixInverse: {
+              type:'m4',
+              value: undefined !== params.initialProjectionMatrixInverse ? params.initialProjectionMatrixInverse : null
+            },
+            initialProjectionMatrix: {
+              type:'m4',
+              value: undefined !== params.initialProjectionMatrix ? params.initialProjectionMatrix : null
+            },
+            plane: {
+              type:'v4',
+              value: undefined !== params.plane ? params.plane : null
+            },
+          },
+
+          vertexShader,
+
+          fragmentShader,
+
+          transparent: true,
+
+        })]);
+
+        this.frustumCulled = false;
+
+        this.renderOrder = -1;
+
+        //end mesh setup
+
+      }
+
+      ScreenQuad.prototype = Object.create( THREE.Mesh.prototype );
+
+      ScreenQuad.constructor = ScreenQuad;
+
+      return ScreenQuad
+
+})();
+    </script>
+    <script>
+let renderer, scene, hiddenScene, camera, hiddenCamera, iframe, boxMesh, boxMesh2, renderTarget, screenQuad;
+
+const localVector = new THREE.Vector3();
+const localVector2 = new THREE.Vector3();
+const localVector3 = new THREE.Vector3();
+const localCoord = new THREE.Vector2();
+const localPlane = new THREE.Plane();
+const localLine = new THREE.Line3();
+const localLine2 = new THREE.Line3();
+
+const planeWorldWidth = 0.9;
+const planeWorldHeight = 0.9;
+const boxMeshSize = 1;
+const planeWidth = 1280;
+const planeHeight = 1024;
+
+function init() {
+  renderer = new THREE.WebGLRenderer({
+    antialias: true,
+    alpha: true,
+  });
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+
+  // window.browser.magicleap.RequestDepthPopulation(true);
+  // renderer.autoClear = false;
+
+  document.body.appendChild(renderer.domElement);
+
+  scene = new THREE.Scene();
+  scene.matrixAutoUpdate = false;
+
+  hiddenScene = new THREE.Scene();
+  hiddenScene.matrixAutoUpdate = false;
+
+  camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera.position.z = 1;
+  scene.add(camera);
+
+  new THREE.OrbitControls(camera);
+
+  hiddenCamera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+  hiddenCamera.position.copy(camera.position);
+  hiddenScene.add(hiddenCamera);
+  hiddenCamera.updateMatrixWorld();
+  hiddenCamera.updateProjectionMatrix();
+  hiddenCamera.initialProjectionMatrixInverse = new THREE.Matrix4();
+  hiddenCamera.initialProjectionMatrix = new THREE.Matrix4();
+  hiddenCamera.plane = new THREE.Vector4(0, 1, 0, 0);
+
+  {
+    const ambientLight = new THREE.AmbientLight(0x808080);
+    scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
+    directionalLight.position.set(1, 1, 1);
+    scene.add(directionalLight);
+  }
+  {
+    const ambientLight = new THREE.AmbientLight(0x808080);
+    hiddenScene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
+    directionalLight.position.set(1, 1, 1);
+    hiddenScene.add(directionalLight);
+  }
+
+  const vertexShader = [
+    'attribute vec2 uv;',
+    'varying vec2 vUv;',
+    'void main() {',
+      'gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );',
+      'vUv = uv;',
+    '}'
+  ].join('\n');
+  const fragmentShader = [
+    'sampler2D t;',
+    'varying vec2 vUv;',
+    'void main() {',
+      'gl_FragColor = texture2D(t, vUv);',
+    '}'
+  ].join('\n');
+
+  const _makeBoxMesh = () => {
+    const geometry = new THREE.BoxBufferGeometry(boxMeshSize, boxMeshSize, boxMeshSize);
+    const material = new THREE.MeshPhongMaterial({
+      color: 0xFF0000,
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.rotation.x = Math.PI / 4;
+    mesh.rotation.y = Math.PI / 4;
+    mesh.rotation.z = Math.PI / 4;
+    mesh.rotation.order = 'YXZ';
+    return mesh;
+  };
+  boxMesh = _makeBoxMesh();
+  boxMesh.position.z = -2;
+  scene.add(boxMesh);
+
+  boxMesh2 = _makeBoxMesh();
+  boxMesh2.position.z = -2;
+  hiddenScene.add(boxMesh2);
+
+  renderTarget = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, {
+    format: THREE.RGBAFormat,
+  });
+  // renderTarget.transparent = false;
+  renderTarget.depthTexture = new THREE.DepthTexture(window.innerWidth, window.innerHeight);
+
+  screenQuad = new ScreenQuad({
+    texture: renderTarget.texture,
+    depthTexture: renderTarget.depthTexture,
+    plane: hiddenCamera.plane,
+    initialProjectionMatrixInverse: hiddenCamera.initialProjectionMatrixInverse,
+    initialProjectionMatrix: hiddenCamera.initialProjectionMatrix,
+  });
+  scene.add(screenQuad);
+}
+
+init();
+
+const _renderFrame = () => {
+  hiddenCamera.position.copy(camera.position);
+  hiddenCamera.quaternion.copy(camera.quaternion);
+  hiddenCamera.scale.copy(camera.scale);
+  hiddenCamera.updateMatrixWorld();
+  hiddenCamera.updateProjectionMatrix();
+
+  screenQuad.position.copy(camera.position);
+  screenQuad.quaternion.copy(camera.quaternion);
+  screenQuad.scale.copy(camera.scale);
+  screenQuad.updateMatrixWorld();
+
+  hiddenCamera.initialProjectionMatrixInverse.copy(hiddenCamera.projectionMatrixInverse);
+  hiddenCamera.initialProjectionMatrix.copy(hiddenCamera.projectionMatrix);
+
+  renderer.render(hiddenScene, hiddenCamera, renderTarget);
+  renderer.setRenderTarget(null);
+
+  setTimeout(_renderFrame, 2000);
+};
+_renderFrame();
+
+function animate(timestamp, frame) {
+  boxMesh.rotation.x += 0.01;
+  boxMesh.rotation.y += 0.01;
+  boxMesh.rotation.z += 0.01;
+
+  boxMesh2.position.copy(boxMesh.position);
+  boxMesh2.quaternion.copy(boxMesh.quaternion);
+  boxMesh2.scale.copy(boxMesh.scale);
+
+  renderer.render(scene, camera);
+}
+
+  renderer.setAnimationLoop(animate);
+    </script>
+  </body>
+</html>
