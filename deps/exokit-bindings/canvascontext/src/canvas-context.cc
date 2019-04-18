@@ -464,7 +464,7 @@ NAN_SETTER(CanvasRenderingContext2D::LineWidthSetter) {
 }
 
 NAN_GETTER(CanvasRenderingContext2D::StrokeStyleGetter) {
-  // nothing
+  // XXX return object
 }
 
 NAN_SETTER(CanvasRenderingContext2D::StrokeStyleSetter) {
@@ -579,7 +579,7 @@ NAN_SETTER(CanvasRenderingContext2D::ShadowOffsetYSetter) {
 }
 
 NAN_GETTER(CanvasRenderingContext2D::FillStyleGetter) {
-  // nothing
+  // XXX return object
 }
 
 NAN_SETTER(CanvasRenderingContext2D::FillStyleSetter) {
@@ -823,7 +823,7 @@ NAN_SETTER(CanvasRenderingContext2D::FontStyleSetter) {
 }
 
 NAN_GETTER(CanvasRenderingContext2D::FontVariantGetter) {
-  // nothing
+  // XXX return object
 }
 
 NAN_SETTER(CanvasRenderingContext2D::FontVariantSetter) {
