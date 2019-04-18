@@ -36,6 +36,7 @@ NAN_METHOD(OculusMobile_Init) {
   oculusMobileContext.Reset(oculusMobileContextObj);
 
   OculusMobileContext *omc = ObjectWrap::Unwrap<OculusMobileContext>(oculusMobileContextObj);
+  omc->RequestPresent();
   info.GetReturnValue().Set(oculusMobileContextObj);
 }
 
