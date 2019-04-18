@@ -435,12 +435,12 @@ NAN_METHOD(CreateRenderTarget) {
   Local<Value> result;
   if (ok) {
     Local<Array> array = Array::New(Isolate::GetCurrent(), 6);
-    array->Set(0, JS_NUM(fbo));
-    array->Set(1, JS_NUM(colorTex));
-    array->Set(2, JS_NUM(depthStencilTex));
-    array->Set(3, JS_NUM(msFbo));
-    array->Set(4, JS_NUM(msColorTex));
-    array->Set(5, JS_NUM(msDepthStencilTex));
+    array->Set(0, JS_INT(fbo));
+    array->Set(1, JS_INT(colorTex));
+    array->Set(2, JS_INT(depthStencilTex));
+    array->Set(3, JS_INT(msFbo));
+    array->Set(4, JS_INT(msColorTex));
+    array->Set(5, JS_INT(msDepthStencilTex));
     result = array;
   } else {
     result = Null(Isolate::GetCurrent());

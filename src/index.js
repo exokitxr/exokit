@@ -492,24 +492,18 @@ if (nativeBindings.nativeOculusVR) {
         nativeBindings.nativeWindow.setCurrentWindowContext(windowHandle);
 
         // fps = VR_FPS;
+
         const system = vrPresentState.oculusSystem || nativeBindings.nativeOculusVR.Oculus_Init();
         const lmContext = vrPresentState.lmContext || (nativeBindings.nativeLm && new nativeBindings.nativeLm());
 
         const {width: halfWidth, height} = system.GetRecommendedRenderTargetSize();
-        const MAX_TEXTURE_SIZE = 4096;
-        const MAX_TEXTURE_SIZE_HALF = MAX_TEXTURE_SIZE/2;
-        if (halfWidth > MAX_TEXTURE_SIZE_HALF) {
-          const factor = halfWidth / MAX_TEXTURE_SIZE_HALF;
-          halfWidth = MAX_TEXTURE_SIZE_HALF;
-          height = Math.floor(height / factor);
-        }
         const width = halfWidth * 2;
         xrState.renderWidth[0] = halfWidth;
         xrState.renderHeight[0] = height;
 
         const cleanups = [];
 
-        const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeBindings.nativeWindow.createRenderTarget(context, width, height, 0, 0, 0, 0);
+        const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = system.CreateSwapChain(context, width, height);
 
         context.setDefaultFramebuffer(msFbo);
 
@@ -540,8 +534,21 @@ if (nativeBindings.nativeOculusVR) {
         const _attribute = (name, value) => {
           if (name === 'width' || name === 'height') {
             nativeBindings.nativeWindow.setCurrentWindowContext(windowHandle);
-
-            nativeBindings.nativeWindow.resizeRenderTarget(context, canvas.width, canvas.height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
+            
+            const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = system.CreateSwapChain(context, canvas.width, canvas.height);
+            context.setDefaultFramebuffer(msFbo);
+            vrPresentState.fbo = fbo;
+            vrPresentState.tex = tex;
+            vrPresentState.depthTex = depthTex;
+            vrPresentState.msFbo = msFbo;
+            vrPresentState.msTex = msTex;
+            vrPresentState.msDepthTex = msDepthTex;
+            canvas.framebuffer.fbo = fbo;
+            canvas.framebuffer.tex = tex;
+            canvas.framebuffer.depthTex = depthTex;
+            canvas.framebuffer.msFbo = msFbo;
+            canvas.framebuffer.msTex = msTex;
+            canvas.framebuffer.msDepthTex = msDepthTex;
           }
         };
         canvas.on('attribute', _attribute);
@@ -590,6 +597,8 @@ if (nativeBindings.nativeOculusVR) {
     }
   }
   nativeBindings.nativeOculusVR.exitPresent = function () {
+    system.ExitPresent();
+
     return Promise.resolve();
   };
 }
@@ -1196,7 +1205,7 @@ const _startRenderLoop = () => {
         const isVisible = nativeWindow.isVisible(windowHandle) || vrPresentState.glContext === context || mlPresentState.mlGlContext === context;
         if (isVisible) {
           const window = context.canvas.ownerDocument.defaultView;
-          if (vrPresentState.glContext === context && vrPresentState.hasPose) {
+          if (vrPresentState.glContext === context && vrPresentState.oculusSystem && vrPresentState.hasPose) {
             if (vrPresentState.layers.length > 0) {
               const {openVRDisplay} = window[symbols.mrDisplaysSymbol];
               _decorateModelViewProjections(vrPresentState.layers, openVRDisplay, 2); // note: openVRDisplay mirrors openVRDevice
@@ -1205,15 +1214,27 @@ const _startRenderLoop = () => {
               nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, true, false, false);
             }
 
-            if (vrPresentState.oculusSystem) {
-              nativeBindings.nativeWindow.setCurrentWindowContext(windowHandle);
-              vrPresentState.oculusSystem.Submit(context, vrPresentState.fbo, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height);
-            } else if (vrPresentState.compositor) {
-              vrPresentState.compositor.Submit(context, vrPresentState.tex);
+            vrPresentState.oculusSystem.Submit();
+            vrPresentState.hasPose = false;
+            
+            const width = vrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1);
+            const height = vrPresentState.glContext.canvas.height;
+            nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, 0, width, height, width, height, true, false, false);
+          } else if (vrPresentState.glContext === context && vrPresentState.system && vrPresentState.hasPose) {
+            if (vrPresentState.layers.length > 0) {
+              const {openVRDisplay} = window[symbols.mrDisplaysSymbol];
+              _decorateModelViewProjections(vrPresentState.layers, openVRDisplay, 2); // note: openVRDisplay mirrors openVRDevice
+              nativeWindow.composeLayers(context, vrPresentState.fbo, vrPresentState.layers);
+            } else {
+              nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, vrPresentState.glContext.canvas.width, vrPresentState.glContext.canvas.height, true, false, false);
             }
 
+            vrPresentState.compositor.Submit(context, vrPresentState.tex);
             vrPresentState.hasPose = false;
-            nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, vrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1), vrPresentState.glContext.canvas.height, xrState.renderWidth[0], xrState.renderHeight[0], true, false, false);
+
+            const width = vrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1);
+            const height = vrPresentState.glContext.canvas.height;
+            nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, 0, width, height, width, height, true, false, false);
           } else if (mlPresentState.mlGlContext === context && mlPresentState.mlHasPose) {
             if (mlPresentState.layers.length > 0) { // TODO: composition can be directly to the output texture array
               const {magicLeapDisplay} = window[symbols.mrDisplaysSymbol];
@@ -1225,8 +1246,6 @@ const _startRenderLoop = () => {
 
             mlPresentState.mlContext.SubmitFrame(mlPresentState.mlTex, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height);
             mlPresentState.mlHasPose = false;
-
-            // nativeWindow.blitFrameBuffer(context, mlPresentState.mlFbo, 0, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height, xrState.renderWidth[0], xrState.renderHeight[0],, true, false, false);
           } else if (fakePresentState.layers.length > 0) {
             const {fakeVrDisplay} = window[symbols.mrDisplaysSymbol];
             _decorateModelViewProjections(fakePresentState.layers, fakeVrDisplay, 1);
