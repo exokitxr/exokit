@@ -530,9 +530,13 @@ NAN_METHOD(OculusMobileContext::Submit) {
 
   if (oculusMobileContext->swapChainGl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
     glBindFramebuffer(GL_READ_FRAMEBUFFER, oculusMobileContext->swapChainGl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
+  } else {
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, oculusMobileContext->swapChainGl->defaultFramebuffer);
   }
   if (oculusMobileContext->swapChainGl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, oculusMobileContext->swapChainGl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
+  } else {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, oculusMobileContext->swapChainGl->defaultFramebuffer);
   }
 }
 
