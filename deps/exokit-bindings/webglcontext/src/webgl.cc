@@ -4585,7 +4585,7 @@ NAN_METHOD(WebGLRenderingContext::GetParameter) {
 
       unique_ptr<GLint[]> params(new GLint[numFormats]);
       glGetIntegerv(name, params.get());
-      info.GetReturnValue().Set(createTypedArray<Uint32Array>(numFormats, params.get()));
+      info.GetReturnValue().Set(createTypedArray<Uint32Array>(numFormats, (uint32_t *)params.get()));
       break;
     }
     case UNPACK_FLIP_Y_WEBGL: {
