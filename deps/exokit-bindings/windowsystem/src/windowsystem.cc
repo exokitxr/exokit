@@ -7,8 +7,7 @@ namespace windowsystembase {
 const char *composeVsh = ""
 #ifdef ANDROID
 "#version 300 es\n"
-#endif
-#ifdef LUMIN
+#else
 "#version 330\n"
 #endif
 "\n\
@@ -24,8 +23,7 @@ void main() {\n\
 const char *composeFsh = ""
 #ifdef ANDROID
 "#version 300 es\n"
-#endif
-#ifdef LUMIN
+#else
 "#version 330\n"
 #endif
 "\n\
@@ -56,8 +54,7 @@ void main() {\n\
 const char *planeVsh = ""
 #ifdef ANDROID
 "#version 300 es\n"
-#endif
-#ifdef LUMIN
+#else
 "#version 330\n"
 #endif
 "\n\
@@ -75,8 +72,7 @@ void main() {\n\
 const char *planeFsh = ""
 #ifdef ANDROID
 "#version 300 es\n"
-#endif
-#ifdef LUMIN
+#else
 "#version 330\n"
 #endif
 "\n\
