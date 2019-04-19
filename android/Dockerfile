@@ -22,8 +22,8 @@ RUN \
   mkdir android-sdk && \
   export ANDROID_HOME=$(pwd)/android-sdk && \
   mv tools android-sdk/tools && \
-  $ANDROID_HOME/tools/sdkmanager "platform-tools" "platforms;android-28" && \
-  $ANDROID_HOME/tools/sdkmanager "ndk-bundle" 
+  $ANDROID_HOME/tools/bin/sdkmanager "platform-tools" "platforms;android-28" && \
+  $ANDROID_HOME/tools/bin/sdkmanager "ndk-bundle" 
 RUN \
   export PATH="$PATH:$(pwd)/node/bin" && \
   scripts/make-toolchain-android.sh && \
