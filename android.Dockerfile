@@ -26,6 +26,7 @@ RUN \
   $ANDROID_HOME/tools/bin/sdkmanager "platform-tools" "platforms;android-28" && \
   $ANDROID_HOME/tools/bin/sdkmanager "ndk-bundle" && \
   export PATH="$PATH:$(pwd)/node/bin" && \
+  npm -g config set user root && \
   scripts/make-toolchain-android.sh && \
   scripts/build-android.sh && \
   export TEST_ENV=ci && \
