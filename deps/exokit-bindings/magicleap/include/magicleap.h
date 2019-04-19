@@ -167,6 +167,7 @@ public:
 
 // protected:
   Nan::Persistent<Object> windowObj;
+  MLMeshingLOD lod;
   Nan::Persistent<Function> cb;
 };
 

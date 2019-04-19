@@ -499,12 +499,33 @@ void MeshBuffer::setBuffers(float *positions, uint32_t numPositions, float *norm
 
 // MLMesher
 
-MLMesher::MLMesher(Local<Object> windowObj) : windowObj(windowObj) {}
+MLMesher::MLMesher(Local<Object> windowObj, MLMeshingLOD lod) : windowObj(windowObj), lod(lod) {}
 
 MLMesher::~MLMesher() {}
 
 NAN_METHOD(MLMesher::New) {
-  MLMesher *mlMesher = new MLMesher(Local<Object>::Cast(info[0]));
+  Local<Object> windowObj = Local<Object>::Cast(info[0]);
+  int lodValue = TO_INT32(info[1]);
+  MLMeshingLOD lod;
+  switch (lodValue) {
+    case 1: {
+      lod = MLMeshingLOD_Minimum;
+      break;
+    }
+    case 2: {
+      lod = MLMeshingLOD_Medium;
+      break;
+    }
+    case 3: {
+      lod = MLMeshingLOD_Maximum;
+      break;
+    }
+    default: {
+      lod = MLMeshingLOD_Minimum;
+      break;
+    }
+  }
+  MLMesher *mlMesher = new MLMesher(windowObj, lod);
   Local<Object> mlMesherObj = info.This();
   mlMesher->Wrap(mlMesherObj);
 
@@ -3636,10 +3657,11 @@ NAN_METHOD(MLContext::SetContentTexture) {
 }
 
 NAN_METHOD(MLContext::RequestMeshing) {
-  if (info[0]->IsObject()) {
+  if (info[0]->IsObject() && info[1]->IsNumber()) {
     Local<Function> mlMesherCons = Nan::New(mlMesherConstructor);
     Local<Value> argv[] = {
       info[0],
+      info[1],
     };
     Local<Object> mlMesherObj = mlMesherCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(argv)/sizeof(argv[0]), argv).ToLocalChecked();
     info.GetReturnValue().Set(mlMesherObj);
@@ -4038,6 +4060,12 @@ NAN_METHOD(MLContext::Update) {
     if (result == MLResult_Ok) {
       uint32_t dataCount = meshInfo.data_count;
 
+      MLMeshingLOD lod = MLMeshingLOD_Minimum;
+      for (auto iter = meshers.begin(); iter != meshers.end(); iter++) {
+        MLMesher *mesher = *iter;
+        lod = std::max(lod, mesher->lod);
+      }
+
       meshRequestNewMap.clear();
       meshRequestRemovedMap.clear();
       meshRequestUnchangedMap.clear();
@@ -4046,9 +4074,7 @@ NAN_METHOD(MLContext::Update) {
         const MLMeshingMeshState &state = meshBlockInfo.state;
         MLMeshingBlockRequest &meshBlockRequest = meshBlockRequests[i];
         meshBlockRequest.id = meshBlockInfo.id;
-        // meshBlockRequest.level = MLMeshingLOD_Minimum;
-        meshBlockRequest.level = MLMeshingLOD_Medium;
-        // meshBlockRequest.level = MLMeshingLOD_Maximum;
+        meshBlockRequest.level = lod;
 
         const std::string &id = id2String(meshBlockInfo.id);
         meshRequestNewMap[id] = (state == MLMeshingMeshState_New);
