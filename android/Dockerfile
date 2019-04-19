@@ -20,12 +20,12 @@ RUN \
   unzip sdk-tools-linux-4333796.zip && \
   rm sdk-tools-linux-4333796.zip && \
   mkdir android-sdk && \
+  export ANDROID_HOME=$(pwd)/android-sdk && \
   mv tools android-sdk/tools && \
-  android-sdk/tools/sdkmanager "platform-tools" "platforms;android-28" && \
-  android-sdk/tools/sdkmanager "ndk-bundle" && \
+  $ANDROID_HOME/tools/sdkmanager "platform-tools" "platforms;android-28" && \
+  $ANDROID_HOME/tools/sdkmanager "ndk-bundle" 
 RUN \
   export PATH="$PATH:$(pwd)/node/bin" && \
-  export ANDROID_HOME=$HOME/android-sdk && \
   scripts/make-toolchain-android.sh && \
   scripts/build-android.sh && \
   export TEST_ENV=ci && \
