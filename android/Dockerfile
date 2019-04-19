@@ -22,6 +22,7 @@ RUN \
   mkdir android-sdk && \
   export ANDROID_HOME=$(pwd)/android-sdk && \
   mv tools android-sdk/tools && \
+  yes | $ANDROID_HOME/tools/bin/sdkmanager --licenses && \
   $ANDROID_HOME/tools/bin/sdkmanager "platform-tools" "platforms;android-28" && \
   $ANDROID_HOME/tools/bin/sdkmanager "ndk-bundle" && \
   export PATH="$PATH:$(pwd)/node/bin" && \
