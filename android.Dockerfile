@@ -1,6 +1,6 @@
 FROM debian:latest
 
-RUN apt-get update && \
+RUN apt-get update -y && \
   apt-get install -y \
     build-essential wget python git \
     libglfw3-dev libglew-dev libfreetype6-dev libfontconfig1-dev uuid-dev libxcursor-dev libxinerama-dev libxi-dev libasound2-dev libexpat1-dev \
