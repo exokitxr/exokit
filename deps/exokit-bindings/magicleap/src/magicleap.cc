@@ -4104,9 +4104,7 @@ NAN_METHOD(MLContext::Update) {
         MLMeshingBlockMesh &blockMesh = blockMeshes[i];
         const std::string &id = id2String(blockMesh.id);
 
-        if (!meshRequestRemovedMap[id]) {
-          meshBuffer->setBuffers((float *)(&blockMesh.vertex->values), blockMesh.vertex_count * 3, (float *)(&blockMesh.normal->values), blockMesh.index, blockMesh.index_count, meshRequestNewMap[id], meshRequestUnchangedMap[id]);
-        } else {
+        if (meshRequestRemovedMap[id]) {
           auto iter = meshBuffers.find(id);
           if (iter != meshBuffers.end()) {
             meshBuffers.erase(iter);
