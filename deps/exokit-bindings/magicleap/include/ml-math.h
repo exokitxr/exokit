@@ -17,6 +17,8 @@ MLVec3f crossVectors(const MLVec3f &a, const MLVec3f &b);
 float vectorLengthSq(const MLVec3f &v);
 float vectorLength(const MLVec3f &v);
 MLVec3f normalizeVector(const MLVec3f &v);
+float distanceTo(const MLVec3f &a, const MLVec3f &b);
+float distanceToSq(const MLVec3f &a, const MLVec3f &b);
 MLVec3f applyVectorQuaternion(const MLVec3f &v, const MLQuaternionf &q);
 MLVec3f applyVectorMatrix(const MLVec3f &v, const MLMat4f &m);
 float quaternionLength(const MLQuaternionf &q);

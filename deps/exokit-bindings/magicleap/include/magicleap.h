@@ -133,15 +133,14 @@ public:
 class MeshBuffer {
 public:
   MeshBuffer();
-  void setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, bool isNew, bool isUnchanged);
+  MeshBuffer(MLTransform transform, float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices);
 
+  MLTransform transform;
   float *positions;
   uint32_t numPositions;
   float *normals;
   uint16_t *indices;
   uint16_t numIndices;
-  bool isNew;
-  bool isUnchanged;
 };
 
 enum class MLUpdateType {
@@ -155,7 +154,7 @@ class MLMesher : public ObjectWrap {
 public:
   static Local<Function> Initialize(Isolate *isolate);
 
-  MLMesher(Local<Object> windowObj);
+  MLMesher(Local<Object> windowObj, float range, MLMeshingLOD lod);
   ~MLMesher();
 
   static NAN_METHOD(New);
@@ -167,6 +166,7 @@ public:
 
 // protected:
   Nan::Persistent<Object> windowObj;
+  float range;
   MLMeshingLOD lod;
   Nan::Persistent<Function> cb;
 };
