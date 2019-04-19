@@ -31,4 +31,4 @@ RUN \
   export TEST_ENV=ci && \
   npm run test
 RUN \
-  mv android/app/build/outputs/apk/debug/app-debug.apk ./app.apk
+  mv android/app/build/outputs/apk/debug/app-debug.apk ./exokit.apk
