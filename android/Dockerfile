@@ -23,8 +23,7 @@ RUN \
   export ANDROID_HOME=$(pwd)/android-sdk && \
   mv tools android-sdk/tools && \
   $ANDROID_HOME/tools/bin/sdkmanager "platform-tools" "platforms;android-28" && \
-  $ANDROID_HOME/tools/bin/sdkmanager "ndk-bundle" 
-RUN \
+  $ANDROID_HOME/tools/bin/sdkmanager "ndk-bundle" && \
   export PATH="$PATH:$(pwd)/node/bin" && \
   scripts/make-toolchain-android.sh && \
   scripts/build-android.sh && \
