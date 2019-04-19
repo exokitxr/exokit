@@ -413,12 +413,16 @@ int main(int argc, char **argv) {
     if (access("/package/app/index.html", F_OK) != -1) {
       jsString = "/package/app/index.html";
     } else {
-      jsString = "examples/realitytabs.html";
+      jsString = "/package/examples/realitytabs.html";
     }
 
     const char *nodeString = "node";
     const char *experimentalWorkerString = "--experimental-worker";
+#ifndef ANDROID
     const char *dotString = ".";
+#else
+    const char *dotString = "/package";
+#endif
     char argsString[4096];
     int i = 0;
 
