@@ -3013,6 +3013,15 @@ module.exports.HTMLVideoElement = HTMLVideoElement;
 class HTMLDivElement extends HTMLElement {}
 module.exports.HTMLDivElement = HTMLDivElement;
 
+class HTMLUListElement extends HTMLElement {}
+module.exports.HTMLUListElement = HTMLUListElement;
+
+class HTMLLIElement extends HTMLElement {}
+module.exports.HTMLLIElement = HTMLLIElement;
+
+class HTMLTableElement extends HTMLElement {}
+module.exports.HTMLTableElement = HTMLTableElement;
+
 function _hash(s) {
   let result = 0;
   for (let i = 0; i < s.length; i++) {

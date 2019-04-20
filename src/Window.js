@@ -124,6 +124,9 @@ const {
   HTMLTextareaElement,
   HTMLTemplateElement,
   HTMLDivElement,
+  HTMLUListElement,
+  HTMLLIElement,
+  HTMLTableElement,
   createImageBitmap,
   DOMRect,
   DOMPoint,
@@ -758,6 +761,9 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     TEXTAREA: HTMLTextareaElement,
     TEMPLATE: HTMLTemplateElement,
     DIV: HTMLDivElement,
+    ULIST: HTMLUListElement,
+    LI: HTMLLIElement,
+    TABLE: HTMLTableElement,
   };
   window[symbols.optionsSymbol] = options;
   window[symbols.styleEpochSymbol] = 0;
@@ -780,6 +786,9 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.HTMLTextareaElement = HTMLTextareaElement;
   window.HTMLTemplateElement = HTMLTemplateElement;
   window.HTMLDivElement = HTMLDivElement;
+  window.HTMLUListElement = HTMLUListElement;
+  window.HTMLLIElement = HTMLLIElement;
+  window.HTMLTableElement = HTMLTableElement;
   window.Node = Node;
   window.Text = Text;
   window.Comment = Comment;
