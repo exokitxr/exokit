@@ -19,20 +19,20 @@ RUN chown -R appuser:appuser $HOME && \
 USER appuser
 
 RUN \
-  wget "https://nodejs.org/dist/v11.6.0/node-v11.6.0-linux-x64.tar.gz" -O node.tar.gz && \
-  tar -zxf node.tar.gz && \
+  wget "https://nodejs.org/dist/v11.6.0/node-v11.6.0-linux-x64.tar.gz" -O node.tar.gz > /dev/null && \
+  tar -zxf node.tar.gz > /dev/null && \
   rm node.tar.gz && \
   mv node-v11.6.0-linux-x64 node
 RUN \
-  wget https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip && \
-  unzip sdk-tools-linux-4333796.zip && \
+  wget https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip > /dev/null && \
+  unzip sdk-tools-linux-4333796.zip > /dev/null && \
   rm sdk-tools-linux-4333796.zip && \
   mkdir android-sdk && \
   export ANDROID_HOME=$(pwd)/android-sdk && \
   mv tools android-sdk/tools && \
-  yes | $ANDROID_HOME/tools/bin/sdkmanager --licenses && \
-  $ANDROID_HOME/tools/bin/sdkmanager "platform-tools" "platforms;android-28" && \
-  $ANDROID_HOME/tools/bin/sdkmanager "ndk-bundle" && \
+  yes | $ANDROID_HOME/tools/bin/sdkmanager --licenses > /dev/null && \
+  $ANDROID_HOME/tools/bin/sdkmanager "platform-tools" "platforms;android-28" > /dev/null && \
+  $ANDROID_HOME/tools/bin/sdkmanager "ndk-bundle" > /dev/null && \
   export PATH="$PATH:$(pwd)/node/bin" && \
   scripts/make-toolchain-android.sh && \
   scripts/build-android.sh
