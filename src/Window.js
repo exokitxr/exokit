@@ -185,6 +185,28 @@ class CustomElementRegistry {
 
   upgrade(el, constructor) {
     if (el instanceof HTMLElement) {
+      let wasConnected = el.isConnected;
+      el.ownerDocument.on('domchange', () =>{
+        const newConnected = el.isConnected;
+        if (newConnected && !wasConnected) {
+          el.connectedCallback && el.connectedCallback();
+          wasConnected = true;
+        } else if (wasConnected && !newConnected) {
+          el.disconnectedCallback && el.disconnectedCallback();
+          wasConnected = false;
+        }
+      });
+
+      const observedAttributes = constructor.observedAttributes ? constructor.observedAttributes() : [];
+      if (observedAttributes.length > 0) {
+        el.on('attribute', (name, value, oldValue) => {
+          if (el.attributeChangedCallback && observedAttributes.includes(name)) {
+            el.attributeChangedCallback(name, value, oldValue);
+          }
+        });
+      }
+
+      Object.setPrototypeOf(el, constructor.prototype);
       HTMLElement.upgradeElement = el;
       let error = null;
       try {
@@ -194,7 +216,14 @@ class CustomElementRegistry {
         error = err;
       }
       HTMLElement.upgradeElement = null;
-      if (error) {
+
+      if (!error) {
+        if (wasConnected) {
+          setImmediate(() => {
+            el.connectedCallback && el.connectedCallback();
+          });
+        }
+      } else {
         throw error;
       }
     } else {
