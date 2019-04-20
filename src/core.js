@@ -212,7 +212,7 @@ const _runHtml = (element, window) => {
       element.traverse(el => {
         const {id} = el;
         if (id) {
-          el._emit('attribute', 'id', id);
+          el._emit('attribute', 'id', id, null);
         }
 
         if (el[symbols.runSymbol]) {
