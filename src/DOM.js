@@ -221,7 +221,7 @@ class Node extends EventTarget {
 
   get isConnected() {
     for (let el = this; el; el = el.parentNode) {
-      if (el === el.ownerDocument) {
+      if (el.parentNode === el.ownerDocument) {
         return true;
       }
     }
