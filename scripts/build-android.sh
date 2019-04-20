@@ -64,6 +64,7 @@ pushd android
 popd
 
 # for debugging symbols lookup
+mkdir -p android/app/src/main/arm64-v8a
 rsync -a --copy-links android/app/build/intermediates/cmake/debug/obj/arm64-v8a/libnative-main.so android/app/src/main/arm64-v8a/libnative-main.so
 
 popd
