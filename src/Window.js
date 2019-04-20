@@ -703,7 +703,6 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.scrollY = 0;
   window[symbols.optionsSymbol] = options;
   window[symbols.styleEpochSymbol] = 0;
-  window.DocumentFragment = DocumentFragment;
 
   // DOM.
   const {
