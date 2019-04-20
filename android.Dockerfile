@@ -28,8 +28,6 @@ RUN \
   export PATH="$PATH:$(pwd)/node/bin" && \
   npm -g config set user root && \
   scripts/make-toolchain-android.sh && \
-  scripts/build-android.sh && \
-  export TEST_ENV=ci && \
-  npm run test
+  scripts/build-android.sh
 RUN \
   mv android/app/build/outputs/apk/debug/app-debug.apk ./exokit.apk
