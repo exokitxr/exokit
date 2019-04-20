@@ -3010,6 +3010,34 @@ function createImageBitmap(src, x, y, w, h, options) {
 }
 module.exports.HTMLVideoElement = HTMLVideoElement;
 
+class HTMLDivElement extends HTMLElement {
+  constructor(attrs = [], value = '', location = null) {
+    super('DIV', attrs, value, location);
+  }
+}
+module.exports.HTMLDivElement = HTMLDivElement;
+
+class HTMLUListElement extends HTMLElement {
+  constructor(attrs = [], value = '', location = null) {
+    super('ULIST', attrs, value, location);
+  }
+}
+module.exports.HTMLUListElement = HTMLUListElement;
+
+class HTMLLIElement extends HTMLElement {
+  constructor(attrs = [], value = '', location = null) {
+    super('LI', attrs, value, location);
+  }
+}
+module.exports.HTMLLIElement = HTMLLIElement;
+
+class HTMLTableElement extends HTMLElement {
+  constructor(attrs = [], value = '', location = null) {
+    super('TABLE', attrs, value, location);
+  }
+}
+module.exports.HTMLTableElement = HTMLTableElement;
+
 function _hash(s) {
   let result = 0;
   for (let i = 0; i < s.length; i++) {
