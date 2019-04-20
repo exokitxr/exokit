@@ -764,6 +764,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   // DOM.
   window.Element = Element;
   window.HTMLElement = HTMLElement;
+  window.HTMLBodyElement = HTMLBodyElement;
   window.HTMLAnchorElement = HTMLAnchorElement;
   window.HTMLStyleElement = HTMLStyleElement;
   window.HTMLLinkElement = HTMLLinkElement;
