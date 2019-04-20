@@ -144,7 +144,6 @@ const _fromAST = (node, window, parentNode, document, uppercase) => {
   if (node.nodeName === '#text') {
     const text = new window.Text(node.value);
     text.parentNode = parentNode;
-    text.ownerDocument = ownerDocument;
     return text;
   } else if (node.nodeName === '#comment') {
     const comment = new window.Comment(node.data);
