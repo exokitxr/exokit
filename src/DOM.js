@@ -219,6 +219,16 @@ class Node extends EventTarget {
     }
   }
 
+  get isConnected() {
+    for (let el = this; el; el = el.parentNode) {
+      if (el === el.ownerDocument) {
+        return true;
+      }
+    }
+    return false;
+  }
+  set isConnected(isConnected) {}
+
   cloneNode(deep = false) {
     return _cloneNode(deep, this);
   }
@@ -1583,14 +1593,6 @@ class HTMLScriptElement extends HTMLLoadableElement {
 
     this.readyState = null;
 
-    const _isAttached = () => {
-      for (let el = this; el; el = el.parentNode) {
-        if (el === el.ownerDocument) {
-          return true;
-        }
-      }
-      return false;
-    };
     const _loadRun = async => {
       if (!async) {
         this.ownerDocument[symbols.addRunSymbol](this.loadRunNow.bind(this));
@@ -1599,19 +1601,19 @@ class HTMLScriptElement extends HTMLLoadableElement {
       }
     };
     this.on('attribute', (name, value) => {
-      if (name === 'src' && value && this.isRunnable() && _isAttached() && !this.readyState) {
+      if (name === 'src' && value && this.isRunnable() && this.isConnected && !this.readyState) {
         const async = this.getAttribute('async');
         _loadRun(async !== null ? async !== 'false' : false);
       }
     });
     this.on('attached', () => {
-      if (this.src && this.isRunnable() && _isAttached() && !this.readyState) {
+      if (this.src && this.isRunnable() && this.isConnected && !this.readyState) {
         const async = this.getAttribute('async');
         _loadRun(async !== null ? async !== 'false' : true);
       }
     });
     this.on('innerHTML', innerHTML => {
-      if (this.isRunnable() && _isAttached() && !this.readyState) {
+      if (this.isRunnable() && this.isConnected && !this.readyState) {
         this.runNow();
       }
     });
