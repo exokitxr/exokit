@@ -3031,7 +3031,7 @@ function createImageBitmap(src, x, y, w, h, options) {
   );
   return Promise.resolve(imageBitmap);
 }
-module.exports.HTMLVideoElement = HTMLVideoElement;
+module.exports.createImageBitmap = createImageBitmap;
 
 class HTMLDivElement extends HTMLElement {
   constructor(window, attrs = [], value = '', location = null) {
