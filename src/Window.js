@@ -186,7 +186,7 @@ class CustomElementRegistry {
   upgrade(el, constructor) {
     if (el instanceof HTMLElement) {
       let wasConnected = el.isConnected;
-      el.ownerDocument.on('domchange', () =>{
+      el.ownerDocument.on('domchange', () => {
         const newConnected = el.isConnected;
         if (newConnected && !wasConnected) {
           el.connectedCallback && el.connectedCallback();
