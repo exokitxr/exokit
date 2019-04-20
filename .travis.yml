@@ -53,8 +53,8 @@ matrix:
     before_install:
     - docker pull debian:latest
     install:
-    - docker build -f android.Dockerfile -t exokitApk .
-    - docker run exokitApk cat exokit.apk >exokit.apk
+    - docker build -f android.Dockerfile -t exokit .
+    - docker run exokit cat exokit.apk >exokit.apk
     script:
     - echo "skipping 'npm run test' outside of docker"
     deploy:
