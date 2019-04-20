@@ -779,6 +779,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.HTMLCanvasElement = HTMLCanvasElement;
   window.HTMLTextareaElement = HTMLTextareaElement;
   window.HTMLTemplateElement = HTMLTemplateElement;
+  window.HTMLDivElement = HTMLDivElement;
   window.Node = Node;
   window.Text = Text;
   window.Comment = Comment;
