@@ -130,12 +130,12 @@ class HTMLCollection extends Array {
 module.exports.HTMLCollection = HTMLCollection;
 
 class Node extends EventTarget {
-  constructor() {
+  constructor(window) {
     super();
 
     this.parentNode = null;
     this.childNodes = new NodeList();
-    this.ownerDocument = null;
+    this.ownerDocument = window.document;
   }
 
   get parentElement() {
@@ -560,8 +560,8 @@ const _defineId = (window, id, el) => {
 };
 
 class Element extends Node {
-  constructor(tagName = 'DIV', attrs = [], value = '', location = null) {
-    super();
+  constructor(window, tagName = 'DIV', attrs = [], value = '', location = null) {
+    super(window);
 
     this.tagName = tagName;
     this.attrs = attrs;
@@ -1219,8 +1219,20 @@ class Element extends Node {
 module.exports.Element = Element;
 
 class HTMLElement extends Element {
-  constructor(tagName = 'DIV', attrs = [], value = '', location = null) {
-    super(tagName, attrs, value, location);
+  constructor(window, tagName = 'DIV', attrs = [], value = '', location = null) {
+    if (HTMLElement.upgradeElement) {
+      return HTMLElement.upgradeElement;
+    }
+    
+    const extension = window.customElements.extensions[tagName];
+    if (extension) {
+      attrs.push({
+        name: 'is',
+        value: extension,
+      });
+    }
+    
+    super(window, tagName, attrs, value, location);
 
     this._style = null;
     this[symbols.computedStyleSymbol] = null;
@@ -1282,8 +1294,8 @@ function getAnchorUrl(anchorEl) {
 }
 
 class HTMLAnchorElement extends HTMLElement {
-  constructor(attrs = [], value = '', location = null) {
-    super('A', attrs, value, location);
+  constructor(window, attrs = [], value = '', location = null) {
+    super(window, 'A', attrs, value, location);
   }
 
   get href() {
@@ -1387,8 +1399,8 @@ class HTMLAnchorElement extends HTMLElement {
 module.exports.HTMLAnchorElement = HTMLAnchorElement;
 
 class HTMLLoadableElement extends HTMLElement {
-  constructor(tagName, attrs = [], value = '', location = null) {
-    super(tagName, attrs, value, location);
+  constructor(window, tagName, attrs = [], value = '', location = null) {
+    super(window, tagName, attrs, value, location);
   }
 
   get onload() {
@@ -1408,8 +1420,8 @@ class HTMLLoadableElement extends HTMLElement {
 module.exports.HTMLLoadableElement = HTMLLoadableElement;
 
 class HTMLBodyElement extends HTMLElement {
-  constructor() {
-    super('BODY');
+  constructor(window) {
+    super(window, 'BODY');
   }
 
   get clientWidth() {
@@ -1424,8 +1436,8 @@ class HTMLBodyElement extends HTMLElement {
 module.exports.HTMLBodyElement = HTMLBodyElement;
 
 class HTMLStyleElement extends HTMLLoadableElement {
-  constructor(attrs = [], value = '', location = null) {
-    super('STYLE', attrs, value, location);
+  constructor(window, attrs = [], value = '', location = null) {
+    super(window, 'STYLE', attrs, value, location);
 
     this.stylesheet = null;
 
@@ -1479,8 +1491,8 @@ class HTMLStyleElement extends HTMLLoadableElement {
 module.exports.HTMLStyleElement = HTMLStyleElement;
 
 class HTMLLinkElement extends HTMLLoadableElement {
-  constructor(attrs = [], value = '', location = null) {
-    super('LINK', attrs, value, location);
+  constructor(window, attrs = [], value = '', location = null) {
+    super(window, 'LINK', attrs, value, location);
 
     this.stylesheet = null;
 
@@ -1565,8 +1577,8 @@ const _mapUrl = (u, window) => {
   return v !== undefined ? v : u;
 };
 class HTMLScriptElement extends HTMLLoadableElement {
-  constructor(attrs = [], value = '', location = null) {
-    super('SCRIPT', attrs, value, location);
+  constructor(window, attrs = [], value = '', location = null) {
+    super(window, 'SCRIPT', attrs, value, location);
 
     this.readyState = null;
 
@@ -1725,8 +1737,8 @@ class HTMLScriptElement extends HTMLLoadableElement {
 module.exports.HTMLScriptElement = HTMLScriptElement;
 
 class HTMLSrcableElement extends HTMLLoadableElement {
-  constructor(tagName = null, attrs = [], value = '', location = null) {
-    super(tagName, attrs, value, location);
+  constructor(window, tagName = null, attrs = [], value = '', location = null) {
+    super(window, tagName, attrs, value, location);
     
     this.readyState = null;
   }
@@ -1749,8 +1761,8 @@ class HTMLSrcableElement extends HTMLLoadableElement {
 module.exports.HTMLSrcableElement = HTMLSrcableElement;
 
 class HTMLMediaElement extends HTMLSrcableElement {
-  constructor(tagName = null, attrs = [], value = '', location = null) {
-    super(tagName, attrs, value, location);
+  constructor(window, tagName = null, attrs = [], value = '', location = null) {
+    super(window, tagName, attrs, value, location);
 
     this._startTime = 0;
     this._startTimestamp = null;
@@ -1849,8 +1861,8 @@ HTMLMediaElement.HAVE_ENOUGH_DATA = 4;
 module.exports.HTMLMediaElement = HTMLMediaElement;
 
 class HTMLSourceElement extends HTMLSrcableElement {
-  constructor(attrs = [], value = '', location = null) {
-    super('SOURCE', attrs, value, location);
+  constructor(window, attrs = [], value = '', location = null) {
+    super(window, 'SOURCE', attrs, value, location);
   }
 }
 module.exports.HTMLSourceElement = HTMLSourceElement;
@@ -1877,8 +1889,8 @@ const _parseVector = s => {
   return result;
 };
 class HTMLIFrameElement extends HTMLSrcableElement {
-  constructor(attrs = [], value = '', location = null) {
-    super('IFRAME', attrs, value, location);
+  constructor(window, attrs = [], value = '', location = null) {
+    super(window, 'IFRAME', attrs, value, location);
 
     this.contentWindow = null;
     this.contentDocument = null;
@@ -2168,8 +2180,8 @@ class HTMLIFrameElement extends HTMLSrcableElement {
 module.exports.HTMLIFrameElement = HTMLIFrameElement;
 
 class HTMLCanvasElement extends HTMLElement {
-  constructor(attrs = [], value = '', location = null) {
-    super('CANVAS', attrs, value, location);
+  constructor(window, attrs = [], value = '', location = null) {
+    super(window, 'CANVAS', attrs, value, location);
 
     this._context = null;
 
@@ -2288,8 +2300,8 @@ class HTMLCanvasElement extends HTMLElement {
 module.exports.HTMLCanvasElement = HTMLCanvasElement;
 
 class HTMLTemplateElement extends HTMLElement {
-  constructor(attrs = [], value = '', location = null) {
-    super('TEMPLATE', attrs, value, location);
+  constructor(window, attrs = [], value = '', location = null) {
+    super(window, 'TEMPLATE', attrs, value, location);
 
     this._childNodes = new NodeList();
   }
@@ -2329,8 +2341,8 @@ class HTMLTemplateElement extends HTMLElement {
 module.exports.HTMLTemplateElement = HTMLTemplateElement;
 
 class HTMLTextareaElement extends HTMLElement {
-  constructor(attrs = [], value = '', location = null) {
-    super('TEXTAREA', attrs, value, location);
+  constructor(window, attrs = [], value = '', location = null) {
+    super(window, 'TEXTAREA', attrs, value, location);
   }
 
   get value() {
@@ -2357,8 +2369,8 @@ class HTMLTextareaElement extends HTMLElement {
 module.exports.HTMLTextareaElement = HTMLTextareaElement;
 
 class CharacterNode extends Node {
-  constructor(value) {
-    super();
+  constructor(window, value) {
+    super(window);
 
     this.value = value;
   }
@@ -2401,8 +2413,8 @@ class CharacterNode extends Node {
 module.exports.CharacterNode = CharacterNode;
 
 class Text extends CharacterNode {
-  constructor(value) {
-    super(value);
+  constructor(window, value) {
+    super(window, value);
   }
 
   get nodeType() {
@@ -2431,8 +2443,8 @@ class Text extends CharacterNode {
 module.exports.Text = Text;
 
 class Comment extends CharacterNode {
-  constructor(value) {
-    super(value);
+  constructor(window, value) {
+    super(window, value);
   }
 
   get nodeType() {
@@ -2452,10 +2464,11 @@ class Comment extends CharacterNode {
 module.exports.Comment = Comment;
 
 class HTMLImageElement extends HTMLSrcableElement {
-  constructor(...args) {
-    if (typeof arguments[0] === 'number') {
-      const [width = 0, height = 0] = arguments;
-      return new HTMLImageElement([
+  constructor(window, attrs = [], value = '', location = null) {
+    if (typeof attrs === 'number') {
+      const width = attrs;
+      const height = value;
+      return new HTMLImageElement(window, [
         {
           name: 'width',
           value: width + '',
@@ -2465,58 +2478,58 @@ class HTMLImageElement extends HTMLSrcableElement {
           value: height + '',
         },
       ], '', null);
-    }
-    const [attrs = [], value = '', location = null] = arguments;
-    super('IMG', attrs, value, location);
+    } else {
+      super(window, 'IMG', attrs, value, location);
 
-    this.image = new bindings.nativeImage();
+      this.image = new bindings.nativeImage();
 
-    this.on('attribute', (name, value) => {
-      if (name === 'src' && value) {
-        this.readyState = 'loading';
-        
-        const src = value;
+      this.on('attribute', (name, value) => {
+        if (name === 'src' && value) {
+          this.readyState = 'loading';
+          
+          const src = value;
 
-        this.ownerDocument.resources.addResource((onprogress, cb) => {
-          this.ownerDocument.defaultView.fetch(src)
-            .then(res => {
-              if (res.status >= 200 && res.status < 300) {
-                return res.arrayBuffer();
-              } else {
-                return Promise.reject(new Error(`img src got invalid status code (url: ${JSON.stringify(src)}, code: ${res.status})`));
-              }
-            })
-            .then(arrayBuffer => new Promise((accept, reject) => {
-              this.image.load(arrayBuffer, err => {
-                if (!err) {
-                  accept();
+          this.ownerDocument.resources.addResource((onprogress, cb) => {
+            this.ownerDocument.defaultView.fetch(src)
+              .then(res => {
+                if (res.status >= 200 && res.status < 300) {
+                  return res.arrayBuffer();
                 } else {
-                  reject(new Error(`failed to decode image: ${err.message} (url: ${JSON.stringify(src)}, size: ${arrayBuffer.byteLength}, message: ${err})`));
+                  return Promise.reject(new Error(`img src got invalid status code (url: ${JSON.stringify(src)}, code: ${res.status})`));
                 }
-              });
-            }))
-            .then(() => {
-              this.readyState = 'complete';
-              
-              this._dispatchEventOnDocumentReady(new Event('load', {target: this}));
-              
-              cb();
-            })
-            .catch(err => {
-              console.warn('failed to load image:', src);
+              })
+              .then(arrayBuffer => new Promise((accept, reject) => {
+                this.image.load(arrayBuffer, err => {
+                  if (!err) {
+                    accept();
+                  } else {
+                    reject(new Error(`failed to decode image: ${err.message} (url: ${JSON.stringify(src)}, size: ${arrayBuffer.byteLength}, message: ${err})`));
+                  }
+                });
+              }))
+              .then(() => {
+                this.readyState = 'complete';
+                
+                this._dispatchEventOnDocumentReady(new Event('load', {target: this}));
+                
+                cb();
+              })
+              .catch(err => {
+                console.warn('failed to load image:', src);
 
-              this.readyState = 'complete';
-              
-              const e = new ErrorEvent('error', {target: this});
-              e.message = err.message;
-              e.stack = err.stack;
-              this._dispatchEventOnDocumentReady(e);
-              
-              cb(err);
-            });
-        });
-      }
-    });
+                this.readyState = 'complete';
+                
+                const e = new ErrorEvent('error', {target: this});
+                e.message = err.message;
+                e.stack = err.stack;
+                this._dispatchEventOnDocumentReady(e);
+                
+                cb(err);
+              });
+          });
+        }
+      });
+    }
   }
 
   get src() {
@@ -2590,59 +2603,69 @@ class TimeRanges {
 module.exports.TimeRanges = TimeRanges;
 
 class HTMLAudioElement extends HTMLMediaElement {
-  constructor(attrs = [], value = '') {
-    super('AUDIO', attrs, value);
+  constructor(window, attrs = [], value = '') {    
+    if (typeof attrs === 'string') {
+      const src = attrs;
+      return new HTMLAudioElement(window, [
+        {
+          name: 'src',
+          value: src + '',
+        },
+      ], '', null);
+    } else {
+      super(window, 'AUDIO', attrs, value);
 
-    this.readyState = HTMLMediaElement.HAVE_NOTHING;
-    this.audio = new bindings.nativeAudio.Audio();
+      this.readyState = HTMLMediaElement.HAVE_NOTHING;
+      this.audio = new bindings.nativeAudio.Audio();
 
-    this.on('attribute', (name, value) => {
-      if (name === 'src' && value) {
-        const src = value;
+      this.on('attribute', (name, value) => {
+        if (name === 'src' && value) {
+          const src = value;
 
-        this.ownerDocument.resources.addResource((onprogress, cb) => {
-          this.ownerDocument.defaultView.fetch(src)
-            .then(res => {
-              if (res.status >= 200 && res.status < 300) {
-                return res.arrayBuffer();
-              } else {
-                return Promise.reject(new Error(`audio src got invalid status code (url: ${JSON.stringify(src)}, code: ${res.status})`));
-              }
-            })
-            .then(arrayBuffer => {
-              try {
-                this.audio.load(arrayBuffer);
-              } catch(err) {
-                throw new Error(`failed to decode audio: ${err.message} (url: ${JSON.stringify(src)}, size: ${arrayBuffer.byteLength})`);
-              }
-            })
-            .then(() => {
-              this.readyState = HTMLMediaElement.HAVE_ENOUGH_DATA;
+          this.ownerDocument.resources.addResource((onprogress, cb) => {
+            this.ownerDocument.defaultView.fetch(src)
+              .then(res => {
+                if (res.status >= 200 && res.status < 300) {
+                  return res.arrayBuffer();
+                } else {
+                  return Promise.reject(new Error(`audio src got invalid status code (url: ${JSON.stringify(src)}, code: ${res.status})`));
+                }
+              })
+              .then(arrayBuffer => {
+                try {
+                  this.audio.load(arrayBuffer);
+                } catch(err) {
+                  throw new Error(`failed to decode audio: ${err.message} (url: ${JSON.stringify(src)}, size: ${arrayBuffer.byteLength})`);
+                }
+              })
+              .then(() => {
+                this.readyState = HTMLMediaElement.HAVE_ENOUGH_DATA;
 
-              const progressEvent = new Event('progress', {target: this});
-              progressEvent.loaded = 1;
-              progressEvent.total = 1;
-              progressEvent.lengthComputable = true;
-              this._emit(progressEvent);
+                const progressEvent = new Event('progress', {target: this});
+                progressEvent.loaded = 1;
+                progressEvent.total = 1;
+                progressEvent.lengthComputable = true;
+                this._emit(progressEvent);
 
-              this._dispatchEventOnDocumentReady(new Event('canplay', {target: this}));
-              this._dispatchEventOnDocumentReady(new Event('canplaythrough', {target: this}));
-              
-              cb();
-            })
-            .catch(err => {
-              console.warn('failed to load audio:', src);
+                this._dispatchEventOnDocumentReady(new Event('canplay', {target: this}));
+                this._dispatchEventOnDocumentReady(new Event('canplaythrough', {target: this}));
+                
+                cb();
+              })
+              .catch(err => {
+                console.warn('failed to load audio:', src);
 
-              const e = new ErrorEvent('error', {target: this});
-              e.message = err.message;
-              e.stack = err.stack;
-              this._dispatchEventOnDocumentReady(e);
-              
-              cb(err);
-            });
-        });
-      }
-    });
+                const e = new ErrorEvent('error', {target: this});
+                e.message = err.message;
+                e.stack = err.stack;
+                this._dispatchEventOnDocumentReady(e);
+                
+                cb(err);
+              });
+          });
+        }
+      });
+    }
   }
 
   play() {
@@ -2704,8 +2727,8 @@ class HTMLAudioElement extends HTMLMediaElement {
 module.exports.HTMLAudioElement = HTMLAudioElement;
 
 class HTMLVideoElement extends HTMLMediaElement {
-  constructor(attrs = [], value = '', location = null) {
-    super('VIDEO', attrs, value, location);
+  constructor(window, attrs = [], value = '', location = null) {
+    super(window, 'VIDEO', attrs, value, location);
 
     this.readyState = HTMLMediaElement.HAVE_NOTHING;
     this.data = new Uint8Array(0);
@@ -3011,29 +3034,29 @@ function createImageBitmap(src, x, y, w, h, options) {
 module.exports.HTMLVideoElement = HTMLVideoElement;
 
 class HTMLDivElement extends HTMLElement {
-  constructor(attrs = [], value = '', location = null) {
-    super('DIV', attrs, value, location);
+  constructor(window, attrs = [], value = '', location = null) {
+    super(window, 'DIV', attrs, value, location);
   }
 }
 module.exports.HTMLDivElement = HTMLDivElement;
 
 class HTMLUListElement extends HTMLElement {
-  constructor(attrs = [], value = '', location = null) {
-    super('ULIST', attrs, value, location);
+  constructor(window, attrs = [], value = '', location = null) {
+    super(window, 'ULIST', attrs, value, location);
   }
 }
 module.exports.HTMLUListElement = HTMLUListElement;
 
 class HTMLLIElement extends HTMLElement {
-  constructor(attrs = [], value = '', location = null) {
-    super('LI', attrs, value, location);
+  constructor(window, attrs = [], value = '', location = null) {
+    super(window, 'LI', attrs, value, location);
   }
 }
 module.exports.HTMLLIElement = HTMLLIElement;
 
 class HTMLTableElement extends HTMLElement {
-  constructor(attrs = [], value = '', location = null) {
-    super('TABLE', attrs, value, location);
+  constructor(window, attrs = [], value = '', location = null) {
+    super(window, 'TABLE', attrs, value, location);
   }
 }
 module.exports.HTMLTableElement = HTMLTableElement;
@@ -3045,3 +3068,38 @@ function _hash(s) {
   }
   return result;
 }
+
+const getBoundDOMElements = window => {
+  const bind = (OldClass, makeClass) => {
+    const NewClass = makeClass((a, b, c, d) => Reflect.construct(OldClass, [window, a, b, c, d]));
+    NewClass.prototype = OldClass.prototype;
+    NewClass.constructor = OldClass;
+    return NewClass;
+  };
+  return {
+    Element: bind(Element, b => function Element() { return b.apply(this, arguments); }),
+    HTMLElement: bind(HTMLElement, b => function HTMLElement() { return b.apply(this, arguments); }),
+    HTMLBodyElement: bind(HTMLBodyElement, b => function HTMLBodyElement() { return b.apply(this, arguments); }),
+    HTMLAnchorElement: bind(HTMLAnchorElement, b => function HTMLAnchorElement() { return b.apply(this, arguments); }),
+    HTMLStyleElement: bind(HTMLStyleElement, b => function HTMLStyleElement() { return b.apply(this, arguments); }),
+    HTMLLinkElement: bind(HTMLLinkElement, b => function HTMLLinkElement() { return b.apply(this, arguments); }),
+    HTMLScriptElement: bind(HTMLScriptElement, b => function HTMLScriptElement() { return b.apply(this, arguments); }),
+    HTMLImageElement: bind(HTMLImageElement, b => function HTMLImageElement() { return b.apply(this, arguments); }),
+    HTMLAudioElement: bind(HTMLAudioElement, b => function HTMLAudioElement() { return b.apply(this, arguments); }),
+    HTMLVideoElement: bind(HTMLVideoElement, b => function HTMLVideoElement() { return b.apply(this, arguments); }),
+    HTMLSourceElement: bind(HTMLSourceElement, b => function HTMLSourceElement() { return b.apply(this, arguments); }),
+    SVGElement: bind(SVGElement, b => function SVGElement() { return b.apply(this, arguments); }),
+    HTMLIFrameElement: bind(HTMLIFrameElement, b => function HTMLIFrameElement() { return b.apply(this, arguments); }),
+    HTMLCanvasElement: bind(HTMLCanvasElement, b => function HTMLCanvasElement() { return b.apply(this, arguments); }),
+    HTMLTextareaElement: bind(HTMLTextareaElement, b => function HTMLTextareaElement() { return b.apply(this, arguments); }),
+    HTMLTemplateElement: bind(HTMLTemplateElement, b => function HTMLTemplateElement() { return b.apply(this, arguments); }),
+    HTMLDivElement: bind(HTMLDivElement, b => function HTMLDivElement() { return b.apply(this, arguments); }),
+    HTMLUListElement: bind(HTMLUListElement, b => function HTMLUListElement() { return b.apply(this, arguments); }),
+    HTMLLIElement: bind(HTMLLIElement, b => function HTMLLIElement() { return b.apply(this, arguments); }),
+    HTMLTableElement: bind(HTMLTableElement, b => function HTMLTableElement() { return b.apply(this, arguments); }),
+    Node: bind(Node, b => function Node() { return b.apply(this, arguments); }),
+    Text: bind(Text, b => function Text() { return b.apply(this, arguments); }),
+    Comment: bind(Comment, b => function Comment() { return b.apply(this, arguments); }),
+  };
+};
+module.exports.getBoundDOMElements = getBoundDOMElements;

@@ -105,36 +105,14 @@ GlobalContext.args = {};
 GlobalContext.version = '';
 
 // Class imports.
-const {_parseDocument, _parseDocumentAst, Document, DocumentFragment, DocumentType, DOMImplementation, initDocument} = require('./Document');
+const {_parseDocument, _parseDocumentAst, getBoundDocumentElements, DocumentType, DOMImplementation, initDocument} = require('./Document');
 const {
-  Element,
-  HTMLElement,
-  HTMLBodyElement,
-  HTMLAnchorElement,
-  HTMLStyleElement,
-  HTMLScriptElement,
-  HTMLLinkElement,
-  HTMLImageElement,
-  HTMLAudioElement,
-  HTMLVideoElement,
-  HTMLSourceElement,
-  HTMLIFrameElement,
-  SVGElement,
-  HTMLCanvasElement,
-  HTMLTextareaElement,
-  HTMLTemplateElement,
-  HTMLDivElement,
-  HTMLUListElement,
-  HTMLLIElement,
-  HTMLTableElement,
-  createImageBitmap,
+  getBoundDOMElements,
+  NodeList,
+  HTMLCollection,
   DOMRect,
   DOMPoint,
-  Node,
-  NodeList,
-  Text,
-  Comment,
-  HTMLCollection,
+  createImageBitmap,
 } = require('./DOM');
 const {CustomEvent, DragEvent, ErrorEvent, Event, EventTarget, KeyboardEvent, MessageEvent, MouseEvent, WheelEvent, PromiseRejectionEvent} = require('./Event');
 const {History} = require('./History');
@@ -153,10 +131,12 @@ class CustomElementRegistry {
     this._window = window;
 
     this.elements = {};
+    this.extensions = {};
     this.elementPromises = {};
   }
 
   define(name, constructor, options) {
+  define(name, constructor, options = {}) {
     name = name.toUpperCase();
 
     this.elements[name] = constructor;
@@ -366,30 +346,6 @@ GlobalContext.fakeVrDisplayEnabled = false;
 
 const _makeWindow = (options = {}, parent = null, top = null) => {
   const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
-
-  const HTMLImageElementBound = (Old => class HTMLImageElement extends Old {
-    constructor() {
-      super(...arguments);
-
-      // need to set owner document here because HTMLImageElement can be manually constructed via new Image()
-      this.ownerDocument = window.document;
-    }
-  })(HTMLImageElement);
-
-  const HTMLAudioElementBound = (Old => class HTMLAudioElement extends Old {
-    constructor(src) {
-      if (typeof src === 'string') {
-        const audio = new HTMLAudioElementBound();
-        audio.setAttribute('src', src);
-        return audio;
-      } else {
-        super(...arguments);
-
-        // need to set owner document here because HTMLAudioElement can be manually constructed via new Audio()
-        this.ownerDocument = window.document;
-      }
-    }
-  })(HTMLAudioElement);
 
   const vmo = nativeVm.make();
   const window = vmo.getGlobal();
@@ -745,31 +701,46 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   };
   window.scrollX = 0;
   window.scrollY = 0;
-  window[symbols.htmlTagsSymbol] = {
-    DOCUMENT: Document,
-    BODY: HTMLBodyElement,
-    A: HTMLAnchorElement,
-    STYLE: HTMLStyleElement,
-    SCRIPT: HTMLScriptElement,
-    LINK: HTMLLinkElement,
-    IMG: HTMLImageElementBound,
-    AUDIO: HTMLAudioElementBound,
-    VIDEO: HTMLVideoElement,
-    SOURCE: HTMLSourceElement,
-    IFRAME: HTMLIFrameElement,
-    CANVAS: HTMLCanvasElement,
-    TEXTAREA: HTMLTextareaElement,
-    TEMPLATE: HTMLTemplateElement,
-    DIV: HTMLDivElement,
-    ULIST: HTMLUListElement,
-    LI: HTMLLIElement,
-    TABLE: HTMLTableElement,
-  };
   window[symbols.optionsSymbol] = options;
   window[symbols.styleEpochSymbol] = 0;
   window.DocumentFragment = DocumentFragment;
 
   // DOM.
+  const {
+    Document,
+    DocumentFragment,
+    Range,
+  } = getBoundDocumentElements(window);
+  window.Document = Document;
+  window.DocumentFragment = DocumentFragment;
+  window.DocumentType = DocumentType;
+  window.DOMImplementation = DOMImplementation;
+
+  const {
+    Element,
+    HTMLElement,
+    HTMLBodyElement,
+    HTMLAnchorElement,
+    HTMLStyleElement,
+    HTMLLinkElement,
+    HTMLScriptElement,
+    HTMLImageElement,
+    HTMLAudioElement,
+    HTMLVideoElement,
+    HTMLSourceElement,
+    SVGElement,
+    HTMLIFrameElement,
+    HTMLCanvasElement,
+    HTMLTextareaElement,
+    HTMLTemplateElement,
+    HTMLDivElement,
+    HTMLUListElement,
+    HTMLLIElement,
+    HTMLTableElement,
+    Node,
+    Text,
+    Comment,
+  } = getBoundDOMElements(window);
   window.Element = Element;
   window.HTMLElement = HTMLElement;
   window.HTMLBodyElement = HTMLBodyElement;
@@ -777,8 +748,8 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.HTMLStyleElement = HTMLStyleElement;
   window.HTMLLinkElement = HTMLLinkElement;
   window.HTMLScriptElement = HTMLScriptElement;
-  window.HTMLImageElement = HTMLImageElementBound,
-  window.HTMLAudioElement = HTMLAudioElementBound;
+  window.HTMLImageElement = HTMLImageElement,
+  window.HTMLAudioElement = HTMLAudioElement;
   window.HTMLVideoElement = HTMLVideoElement;
   window.SVGElement = SVGElement;
   window.HTMLIFrameElement = HTMLIFrameElement;
@@ -792,6 +763,26 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.Node = Node;
   window.Text = Text;
   window.Comment = Comment;
+  window[symbols.htmlTagsSymbol] = {
+    DOCUMENT: Document,
+    BODY: HTMLBodyElement,
+    A: HTMLAnchorElement,
+    STYLE: HTMLStyleElement,
+    SCRIPT: HTMLScriptElement,
+    LINK: HTMLLinkElement,
+    IMG: HTMLImageElement,
+    AUDIO: HTMLAudioElement,
+    VIDEO: HTMLVideoElement,
+    SOURCE: HTMLSourceElement,
+    IFRAME: HTMLIFrameElement,
+    CANVAS: HTMLCanvasElement,
+    TEXTAREA: HTMLTextareaElement,
+    TEMPLATE: HTMLTemplateElement,
+    DIV: HTMLDivElement,
+    ULIST: HTMLUListElement,
+    LI: HTMLLIElement,
+    TABLE: HTMLTableElement,
+  };
   window.NodeList = NodeList;
   window.HTMLCollection = HTMLCollection;
 
@@ -1016,7 +1007,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.addEventListener = EventTarget.prototype.addEventListener.bind(window);
   window.removeEventListener = EventTarget.prototype.removeEventListener.bind(window);
   window.dispatchEvent = EventTarget.prototype.dispatchEvent.bind(window);
-  window.Image = HTMLImageElementBound;
+  window.Image = HTMLImageElement;
   window.ImageData = ImageData;
   window.ImageBitmap = ImageBitmap;
   window.Path2D = Path2D;
@@ -1026,11 +1017,8 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   if (options.args.webgl !== '1') {
     window.WebGL2RenderingContext = WebGL2RenderingContext;
   }
-  window.Audio = HTMLAudioElementBound;
+  window.Audio = HTMLAudioElement;
   window.MediaRecorder = MediaRecorder;
-  window.Document = Document;
-  window.DocumentType = DocumentType;
-  window.DOMImplementation = DOMImplementation;
   window.DataTransfer = DataTransfer;
   window.DataTransferItem = DataTransferItem;
   window.FileReader = FileReader;
@@ -1467,7 +1455,7 @@ GlobalContext._makeWindow = _makeWindow;
 
 const _makeWindowWithDocument = (s, options, parent, top) => {
   const window = _makeWindow(options, parent, top);
-  window.document = _parseDocument(s, window);
+  _parseDocument(s, window); // attaches window.document
   return window;
 };
 module.exports._makeWindowWithDocument = _makeWindowWithDocument;
