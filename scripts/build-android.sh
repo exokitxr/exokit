@@ -41,7 +41,7 @@ export TARGET_ARCH="aarch64"  # For webrtc install prebuilt.
 pushd ..
 
 # build native modules
-npm install --verbose --devdir="$(pwd)/.node-gyp" --arch=aarch64 --target_arch=aarch64 --no-optional --unsafe-perm
+npm install --verbose --devdir="$(pwd)/.node-gyp" --arch=aarch64 --target_arch=aarch64 --no-optional
 
 # archive native module dlibs
 mkdir -p build/libexokit
