@@ -3010,6 +3010,9 @@ function createImageBitmap(src, x, y, w, h, options) {
 }
 module.exports.HTMLVideoElement = HTMLVideoElement;
 
+class HTMLDivElement extends HTMLElement {}
+module.exports.HTMLDivElement = HTMLDivElement;
+
 function _hash(s) {
   let result = 0;
   for (let i = 0; i < s.length; i++) {

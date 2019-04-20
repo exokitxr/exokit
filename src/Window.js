@@ -123,6 +123,7 @@ const {
   HTMLCanvasElement,
   HTMLTextareaElement,
   HTMLTemplateElement,
+  HTMLDivElement,
   createImageBitmap,
   DOMRect,
   DOMPoint,
@@ -756,6 +757,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     CANVAS: HTMLCanvasElement,
     TEXTAREA: HTMLTextareaElement,
     TEMPLATE: HTMLTemplateElement,
+    DIV: HTMLDivElement,
   };
   window[symbols.optionsSymbol] = options;
   window[symbols.styleEpochSymbol] = 0;
