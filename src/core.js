@@ -197,10 +197,15 @@ const _fromAST = (node, window, parentNode, document, uppercase) => {
 };
 GlobalContext._fromAST = _fromAST;
 
+function _upgradeElement(window, el, upgradeTagName) {
+  const constructor = window.customElements.get(upgradeTagName);
+  constructor && window.customElements.upgrade(el, constructor);
+}
+
 // To "run" the HTML means to walk it and execute behavior on the elements such as <script src="...">.
 // Each candidate element exposes a method on runSymbol which returns whether to await the element load or not.
 const _runHtml = (element, window) => {
-  if (element instanceof HTMLElement) {
+  if (element instanceof window.HTMLElement) {
     return new Promise((accept, reject) => {
       const {document} = window;
 
@@ -214,10 +219,15 @@ const _runHtml = (element, window) => {
           document[symbols.addRunSymbol](el[symbols.runSymbol].bind(el));
         }
 
-        if (/\-/.test(el.tagName)) {
-          const constructor = window.customElements.get(el.tagName);
-          if (constructor) {
-            window.customElements.upgrade(el, constructor);
+        const {tagName} = el;
+        if (tagName) {
+          if (/\-/.test(tagName)) {
+            _upgradeElement(window, el, tagName);
+          } else {
+            const isAttr = el.getAttribute('is');
+            if (isAttr) {
+              _upgradeElement(window, el, isAttr);
+            }
           }
         }
       });

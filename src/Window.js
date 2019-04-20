@@ -107,6 +107,7 @@ GlobalContext.version = '';
 // Class imports.
 const {_parseDocument, _parseDocumentAst, getBoundDocumentElements, DocumentType, DOMImplementation, initDocument} = require('./Document');
 const {
+  HTMLElement,
   getBoundDOMElements,
   NodeList,
   HTMLCollection,
@@ -135,11 +136,13 @@ class CustomElementRegistry {
     this.elementPromises = {};
   }
 
-  define(name, constructor, options) {
   define(name, constructor, options = {}) {
     name = name.toUpperCase();
 
     this.elements[name] = constructor;
+    if (options.extends) {
+      this.extensions[options.extends.toUpperCase()] = name.toLowerCase();
+    }
 
     this._window.document.traverse(el => {
       if (el.tagName === name) {
@@ -181,8 +184,22 @@ class CustomElementRegistry {
   }
 
   upgrade(el, constructor) {
-    Object.setPrototypeOf(el, constructor.prototype);
-    constructor.call(el);
+    if (el instanceof HTMLElement) {
+      HTMLElement.upgradeElement = el;
+      let error = null;
+      try {
+        Object.setPrototypeOf(el, constructor.prototype);
+        Reflect.construct(constructor, []);
+      } catch(err) {
+        error = err;
+      }
+      HTMLElement.upgradeElement = null;
+      if (error) {
+        throw error;
+      }
+    } else {
+      throw new Error('cannot upgrade non-subclass of HTMLElement');
+    }
   }
 }
 

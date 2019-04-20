@@ -1287,6 +1287,7 @@ class HTMLElement extends Element {
   }
   set style(style) {}
 }
+HTMLElement.upgradeElement = null;
 module.exports.HTMLElement = HTMLElement;
 
 function getAnchorUrl(anchorEl) {
