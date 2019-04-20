@@ -7,8 +7,18 @@ RUN apt-get update -y && \
     libnss3-dev libxcomposite-dev libxtst-dev libxss-dev libdbus-1-dev libpango-1.0-0 libpangocairo-1.0-0 libatk1.0-0 libatk-bridge2.0-0 default-jdk \
     unzip
 
-ADD . /app
-WORKDIR /app
+RUN groupadd -g 999 appuser && \
+    useradd -r -u 999 -g appuser appuser
+
+ENV HOME /home/appuser
+ADD . $HOME/app
+WORKDIR $HOME/app
+RUN echo $HOME
+
+RUN chown -R appuser:appuser $HOME && \
+    chmod -R 777 $HOME
+
+USER appuser
 
 RUN \
   wget "https://nodejs.org/dist/v11.6.0/node-v11.6.0-linux-x64.tar.gz" -O node.tar.gz && \
@@ -26,7 +36,6 @@ RUN \
   $ANDROID_HOME/tools/bin/sdkmanager "platform-tools" "platforms;android-28" && \
   $ANDROID_HOME/tools/bin/sdkmanager "ndk-bundle" && \
   export PATH="$PATH:$(pwd)/node/bin" && \
-  npm -g config set user root && \
   scripts/make-toolchain-android.sh && \
   scripts/build-android.sh
 RUN \
