@@ -24,4 +24,3 @@ allprojects {
         mavenLocal()
     }
 }
-
