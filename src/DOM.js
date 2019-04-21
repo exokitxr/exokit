@@ -322,6 +322,7 @@ const _makeAttr = attr => attr && ({ // XXX should be class Attr
   name: attr.name,
   value: attr.value,
   nodeName: attr.name,
+  nodeValue: attr.value,
 });
 const _makeAttributesProxy = el => new Proxy(el.attrs, {
   get(target, prop) {
