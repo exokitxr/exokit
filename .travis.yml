@@ -54,7 +54,7 @@ matrix:
     - docker pull debian:latest
     install:
     - docker build -f android.Dockerfile -t exokit .
-    - docker run exokit cat exokit.apk >exokit.apk
+    - docker run exokit cat exokit.apk >exokit-oculusmobile.apk
     script:
     - echo "skipping 'npm run test' outside of docker"
     deploy:
