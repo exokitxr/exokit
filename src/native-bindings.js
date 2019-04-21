@@ -1,4 +1,5 @@
 const path = require('path');
+const {isMainThread} = require('worker_threads');
 
 /* const exokitNode = (() => {
   const oldCwd = process.cwd();
@@ -8,9 +9,21 @@ const path = require('path');
   process.chdir(oldCwd);
   return exokitNode;
 })(); */
-const exokitNode = require(path.join(__dirname, '..', 'build', 'Release', 'exokit.node'));
-const WindowWorker = require('window-worker');
-const vmOne = require('vm-one');
+const {
+  exokitNode,
+  WindowWorker,
+  vmOne,
+} = (() => {
+  if (isMainThread) {
+    return {
+     exokitNode: require(path.join(__dirname, '..', 'build', 'Release', 'exokit.node')),
+     WindowWorker: require('window-worker'),
+     vmOne: require('vm-one'),
+    };
+  } else {
+    return {};
+  }
+})();
 const webGlToOpenGl = require('webgl-to-opengl');
 const GlobalContext = require('./GlobalContext');
 
@@ -102,39 +115,40 @@ GlobalContext.CanvasRenderingContext2D = bindings.nativeCanvasRenderingContext2D
 GlobalContext.WebGLRenderingContext = bindings.nativeGl;
 GlobalContext.WebGL2RenderingContext = bindings.nativeGl2;
 
-bindings.nativeAudio.AudioContext = (OldAudioContext => class AudioContext extends OldAudioContext {
-  decodeAudioData(arrayBuffer, successCallback, errorCallback) {
-    return new Promise((resolve, reject) => {
-      try {
-        let audioBuffer = this._decodeAudioDataSync(arrayBuffer);
-        if (successCallback) {
-          process.nextTick(() => {
-            try {
-              successCallback(audioBuffer);
-            } catch(err) {
-              console.warn(err);
-            }
-          });
+if (bindings.nativeAudio) {
+  bindings.nativeAudio.AudioContext = (OldAudioContext => class AudioContext extends OldAudioContext {
+    decodeAudioData(arrayBuffer, successCallback, errorCallback) {
+      return new Promise((resolve, reject) => {
+        try {
+          let audioBuffer = this._decodeAudioDataSync(arrayBuffer);
+          if (successCallback) {
+            process.nextTick(() => {
+              try {
+                successCallback(audioBuffer);
+              } catch(err) {
+                console.warn(err);
+              }
+            });
+          }
+          resolve(audioBuffer);
+        } catch(err) {
+          console.warn(err);
+          if (errorCallback) {
+            process.nextTick(() => {
+              try {
+                errorCallback(err);
+              } catch(err) {
+                console.warn(err);
+              }
+            });
+          }
+          reject(err);
         }
-        resolve(audioBuffer);
-      } catch(err) {
-        console.warn(err);
-        if (errorCallback) {
-          process.nextTick(() => {
-            try {
-              errorCallback(err);
-            } catch(err) {
-              console.warn(err);
-            }
-          });
-        }
-        reject(err);
-      }
-    });
-  }
-})(bindings.nativeAudio.AudioContext);
-
-bindings.nativeAudio.PannerNode.setPath(path.join(require.resolve('native-audio-deps').slice(0, -'index.js'.length), 'assets', 'hrtf'));
+      });
+    }
+  })(bindings.nativeAudio.AudioContext);
+  bindings.nativeAudio.PannerNode.setPath(path.join(require.resolve('native-audio-deps').slice(0, -'index.js'.length), 'assets', 'hrtf'));
+}
 
 if (bindings.nativeOpenVR) {
 	bindings.nativeOpenVR.EVRInitError = {
