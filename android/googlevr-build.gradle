@@ -1,0 +1,31 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+buildscript {
+    repositories {
+       google()
+       jcenter()
+       maven {
+           url "https://maven.google.com"
+       }
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        jcenter()
+        maven {
+            // For Android support library components.
+            url "https://maven.google.com"
+        }
+        // You can also use a local Maven repository if desired.
+        mavenLocal()
+    }
+    dependencies {
+      // The Google VR SDK requires version 2.3.3 or higher.
+      classpath 'com.android.tools.build:gradle:3.3.2'
+
+      // The Google VR NDK requires experimental version 0.9.3 or higher.
+      // classpath 'com.android.tools.build:gradle-experimental:0.9.3'
+    }
+
+}
