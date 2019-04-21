@@ -317,15 +317,20 @@ const _setAttributeRaw = (el, prop, value) => {
   }
 };
 
+const _makeAttr = attr => attr && ({ // XXX should be class Attr
+  name: attr.name,
+  value: attr.value,
+  nodeName: attr.name,
+});
 const _makeAttributesProxy = el => new Proxy(el.attrs, {
   get(target, prop) {
     const propN = parseIntStrict(prop);
     if (propN !== undefined) {
-      return target[propN];
+      return _makeAttr(target[propN]);
     } else if (prop === 'length') {
       return target.length;
     } else {
-      return target.find(attr => attr.name === prop);
+      return _makeAttr(target.find(attr => attr.name === prop));
     }
   },
   set(target, prop, value) {
