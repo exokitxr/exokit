@@ -10,14 +10,6 @@ const THREE = require('../lib/three-min.js');
 const GlobalContext = require('./GlobalContext');
 const symbols = require('./symbols');
 
-const {
-  Element,
-  HTMLElement,
-  Node,
-  NodeList,
-  Text,
-  Comment,
-} = require('./DOM');
 const {Event, EventTarget} = require('./Event');
 const utils = require('./utils');
 const {_download} = utils;
@@ -148,16 +140,14 @@ class Resources extends EventTarget {
 }
 GlobalContext.Resources = Resources;
 
-const _fromAST = (node, window, parentNode, ownerDocument, uppercase) => {
+const _fromAST = (node, window, parentNode, document, uppercase) => {
   if (node.nodeName === '#text') {
-    const text = new Text(node.value);
+    const text = new window.Text(node.value);
     text.parentNode = parentNode;
-    text.ownerDocument = ownerDocument;
     return text;
   } else if (node.nodeName === '#comment') {
-    const comment = new Comment(node.data);
+    const comment = new window.Comment(node.data);
     comment.parentNode = parentNode;
-    comment.ownerDocument = ownerDocument;
     return comment;
   } else {
     let {tagName} = node;
@@ -177,28 +167,28 @@ const _fromAST = (node, window, parentNode, ownerDocument, uppercase) => {
         location,
       )
     :
-      new HTMLElement(
+      new window.HTMLElement(
         tagName,
         attrs,
         value,
         location,
       );
     element.parentNode = parentNode;
-    if (!ownerDocument) { // if there is no owner document, it's us
-      ownerDocument = element;
-      ownerDocument.defaultView = window;
+    if (!document) { // if there is no document, it's us
+      document = element;
+      document.defaultView = window;
+      window.document = document;
     }
-    element.ownerDocument = ownerDocument;
     if (content) {
-      element.childNodes = new NodeList(
+      element.childNodes = new window.NodeList(
         content.childNodes.map(childNode =>
-          _fromAST(childNode, window, element, ownerDocument, uppercase)
+          _fromAST(childNode, window, element, document, uppercase)
         )
       );
     } else if (childNodes) {
-      element.childNodes = new NodeList(
+      element.childNodes = new window.NodeList(
         childNodes.map(childNode =>
-          _fromAST(childNode, window, element, ownerDocument, uppercase)
+          _fromAST(childNode, window, element, document, uppercase)
         )
       );
     }
@@ -207,27 +197,37 @@ const _fromAST = (node, window, parentNode, ownerDocument, uppercase) => {
 };
 GlobalContext._fromAST = _fromAST;
 
+function _upgradeElement(window, el, upgradeTagName) {
+  const constructor = window.customElements.get(upgradeTagName);
+  constructor && window.customElements.upgrade(el, constructor);
+}
+
 // To "run" the HTML means to walk it and execute behavior on the elements such as <script src="...">.
 // Each candidate element exposes a method on runSymbol which returns whether to await the element load or not.
 const _runHtml = (element, window) => {
-  if (element instanceof HTMLElement) {
+  if (element instanceof window.HTMLElement) {
     return new Promise((accept, reject) => {
       const {document} = window;
 
       element.traverse(el => {
         const {id} = el;
         if (id) {
-          el._emit('attribute', 'id', id);
+          el._emit('attribute', 'id', id, null);
         }
 
         if (el[symbols.runSymbol]) {
           document[symbols.addRunSymbol](el[symbols.runSymbol].bind(el));
         }
 
-        if (/\-/.test(el.tagName)) {
-          const constructor = window.customElements.get(el.tagName);
-          if (constructor) {
-            window.customElements.upgrade(el, constructor);
+        const {tagName} = el;
+        if (tagName) {
+          if (/\-/.test(tagName)) {
+            _upgradeElement(window, el, tagName);
+          } else {
+            const isAttr = el.getAttribute('is');
+            if (isAttr) {
+              _upgradeElement(window, el, isAttr);
+            }
           }
         }
       });

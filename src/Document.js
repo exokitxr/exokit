@@ -38,34 +38,17 @@ function initDocument (document, window) {
   document.location = window.location;
   document.cookie = '';
   document.referrer = '';
-  document.createElement = tagName => {
+  document.createElement = (tagName, options = {}) => {
     tagName = tagName.toUpperCase();
     const HTMLElementTemplate = window[symbols.htmlTagsSymbol][tagName];
-    const element = HTMLElementTemplate ? new HTMLElementTemplate() : new DOM.HTMLElement(tagName);
-    element.ownerDocument = document;
+    const element = HTMLElementTemplate ? new HTMLElementTemplate() : new window.HTMLElement(tagName);
+    options.is && element.setAttribute('is', options.is);
     return element;
   };
-  document.createElementNS = (namespace, tagName) => document.createElement(tagName);
-  document.createDocumentFragment = () => {
-    const documentFragment = new DocumentFragment();
-    documentFragment.ownerDocument = document;
-    return documentFragment;
-  };
-  document.createRange = () => {
-    const range = new Range();
-    range.ownerDocument = document;
-    return range;
-  };
-  document.createTextNode = text => {
-    const node = new DOM.Text(text);
-    node.ownerDocument = document;
-    return node;
-  }
-  document.createComment = comment => {
-    const node = new DOM.Comment(comment);
-    node.ownerDocument = document;
-    return node;
-  };
+  document.createElementNS = (namespace, tagName, options) => document.createElement(tagName, options);
+  document.createDocumentFragment = () => new window.DocumentFragment();
+  document.createTextNode = text => new window.Text(text);
+  document.createComment = comment => new window.Comment(comment);
   document.createEvent = type => {
     switch (type) {
       case 'KeyboardEvent':
@@ -82,6 +65,7 @@ function initDocument (document, window) {
         throw new Error('invalid createEvent type: ' + type);
     }
   };
+  document.createRange = () => new window.Range();
   document.importNode = (el, deep) => el.cloneNode(deep);
   document.scripts = utils._makeHtmlCollectionProxy(document.documentElement, 'script');
   document.styleSheets = [];
@@ -160,7 +144,7 @@ function initDocument (document, window) {
   process.nextTick(async () => {
     if (body) {
       const bodyChildNodes = body.childNodes;
-      body.childNodes = new DOM.NodeList();
+      body.childNodes = new window.NodeList();
 
       try {
         await GlobalContext._runHtml(document.head, window);
@@ -276,9 +260,10 @@ class DOMImplementation {
 module.exports.DOMImplementation = DOMImplementation;
 
 class Document extends DOM.HTMLLoadableElement {
-  constructor() {
-    super('DOCUMENT');
+  constructor(window) {
+    super(window, 'DOCUMENT');
 
+    this.ownerDocument = null;
     this.hidden = false;
   }
 
@@ -334,8 +319,8 @@ module.exports.Document = Document;
 GlobalContext.Document = Document;
 
 class DocumentFragment extends DOM.HTMLElement {
-  constructor() {
-    super('DOCUMENTFRAGMENT');
+  constructor(window) {
+    super(window, 'DOCUMENTFRAGMENT');
   }
 
   get nodeType() {
@@ -346,8 +331,8 @@ module.exports.DocumentFragment = DocumentFragment;
 GlobalContext.DocumentFragment = DocumentFragment;
 
 class Range extends DocumentFragment {
-  constructor() {
-    super('RANGE');
+  constructor(window) {
+    super(window, 'RANGE');
   }
 
   createContextualFragment(str) {
@@ -360,3 +345,18 @@ class Range extends DocumentFragment {
   setEnd() {}
 }
 module.exports.Range = Range;
+
+const getBoundDocumentElements = window => {
+  const bind = (OldClass, makeClass) => {
+    const NewClass = makeClass((a, b, c, d) => Reflect.construct(OldClass, [window, a, b, c, d]));
+    NewClass.prototype = OldClass.prototype;
+    NewClass.constructor = OldClass;
+    return NewClass;
+  };
+  return {
+    Document: bind(Document, b => function Document() { return b.apply(this, arguments); }),
+    DocumentFragment: bind(DocumentFragment, b => function DocumentFragment() { return b.apply(this, arguments); }),
+    Range: bind(Range, b => function Range() { return b.apply(this, arguments); }),
+  };
+};
+module.exports.getBoundDocumentElements = getBoundDocumentElements;
