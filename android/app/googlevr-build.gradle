@@ -1,0 +1,64 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 21
+    // Sceneform libraries use language constructs from Java 8.
+    // Add these compile options if targeting minSdkVersion < 26.
+    compileOptions {
+        sourceCompatibility 1.8
+        targetCompatibility 1.8
+    }
+
+
+    defaultConfig {
+        applicationId = 'com.webmr.exokit'
+        minSdkVersion 21
+        targetSdkVersion 21
+        externalNativeBuild {
+            cmake {
+                arguments '-DANDROID_STL=c++_static'
+                cppFlags "-std=c++11"
+            }
+        }
+        ndk {
+            // Specifies the ABI configurations of your native
+            // libraries Gradle should build and package with your APK.
+            abiFilters 'arm64-v8a'
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'),
+                    'proguard-rules.pro'
+        }
+    }
+    externalNativeBuild {
+        cmake {
+            // version '3.10.2'
+            path '../googlevr-CMakeLists.txt'
+        }
+    }
+    lintOptions {
+        abortOnError false
+    }
+}
+
+
+dependencies {
+   // Adds Google VR spatial audio support
+   compile 'com.google.vr:sdk-audio:1.160.0'
+
+   // Required for all Google VR apps
+   compile 'com.google.vr:sdk-base:1.160.0'
+}
+
+
+android {
+  sourceSets {
+    main {
+      assets.srcDirs = ['assets']
+      jniLibs.srcDirs = ['assets/node_modules/native-oculus-mobile-deps/lib/android']
+    }
+  }
+}
