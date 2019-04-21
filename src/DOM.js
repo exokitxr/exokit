@@ -136,6 +136,8 @@ class Node extends EventTarget {
     this.parentNode = null;
     this.childNodes = new NodeList();
     this.ownerDocument = window.document;
+
+    this[symbols.windowSymbol] = window;
   }
 
   get parentElement() {
@@ -267,9 +269,8 @@ class Node extends EventTarget {
  * @param {parentNode} parentNode - Used for recursive cloning to attach parent.
  */
 function _cloneNode(deep, sourceNode, parentNode) {
-  const clone = new sourceNode.constructor();
+  const clone = new sourceNode.constructor(sourceNode[symbols.windowSymbol]);
   clone.attrs = sourceNode.attrs;
-  clone.ownerDocument = sourceNode.ownerDocument;
   clone.tagName = sourceNode.tagName;
   clone.value = sourceNode.value;
 
