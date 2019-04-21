@@ -764,6 +764,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   const {
     Element,
     HTMLElement,
+    HTMLHeadElement,
     HTMLBodyElement,
     HTMLAnchorElement,
     HTMLStyleElement,
@@ -788,6 +789,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   } = getBoundDOMElements(window);
   window.Element = Element;
   window.HTMLElement = HTMLElement;
+  window.HTMLHeadElement = HTMLHeadElement;
   window.HTMLBodyElement = HTMLBodyElement;
   window.HTMLAnchorElement = HTMLAnchorElement;
   window.HTMLStyleElement = HTMLStyleElement;
@@ -810,6 +812,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.Comment = Comment;
   window[symbols.htmlTagsSymbol] = {
     DOCUMENT: Document,
+    HEAD: HTMLHeadElement,
     BODY: HTMLBodyElement,
     A: HTMLAnchorElement,
     STYLE: HTMLStyleElement,

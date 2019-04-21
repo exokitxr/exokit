@@ -1442,6 +1442,12 @@ class HTMLLoadableElement extends HTMLElement {
 }
 module.exports.HTMLLoadableElement = HTMLLoadableElement;
 
+class HTMLHeadElement extends HTMLElement {
+  constructor(window) {
+    super(window, 'HEAD');
+  }
+}
+
 class HTMLBodyElement extends HTMLElement {
   constructor(window) {
     super(window, 'BODY');
@@ -3104,6 +3110,7 @@ const getBoundDOMElements = window => {
   return {
     Element: bind(Element, b => function Element() { return b.apply(this, arguments); }),
     HTMLElement: bind(HTMLElement, b => function HTMLElement() { return b.apply(this, arguments); }),
+    HTMLHeadElement: bind(HTMLHeadElement, b => function HTMLHeadElement() { return b.apply(this, arguments); }),
     HTMLBodyElement: bind(HTMLBodyElement, b => function HTMLBodyElement() { return b.apply(this, arguments); }),
     HTMLAnchorElement: bind(HTMLAnchorElement, b => function HTMLAnchorElement() { return b.apply(this, arguments); }),
     HTMLStyleElement: bind(HTMLStyleElement, b => function HTMLStyleElement() { return b.apply(this, arguments); }),
