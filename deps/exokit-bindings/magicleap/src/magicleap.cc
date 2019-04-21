@@ -3200,14 +3200,14 @@ NAN_METHOD(MLContext::CreateSwapChain) {
 
   Local<Array> array = Array::New(Isolate::GetCurrent(), 6);
   Local<Array> fbosArray = Array::New(Isolate::GetCurrent(), 2);
-  fbosArray->Set(0, JS_INT(fbos[0]));
-  fbosArray->Set(1, JS_INT(fbos[1]));
+  fbosArray->Set(0, JS_INT(mlContext->fbos[0]));
+  fbosArray->Set(1, JS_INT(mlContext->fbos[1]));
   array->Set(0, fbosArray);
   array->Set(1, JS_INT(colorTex));
   array->Set(2, JS_INT(depthStencilTex));
-  array->Set(3, JS_INT(msFbo));
-  array->Set(4, JS_INT(msColorTex));
-  array->Set(5, JS_INT(msDepthStencilTex));
+  array->Set(3, JS_INT(mlContext->msFbo));
+  array->Set(4, JS_INT(mlContext->msColorTex));
+  array->Set(5, JS_INT(mlContext->msDepthStencilTex));
   info.GetReturnValue().Set(array);
 
   /* if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
@@ -3648,11 +3648,11 @@ NAN_METHOD(MLContext::SubmitFrame) {
 
   if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber()) {
     // WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
-    /* GLuint colorTex = TO_UINT32(info[0]); // XXX don't need these arguments
+    // GLuint colorTex = TO_UINT32(info[0]); // XXX don't need these arguments
     unsigned int width = TO_UINT32(info[1]);
-    unsigned int height = TO_UINT32(info[2]); */
+    unsigned int height = TO_UINT32(info[2]);
 
-    GLuint fbos[2] = mlContext->fbos;
+    GLuint *fbos = mlContext->fbos;
     GLsync sync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 
     {
