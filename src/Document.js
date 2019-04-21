@@ -28,8 +28,8 @@ module.exports._parseDocumentAst = _parseDocumentAst;
 function initDocument (document, window) {
   const html = document.childNodes.find(el => el.tagName === 'HTML');
   const documentElement = html || (document.childNodes.length > 0 ? document.childNodes[0] : null);
-  const head = html ? html.childNodes.find(el => el.tagName === 'HEAD') : null;
-  const body = html ? html.childNodes.find(el => el.tagName === 'BODY') : null;
+  const head = html ? html.childNodes.find(el => el.tagName === 'HEAD') : new window.HTMLHeadElement();
+  const body = html ? html.childNodes.find(el => el.tagName === 'BODY') : new window.HTMLBodyElement();
 
   document.documentElement = documentElement;
   document.readyState = 'loading';
