@@ -2,7 +2,6 @@ const path = require('path');
 const fs = require('fs');
 const url = require('url');
 
-const bindings = require('./native-bindings');
 const symbols = require('./symbols');
 const mkdirp = require('mkdirp');
 const parseIntStrict = require('parse-int');
@@ -130,12 +129,12 @@ const _normalizePrototype = (obj, targetContext) => {
 
   // Normalize to window prototype.
   if (isToWindow) {
-    bindings.nativeVm.setPrototype(obj, targetContext[symbols.prototypesSymbol][name].prototype || targetContext[name].prototype);
+    Object.setPrototypeOf(obj, targetContext[symbols.prototypesSymbol][name].prototype || targetContext[name].prototype);
     return obj;
   }
 
   // Normalize to native prototype.
-  bindings.nativeVm.setPrototype(obj, targetContext[name].prototype);
+  Object.setPrototypeOf(obj, targetContext[name].prototype);
   return obj;
 };
 module.exports._normalizePrototype = _normalizePrototype;
