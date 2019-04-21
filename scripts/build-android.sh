@@ -60,7 +60,7 @@ rsync -a --relative --copy-links build/Release/exokit.node ./android/app/assets/
 
 # build apk
 pushd android
-./gradlew build && ./gradlew assembleDebug
+./gradlew build -b oculusmobile-build.gradle && ./gradlew assembleDebug
 popd
 
 # for debugging symbols lookup
