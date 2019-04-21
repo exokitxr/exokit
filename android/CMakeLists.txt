@@ -19,7 +19,7 @@ add_library( vrapi SHARED IMPORTED )
 set_target_properties( vrapi PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../node_modules/native-oculus-mobile-deps/lib/android/arm64-v8a/libvrapi.so )
 
 add_library( skia STATIC IMPORTED )
-set_target_properties( skia PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../node_modules/native-canvas-deps/lib2/magicleap/libskia.a )
+set_target_properties( skia PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../node_modules/native-canvas-deps/lib2/android/libskia.a )
 
 add_library( labsound STATIC IMPORTED )
 set_target_properties( labsound PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/../node_modules/native-audio-deps/lib2/magicleap/libLabSound.a )
