@@ -53,7 +53,7 @@ deploy:
   - provider: GitHub
     description: 'Exokit git'
     auth_token:
-      secure: qQU6Qfie9FkYGW1inshRh/P37b5KRsA4fGM4GjqRm8PlBlt1nSIctc5tXIq6WeyY
+      secure: ewZJqEOOh1B8ZWAJyd2dikQZ9BtcN4Cv04WEirXNDT8m9J06ZHgsw8hVcYmTinw8
     artifact: "exokit-windows.zip"
     draft: false
     prerelease: false
@@ -62,7 +62,7 @@ deploy:
   - provider: GitHub
     description: 'Exokit git'
     auth_token:
-      secure: qQU6Qfie9FkYGW1inshRh/P37b5KRsA4fGM4GjqRm8PlBlt1nSIctc5tXIq6WeyY
+      secure: ewZJqEOOh1B8ZWAJyd2dikQZ9BtcN4Cv04WEirXNDT8m9J06ZHgsw8hVcYmTinw8
     artifact: "exokit-windows-full.zip"
     draft: false
     prerelease: false
@@ -71,7 +71,7 @@ deploy:
   - provider: GitHub
     description: 'Exokit installer'
     auth_token:
-      secure: qQU6Qfie9FkYGW1inshRh/P37b5KRsA4fGM4GjqRm8PlBlt1nSIctc5tXIq6WeyY
+      secure: ewZJqEOOh1B8ZWAJyd2dikQZ9BtcN4Cv04WEirXNDT8m9J06ZHgsw8hVcYmTinw8
     artifact: "exokit-win-x64.exe"
     draft: false
     prerelease: false
@@ -86,7 +86,7 @@ notifications:
     on_build_success: false
     on_build_failure: true
     on_build_status_changed: true
-    
+
 on_success:
   - ps: Invoke-RestMethod https://raw.githubusercontent.com/exokitxr/appveyor-discord-webhook/master/send.ps1 -o send.ps1
   - ps: ./send.ps1 success $env:WEBHOOK_URL
