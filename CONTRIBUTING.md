@@ -1,23 +1,16 @@
-[slack]: https://exokit.slack.com/join/shared_invite/enQtNDI3NjcxNzYwMDIxLWU2NmFmOTEzMzk4NWNiYjRhMjVkYzcyNjg5YjUyMzZkYWM1ZGI4M2IwYWZiMjNlMTJjMDlkM2U3Y2JiNTc2M2Q
-[stackoverflow]: http://stackoverflow.com/questions/tagged/exokit
 
 Interested in contributing? As an open source project, we'd appreciate any help
 and contributions! On top of the Exokit engine itself, you can also
 contribute to any [related projects](https://github.com/exokitxr).
 
 
-# Join the Community on Slack
+# Join the Community on Discord 
 
-1. [Invite yourself][slack] to the Exokit Slack channel.
-2. [Join the discussion](https://exokit.slack.com)!
+[Invite yourself](https://discord.gg/Apk6cZN) to the Exokit Discord.
 
 # Get Help or Ask a Question
 
-If you're not sure how to do something with Exokit, please post a question
-(and any code you've tried so far) to [Stack Overflow under the 'exokit'
-tag][stackoverflow]. Questions there will automatically create notifications in
-[Slack][slack], and are easier for others to find so new developers can learn
-from your questions too.
+If you're not sure how to do something with Exokit, please ask in [Discord](https://discord.gg/Apk6cZN).
 
 # File an Issue
 
@@ -53,39 +46,25 @@ under the [MIT License](LICENSE).
 
 1. Create something awesome using Exokit.
 2. Publish your work to Github (and GitHub pages) so everyone can learn from your work.
-3. Share it on [Slack](https://exokit.slack.com), Twitter, etc.
+3. Share it on [Discord](https://discord.gg/Apk6cZN), Twitter, etc.
 4. For bonus points, write and publish a case study to explain how you built it.
 
 # Update Documentation
 
-If you catch a typo or error in the [documentation](https://github.com/exokitxr/webmr-docs), we'd greatly appreciate a
+If you catch a typo or error in the [documentation](https://github.com/exokitxr/exokit/tree/master/docs), we'd greatly appreciate a
 pull request.
 
 
 
 ## Add Examples to Documentation
 
-We like to have simple and interesting [Glitch](https://glitch.com/~exokit)
-examples listed on relevant documentation pages. Glitch lets people remix/fork
-examples and code right in the browser with live updates. If you have a Glitch
-that might be useful in the documentation, request to add it!
-
-If a Glitch example needs to be updated for whatever reason, we can remix the
-Glitch and update the `src` URL.
+We like to have simple and interesting examples listed on relevant documentation pages. If you have an example that might be useful in the documentation, request to add it!
 
 # Help Your Fellow Exokit users
 
-## On Slack
-
-1. [Invite yourself][slack] to the Exokit Slack channel.
-2. Help answer questions that people might have and welcome new people.
-3. Redirect or cross-post questions to the [Stack Overflow Exokit tag][stackoverflow].
-
 ## On GitHub
 
-1. Help respond to [newly-filed GitHub issues](https://github.com/exokitxr/exokit/issues)
-2. Redirect developers to [Stack Overflow][stackoverflow] if a question is filed rather than an issue.
-3. For extra points, cross-post and answer the question on Stack Overflow after redirecting!
+Help respond to [newly-filed GitHub issues](https://github.com/exokitxr/exokit/issues)
 
 # Curate and Make Efforts Known
 
