@@ -72,6 +72,7 @@
     "native-graphics-deps": "0.0.20",
     "native-oculus-deps": "0.0.2",
     "native-oculus-mobile-deps": "0.0.2",
+    "native-googlevr-deps": "0.0.1",
     "native-openvr-deps": "0.0.18",
     "native-video-deps": "0.0.35",
     "native-webrtc-deps": "0.0.45",
