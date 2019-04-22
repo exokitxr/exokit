@@ -8,6 +8,8 @@
 	<string>en</string>
 	<key>CFBundleExecutable</key>
 	<string>scripts/exokit-macos</string>
+        <key>CFBundleIconFile</key>
+        <string>icon</string>
 	<key>CFBundleDisplayName</key>
 	<string>Exokit</string>
 	<key>CFBundleIdentifier</key>

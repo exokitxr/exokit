@@ -86,6 +86,8 @@ matrix:
       build/Release/exokit.node
     - mkdir -p /tmp/Exokit.app/Contents/MacOS
     - cp -R * /tmp/Exokit.app/Contents/MacOS
+    - mkdir -p /tmp/Exokit.app/Contents/Resources
+    - cp -R metadata/icon.icns /tmp/Exokit.app/Contents/Resources
     - cp metadata/Info.plist /tmp/Exokit.app/Contents
     - tar -czf exokit-macos-full.tar.gz --exclude=".*" --exclude="*.tar.gz" *
     - rm -R node
