@@ -3,7 +3,6 @@
 <p align="center"><b>:dark_sunglasses: Native VR and AR engine for JavaScript 🦖</b></p>
 
 <p align="center">
-  <a href="https://join.slack.com/t/exokit/shared_invite/enQtNDI3NjcxNzYwMDIxLWU2NmFmOTEzMzk4NWNiYjRhMjVkYzcyNjg5YjUyMzZkYWM1ZGI4M2IwYWZiMjNlMTJjMDlkM2U3Y2JiNTc2M2Q"><img src="https://img.shields.io/badge/slack-join-green.svg?logo=slack&longCache=true&style=flat"></a>
   <a href="https://github.com/exokitxr/exokit/releases"><img src="https://img.shields.io/github/downloads/exokitxr/exokit/total.svg"></a>
   <a href="https://www.npmjs.com/package/exokit"><img src="https://img.shields.io/npm/v/exokit.svg"></a>
   <a href="https://travis-ci.org/modulesio/exokit-windows"><img src="https://travis-ci.org/modulesio/exokit-windows.svg?branch=master"></a>
@@ -17,8 +16,6 @@
   <a href="https://exokit.org/docs/">Docs</a>
   &mdash;
   <a href="https://discordapp.com/invite/Apk6cZN">Discord</a>
-  &mdash;
-  <a href="https://exokit.slack.com/join/shared_invite/enQtNDI3NjcxNzYwMDIxLWU2NmFmOTEzMzk4NWNiYjRhMjVkYzcyNjg5YjUyMzZkYWM1ZGI4M2IwYWZiMjNlMTJjMDlkM2U3Y2JiNTc2M2Q">Slack</a>
   &mdash;
   <a href="https://twitter.com/exokitxr">Twitter</a>
   &mdash;
@@ -178,13 +175,8 @@ Now you have a handle on the window object as you test your application, and
 you can set `debugger` breakpoints, inspect memory, profile CPU, etc.
 
 
-## Questions
-
-For questions and support, [ask on StackOverflow](https://stackoverflow.com/questions/ask/?tags=exokit).
-
 ## Stay in Touch
 
-- [Join our Slack](https://join.slack.com/t/exokit/shared_invite/enQtNDI3NjcxNzYwMDIxLWU2NmFmOTEzMzk4NWNiYjRhMjVkYzcyNjg5YjUyMzZkYWM1ZGI4M2IwYWZiMjNlMTJjMDlkM2U3Y2JiNTc2M2Q) for development.
 - [Join our Discord](https://discord.gg/Apk6cZN) for hanging out.
 - [Follow @exokitxr on Twitter](https://twitter.com/exokitxr) for updates.
 
