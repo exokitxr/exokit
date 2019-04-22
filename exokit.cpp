@@ -12,7 +12,7 @@
 #ifdef OPENVR
 #include <openvr-bindings.h>
 #endif
-#ifdef ANDROID
+#if defined(ANDROID) && defined(OCULUSMOBILE)
 #include <oculus-mobile.h>
 #endif
 
@@ -211,7 +211,7 @@ void InitExports(Local<Object> exports) {
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeLm"), lm);
 #endif
 
-#ifdef ANDROID
+#if defined(ANDROID) && defined(OCULUSMOBILE)
   Local<Value> oculusMobileVr = makeOculusMobileVr();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeOculusMobileVr"), oculusMobileVr);
 #endif
