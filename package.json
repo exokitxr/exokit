@@ -11,7 +11,6 @@
   "main": "src/index.js",
   "scripts": {
     "build": "node-gyp build",
-    "debug": "ndb",
     "install": "node ./scripts/preinstall.js && node-gyp configure --msvs_version=2017 && node-gyp rebuild",
     "lint": "eslint src tests",
     "rebuild": "shx rm -rf node_modules && npm cache clean --force && npm install",
@@ -99,7 +98,6 @@
     "express": "^4.16.3",
     "find": "^0.2.9",
     "mocha": "^6.0.0-1",
-    "ndb": "^1.0.44",
     "serve": "^9.4.0",
     "shx": "^0.3.2",
     "sinon": "^6.1.4"
