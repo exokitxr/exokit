@@ -9,7 +9,7 @@
 	<key>CFBundleExecutable</key>
 	<string>scripts/exokit-macos</string>
         <key>CFBundleIconFile</key>
-        <string>icon.icns</string>
+        <string>icon</string>
 	<key>CFBundleDisplayName</key>
 	<string>Exokit</string>
 	<key>CFBundleIdentifier</key>
