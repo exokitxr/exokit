@@ -160,24 +160,6 @@ npm install
 node --experimental-worker . <url> # or node --experimental-worker . -h for home
 ```
 
-## Debugging
-
-Uses [ndb](https://github.com/GoogleChromeLabs/ndb).
-
-```sh
-npm run debug
-```
-
-Then in the console, input:
-
-```js
-let window = await require('./src/').load(yourUrl);
-```
-
-Now you have a handle on the window object as you test your application, and
-you can set `debugger` breakpoints, inspect memory, profile CPU, etc.
-
-
 ## Questions
 
 For questions and support, [ask on StackOverflow](https://stackoverflow.com/questions/ask/?tags=exokit).
