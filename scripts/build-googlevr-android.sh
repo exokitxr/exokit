@@ -28,6 +28,7 @@ export LD="$TOOLCHAIN/bin/aarch64-linux-android-ld"
 
 export OS="android"
 export ANDROID=1
+export GOOGLEVR=1
 
 EXTRA_FLAGS="-I$TOOLCHAIN_INCLUDE_LIB -I$TOOLCHAIN_INCLUDE_SYSROOT"
 export CFLAGS="$CFLAGS $EXTRA_FLAGS"
