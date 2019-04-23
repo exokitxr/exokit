@@ -83,7 +83,7 @@ void OculusMobileContext::handleAppCmd(struct android_app *app, int32_t cmd) {
 	}
 }
 
-Local<Function> OculusMobileContext::Initialize() {  
+Local<Function> OculusMobileContext::Initialize() {
   Nan::EscapableHandleScope scope;
 
   // constructor
@@ -316,10 +316,15 @@ NAN_METHOD(OculusMobileContext::WaitGetPoses) {
               if (remoteCaps.ControllerCapabilities & ovrControllerCaps_LeftHand) {
                 ovrTracking tracking;
                 vrapi_GetInputTrackingState(oculusMobileContext->ovrState, capsHeader.DeviceID, predictedDisplayTime, &tracking);
-                ovrVector3f pivot{-0.2, 1, 0};
-                ovrVector3f point{-0.2, 1, -0.2};
-                tracking.HeadPose.Pose.Position = ovrVector3f_RotateAboutPivot(&tracking.HeadPose.Pose.Orientation, &pivot, &point);
-                // const ovrMatrix4f &matrix = vrapi_GetViewMatrixFromPose(&tracking.HeadPose.Pose);
+
+                // 3DOF Controller Tracking
+                if (remoteCaps.ControllerCapabilities & ovrControllerCaps_ModelOculusGo ||
+                    remoteCaps.ControllerCapabilities & ovrControllerCaps_ModelGearVR) {
+                  ovrVector3f pivot{-0.2, 1, 0};
+                  ovrVector3f point{-0.2, 1, -0.2};
+                  tracking.HeadPose.Pose.Position = ovrVector3f_RotateAboutPivot(&tracking.HeadPose.Pose.Orientation, &pivot, &point);
+                }
+
                 const ovrMatrix4f &matrix = vrapi_GetTransformFromPose(&tracking.HeadPose.Pose);
                 const ovrMatrix4f &matrix2 = ovrMatrix4f_Transpose(&matrix);
                 memcpy(controllerMatrixLeft, matrix2.M, sizeof(matrix2.M));
@@ -332,12 +337,16 @@ NAN_METHOD(OculusMobileContext::WaitGetPoses) {
                 controllerStateLeft[2] = remoteState.TrackpadPosition.x;
                 controllerStateLeft[3] = remoteState.TrackpadPosition.y;
                 controllerStateLeft[4] = (remoteState.Buttons & ovrButton_Enter) ? 1 : (remoteState.TrackpadStatus ? 0.5 : 0);
-              } else if (remoteCaps.ControllerCapabilities & (ovrControllerCaps_RightHand|ovrControllerCaps_ModelOculusGo)) {
+              } else if (remoteCaps.ControllerCapabilities & ovrControllerCaps_RightHand) {
                 ovrTracking tracking;
                 vrapi_GetInputTrackingState(oculusMobileContext->ovrState, capsHeader.DeviceID, predictedDisplayTime, &tracking);
-                ovrVector3f pivot{0.2, 1, 0};
-                ovrVector3f point{0.2, 1, -0.2};
-                tracking.HeadPose.Pose.Position = ovrVector3f_RotateAboutPivot(&tracking.HeadPose.Pose.Orientation, &pivot, &point);
+                // 3DOF Controller Tracking
+                if (remoteCaps.ControllerCapabilities & ovrControllerCaps_ModelOculusGo ||
+                    remoteCaps.ControllerCapabilities & ovrControllerCaps_ModelGearVR) {
+                  ovrVector3f pivot{-0.2, 1, 0};
+                  ovrVector3f point{0.2, 1, -0.2};
+                  tracking.HeadPose.Pose.Position = ovrVector3f_RotateAboutPivot(&tracking.HeadPose.Pose.Orientation, &pivot, &point);
+                }
                 // const ovrMatrix4f &matrix = vrapi_GetViewMatrixFromPose(&tracking.HeadPose.Pose);
                 const ovrMatrix4f &matrix = vrapi_GetTransformFromPose(&tracking.HeadPose.Pose);
                 const ovrMatrix4f &matrix2 = ovrMatrix4f_Transpose(&matrix);
