@@ -300,7 +300,7 @@ class VRDisplay extends EventEmitter {
   }
 
   submitFrame() {}
-  
+
   get layers() {
     return this._layers;
   }
@@ -609,9 +609,15 @@ class FakeVRDisplay extends VRDisplay {
 
 const createVRDisplay = () => new FakeVRDisplay();
 
-const oculusVRIdLeft = 'Oculus Touch (Left)';
-const oculusVRIdRight = 'Oculus Touch (Right)';
-const openVRId = 'OpenVR Gamepad';
+const controllerIDs = {
+  oculusVRIDLeft: 'Oculus Touch (Left)',
+  oculusVRIDRight: 'Oculus Touch (Right)',
+  oculusMobileVRIDLeft: 'Oculus Touch (Left)',
+  oculusMobileVRIDRight: 'Oculus Touch (Right)',
+  openVRID: 'OpenVR Gamepad',
+  openVRTrackerID: 'OpenVR Tracker'
+};
+
 let gamepads = null;
 function getGamepads(window) {
   const {oculusVRDisplay, openVRDisplay, oculusMobileVrDisplay, magicLeapARDisplay} = window[symbols.mrDisplaysSymbol];
@@ -628,13 +634,13 @@ function getGamepads(window) {
         let hand, id;
         if (i === 0) {
           hand = 'left';
-          id = oculusVRDisplay.isPresenting ? oculusVRIdLeft : openVRId;
+          id = openVRDisplay.isPresenting ? controllerIDs.openVRID : controllerIDs.oculusVRIDLeft;
         } else if (i === 1) {
           hand = 'right';
-          id = oculusVRDisplay.isPresenting ? oculusVRIdRight : openVRId;
+          id = openVRDisplay.isPresenting ? controllerIDs.openVRID : controllerIDs.oculusVRIDRight;
         } else {
           hand = null;
-          id = openVRId;
+          id = controllerIDs.openVRTrackerID;
         }
         gamepads[i] = new Gamepad(hand, i, id);
       }
