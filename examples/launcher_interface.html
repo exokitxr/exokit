@@ -4,30 +4,47 @@
    <meta http-equiv="X-UA-Compatible" content="IE=edge">
    <meta name="viewport" content="width=device-width, initial-scale=1">
    <meta name="theme-color" content="#FFFFFF"/>
-   <title>exobot</title>
+   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+   <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+   <script crossorigin src="https://unpkg.com/react@16/umd/react.development.js"></script>
+   <script crossorigin src="https://unpkg.com/react-dom@16/umd/react-dom.development.js"></script>
+   <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/6.26.0/babel.min.js"></script>
+
+   <title>Exokit Launcher</title>
     <style>
       body {
         margin: 0;
-        background-color: FFF;
+        background: #232526;  /* fallback for old browsers */
+        background: -webkit-linear-gradient(to right, #414345, #232526);  /* Chrome 10-25, Safari 5.1-6 */
+        background: linear-gradient(to right, #414345, #232526); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+      }
+      .nav-pills .nav-link.active{
+        background-color: #B600DB;
+      }
+      .nav-pills .nav-link{
+        color: white;
+      }
+      #logo{
+        position: absolute;
+        top: 0;
+        right: 0;
+        height: 45px;
+        margin: 10px;
       }
     </style>
   </head>
   <body>
-    <h1>Exokit</h1>
-    <form id=form>
-      <input type=submit>
-    </form> 
-    <script>
-      (() => {
-        const form = document.getElementById('form');
-        form.addEventListener('submit', e => {
-          e.preventDefault();
+    <div id="root"></div>
+    <script type="text/babel">
 
-          window.postMessage({
-            click: 'submit',
-          });
-        });
-      })();
-    </script>
+    
+
+      ReactDOM.render(
+          <NavTabs/>,
+          document.getElementById('root')
+      );
+      </script>
   </body>
 </html>
