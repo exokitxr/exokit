@@ -65,7 +65,7 @@ Here, you can enter:
 Exokit has a logging mode enabled by the `-l` flag:
 
 ```sh
-exokit -l https://emukit.webmr.io/
+exokit -l https://emukit.exokit.org/
 ```
 
 The logs go in `$HOME/.exokit/log.txt`. For window that generally means `C:\username\.exokit\log.txt`.
