@@ -164,7 +164,6 @@ Exokit:
 2. Read through the documentation to get a grasp.
 
 3. Stay in Touch:
-- [Join our Slack](https://join.slack.com/t/exokit/shared_invite/enQtNDI3NjcxNzYwMDIxLWU2NmFmOTEzMzk4NWNiYjRhMjVkYzcyNjg5YjUyMzZkYWM1ZGI4M2IwYWZiMjNlMTJjMDlkM2U3Y2JiNTc2M2Q) for development.
 - [Join our Discord](https://discord.gg/Apk6cZN) for hanging out.
 - [Follow @exokitxr on Twitter](https://twitter.com/exokitxr) for updates.
 
