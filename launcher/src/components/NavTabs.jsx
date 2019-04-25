@@ -6,6 +6,35 @@ class NavTabs extends React.Component {
     constructor(props) {
       super(props);
       this.toggleTab = this.toggleTab.bind(this);
+      this.togglePage = this.togglePage.bind(this);
+    }
+
+    componentDidMount(){
+      this.togglePage('launch');
+    }
+
+    togglePage(page){
+      const updatePage = document.getElementById('Update');
+      const launchPage = document.getElementById('Launch');
+      const socialPage = document.getElementById('Social')
+
+      updatePage.hidden = true;
+      launchPage.hidden = true;
+      socialPage.hidden = true;
+
+      switch(page){
+        case 'launch':
+          launchPage.hidden = false;
+          break;
+        case 'update':
+          updatePage.hidden = false;
+          break;
+        case 'social':
+          socialPage.hidden = false;
+          break;
+        default:
+          break;
+      }
     }
 
     toggleTab(tab){
@@ -20,6 +49,7 @@ class NavTabs extends React.Component {
           }
           updateTab.classList.remove('active');
           socialTab.classList.remove('active');
+          this.togglePage('launch');
           break;
         case 'update':
           if(!updateTab.classList.contains('active')){
@@ -27,6 +57,7 @@ class NavTabs extends React.Component {
           }
           launchTab.classList.remove('active');
           socialTab.classList.remove('active');
+          this.togglePage('update');
           break;
         case 'social':
           if(!socialTab.classList.contains('active')){
@@ -34,6 +65,7 @@ class NavTabs extends React.Component {
           }
           updateTab.classList.remove('active');
           launchTab.classList.remove('active');
+          this.togglePage('social');
           break;
         default:
           break;

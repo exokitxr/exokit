@@ -1,4 +1,5 @@
 import React from 'react';
+import '../css/update.css';
 const ReactMarkdown = require('react-markdown')
 
 class Update extends React.Component {
@@ -8,7 +9,6 @@ class Update extends React.Component {
       this.state = {
           readme: ''
         };
-    
     }
 
     componentDidMount(){
@@ -26,7 +26,7 @@ class Update extends React.Component {
       return (
         <div id="Update">
             <div className="row">
-                <div class="col-lg-1 col-md-1 col-sm-1 col-xs-1">
+                <div className="col-lg-1 col-md-1 col-sm-1 col-xs-1">
                 </div>
                 <div className="col-lg-10 col-md-10 col-sm-10 col-xs-10 p-5">
                     <h1>Changelog</h1>
@@ -34,9 +34,9 @@ class Update extends React.Component {
                         <ReactMarkdown source={this.state.readme}/>
                     </div>
                 </div>
-                <div class="col-lg-1 col-md-1 col-sm-1 col-xs-1">
+                <div className="col-lg-1 col-md-1 col-sm-1 col-xs-1">
                 </div>
-                <div class="col-lg-1 col-md-1 col-sm-1 col-xs-1">
+                <div className="col-lg-1 col-md-1 col-sm-1 col-xs-1">
                 </div>
                 <div className="col-lg-10 col-md-10 col-sm-10 col-xs-10 p-5 text-center">
                     <p>75%</p>
@@ -44,9 +44,9 @@ class Update extends React.Component {
                         <div className="progress-bar progress-bar-striped progress-bar-animated w-75" role="progressbar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
                     </div>
                     <br/>
-                    <button type="button" class="btn btn-primary btn-lg m-2">Update</button>
+                    <button type="button" className="btn btn-primary btn-lg m-2">Update</button>
                 </div>
-                <div class="col-lg-1 col-md-1 col-sm-1 col-xs-1">
+                <div className="col-lg-1 col-md-1 col-sm-1 col-xs-1">
                 </div>
             </div>
         </div>
