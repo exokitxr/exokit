@@ -10,6 +10,8 @@ examples: []
 
 ## Exokit Engine vs Chrome vs Firefox
 
+#### More sophisticated and thorough benchmarks are coming soon, but feel free to try for yourself!
+
 ### Test Subject: [Supermedium's Gunters of OASIS](https://aframe.io/examples/showcase/gunters-of-oasis/)
 
 ### How was FPS captured?
@@ -20,17 +22,6 @@ examples: []
 
 - **Firefox** - Firefox's built in [FPS meter](https://developer.mozilla.org/en-US/docs/Tools/Performance/Frame_rate).
 
-<div id='myChartContainer'>
-    <canvas id="myChart" width="400" height="200"></canvas>
-</div>
-
-## Our Test Rig
-
-- **OS** - Windows 10
-- **GPU** - Nvidia GTX 980
-- **CPU** - Intel i7 4790k @ 4.6 ghz
-- **RAM** - 16GB @ 1800 mhz
-
 ## How do we achieve these gains?
 
 Exokit Engine cuts the fat off of the old-school, deprecated browsers.
@@ -40,5 +31,3 @@ With less overhead, and the power of Javascript, we achieve 2-3 times faster spe
 Simply put, Exokit Engine does **less** work than Chrome and Firefox.
 
 Exokit Engine gives VR/AR developers back their maximum hardware performance.
-
-#### More sophisticated and thorough benchmarks are coming soon, but feel free to try for yourself!

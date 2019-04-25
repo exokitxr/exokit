@@ -8,9 +8,6 @@ source_code:
 examples: []
 ---
 
-## Visual guide
-
-<video src="https://cdn.rawgit.com/exokitxr/webmr-docs/master/website/static/media/exokitmediacopy/ExokitBrowserHowto.mp4" width='100%' controls></video>
 
 ## Where do I get Exokit Engine?
 
