@@ -12,7 +12,7 @@ class Update extends React.Component {
     }
 
     componentDidMount(){
-        fetch('https://raw.githubusercontent.com/exokitxr/exokit/master/README.md')
+        fetch('https://raw.githubusercontent.com/exokitxr/exokit/add-changelog/CHANGELOG.md')
             .then(function(response) {
                 return response.text();
             }).then((data) => {
