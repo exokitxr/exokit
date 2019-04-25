@@ -3,7 +3,7 @@
   <body>
     <script src="three.js"></script>
     <script>
-let canvas, context, fbo, camera, iframe;
+let canvas, context, fbo, camera, iframe, isMacOs;
 
 function init() {
   canvas = document.createElement('canvas');
@@ -88,6 +88,8 @@ function init() {
       }
     }
   });
+
+  isMacOs = /darwin/.test(navigator.userAgent);
 }
 
 init();
@@ -100,10 +102,11 @@ function animate(timestamp, frame) {
 
   context.bindFramebuffer(context.DRAW_FRAMEBUFFER, 0);
 
-  context.clearColor(1, 1, 1, 1);
-  context.clear(context.COLOR_BUFFER_BIT);
+  /* context.clearColor(1, 0, 0, 1);
+  context.clear(context.COLOR_BUFFER_BIT); */
 
-  context.blitFramebuffer(0, 0, canvas.width, canvas.height, 0, canvas.height, canvas.width, 0, context.COLOR_BUFFER_BIT, context.LINEAR);
+  const delta = isMacOs ? -245 : 0;
+  context.blitFramebuffer(0, 0, canvas.width, canvas.height, 0, canvas.height + delta, canvas.width, delta, context.COLOR_BUFFER_BIT, context.LINEAR);
 
   context.finish();
 }
