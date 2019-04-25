@@ -451,7 +451,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     }
   }
   window.navigator = {
-    userAgent: `Mozilla/5.0 (OS) AppleWebKit/999.0 (KHTML, like Gecko) Chrome/999.0.0.0 Safari/999.0 Exokit/${GlobalContext.version}`,
+    userAgent: `Mozilla/5.0 (OS) AppleWebKit/999.0 (KHTML, like Gecko) Chrome/999.0.0.0 Safari/999.0 Exokit/${GlobalContext.version} ${os.platform()}/1.0`,
     vendor: 'Exokit',
     platform: os.platform(),
     hardwareConcurrency: os.cpus().length,

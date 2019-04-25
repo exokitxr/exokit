@@ -20,12 +20,15 @@ An example of how to use these flags:
 |`-t`|`--tab`|Reality Tab|
 |`-w`|`--webgl`|WebGL|
 |`-x`|`--xr`|WebXR|
-|`-u`|`--uncapped`|Uncap FPS|
-|`-p`|`--performance`|Performance logging to Console|
+|`-p`|`--perf`|Performance logging to Console|
 |`-s`|`--size`|Size|
 |`-f`|`--frame`|Frame|
 |`-m`|`--minimalFrame`|minimalFrame|
 |`-q`|`--quit`|Quit|
 |`-b`|`--blit`|Blit|
+|`-l`|`--log`|Log to log.txt|
 |`-i`|`--image`|Image|
-|`-r`|`--require`|Require|
+|`-r`|`--replace`|Replace|
+|`-u`|`--require`|Require|
+|`-n`|`--headless`|Headless|
+|`-d`|`--download`|Download|

@@ -1945,7 +1945,8 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                     context,
                     this.width||context.canvas.ownerDocument.defaultView.innerWidth,
                     this.height||context.canvas.ownerDocument.defaultView.innerHeight,
-                    path.join(this.ownerDocument.defaultView[symbols.optionsSymbol].dataPath, '.cef')
+                    path.join(this.ownerDocument.defaultView[symbols.optionsSymbol].dataPath, '.cef'),
+                    path.join(__dirname, '..', 'node_modules', 'native-browser-deps-macos', 'lib3', 'macos', 'Chromium Embedded Framework.framework')
                   );
                   
                   this.browser.onconsole = (message, source, line) => {
