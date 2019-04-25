@@ -29,6 +29,8 @@
 #include <libcef_dll/ctocpp/request_context_ctocpp.h>
 #include <libcef_dll/ctocpp/browser_ctocpp.h>
 
+#include <include/wrapper/cef_library_loader.h>
+
 #else
 
 #include <Servo2D.h>
@@ -55,7 +57,7 @@ enum class EmbeddedKeyModifiers {
 
 // bindings
 
-bool initializeEmbedded(const std::string &dataPath);
+bool initializeEmbedded(const std::string &dataPath, const string &frameworkPath);
 EmbeddedBrowser createEmbedded(
   const std::string &url,
   WebGLRenderingContext *gl,

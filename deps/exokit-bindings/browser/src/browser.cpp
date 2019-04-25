@@ -82,11 +82,13 @@ NAN_METHOD(Browser::New) {
     int height = TO_INT32(info[2]);
     Nan::Utf8String dataPathValue(Local<String>::Cast(info[3]));
     std::string dataPath(*dataPathValue, dataPathValue.length());
+    Nan::Utf8String frameworkPathValue(Local<String>::Cast(info[4]));
+    std::string frameworkPath(*frameworkPathValue, frameworkPathValue.length());
 
     if (!embeddedInitialized) {
-      browserThread = std::thread([dataPath{std::move(dataPath)}]() -> void {
+      browserThread = std::thread([dataPath{std::move(dataPath)}, frameworkPath{std::move(frameworkPath)}]() -> void {
         // exout << "initialize web core manager 1" << std::endl;
-        const bool success = initializeEmbedded(dataPath);
+        const bool success = initializeEmbedded(dataPath, frameworkPath);
         // exout << "initialize web core manager 2 " << success << std::endl;
         if (success) {          
           for (;;) {
