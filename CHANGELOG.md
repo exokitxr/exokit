@@ -8,6 +8,9 @@
 
 ### Fixes
 - DOMContentLoaded event emit (#812)
+- Add `--experimental-worker` flag to windows script (#970)
+- Cleanup macOS installer (#964)
+- Update macOS certificate (#962)
 
 ### Native Support
 - Add OpenVR trackers support (#896)
