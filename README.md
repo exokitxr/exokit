@@ -147,6 +147,8 @@ Exokit runs on Windows, macOS, Linux (x64), Linux (ARM64), and Magic Leap (ARM64
 
 - OpenGL
 - OpenVR (Steam VR)
+- Oculus 
+- Oculus Mobile 
 - Magic Leap
 - Leap Motion
 
