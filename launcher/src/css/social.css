@@ -1,0 +1,11 @@
+#Social{
+    color: white;
+    margin-top: 200px;
+}
+#Social a{
+    color: white;
+    text-decoration: none;
+}
+#Social a:hover{
+    color: #B600DB;
+}
