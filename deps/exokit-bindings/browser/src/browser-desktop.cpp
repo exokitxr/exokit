@@ -67,7 +67,12 @@ bool CefInitialize2(const CefMainArgs& args,
   // Return type: bool
   return _retval ? true : false;
 }
-bool initializeEmbedded(const std::string &dataPath) {
+bool initializeEmbedded(const std::string &dataPath, const std::string &frameworkPath) {
+#ifdef __APPLE__
+  std::string libraryPath = frameworkPath + "/Chromium Embedded Framework";
+  cef_load_library(libraryPath.c_str());
+#endif
+
   CefMainArgs args;
   
 	CefSettings settings;
@@ -76,6 +81,9 @@ bool initializeEmbedded(const std::string &dataPath) {
   // CefString(&settings.locales_dir_path) = localesPath;
   CefString(&settings.cache_path).FromString(dataPath);
   CefString(&settings.log_file).FromString(dataPath + "/log.txt");
+#ifdef __APPLE__
+  CefString(&settings.framework_dir_path).FromString(frameworkPath);
+#endif
   settings.no_sandbox = true;
   
   SimpleApp *app = new SimpleApp(dataPath);
