@@ -17,7 +17,7 @@ function init() {
 
   iframe = document.createElement('iframe');
   iframe.d = 2;
-  iframe.src = 'examples/launcher_interface.html';
+  iframe.src = 'launcher/public/index.html';
   iframe.onload = () => {
     iframe.contentWindow.onmessage = m => {
       console.log('parent got message: ' + JSON.stringify(m.data));
