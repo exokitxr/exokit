@@ -373,7 +373,7 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "setWindowPos", egl::SetWindowPos);
   Nan::SetMethod(target, "getWindowPos", egl::GetWindowPos);
   Nan::SetMethod(target, "getFramebufferSize", egl::GetFramebufferSize);
-  Nan::SetMethod(target, "getDevicePixelRatio", glfw::GetDevicePixelRatio);
+  Nan::SetMethod(target, "getDevicePixelRatio", egl::GetDevicePixelRatio);
   Nan::SetMethod(target, "iconifyWindow", egl::IconifyWindow);
   Nan::SetMethod(target, "restoreWindow", egl::RestoreWindow);
   Nan::SetMethod(target, "setEventHandler", egl::SetEventHandler);
