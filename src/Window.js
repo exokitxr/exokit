@@ -1241,16 +1241,16 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
         _clearLocalCbs(); // release garbage
       }
 
-      for (let i = 0; i < GlobalContext.contexts.length; i++) {
-        const context = GlobalContext.contexts[i];
-        
-        if (context.isDirty && context.isDirty()) {
-          if (type === 'child') {
+      if (type === 'child') {
+        for (let i = 0; i < GlobalContext.contexts.length; i++) {
+          const context = GlobalContext.contexts[i];
+
+          if (context.isDirty && context.isDirty()) {
             nativeWindow.setCurrentWindowContext(context.getWindowHandle());
             syncs.push(nativeWindow.getSync());
+
+            context.clearDirty();
           }
-          
-          context.clearDirty();
         }
       }
     };
