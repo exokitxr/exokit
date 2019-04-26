@@ -353,7 +353,7 @@ void InitializeLocalGlState(WebGLRenderingContext *gl) {
 }
 
 constexpr GLint MAX_TEXTURE_SIZE = 4096;
-void CreateHiddenRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint *pmsFbo, GLuint *pmsColorTex, GLuint *pmsDepthStencilTex, GLuint *pCopyMsFbo, GLuint *pCopyMsColorTex, GLuint *pCopyMsDepthStencilTex) {
+/* void CreateHiddenRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint *pmsFbo, GLuint *pmsColorTex, GLuint *pmsDepthStencilTex, GLuint *pCopyMsFbo, GLuint *pCopyMsColorTex, GLuint *pCopyMsDepthStencilTex) {
   const int samples = 4;
 
   GLuint &msFbo = *pmsFbo;
@@ -460,7 +460,7 @@ NAN_METHOD(CreateHiddenRenderTarget) {
   result->Set(4, JS_INT(copyMsColorTex));
   result->Set(5, JS_INT(copyMsDepthStencilTex));
   info.GetReturnValue().Set(result);
-}
+} */
 
 void CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint *pfbo, GLuint *pcolorTex, GLuint *pdepthStencilTex, GLuint *pmsFbo, GLuint *pmsColorTex, GLuint *pmsDepthStencilTex) {
   const int samples = 4;
@@ -566,9 +566,9 @@ NAN_METHOD(CreateRenderTarget) {
   info.GetReturnValue().Set(result);
 }
 
-NAN_METHOD(ResizeHiddenRenderTarget) {
+/* NAN_METHOD(ResizeHiddenRenderTarget) {
   // nothing; we do not resize multisampled textures
-}
+} */
 
 NAN_METHOD(ResizeRenderTarget) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
@@ -1011,9 +1011,9 @@ NAN_METHOD(SetEventLoop) {
 }
 
 void Decorate(Local<Object> target) {
-  Nan::SetMethod(target, "createHiddenRenderTarget", CreateHiddenRenderTarget);
+  // Nan::SetMethod(target, "createHiddenRenderTarget", CreateHiddenRenderTarget);
   Nan::SetMethod(target, "createRenderTarget", CreateRenderTarget);
-  Nan::SetMethod(target, "resizeHiddenRenderTarget", ResizeHiddenRenderTarget);
+  // Nan::SetMethod(target, "resizeHiddenRenderTarget", ResizeHiddenRenderTarget);
   Nan::SetMethod(target, "resizeRenderTarget", ResizeRenderTarget);
   Nan::SetMethod(target, "destroyRenderTarget", DestroyRenderTarget);
   Nan::SetMethod(target, "copyRenderTarget", CopyRenderTarget);

@@ -246,13 +246,13 @@ const _onGl3DConstruct = (gl, canvas) => {
 
     const {hidden} = document;
     if (hidden) {
-      const [msFbo, msTex, msDepthTex, copyMsFbo, copyMsTex, copyMsDepthTex] = nativeWindow.createHiddenRenderTarget(gl, canvasWidth, canvasHeight);
+      const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeWindow.createRenderTarget(gl, canvasWidth, canvasHeight);
 
       gl.setDefaultFramebuffer(msFbo);
 
       gl.resize = (width, height) => { // XXX run these on the main thread
         nativeWindow.setCurrentWindowContext(windowHandle);
-        nativeWindow.resizeHiddenRenderTarget(gl, width, height, msFbo, msTex, msDepthTex, copyMsFbo, copyMsTex, copyMsDepthTex);
+        nativeWindow.resizeRenderTarget(gl, width, height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
         
         window.windowEmit('resize', {
           width,
@@ -264,9 +264,9 @@ const _onGl3DConstruct = (gl, canvas) => {
         msFbo,
         msTex,
         msDepthTex,
-        copyMsFbo,
-        copyMsTex,
-        copyMsDepthTex,
+        fbo,
+        tex,
+        depthTex,
       };
       window.document.framebufferContext = gl;
       window.windowEmit('framebuffer', window.document.framebuffer);
@@ -783,7 +783,7 @@ if (bindings.nativeOpenVR) {
         const windowHandle = context.getWindowHandle();
         nativeWindow.setCurrentWindowContext(windowHandle);
 
-        const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeWindow.createRenderTarget(context, width, height, 0, 0, 0, 0);
+        const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeWindow.createRenderTarget(context, width, height);
 
         const {vrPresentState} = GlobalContext;
         // vrPresentState.lmContext = lmContext;
@@ -934,7 +934,7 @@ if (bindings.nativeMl) {
         const windowHandle = context.getWindowHandle();
         nativeWindow.setCurrentWindowContext(windowHandle);
 
-        const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeWindow.createRenderTarget(context, width, height, 0, 0, 0, 0);
+        const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeWindow.createRenderTarget(context, width, height);
 
         const {mlPresentState} = GlobalContext;
         mlPresentState.mlContext.SetContentTexture(tex);
