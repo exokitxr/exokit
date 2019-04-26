@@ -1780,21 +1780,6 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       }); */
     }
 
-    // compute derived gamepads data
-    for (let i = 0; i < xrState.gamepads.length; i++) {
-      const gamepad = xrState.gamepads[i];
-      localQuaternion.fromArray(gamepad.orientation);
-      localVector
-        .set(0, 0, -1)
-        .applyQuaternion(localQuaternion)
-        .toArray(gamepad.direction);
-      localVector.fromArray(gamepad.position);
-      localVector2.set(1, 1, 1);
-      localMatrix
-        .compose(localVector, localQuaternion, localVector2)
-        .toArray(gamepad.transformMatrix);
-    }
-
     // emit xr events
     window[symbols.mrDisplaysSymbol].oculusVRDevice.session && window[symbols.mrDisplaysSymbol].oculusVRDevice.session.update();
     window[symbols.mrDisplaysSymbol].openVRDevice.session && window[symbols.mrDisplaysSymbol].openVRDevice.session.update();

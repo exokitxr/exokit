@@ -25,7 +25,7 @@ const minimist = require('minimist');
 const {version} = require('../package.json');
 const {defaultEyeSeparation, maxNumTrackers} = require('./constants.js');
 const symbols = require('./symbols');
-const {THREE} = core;
+const THREE = require('../lib/three-min.js');
 
 const nativeBindings = require(path.join(__dirname, 'native-bindings.js'));
 
@@ -33,6 +33,11 @@ const GlobalContext = require('./GlobalContext');
 GlobalContext.args = {};
 GlobalContext.version = '';
 GlobalContext.commands = [];
+
+const localVector = new THREE.Vector3();
+const localVector2 = new THREE.Vector3();
+const localQuaternion = new THREE.Quaternion();
+const localMatrix = new THREE.Matrix4();
 
 const args = (() => {
   if (require.main === module) {
@@ -268,6 +273,21 @@ const _startTopRenderLoop = () => {
     }
 
     await Promise.all(windows.map(window => window.tickAnimationFrame('wait')));
+
+    // compute derived gamepads data
+    for (let i = 0; i < xrState.gamepads.length; i++) {
+      const gamepad = xrState.gamepads[i];
+      localQuaternion.fromArray(gamepad.orientation);
+      localVector
+        .set(0, 0, -1)
+        .applyQuaternion(localQuaternion)
+        .toArray(gamepad.direction);
+      localVector.fromArray(gamepad.position);
+      localVector2.set(1, 1, 1);
+      localMatrix
+        .compose(localVector, localQuaternion, localVector2)
+        .toArray(gamepad.transformMatrix);
+    }
 
     if (args.performance) {
       const now = Date.now();
