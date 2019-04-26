@@ -67,6 +67,7 @@ const {
   Gamepad,
   GamepadButton,
   getGamepads,
+  getHMDType,
 } = require('./VR.js');
 
 const {defaultCanvasSize, maxNumTrackers} = require('./constants');
@@ -586,28 +587,17 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     },
     webkitGetUserMedia: getUserMedia, // for feature detection
     getVRDisplaysSync() {
-      const result = [];
-      if (xrState.fakeVrDisplayEnabled[0]) {
-        result.push(window[symbols.mrDisplaysSymbol].fakeVrDisplay);
-      }
+      const hmdType = getHMDType();
 
-      // Oculus runtime takes precedence over OpenVR for Oculus headsets.
-      if (nativeOculusVR && nativeOculusVR.Oculus_IsHmdPresent()) {
-        result.push(window[symbols.mrDisplaysSymbol].oculusVRDisplay);
-      } else if (nativeOpenVR && nativeOpenVR.VR_IsHmdPresent()) {
-        result.push(window[symbols.mrDisplaysSymbol].openVRDisplay);
+      if (hmdType) {
+        if (hmdType === 'fake') {
+          return [window[symbols.mrDisplaysSymbol].fakeVrDisplay];
+        } else {
+          return [window[symbols.mrDisplaysSymbol].vrDisplay];
+        }
+      } else {
+        return [];
       }
-
-      if (nativeOculusMobileVr && nativeOculusMobileVr.OculusMobile_IsHmdPresent()) {
-        result.push(window[symbols.mrDisplaysSymbol].oculusMobileVrDisplay);
-      }
-
-      if (nativeMl && nativeMl.IsPresent()) {
-        result.push(window[symbols.mrDisplaysSymbol].mlDisplay);
-      }
-
-      result.sort((a, b) => +b.isPresenting - +a.isPresenting);
-      return result;
     },
     createVRDisplay() {
       xrState.fakeVrDisplayEnabled[0] = 1;

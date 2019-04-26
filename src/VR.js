@@ -607,6 +607,22 @@ class FakeVRDisplay extends VRDisplay {
   }
 }
 
+const getHMDType = () => {
+  if (GlobalContext.xrState.fakeVrDisplayEnabled[0]) {
+    return 'fake';
+  } else if (nativeOculusVR && nativeOculusVR.Oculus_IsHmdPresent()) {
+    return 'oculus';
+  } else if (nativeOpenVR && nativeOpenVR.VR_IsHmdPresent()) {
+    return 'openvr';
+  } else if (nativeOculusMobileVr && nativeOculusMobileVr.OculusMobile_IsHmdPresent()) {
+    return 'oculusMobile';
+  } else if (nativeMl && nativeMl.IsPresent()) {
+    return 'magicleap';
+  } else {
+    return null;
+  }
+};
+
 const createVRDisplay = () => new FakeVRDisplay();
 
 const oculusVRIdLeft = 'Oculus Touch (Left)';
@@ -614,24 +630,20 @@ const oculusVRIdRight = 'Oculus Touch (Right)';
 const openVRId = 'OpenVR Gamepad';
 let gamepads = null;
 function getGamepads(window) {
-  const {oculusVRDisplay, openVRDisplay, oculusMobileVrDisplay, magicLeapARDisplay} = window[symbols.mrDisplaysSymbol];
-  if (
-    GlobalContext.xrState.fakeVrDisplayEnabled[0] ||
-    oculusVRDisplay.isPresenting ||
-    openVRDisplay.isPresenting ||
-    oculusMobileVrDisplay.isPresenting ||
-    magicLeapARDisplay.isPresenting
-  ) {
+  // const {oculusVRDisplay, openVRDisplay, oculusMobileVrDisplay, magicLeapARDisplay} = window[symbols.mrDisplaysSymbol];
+  if (GlobalContext.xrState.isPresenting[0]) {
     if (!gamepads) {
+      const hmdType = getHMDType();
+
       gamepads = Array(2 + maxNumTrackers);
       for (let i = 0; i < gamepads.length; i++) {
         let hand, id;
         if (i === 0) {
           hand = 'left';
-          id = oculusVRDisplay.isPresenting ? oculusVRIdLeft : openVRId;
+          id = hmdType === 'oculus' ? oculusVRIdLeft : openVRId;
         } else if (i === 1) {
           hand = 'right';
-          id = oculusVRDisplay.isPresenting ? oculusVRIdRight : openVRId;
+          id = hmdType === 'oculus' ? oculusVRIdRight : openVRId;
         } else {
           hand = null;
           id = openVRId;
@@ -654,6 +666,7 @@ module.exports = {
   VRStageParameters,
   Gamepad,
   GamepadButton,
+  getHMDType,
   createVRDisplay,
   getGamepads
 };

@@ -1,8 +1,9 @@
 const {EventEmitter} = require('events');
 const {Event, EventTarget} = require('./Event');
-const {defaultCanvasSize} = require('./constants');
+const {getHMDType} = require('./VR');
 const GlobalContext = require('./GlobalContext');
 const THREE = require('../lib/three-min.js');
+const {defaultCanvasSize} = require('./constants');
 const symbols = require('./symbols');
 const {maxNumTrackers} = require('./constants');
 const {_elementGetter, _elementSetter} = require('./utils');
@@ -20,19 +21,17 @@ class XR extends EventEmitter {
 
     this._window = window;
   }
-  requestDevice() {
-    if (GlobalContext.xrState.fakeVrDisplayEnabled[0]) {
-      return Promise.resolve(this._window[symbols.mrDisplaysSymbol].fakeVrDisplay);
-    } else if (GlobalContext.nativeOculusVR && GlobalContext.nativeOculusVR.Oculus_IsHmdPresent()) {
-      return Promise.resolve(this._window[symbols.mrDisplaysSymbol].oculusVRDevice);
-    } else if (GlobalContext.nativeOpenVR && GlobalContext.nativeOpenVR.VR_IsHmdPresent()) {
-      return Promise.resolve(this._window[symbols.mrDisplaysSymbol].openVRDevice);
-    } else if (GlobalContext.nativeOculusMobileVr && GlobalContext.nativeOculusMobileVr.OculusMobile_IsHmdPresent()) {
-      return Promise.resolve(this._window[symbols.mrDisplaysSymbol].oculusMobileVrDevice);
-    } else if (GlobalContext.nativeMl && GlobalContext.nativeMl.IsPresent()) {
-      return Promise.resolve(this._window[symbols.mrDisplaysSymbol].magicLeapARDevice);
+  async requestDevice() {
+    const hmdType = getHMDType();
+
+    if (hmdType) {
+      if (hmdType === 'fake') {
+        return this._window[symbols.mrDisplaysSymbol].fakeVrDisplay;
+      } else {
+        return this._window[symbols.mrDisplaysSymbol].vrDevice;
+      }
     } else {
-      return Promise.resolve(null);
+      return null;
     }
   }
   get onvrdevicechange() {
