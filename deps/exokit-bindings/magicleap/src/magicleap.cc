@@ -2364,7 +2364,7 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "GetSize", GetSize);
   Nan::SetMethod(proto, "SetContentTexture", SetContentTexture);
   Nan::SetMethod(proto, "RequestGetPoses", RequestGetPoses);
-  Nan::SetMethod(proto, "PrepareFrame", PrepareFrame);
+  // Nan::SetMethod(proto, "PrepareFrame", PrepareFrame);
   Nan::SetMethod(proto, "SubmitFrame", SubmitFrame);
 
   Local<Function> ctorFn = ctor->GetFunction();
