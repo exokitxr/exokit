@@ -427,6 +427,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.innerWidth = defaultCanvasSize[0];
   window.innerHeight = defaultCanvasSize[1];
   window.devicePixelRatio = 1;
+
   window.document = null;
   const location = new Location(options.url);
   Object.defineProperty(window, 'location', {

@@ -179,12 +179,9 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
     const nativeWindowHeight = nativeWindowSize.height;
     const nativeWindowWidth = nativeWindowSize.width;
 
-    // Calculate devicePixelRatio.
-    window.devicePixelRatio = nativeWindowWidth / canvasWidth;
-
     // Tell DOM how large the window is.
-    window.innerHeight = nativeWindowHeight / window.devicePixelRatio;
-    window.innerWidth = nativeWindowWidth / window.devicePixelRatio;
+    window.innerHeight = nativeWindowSize.height;
+    window.innerWidth = nativeWindowSize.width;
 
     const title = `Exokit ${version}`;
     nativeWindow.setWindowTitle(windowHandle, title);
@@ -478,6 +475,7 @@ class XRState {
       }
       return result;
     })();
+    this.devicePixelRatio = _makeTypedArray(Uint32Array, 1);
   }
 }
 const xrState = GlobalContext.xrState = new XRState();
@@ -1354,6 +1352,12 @@ const _startRenderLoop = () => {
       }
     }
   };
+  const _getFramebufferPixelRatio = () =>{
+    if (!xrState.devicePixelRatio[0]) {
+      xrState.devicePixelRatio[0] = nativeBindings.nativeWindow.getDevicePixelRatio();
+    }
+    return xrState.devicePixelRatio[0];
+  };
   const _blit = () => {
     for (let i = 0; i < contexts.length; i++) {
       const context = contexts[i];
@@ -1371,6 +1375,7 @@ const _startRenderLoop = () => {
         const isVisible = nativeWindow.isVisible(windowHandle) || vrPresentState.glContext === context || oculusMobileVrPresentState.glContext === context || mlPresentState.mlGlContext === context;
         if (isVisible) {
           const window = context.canvas.ownerDocument.defaultView;
+          const framebufferPixelRatio = _getFramebufferPixelRatio();
 
           if (vrPresentState.glContext === context && vrPresentState.oculusSystem && vrPresentState.hasPose) {
             if (vrPresentState.layers.length > 0) {
@@ -1386,7 +1391,7 @@ const _startRenderLoop = () => {
             
             const width = vrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1);
             const height = vrPresentState.glContext.canvas.height;
-            nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, 0, width, height, width * window.devicePixelRatio, height * window.devicePixelRatio, true, false, false);
+            nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, 0, width, height, width * framebufferPixelRatio, height * framebufferPixelRatio, true, false, false);
           } else if (vrPresentState.glContext === context && vrPresentState.system && vrPresentState.hasPose) {
             if (vrPresentState.layers.length > 0) {
               const {openVRDisplay} = window[symbols.mrDisplaysSymbol];
@@ -1401,7 +1406,7 @@ const _startRenderLoop = () => {
 
             const width = vrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1);
             const height = vrPresentState.glContext.canvas.height;
-            nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, 0, width, height, width * window.devicePixelRatio, height * window.devicePixelRatio, true, false, false);
+            nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, 0, width, height, width * framebufferPixelRatio, height * framebufferPixelRatio, true, false, false);
           } else if (oculusMobileVrPresentState.glContext === context && oculusMobileVrPresentState.hasPose) {
             if (oculusMobileVrPresentState.layers.length > 0) {
               const {oculusMobileVrDisplay} = window[symbols.mrDisplaysSymbol];
@@ -1435,7 +1440,7 @@ const _startRenderLoop = () => {
 
             const width = context.canvas.width * (args.blit ? 0.5 : 1);
             const height = context.canvas.height;
-            nativeWindow.blitFrameBuffer(context, context.framebuffer.fbo, 0, width, height, width * window.devicePixelRatio, height * window.devicePixelRatio, true, false, false);
+            nativeWindow.blitFrameBuffer(context, context.framebuffer.fbo, 0, width, height, width * framebufferPixelRatio, height * framebufferPixelRatio, true, false, false);
           }
         }
 
