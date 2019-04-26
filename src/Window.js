@@ -1326,11 +1326,6 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       }
     }
 
-    // perform the wait
-    if (fakePresentState.fakeVrDisplay) {
-      fakePresentState.fakeVrDisplay.waitGetPoses();
-    }
-
     let oculusVrGlContext, openVrGlContext, mlGlContext;
     if (oculusVrGlContext = _getOculusVrGlContext()) {
       // wait for frame
