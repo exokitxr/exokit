@@ -854,13 +854,13 @@ NAN_METHOD(ComposeLayers) {
             int height = TO_INT32(windowObj->Get(JS_STR("height")));
             GLuint msTex, msDepthTex;
             Local<Object> framebufferObj = Local<Object>::Cast(JS_OBJ(elementObj->Get(JS_STR("contentDocument")))->Get(JS_STR("framebuffer")));
-            if (elementObj->Get(JS_STR("contentWindow"))->IsObject() && TO_UINT32(JS_OBJ(elementObj->Get(JS_STR("contentWindow")))->Get(JS_STR("phase"))) == 4) {
+            // if (elementObj->Get(JS_STR("contentWindow"))->IsObject() && TO_UINT32(JS_OBJ(elementObj->Get(JS_STR("contentWindow")))->Get(JS_STR("phase"))) == 4) {
               msTex = TO_UINT32(framebufferObj->Get(JS_STR("msTex")));
               msDepthTex = TO_UINT32(framebufferObj->Get(JS_STR("msDepthTex")));
-            } else {
+            /* } else {
               msTex = TO_UINT32(framebufferObj->Get(JS_STR("copyMsTex")));
               msDepthTex = TO_UINT32(framebufferObj->Get(JS_STR("copyMsDepthTex")));
-            }
+            } */
 
             layers.push_back(LayerSpec{
               width,
