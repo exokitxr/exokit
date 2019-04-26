@@ -16,17 +16,18 @@ const _makeWindow = (options = {}) => {
     },
   });
   window.id = id;
-  window.tickAnimationFrame = type => window.runAsync(type);
-  window.phase = 0;
-  window.rendered = false;
+  window.phase = 0; // XXX
+  // window.rendered = false;
   window.promise = null;
-  window.syncs = null;
-  
+  // window.syncs = null;
+
   window.on('resize', ({width, height}) => {
+    console.log('got resize', width, height);
     window.width = width;
     window.height = height;
   });
   window.on('framebuffer', framebuffer => {
+    console.log('got framebuffer', framebuffer);
     window.document.framebuffer = framebuffer;
   });
   window.on('error', err => {
