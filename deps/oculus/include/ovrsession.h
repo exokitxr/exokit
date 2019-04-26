@@ -74,11 +74,7 @@ private:
   ovrPosef eyeRenderPoses[2];
   int swapChainMetrics[2];
   int fboMetrics[2];
-  WebGLRenderingContext *swapChainGl;
   GLuint fbo;
-  GLuint msFbo;
-  GLuint msColorTex;
-  GLuint msDepthStencilTex;
   int frameIndex;
   double sensorSampleTime;
   bool hmdMounted;
