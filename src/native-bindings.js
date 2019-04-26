@@ -396,14 +396,7 @@ const _onGl2DConstruct = (ctx, canvas) => {
       
       nativeWindow.destroyWindowHandle(windowHandle);
       canvas._context = null;
-      
-      window.postInternalMessage({
-        type: 'postRequestAsync',
-        method: 'context.destroy',
-        args: {
-          id,
-        },
-      });
+
       GlobalContext.contexts.splice(GlobalContext.contexts.indexOf(ctx), 1);
     })(ctx.destroy);
     
