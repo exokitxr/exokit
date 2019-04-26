@@ -115,10 +115,9 @@ const PHASES = (() => {
   let phase = 0;
   return {
     NULL: phase++,
-    WAITED: phase++,
-    PENDING: phase++,
+    RENDERING: phase++,
+    RENDERED: phase++,
     DONE: phase++,
-    COMPLETE: phase++,
   };
 })();
 
@@ -204,64 +203,57 @@ const contexts = [];
 GlobalContext.contexts = contexts;
 
 const vrPresentState = {
-  vrContext: null,
+  /* vrContext: null,
   system: null,
   oculusSystem: null,
   compositor: null,
-  glContextId: 0,
-  msFbo: null,
-  msTex: null,
-  msDepthTex: null,
-  fbo: null,
-  tex: null,
-  depthTex: null,
-  hasPose: false,
+  glContextId: 0, */
+  hmdType: null,
+  vrContext: null,
+  glContext: null,
+  fbo: 0,
+  msFbo: 0,
+  msTex: 0,
+  msDepthTex: 0,
+  // tex: null,
+  // depthTex: null,
+  // hasPose: false,
   // lmContext: null,
   layers: [],
+  responseAccept: null,
 };
 GlobalContext.vrPresentState = vrPresentState;
 
 const oculusMobileVrPresentState = {
   vrContext: null,
   isPresenting: false,
-  glContext: null,
-  msFbo: null,
-  msTex: null,
-  msDepthTex: null,
-  fbo: null,
-  tex: null,
-  depthTex: null,
+  glContextId: 0,
   cleanups: null,
   hasPose: false,
-  layers: [],
 };
 GlobalContext.oculusMobileVrPresentState = oculusMobileVrPresentState;
 
 const mlPresentState = {
   mlContext: null,
-  mlFbo: null,
-  mlTex: null,
-  mlDepthTex: null,
-  mlMsFbo: null,
-  mlMsTex: null,
-  mlMsDepthTex: null,
+  msFbo: null,
+  msTex: null,
+  msDepthTex: null,
   mlGlContextId: 0,
   mlCleanups: null,
   mlHasPose: false,
-  layers: [],
 };
 GlobalContext.mlPresentState = mlPresentState;
 
 const fakePresentState = {
   fakeVrDisplay: null,
-  layers: [],
 };
 GlobalContext.fakePresentState = fakePresentState;
 
+/* const _getVrGlContext = () => contexts.find(context => context.contextId === vrPresentState.glContextId);
 const _getOculusVrGlContext = () => vrPresentState.oculusSystem ? contexts.find(context => context.contextId === vrPresentState.glContextId) : undefined;
 const _getOpenVrGlContext = () => vrPresentState.system ? contexts.find(context => context.contextId === vrPresentState.glContextId) : undefined;
 const _getOculusMobileVrGlContext = () => oculusMobileVrPresentState.vrContext ? contexts.find(context => context.contextId === oculusMobileVrPresentState.glContextId) : undefined;
-const _getMlGlContext = () => contexts.find(context => context.contextId === mlPresentState.mlGlContextId);
+const _getMlGlContext = () => contexts.find(context => context.contextId === mlPresentState.mlGlContextId); */
 
 class CustomElementRegistry {
   constructor(window) {
@@ -604,12 +596,12 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       return window[symbols.mrDisplaysSymbol].fakeVrDisplay;
     },
     getGamepads: getGamepads.bind(null, window),
-    clipboard:{
-      read:() => Promise.resolve(), // Not implemented yet
+    clipboard: {
+      read: () => Promise.resolve(), // Not implemented yet
       readText: () => new Promise(resolve => {
         resolve(nativeWindow.getClipboard().slice(0, 256));// why do we slice this?
       }),
-      write:() => Promise.resolve(), // Not implemented yet
+      write: () => Promise.resolve(), // Not implemented yet
       writeText: clipboardContents => new Promise(resolve => {
         nativeWindow.setClipboard(clipboardContents);
         resolve();
@@ -1205,8 +1197,113 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       localCbs[i] = null;
     }
   };
-  let childSyncs = [];
-  const _tickAnimationFrameRaf = type => async () => {
+  window.tickAnimationFrame = async () => {
+    const _emitXrEvents = () => {
+      fakePresentState.fakeVrDisplay && fakePresentState.fakeVrDisplay.update();
+      window[symbols.mrDisplaysSymbol].vrDevice.session && window[symbols.mrDisplaysSymbol].vrDevice.session.update();
+    };
+    const _composeLayers = () => {
+      for (let i = 0; i < contexts.length; i++) {
+        const context = contexts[i];
+        const isDirty = (!!context.isDirty && context.isDirty()) || context === vrPresentState.glContext /*|| mlPresentState.mlGlContext === context*/;
+        if (isDirty) {
+          const windowHandle = context.getWindowHandle();
+
+          nativeWindow.setCurrentWindowContext(windowHandle);
+          if (isMac) {
+            context.flush();
+          }
+
+          /* const isVisible = nativeWindow.isVisible(windowHandle) || context === vrPresentState.glContext;
+          if (isVisible) { */
+          if (context === vrPresentState.glContext) {
+            nativeWindow.bindVrChildFbo(context, vrPresentState.fbo, xrState.tex[0], xrState.depthTex[0]);
+
+            if (vrPresentState.layers.length > 0) {
+              for (let i = 0; i < vrPresentState.layers.length; i++) {
+                const layer = vrPresentState.layers[i];
+
+                if (layer instanceof window.HTMLCanvasElement && !layer.framebuffer) {
+                  let [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeWindow.createRenderTarget(context, layer.width, layer.height);
+
+                  // XXX do not construct pointless msFbo
+                  if (layer._context === context) {
+                    msFbo = vrPresentState.msFbo;
+                    msTex = vrPresentState.msTex;
+                    msDepthTex = vrPresentState.msDepthTex;
+                  }
+
+                  layer.framebuffer = {
+                    msFbo,
+                    msTex,
+                    msDepthTex,
+                    fbo,
+                    tex,
+                    depthTex,
+                  };
+                }
+              }
+
+              nativeWindow.composeLayers(context, vrPresentState.fbo, vrPresentState.layers, xrState);
+            } else {
+              nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, context.canvas.width, context.canvas.height, context.canvas.width, context.canvas.height, true, false, false);
+            }
+
+            if (vrPresentState.hmdType === 'fake' || vrPresentState.hmdType === 'oculus' || vrPresentState.hmdType === 'openvr') {
+              // console.log('compose', vrPresentState.msFbo, vrPresentState.fbo, context.canvas.width, context.canvas.height);
+              // nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, 0, context.canvas.width, context.canvas.height, context.canvas.width, context.canvas.height, true, false, false);
+              // console.log('compose', context.canvas.width, context.canvas.height);
+              nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, context.canvas.width, context.canvas.height, context.canvas.width, context.canvas.height, true, false, false);
+            }
+          }
+          
+          /* const width = context.canvas.width;
+          const height = context.canvas.height;
+          nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, 0, width, height, width, height, true, false, false); */
+
+          if (isMac) {
+            context.bindFramebufferRaw(context.FRAMEBUFFER, null);
+          }
+          nativeWindow.swapBuffers(windowHandle);
+          if (isMac) {
+            const drawFramebuffer = context.getFramebuffer(context.DRAW_FRAMEBUFFER);
+            if (drawFramebuffer) {
+              context.bindFramebuffer(context.DRAW_FRAMEBUFFER, drawFramebuffer);
+            }
+
+            const readFramebuffer = context.getFramebuffer(context.READ_FRAMEBUFFER);
+            if (readFramebuffer) {
+              context.bindFramebuffer(context.READ_FRAMEBUFFER, readFramebuffer);
+            }
+          }
+
+          context.clearDirty();
+        }
+      }
+      for (let i = 0; i < contexts.length; i++) {
+        const context = contexts[i];
+        context.finish && context.finish();
+        
+        /* if (context.finish && GlobalContext.id === 2) {
+          const pixels = new Uint8Array(1280*1024*4);
+          context.readPixels(0, 0, 1280, 1024, context.RGBA, context.UNSIGNED_BYTE, pixels); 
+          let count = 0;
+          for (let i = 0; i < pixels.length; i++) {
+            if (pixels[i]) {
+              count++;
+            }
+          }
+          console.log('finish', count);
+        } */
+      }
+      
+      for (let i = 0; i < windows.length; i++) {
+        const window = windows[i];
+        if (window.phase === PHASES.RENDERED) {
+          window.phase = PHASES.NULL;
+        }
+      }
+    };
     const _renderLocal = async () => {
       if (rafCbs.length > 0) {
         _cacheLocalCbs(rafCbs);
@@ -1232,7 +1329,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
         _clearLocalCbs(); // release garbage
       }
 
-      if (type === 'child') {
+      /* if (type === 'child') {
         for (let i = 0; i < GlobalContext.contexts.length; i++) {
           const context = GlobalContext.contexts[i];
 
@@ -1243,32 +1340,34 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
             context.clearDirty();
           }
         }
-      }
+      } */
     };
     const _renderChildren = async () => {
-      let timeout;
+      /* let timeout;
       const timeoutPromise = new Promise((accept, reject) => {
         timeout = setTimeout(() => {
           accept();
         }, 1000/60); // XXX make this timeout accurate
-      });
+      }); */
       for (let i = 0; i < windows.length; i++) {
         const window = windows[i];
-        if (window.phase === PHASES.WAITED) {
-          window.promise = window.tickAnimationFrame('rafChild')
+        if (window.phase === PHASES.NULL) {
+          window.promise = window.runAsync('tickAnimationFrame')
             .then(syncs => {
-              window.syncs = syncs;
+              // console.log('got syncs', syncs[0]);
+              // window.syncs = syncs;
+              window.phase = PHASES.RENDERED;
               window.promise = null;
             });
-          window.phase = PHASES.PENDING;
+          window.phase = PHASES.RENDERING;
         }
       }
       await Promise.race([
-        timeoutPromise,
+        // timeoutPromise,
         Promise.all(windows.map(window => window.promise)),
       ]);
-      clearTimeout(timeout);
-      for (let i = 0; i < childSyncs.length; i++) {
+      // clearTimeout(timeout);
+      /* for (let i = 0; i < childSyncs.length; i++) {
         nativeWindow.deleteSync(childSyncs[i]);
       }
       childSyncs = windows.map(window => window.syncs || []).flat();
@@ -1278,11 +1377,14 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
           nativeWindow.setCurrentWindowContext(context.getWindowHandle());
 
           for (let j = 0; j < childSyncs.length; j++) {
+            if (GlobalContext.id === 1) {
+              console.log('wait sync', GlobalContext.id, i, childSyncs[j]);
+            }
             nativeWindow.waitSync(childSyncs[j]);
           }
         }
-      }
-      for (let i = 0; i < windows.length; i++) {
+      } */
+      /* for (let i = 0; i < windows.length; i++) {
         const window = windows[i];
         if (window.syncs) {
           window.phase = PHASES.DONE;
@@ -1291,651 +1393,147 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
           }
           window.syncs = null;
         }
-      }
+      } */
     };
     
-    const syncs = [];
-    if (type === 'top') {
-      _renderLocal();
-      await _renderChildren();
-    } else {
-      await _renderChildren();
-      _renderLocal();
-    }
-
-    return syncs;
-  };
-  const _tickAnimationFrameTop = _tickAnimationFrameRaf('top');
-  const _tickAnimationFrameChild = _tickAnimationFrameRaf('child');
-  const _tickAnimationFrameWait = async () => {
-    for (let i = 0; i < windows.length; i++) {
-      const window = windows[i];
-      if (window.phase === PHASES.NULL) {
-        window.tickAnimationFrame('wait');
-        window.phase = PHASES.WAITED;
-      }
-    }
-
-    let oculusVrGlContext, openVrGlContext, oculusMobileVrGlContext, mlGlContext;
-    if (oculusVrGlContext = _getOculusVrGlContext()) {
-      // wait for frame
-      await new Promise((accept, reject) => {
-        vrPresentState.oculusSystem.GetPose(
-          localPositionArray3,   // hmd position
-          localQuaternionArray4, // hmd orientation
-          localFloat32Array,     // left eye view matrix
-          localFloat32Array2,    // left eye projection matrix
-          localFloat32Array3,    // right eye view matrix
-          localFloat32Array4,     // right eye projection matrix
-          leftControllerPositionArray3, // left controller position.
-          leftControllerQuaternionArray4, // left controller orientation.
-          rightControllerPositionArray3, // right controller position.
-          rightControllerQuaternionArray4, // right controller orientation.
-          accept
-        );
-      });
-      if (!immediate) {
-        return;
-      }
-
-      vrPresentState.hasPose = true;
-
-      xrState.position = localPositionArray3;
-      xrState.orientation = localQuaternionArray4;
-      xrState.leftViewMatrix.set(localFloat32Array);
-      xrState.leftProjectionMatrix.set(localFloat32Array2);
-      xrState.rightViewMatrix.set(localFloat32Array3);
-      xrState.rightProjectionMatrix.set(localFloat32Array4);
-
-      localVector.toArray(xrState.position);
-      localQuaternion.toArray(xrState.orientation);
-
-      // Controllers.
-      {
-        const leftGamepad = xrState.gamepads[0];
-
-        // Pose
-        leftGamepad.position[0] = leftControllerPositionArray3[0];
-        leftGamepad.position[1] = leftControllerPositionArray3[1];
-        leftGamepad.position[2] = leftControllerPositionArray3[2];
-
-        leftGamepad.orientation[0] = leftControllerQuaternionArray4[0];
-        leftGamepad.orientation[1] = leftControllerQuaternionArray4[1];
-        leftGamepad.orientation[2] = leftControllerQuaternionArray4[2];
-        leftGamepad.orientation[3] = leftControllerQuaternionArray4[3];
-
-        // Input
-        vrPresentState.oculusSystem.GetControllersInputState(0, localGamepadArray);
-
-        leftGamepad.connected[0] = localGamepadArray[0];
-
-        // Pressed
-        leftGamepad.buttons[0].pressed[0] = localGamepadArray[3]; // thumbstick
-        leftGamepad.buttons[1].pressed[0] = localGamepadArray[5] >= 0.01; // trigger
-        leftGamepad.buttons[2].pressed[0] = localGamepadArray[6] >= 0.01; // grip
-        leftGamepad.buttons[3].pressed[0] = localGamepadArray[1] == 1; // xbutton
-        leftGamepad.buttons[4].pressed[0] = localGamepadArray[2] == 1; // ybutton
-        leftGamepad.buttons[5].pressed[0] = localGamepadArray[4] == 1; // menu
-
-        // touched
-        leftGamepad.buttons[0].touched[0] = localGamepadArray[9]; // thumbstick
-        leftGamepad.buttons[1].touched[0] = localGamepadArray[10]; // trigger
-        leftGamepad.buttons[3].touched[0] = localGamepadArray[7]; // xbutton
-        leftGamepad.buttons[4].touched[0] = localGamepadArray[8]; // ybutton
-
-        // thumbstick axis
-        leftGamepad.axes[0] = localGamepadArray[11];
-        leftGamepad.axes[1] = localGamepadArray[12];
-
-        // values
-        leftGamepad.buttons[1].value[0] = localGamepadArray[5]; // trigger
-        leftGamepad.buttons[2].value[0] = localGamepadArray[6]; // grip
-      }
-      {
-        const rightGamepad = xrState.gamepads[1];
-
-        // Pose
-        rightGamepad.position[0] = rightControllerPositionArray3[0];
-        rightGamepad.position[1] = rightControllerPositionArray3[1];
-        rightGamepad.position[2] = rightControllerPositionArray3[2];
-
-        rightGamepad.orientation[0] = rightControllerQuaternionArray4[0];
-        rightGamepad.orientation[1] = rightControllerQuaternionArray4[1];
-        rightGamepad.orientation[2] = rightControllerQuaternionArray4[2];
-        rightGamepad.orientation[3] = rightControllerQuaternionArray4[3];
-
-        // Input
-        vrPresentState.oculusSystem.GetControllersInputState(1, localGamepadArray);
-
-        rightGamepad.connected[0] = localGamepadArray[0];
-
-        // pressed
-        rightGamepad.buttons[0].pressed[0] = localGamepadArray[3]; // thumbstick
-        rightGamepad.buttons[1].pressed[0] = localGamepadArray[5] >= 0.1; // trigger
-        rightGamepad.buttons[2].pressed[0] = localGamepadArray[6] >= 0.1; // grip
-        rightGamepad.buttons[3].pressed[0] = localGamepadArray[1] == 1; // xbutton
-        rightGamepad.buttons[4].pressed[0] = localGamepadArray[2] == 1; // ybutton
-        rightGamepad.buttons[5].pressed[0] = localGamepadArray[4] == 1; // menu
-
-        // touched
-        rightGamepad.buttons[0].touched[0] = localGamepadArray[9]; // thumbstick
-        rightGamepad.buttons[1].touched[0] = localGamepadArray[10]; // trigger
-        rightGamepad.buttons[3].touched[0] = localGamepadArray[7]; // xbutton
-        rightGamepad.buttons[4].touched[0] = localGamepadArray[8]; // ybutton
-
-        // thumbstick axis
-        rightGamepad.axes[0] = localGamepadArray[11];
-        rightGamepad.axes[1] = localGamepadArray[12];
-
-        // values
-        rightGamepad.buttons[1].value[0] = localGamepadArray[5]; // trigger
-        rightGamepad.buttons[2].value[0] = localGamepadArray[6]; // grip
-      }
-    } else if (openVrGlContext = _getOpenVrGlContext()) {
-      // wait for frame
-      await new Promise((accept, reject) => {
-        vrPresentState.compositor.RequestGetPoses(
-          vrPresentState.system,
-          localFloat32PoseArray, // hmd, controllers, trackers
-          accept
-        );
-      });
-      if (!immediate) {
-        return;
-      }
-
-      vrPresentState.hasPose = true;
-
-      // hmd pose
-      const hmdMatrix = localMatrix.fromArray(localFloat32HmdPoseArray);
-
-      hmdMatrix.decompose(localVector, localQuaternion, localVector2);
-      localVector.toArray(xrState.position);
-      localQuaternion.toArray(xrState.orientation);
-
-      hmdMatrix.getInverse(hmdMatrix);
-
-      // left eye pose
-      vrPresentState.system.GetEyeToHeadTransform(0, localFloat32MatrixArray);
-      localMatrix2.fromArray(localFloat32MatrixArray);
-      localMatrix2.decompose(localVector, localQuaternion, localVector2);
-      localVector.toArray(xrState.leftOffset);
-      localMatrix2
-        .getInverse(localMatrix2)
-        .multiply(hmdMatrix);
-      localMatrix2.toArray(xrState.leftViewMatrix);
-
-      vrPresentState.system.GetProjectionMatrix(0, xrState.depthNear[0], xrState.depthFar[0], localFloat32MatrixArray);
-      xrState.leftProjectionMatrix.set(localFloat32MatrixArray);
-
-      vrPresentState.system.GetProjectionRaw(0, localFovArray);
-      for (let i = 0; i < localFovArray.length; i++) {
-        xrState.leftFov[i] = Math.atan(localFovArray[i]) / Math.PI * 180;
-      }
-
-      // right eye pose
-      vrPresentState.system.GetEyeToHeadTransform(1, localFloat32MatrixArray);
-      localMatrix2.fromArray(localFloat32MatrixArray);
-      localMatrix2.decompose(localVector, localQuaternion, localVector2);
-      localVector.toArray(xrState.rightOffset);
-      localMatrix2
-        .getInverse(localMatrix2)
-        .multiply(hmdMatrix);
-      localMatrix2.toArray(xrState.rightViewMatrix);
-
-      vrPresentState.system.GetProjectionMatrix(1, xrState.depthNear[0], xrState.depthFar[0], localFloat32MatrixArray);
-      xrState.rightProjectionMatrix.set(localFloat32MatrixArray);
-
-      vrPresentState.system.GetProjectionRaw(1, localFovArray);
-      for (let i = 0; i < localFovArray.length; i++) {
-        xrState.rightFov[i] = Math.atan(localFovArray[i]) / Math.PI * 180;
-      }
-
-      // build stage parameters
-      // vrPresentState.system.GetSeatedZeroPoseToStandingAbsoluteTrackingPose(localFloat32MatrixArray);
-      // stageParameters.sittingToStandingTransform.set(localFloat32MatrixArray);
-
-      // build gamepads data
-      const _loadGamepad = i => {
-        const gamepad = xrState.gamepads[i];
-        if (vrPresentState.system.GetControllerState(i, localGamepadArray)) {
-          gamepad.connected[0] = 1;
-
-          localMatrix.fromArray(localFloat32GamepadPoseArrays[i]);
-          localMatrix.decompose(localVector, localQuaternion, localVector2);
-          localVector.toArray(gamepad.position);
-          localQuaternion.toArray(gamepad.orientation);
-
-          gamepad.buttons[0].pressed[0] = localGamepadArray[4]; // pad
-          gamepad.buttons[1].pressed[0] = localGamepadArray[5]; // trigger
-          gamepad.buttons[2].pressed[0] = localGamepadArray[3]; // grip
-          gamepad.buttons[3].pressed[0] = localGamepadArray[2]; // menu
-          gamepad.buttons[4].pressed[0] = localGamepadArray[1]; // system
-
-          gamepad.buttons[0].touched[0] = localGamepadArray[9]; // pad
-          gamepad.buttons[1].touched[0] = localGamepadArray[10]; // trigger
-          gamepad.buttons[2].touched[0] = localGamepadArray[8]; // grip
-          gamepad.buttons[3].touched[0] = localGamepadArray[7]; // menu
-          gamepad.buttons[4].touched[0] = localGamepadArray[6]; // system
-
-          for (let i = 0; i < 10; i++) {
-            gamepad.axes[i] = localGamepadArray[11+i];
-          }
-          gamepad.buttons[1].value[0] = gamepad.axes[2]; // trigger
-        } else {
-          gamepad.connected[0] = 0;
-        }
-      };
-      _loadGamepad(0);
-      _loadGamepad(1);
-
-      // build tracker data
-      const _loadTracker = i => {
-        const tracker = xrState.gamepads[2 + i];
-        const trackerPoseArray = localFloat32TrackerPoseArrays[i];
-        if (!isNaN(trackerPoseArray[0])) {
-          tracker.connected[0] = 1;
-
-          localMatrix.fromArray(trackerPoseArray);
-          localMatrix.decompose(localVector, localQuaternion, localVector2);
-          localVector.toArray(tracker.position);
-          localQuaternion.toArray(tracker.orientation);
-        } else {
-          tracker.connected[0] = 0;
-        }
-      };
-      for (let i = 0; i < maxNumTrackers; i++) {
-        _loadTracker(i);
-      }
-
-      /* if (vrPresentState.lmContext) { // XXX remove this binding
-        vrPresentState.lmContext.WaitGetPoses(handsArray);
-      } */
-    } else if (oculusMobileVrGlContext = _getOculusMobileVrGlContext()) {
-      await new Promise((accept, reject) => {
-        oculusMobileVrPresentState.hasPose = oculusMobileVrPresentState.vrContext.WaitGetPoses(
-          oculusMobilePoseFloat32Array
-        );
-
-        accept();
-      });
-
-      // build hmd data
-      let index = oculusMobilePoseFloat32Array.byteOffset;
-      xrState.position.set(new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 3));
-      index += 3*Float32Array.BYTES_PER_ELEMENT;
-      xrState.orientation.set(new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 4));
-      index += 4*Float32Array.BYTES_PER_ELEMENT;
-      const ipd = new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 1)[0];
-      xrState.leftOffset[0] = -ipd/2;
-      xrState.rightOffset[0] = ipd/2;
-      index += 1*Float32Array.BYTES_PER_ELEMENT;
-      const fov = new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 4);
-      xrState.leftFov.set(fov);
-      xrState.rightFov.set(fov);
-      index += 4*Float32Array.BYTES_PER_ELEMENT;
-      xrState.leftViewMatrix.set(new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 16));
-      index += 16*Float32Array.BYTES_PER_ELEMENT;
-      xrState.rightViewMatrix.set(new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 16));
-      index += 16*Float32Array.BYTES_PER_ELEMENT;
-      xrState.leftProjectionMatrix.set(new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 16));
-      index += 16*Float32Array.BYTES_PER_ELEMENT;
-      xrState.rightProjectionMatrix.set(new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 16));
-      index += 16*Float32Array.BYTES_PER_ELEMENT;
-
-      // build gamepads data
-      {
-        const leftGamepad = xrState.gamepads[0];
-        const gamepadFloat32Array = new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 16);
-        index += 16*Float32Array.BYTES_PER_ELEMENT;
-        const buttonsFloat32Array = new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 5);
-        index += 5*Float32Array.BYTES_PER_ELEMENT;
-        if (!isNaN(gamepadFloat32Array[0])) {
-          leftGamepad.connected[0] = true;
-
-          localMatrix.fromArray(gamepadFloat32Array);
-          localMatrix.decompose(localVector, localQuaternion, localVector2);
-          localVector.toArray(leftGamepad.position);
-          localQuaternion.toArray(leftGamepad.orientation);
-
-          leftGamepad.buttons[1].value[0] = buttonsFloat32Array[0]; // trigger
-          leftGamepad.buttons[1].pressed[0] = leftGamepad.buttons[1].touched[0] = buttonsFloat32Array[0] ? 1 : 0;
-
-          leftGamepad.buttons[2].value[0] = buttonsFloat32Array[1]; // grip
-          leftGamepad.buttons[2].pressed[0] = leftGamepad.buttons[2].touched[0] = buttonsFloat32Array[1] ? 1 : 0;
-
-          leftGamepad.axes[0] = buttonsFloat32Array[2];
-          leftGamepad.axes[1] = buttonsFloat32Array[3];
-
-          leftGamepad.buttons[0].touched[0] = buttonsFloat32Array[4] >= 0.5 ? 1 : 0; // pad
-          leftGamepad.buttons[0].pressed[0] = buttonsFloat32Array[4] >= 1 ? 1 : 0;
-        } else {
-          leftGamepad.connected[0] = 0;
-        }
-      }
-      {
-        const rightGamepad = xrState.gamepads[1];
-        const gamepadFloat32Array = new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 16);
-        index += 16*Float32Array.BYTES_PER_ELEMENT;
-        const buttonsFloat32Array = new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 5);
-        index += 5*Float32Array.BYTES_PER_ELEMENT;
-        if (!isNaN(gamepadFloat32Array[0])) {
-          rightGamepad.connected[0] = true;
-
-          localMatrix.fromArray(gamepadFloat32Array);
-          localMatrix.decompose(localVector, localQuaternion, localVector2);
-          localVector.toArray(rightGamepad.position);
-          localQuaternion.toArray(rightGamepad.orientation);
-
-          rightGamepad.buttons[1].value[0] = buttonsFloat32Array[0]; // trigger
-          rightGamepad.buttons[1].pressed[0] = rightGamepad.buttons[1].touched[0] = buttonsFloat32Array[0] ? 1 : 0;
-
-          rightGamepad.buttons[2].value[0] = buttonsFloat32Array[1]; // grip
-          rightGamepad.buttons[2].pressed[0] = rightGamepad.buttons[2].touched[0] = buttonsFloat32Array[1] ? 1 : 0;
-
-          rightGamepad.axes[0] = buttonsFloat32Array[2];
-          rightGamepad.axes[1] = buttonsFloat32Array[3];
-
-          rightGamepad.buttons[0].touched[0] = buttonsFloat32Array[4] >= 0.5 ? 1 : 0; // pad
-          rightGamepad.buttons[0].pressed[0] = buttonsFloat32Array[4] >= 1 ? 1 : 0;
-        } else {
-          rightGamepad.connected[0] = 0;
-        }
-      }
-
-      /* vrPresentState.system.GetProjectionRaw(0, localFovArray);
-      for (let i = 0; i < localFovArray.length; i++) {
-        xrState.leftFov[i] = Math.atan(localFovArray[i]) / Math.PI * 180;
-      } */
-    } else if (mlGlContext = _getMlGlContext()) {
-      mlPresentState.mlHasPose = await new Promise((accept, reject) => {
-        mlPresentState.mlContext.RequestGetPoses(
-          transformArray,
-          projectionArray,
-          controllersArray,
-          accept
-        );
-      });
-
-      if (mlPresentState.mlHasPose) {
-        localVector.fromArray(transformArray, 0);
-        localQuaternion.fromArray(transformArray, 3);
-        localVector2.set(1, 1, 1);
-        localMatrix.compose(localVector, localQuaternion, localVector2).getInverse(localMatrix);
-        localVector.toArray(xrState.position);
-        localQuaternion.toArray(xrState.orientation);
-        localMatrix.toArray(xrState.leftViewMatrix);
-        xrState.leftProjectionMatrix.set(projectionArray.slice(0, 16));
-
-        localVector.fromArray(transformArray, 3 + 4);
-        localQuaternion.fromArray(transformArray, 3 + 4 + 3);
-        // localVector2.set(1, 1, 1);
-        localMatrix.compose(localVector, localQuaternion, localVector2).getInverse(localMatrix);
-        localMatrix.toArray(xrState.rightViewMatrix);
-        xrState.rightProjectionMatrix.set(projectionArray.slice(16, 32));
-
-        let controllersArrayIndex = 0;
-        {
-          const leftGamepad = xrState.gamepads[0];
-          leftGamepad.connected[0] = controllersArray[controllersArrayIndex];
-          controllersArrayIndex++;
-          leftGamepad.position.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 3));
-          controllersArrayIndex += 3;
-          leftGamepad.orientation.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 4));
-          controllersArrayIndex += 4;
-          const leftTriggerValue = controllersArray[controllersArrayIndex];
-          leftGamepad.buttons[1].value[0] = leftTriggerValue;
-          const leftTriggerPushed = leftTriggerValue > 0.5 ? 1 : 0;
-          leftGamepad.buttons[1].touched[0] = leftTriggerPushed;
-          leftGamepad.buttons[1].pressed[0] = leftTriggerPushed;
-          leftGamepad.axes[2] = leftTriggerValue;
-          controllersArrayIndex++;
-          const leftBumperValue = controllersArray[controllersArrayIndex];
-          leftGamepad.buttons[2].value[0] = leftBumperValue;
-          const leftBumperPushed = leftBumperValue > 0.5 ? 1 : 0;
-          leftGamepad.buttons[2].touched[0] = leftBumperPushed;
-          leftGamepad.buttons[2].pressed[0] = leftBumperPushed;
-          controllersArrayIndex++;
-          const leftHomeValue = controllersArray[controllersArrayIndex];
-          leftGamepad.buttons[3].value[0] = leftHomeValue;
-          const leftHomePushed = leftHomeValue > 0.5 ? 1 : 0;
-          leftGamepad.buttons[3].touched[0] = leftHomePushed;
-          leftGamepad.buttons[3].pressed[0] = leftHomePushed;
-          controllersArrayIndex++;
-          leftGamepad.axes[0] = controllersArray[controllersArrayIndex];
-          leftGamepad.axes[1] = controllersArray[controllersArrayIndex + 1];
-          const leftPadValue = controllersArray[controllersArrayIndex + 2];
-          leftGamepad.buttons[0].value[0] = leftPadValue;
-          const leftPadTouched = leftPadValue > 0 ? 1 : 0;
-          const leftPadPushed = leftPadValue > 0.5 ? 1: 0;
-          leftGamepad.buttons[0].touched[0] = leftPadTouched;
-          leftGamepad.buttons[0].pressed[0] = leftPadPushed;
-          controllersArrayIndex += 3;
-        }
-        {
-          const rightGamepad = xrState.gamepads[1];
-          rightGamepad.connected[0] = controllersArray[controllersArrayIndex];
-          controllersArrayIndex++;
-          rightGamepad.position.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 3));
-          controllersArrayIndex += 3;
-          rightGamepad.orientation.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 4));
-          controllersArrayIndex += 4;
-          const rightTriggerValue = controllersArray[controllersArrayIndex];
-          rightGamepad.buttons[1].value[0] = rightTriggerValue;
-          const rightTriggerPushed = rightTriggerValue > 0.5 ? 1 : 0;
-          rightGamepad.buttons[1].touched[0] = rightTriggerPushed;
-          rightGamepad.buttons[1].pressed[0] = rightTriggerPushed;
-          rightGamepad.axes[2] = rightTriggerValue;
-          controllersArrayIndex++;
-          const rightBumperValue = controllersArray[controllersArrayIndex];
-          rightGamepad.buttons[2].value[0] = rightBumperValue;
-          const rightBumperPushed = rightBumperValue > 0.5 ? 1 : 0;
-          rightGamepad.buttons[2].touched[0] = rightBumperPushed;
-          rightGamepad.buttons[2].pressed[0] = rightBumperPushed;
-          controllersArrayIndex++;
-          const rightHomeValue = controllersArray[controllersArrayIndex];
-          rightGamepad.buttons[3].value[0] = rightHomeValue;
-          const rightHomePushed = rightHomeValue > 0.5 ? 1 : 0;
-          rightGamepad.buttons[3].touched[0] = rightHomePushed;
-          rightGamepad.buttons[3].pressed[0] = rightHomePushed;
-          controllersArrayIndex++;
-          rightGamepad.axes[0] = controllersArray[controllersArrayIndex];
-          rightGamepad.axes[1] = controllersArray[controllersArrayIndex + 1];
-          const rightPadValue = controllersArray[controllersArrayIndex + 2];
-          rightGamepad.buttons[0].value[0] = rightPadValue;
-          const rightPadTouched = rightPadValue > 0 ? 1 : 0;
-          const rightPadPushed = rightPadValue > 0.5 ? 1 : 0;
-          rightGamepad.buttons[0].touched[0] = rightPadTouched;
-          rightGamepad.buttons[0].pressed[0] = rightPadPushed;
-          controllersArrayIndex += 3;
-        }
-      }
-
-      // update magic leap state
-      nativeMl.Update(mlPresentState.mlContext, mlGlContext); // gl context for mesh buffer population
-
-      // prepare magic leap frame
-      mlPresentState.mlContext.PrepareFrame(
-        mlGlContext, // gl context for depth population
-        mlPresentState.mlFbo,
-        xrState.renderWidth[0]*2,
-        xrState.renderHeight[0],
-      );
-    } else {
-      /* await new Promise((accept, reject) => {
-        const now = Date.now();
-        const timeDiff = now - lastFrameTime;
-        const waitTime = Math.max(8 - timeDiff, 0);
-        setTimeout(accept, waitTime);
-      }); */
-    }
-
-    // emit xr events
-    window[symbols.mrDisplaysSymbol].oculusVRDevice.session && window[symbols.mrDisplaysSymbol].oculusVRDevice.session.update();
-    window[symbols.mrDisplaysSymbol].openVRDevice.session && window[symbols.mrDisplaysSymbol].openVRDevice.session.update();
-    window[symbols.mrDisplaysSymbol].oculusMobileVrDevice.session && window[symbols.mrDisplaysSymbol].oculusMobileVrDevice.session.update();
-    window[symbols.mrDisplaysSymbol].magicLeapARDevice.session && window[symbols.mrDisplaysSymbol].magicLeapARDevice.session.update();
-  };
-  const _tickAnimationFrameSubmit = type => async () => {
-    for (let i = 0; i < windows.length; i++) {
-      const window = windows[i];
-      if (window.phase === PHASES.DONE) {
-        window.tickAnimationFrame('submitChild');
-        window.phase = PHASES.COMPLETE;
-      }
-    }
-
-    const oculusVrGlContext = _getOculusVrGlContext();
-    const openVrGlContext = _getOpenVrGlContext();
-    const oculusMobileVrGlContext = _getOculusMobileVrGlContext();
-    const mlGlContext = _getMlGlContext();
-
-    for (let i = 0; i < contexts.length; i++) {
-      const context = contexts[i];
-
-      if (context.d === 3) {
-        const windowHandle = context.getWindowHandle();
-
-        const isVisible = nativeWindow.isVisible(windowHandle) || oculusVrGlContext === context || oculusMobileVrGlContext === context || mlGlContext === context;
-        if (isVisible) {
-          nativeWindow.setCurrentWindowContext(windowHandle);
-
-          if (vrPresentState.oculusSystem && oculusVrGlContext === context && vrPresentState.hasPose) {
-            if (vrPresentState.layers.length > 0) {
-              nativeWindow.composeLayers(context, vrPresentState.fbo, vrPresentState.layers, xrState);
-            } else {
-              nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, oculusVrGlContext.canvas.width, oculusVrGlContext.canvas.height, oculusVrGlContext.canvas.width, oculusVrGlContext.canvas.height, true, false, false);
-            }
-
-            vrPresentState.oculusSystem.Submit(context, vrPresentState.fbo, oculusVrGlContext.canvas.width, oculusVrGlContext.canvas.height);
-            vrPresentState.hasPose = false;
-
-            nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, oculusVrGlContext.canvas.width * (args.blit ? 0.5 : 1), oculusVrGlContext.canvas.height, xrState.renderWidth[0], xrState.renderHeight[0], true, false, false);
-
-          } else if (vrPresentState.compositor && openVrGlContext === context && vrPresentState.hasPose) {
-            if (vrPresentState.layers.length > 0) {
-              nativeWindow.composeLayers(context, vrPresentState.fbo, vrPresentState.layers, xrState);
-            } else {
-              nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, openVrGlContext.canvas.width, openVrGlContext.canvas.height, openVrGlContext.canvas.width, openVrGlContext.canvas.height, true, false, false);
-            }
-
-            nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, oculusVrGlContext.canvas.width * (args.blit ? 0.5 : 1), oculusVrGlContext.canvas.height, xrState.renderWidth[0], xrState.renderHeight[0], true, false, false);
-          } else if (openVrGlContext === context && vrPresentState.hasPose) {
-            if (vrPresentState.layers.length > 0) {
-              nativeWindow.composeLayers(context, vrPresentState.fbo, vrPresentState.layers, xrState);
-            } else {
-              nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, openVrGlContext.canvas.width, openVrGlContext.canvas.height, openVrGlContext.canvas.width, openVrGlContext.canvas.height, true, false, false);
-            }
-
-            nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, openVrGlContext.canvas.width * (args.blit ? 0.5 : 1), openVrGlContext.canvas.height, xrState.renderWidth[0], xrState.renderHeight[0], true, false, false);
-          } else if (oculusMobileVrGlContext === context && oculusMobileVrPresentState.hasPose) {
-            if (oculusMobileVrPresentState.layers.length > 0) {
-              nativeWindow.composeLayers(context, oculusMobileVrPresentState.fbo, oculusMobileVrPresentState.layers);
-            } else {
-              nativeWindow.blitFrameBuffer(context, oculusMobileVrPresentState.msFbo, oculusMobileVrPresentState.fbo, oculusMobileVrGlContext.canvas.width, oculusMobileVrGlContext.canvas.height, oculusMobileVrGlContext.canvas.width, oculusMobileVrGlContext.canvas.height, true, false, false);
-            }
-
-            oculusMobileVrPresentState.vrContext.Submit(oculusMobileVrGlContext, oculusMobileVrPresentState.fbo, oculusMobileVrGlContext.canvas.width, oculusMobileVrGlContext.canvas.height);
-            oculusMobileVrPresentState.hasPose = false;
-          } else if (mlGlContext === context && mlPresentState.mlHasPose) {
-            if (mlPresentState.layers.length > 0) { // TODO: composition can be directly to the output texture array
-              nativeWindow.composeLayers(context, mlPresentState.mlFbo, mlPresentState.layers, xrState);
-            } else {
-              nativeWindow.blitFrameBuffer(context, mlPresentState.mlMsFbo, mlPresentState.mlFbo, mlGlContext.canvas.width, mlGlContext.canvas.height, mlGlContext.canvas.width, mlGlContext.canvas.height, true, false, false);
-            }
-
-            mlPresentState.mlContext.SubmitFrame(mlPresentState.mlTex, mlGlContext.canvas.width, mlGlContext.canvas.height);
-            mlPresentState.mlHasPose = false;
-          } else if (fakePresentState.layers.length > 0) { // XXX blit only to the intended context
-            nativeWindow.composeLayers(context, 0, fakePresentState.layers, xrState);
-            context.finish();
-          }
-        }
-
-        if (type === 'top') {
-          nativeWindow.swapBuffers(windowHandle);
-        }
-        if (isMac) {
-          const drawFramebuffer = context.getFramebuffer(context.DRAW_FRAMEBUFFER);
-          if (drawFramebuffer) {
-            context.bindFramebuffer(context.DRAW_FRAMEBUFFER, drawFramebuffer);
-          }
-
-          const readFramebuffer = context.getFramebuffer(context.READ_FRAMEBUFFER);
-          if (readFramebuffer) {
-            context.bindFramebuffer(context.READ_FRAMEBUFFER, readFramebuffer);
-          }
-        }
-      }
-    }
-
-    for (let i = 0; i < windows.length; i++) {
-      const window = windows[i];
-      if (window.phase === PHASES.COMPLETE) {
-        window.phase = PHASES.NULL;
-      }
-    }
-  };
-  const _tickAnimationFrameSubmitTop = _tickAnimationFrameSubmit('top');
-  const _tickAnimationFrameSubmitChild = _tickAnimationFrameSubmit('child');
-  window.tickAnimationFrame = type => {
-    switch (type) {
-      case 'wait': return _tickAnimationFrameWait();
-      case 'rafTop': return _tickAnimationFrameTop();
-      case 'rafChild': return _tickAnimationFrameChild();
-      case 'submitTop': return _tickAnimationFrameSubmitTop();
-      case 'submitChild': return _tickAnimationFrameSubmitChild();
-      default: throw new Error(`unknown tick animation frame mode: ${type}`);
-    }
+    _emitXrEvents();
+
+    // const syncs = [];
+    const childPromises = _renderChildren();
+    _renderLocal();
+    await childPromises;
+    
+    _composeLayers();
+
+    // return syncs;
   };
   
   const _makeMrDisplays = () => {
-    const _bindMRDisplay = display => {
-      display.onrequestanimationframe = _makeRequestAnimationFrame(window);
-      display.oncancelanimationframe = window.cancelAnimationFrame;
-      display.onvrdisplaypresentchange = () => {
-        const e = new Event('vrdisplaypresentchange');
-        e.display = display;
-        window.dispatchEvent(e);
-      };
+    const _onrequestpresent = async () => {
+      if (!xrState.isPresenting[0]) {
+        await new Promise((accept, reject) => {
+          vrPresentState.responseAccept = accept;
+
+          xrState.vrRequest[1] = GlobalContext.id;
+          xrState.vrRequest[0] = 1; // requestPresent
+        });
+
+        fakePresentState.fakeVrDisplay = fakeVrDisplay; // XX make this returned from the api
+        
+        vrPresentState.hmdType = 'fake';
+      }
+    };
+    const _onmakeswapchain = context => {
+      const windowHandle = context.getWindowHandle();
+      nativeWindow.setCurrentWindowContext(windowHandle);
+
+      const window = context.canvas.ownerDocument.defaultView;
+      if (!window.document.hidden) {
+        const [fbo, msFbo, msTex, msDepthTex] = nativeWindow.createVrChildRenderTarget(context, xrState.renderWidth[0]*2, xrState.renderHeight[0]);
+        context.setDefaultFramebuffer(msFbo);
+        
+        // console.log('make top level', xrState.renderWidth[0]*2, xrState.renderHeight[0], fbo, xrState.tex[0], xrState.depthTex[0]);
+
+        /* context.resize = (width, height) => {
+          nativeWindow.setCurrentWindowContext(windowHandle);
+          nativeWindow.resizeRenderTarget(context, width, height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
+
+          window.windowEmit('resize', {
+            width,
+            height,
+          });
+        }; */
+
+        vrPresentState.glContext = context;
+        vrPresentState.fbo = fbo;
+        vrPresentState.msFbo = msFbo;
+        vrPresentState.msTex = msTex;
+        vrPresentState.msDepthTex = msDepthTex;
+        
+        return {
+          msFbo,
+        };
+      } else {
+        const {canvas} = context;
+        const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeWindow.createRenderTarget(context, xrState.renderWidth[0]*2, xrState.renderHeight[0]);
+        
+        console.log('make low level', canvas.width, canvas.height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
+
+        context.setDefaultFramebuffer(msFbo);
+
+        window.document.framebuffer = {
+          msFbo,
+          msTex,
+          msDepthTex,
+          fbo,
+          tex,
+          depthTex,
+        };
+        window.windowEmit('framebuffer', window.document.framebuffer);
+        window.windowEmit('resize', {
+          width: xrState.renderWidth[0]*2,
+          height: xrState.renderHeight[0],
+        });
+        
+        return {
+          msFbo,
+        };
+      }
+    };
+    const _onexitpresent = async () => {
+      // XXX call upwards
+      fakePresentState.fakeVrDisplay = null;
     };
 
     const fakeVrDisplay = new FakeVRDisplay(window);
-    fakeVrDisplay.onrequestpresent = layers => {
-      if (!xrState.isPresenting[0]) {
-        xrState.isPresenting[0] = 1;
-        GlobalContext.fakePresentState.fakeVrDisplay = fakeVrDisplay;
-      }
-
-      const [{source: canvas}] = layers;
-      const {_context: context} = canvas;
-      return {
-        width: context.drawingBufferWidth,
-        height: context.drawingBufferHeight,
-        msFbo: null,
-      };
-    };
-    fakeVrDisplay.onexitpresent = () => {
-      GlobalContext.fakePresentState.fakeVrDisplay = null;
-    };
+    fakeVrDisplay.onrequestpresent = _onrequestpresent;
+    fakeVrDisplay.onmakeswapchain = _onmakeswapchain;
+    fakeVrDisplay.onexitpresent = _onexitpresent;
     fakeVrDisplay.onlayers = layers => {
-      GlobalContext.fakePresentState.layers = layers;
+      vrPresentState.layers = layers;
     };
 
-    const openVRDisplay = new VRDisplay('OpenVR');
-    _bindMRDisplay(openVRDisplay);
-    openVRDisplay.onrequestpresent = layers => nativeOpenVR.requestPresent(layers);
-    openVRDisplay.onexitpresent = () => nativeOpenVR.exitPresent();
-    openVRDisplay.onlayers = layers => {
-      GlobalContext.vrPresentState.layers = layers;
+    const vrDisplay = new VRDisplay('OpenVR');
+    vrDisplay.onrequestanimationframe = _makeRequestAnimationFrame(window);
+    vrDisplay.oncancelanimationframe = window.cancelAnimationFrame;
+    vrDisplay.onvrdisplaypresentchange = () => {
+      const e = new Event('vrdisplaypresentchange');
+      e.display = vrDisplay;
+      window.dispatchEvent(e);
+    };
+    vrDisplay.onrequestpresent = _onrequestpresent;
+    vrDisplay.onmakeswapchain = _onmakeswapchain;
+    vrDisplay.onexitpresent = _onexitpresent;
+    vrDisplay.onlayers = layers => {
+      vrPresentState.layers = layers;
+    };
+    
+    const vrDevice = new XR.XRDevice('OpenVR', window);
+    vrDevice.onrequestpresent = _onrequestpresent;
+    vrDevice.onmakeswapchain = _onmakeswapchain;
+    vrDevice.onexitpresent = _onexitpresent;
+    vrDevice.onrequestanimationframe = _makeRequestAnimationFrame(window);
+    vrDevice.oncancelanimationframe = window.cancelAnimationFrame;
+    vrDevice.requestSession = (requestSession => function() {
+      return requestSession.apply(this, arguments)
+        .then(session => {
+          vrDisplay.isPresenting = true;
+          session.once('end', () => {
+            vrDisplay.isPresenting = false;
+          });
+          return session;
+        });
+    })(vrDevice.requestSession);
+    vrDevice.onlayers = layers => {
+      vrPresentState.layers = layers;
     };
 
-    const oculusVRDisplay = new VRDisplay('OculusVR');
+    /* const oculusVRDisplay = new VRDisplay('OculusVR');
     _bindMRDisplay(oculusVRDisplay);
     oculusVRDisplay.onrequestpresent = layers => nativeOculusVR.requestPresent(layers);
     oculusVRDisplay.onexitpresent = () => nativeOculusVR.exitPresent();
     oculusVRDisplay.onlayers = layers => {
-      GlobalContext.vrPresentState.layers = layers;
+      vrPresentState.layers = layers;
     };
 
     const openVRDevice = new XR.XRDevice('OpenVR', window);
@@ -1954,7 +1552,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
         });
     })(openVRDevice.requestSession);
     openVRDevice.onlayers = layers => {
-      GlobalContext.vrPresentState.layers = layers;
+      vrPresentState.layers = layers;
     };
 
     const oculusVRDevice = new XR.XRDevice('OculusVR', window);
@@ -1973,7 +1571,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
         });
     })(oculusVRDevice.requestSession);
     oculusVRDevice.onlayers = layers => {
-      GlobalContext.vrPresentState.layers = layers;
+      vrPresentState.layers = layers;
     };
 
     const oculusMobileVrDisplay = new VRDisplay('OculusMobileVR');
@@ -1981,7 +1579,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     oculusMobileVrDisplay.onrequestpresent = layers => nativeOculusMobileVr.requestPresent(layers);
     oculusMobileVrDisplay.onexitpresent = () => nativeOculusMobileVr.exitPresent();
     oculusMobileVrDisplay.onlayers = layers => {
-      GlobalContext.vrPresentState.layers = layers;
+      vrPresentState.layers = layers;
     };
 
     const oculusMobileVrDevice = new XR.XRDevice('OculusMobileVR', window);
@@ -2000,7 +1598,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
         });
     })(oculusMobileVrDevice.requestSession);
     oculusMobileVrDevice.onlayers = layers => {
-      GlobalContext.vrPresentState.layers = layers;
+      vrPresentState.layers = layers;
     };
 
     const magicLeapARDisplay = new VRDisplay('AR');
@@ -2009,7 +1607,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     magicLeapARDisplay.onexitpresent = () => nativeMl.exitPresent();
     magicLeapARDisplay.onrequesthittest = _makeOnRequestHitTest(window);
     magicLeapARDisplay.onlayers = layers => {
-      GlobalContext.mlPresentState.layers = layers;
+      vrPresentState.layers = layers;
     };
 
     const magicLeapARDevice = new XR.XRDevice('AR', window);
@@ -2029,19 +1627,21 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     })(magicLeapARDevice.requestSession);
     magicLeapARDevice.onrequesthittest = _makeOnRequestHitTest(window);
     magicLeapARDevice.onlayers = layers => {
-      GlobalContext.mlPresentState.layers = layers;
-    };
+      vrPresentState.layers = layers;
+    }; */
 
     return {
       fakeVrDisplay,
-      openVRDisplay,
+      vrDisplay,
+      vrDevice,
+      /* openVRDisplay,
       oculusVRDisplay,
       openVRDevice,
       oculusVRDevice,
       oculusMobileVrDisplay,
       oculusMobileVrDevice,
       magicLeapARDisplay,
-      magicLeapARDevice,
+      magicLeapARDevice, */
     };
   };
   window[symbols.mrDisplaysSymbol] = _makeMrDisplays();
@@ -2053,7 +1653,24 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
 
 global.require = undefined;
 global.process = undefined;
-global.onrunasync = type => global.tickAnimationFrame(type);
+global.onrunasync = method => {
+  if (method === 'tickAnimationFrame') {
+    return global.tickAnimationFrame();
+  } else if (/^\{"method":"response"/.test(method)) {
+    if (vrPresentState.responseAccept) {
+      const res = JSON.parse(method);
+      
+      const {responseAccept} = vrPresentState;
+      vrPresentState.responseAccept = null;
+      responseAccept(res);
+      return Promise.resolve();
+    } else {
+      return Promise.reject(new Error(`unexpected window response`));
+    }
+  } else {
+    return Promise.reject(new Error(`invalid window async method: ${method}`));
+  }
+};
 global.onexit = () => {
   const localContexts = contexts.slice();
   for (let i = 0; i < localContexts.length; i++) {
