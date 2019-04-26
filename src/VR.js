@@ -3,6 +3,12 @@ const {Event} = require('./Event');
 const symbols = require('./symbols');
 const THREE = require('../lib/three-min.js');
 const {defaultCanvasSize, defaultEyeSeparation, maxNumTrackers} = require('./constants.js');
+const {
+  nativeOculusVR,
+  nativeOpenVR,
+  nativeOculusMobileVr,
+  nativeMl,
+} = require('./native-bindings.js');
 const GlobalContext = require('./GlobalContext');
 
 const localVector = new THREE.Vector3();
@@ -201,6 +207,7 @@ class VRDisplay extends EventEmitter {
     this.stageParameters = new VRStageParameters();
 
     this.onrequestpresent = null;
+    this.onmakeswapchain = null;
     this.onexitpresent = null;
     this.onrequestanimationframe = null;
     this.onvrdisplaypresentchange = null;
@@ -245,36 +252,37 @@ class VRDisplay extends EventEmitter {
     };
   }
 
-  requestPresent(layers) {
-    return Promise.resolve().then(() => {
-      if (this.onrequestpresent) {
-        this.onrequestpresent(layers);
-      }
+  async requestPresent(layers) {
+    await this.onrequestpresent();
+    
+    const [{source: canvas}] = layers;
+    const {_context: context} = canvas;
+    this.session.device.onmakeswapchain(context);
 
-      if (this.onvrdisplaypresentchange && !this.isPresenting) {
-        this.isPresenting = true;
-        this.onvrdisplaypresentchange();
-      } else {
-        this.isPresenting = true;
-      }
-    });
+    if (this.onvrdisplaypresentchange && !this.isPresenting) {
+      this.isPresenting = true;
+      this.onvrdisplaypresentchange();
+    } else {
+      this.isPresenting = true;
+    }
   }
 
-  exitPresent() {
-    return (this.onexitpresent ? this.onexitpresent() : Promise.resolve())
-      .then(() => {
-        for (let i = 0; i < this._rafs.length; i++) {
-          this.cancelAnimationFrame(this._rafs[i]);
-        }
-        this._rafs.length = 0;
+  async exitPresent() {
+    if (this.onexitpresent) {
+      await this.onexitpresent();
+    }
 
-        if (this.onvrdisplaypresentchange && this.isPresenting) {
-          this.isPresenting = false;
-          this.onvrdisplaypresentchange();
-        } else {
-          this.isPresenting = false;
-        }
-      });
+    for (let i = 0; i < this._rafs.length; i++) {
+      this.cancelAnimationFrame(this._rafs[i]);
+    }
+    this._rafs.length = 0;
+
+    if (this.onvrdisplaypresentchange && this.isPresenting) {
+      this.isPresenting = false;
+      this.onvrdisplaypresentchange();
+    } else {
+      this.isPresenting = false;
+    }
   }
 
   requestAnimationFrame(fn) {
@@ -379,22 +387,26 @@ class FakeVRDisplay extends VRDisplay {
     GlobalContext.xrState.rightProjectionMatrix.set(projectionMatrix);
   } */
 
-  requestPresent(layers) {
-    return Promise.resolve().then(() => {
-      GlobalContext.xrState.renderWidth[0] = this.window.innerWidth * this.window.devicePixelRatio / 2;
-      GlobalContext.xrState.renderHeight[0] = this.window.innerHeight * this.window.devicePixelRatio;
+  async requestPresent(layers) {
+    /* GlobalContext.xrState.renderWidth[0] = this.window.innerWidth * this.window.devicePixelRatio / 2;
+    GlobalContext.xrState.renderHeight[0] = this.window.innerHeight * this.window.devicePixelRatio; */
 
-      if (this.onrequestpresent) {
-        this.onrequestpresent(layers);
-      }
+    await this.onrequestpresent();
+    
+    const [{source: canvas}] = layers;
+    const {_context: context} = canvas;
+    this.onmakeswapchain(context);
+    
+    const [fbo, msFbo, msTex, msDepthTex] = nativeWindow.createVrChildRenderTarget(context, xrState.renderWidth[0]*2, xrState.renderHeight[0]);
+    context.setDefaultFramebuffer(msFbo);
+    nativeWindow.bindVrChildFbo(context, fbo, xrState.tex[0], xrState.depthTex[0]);
 
-      if (this.onvrdisplaypresentchange && !this.isPresenting) {
-        this.isPresenting = true;
-        this.onvrdisplaypresentchange();
-      } else {
-        this.isPresenting = true;
-      }
-    });
+    if (this.onvrdisplaypresentchange && !this.isPresenting) {
+      this.isPresenting = true;
+      this.onvrdisplaypresentchange();
+    } else {
+      this.isPresenting = true;
+    }
   }
 
   exitPresent() {
@@ -408,12 +420,14 @@ class FakeVRDisplay extends VRDisplay {
     });
   }
 
-  requestSession({exclusive = true} = {}) {
+  async requestSession({exclusive = true} = {}) {
     const self = this;
 
-    GlobalContext.xrState.renderWidth[0] = this.window.innerWidth * this.window.devicePixelRatio / 2;
-    GlobalContext.xrState.renderHeight[0] = this.window.innerHeight * this.window.devicePixelRatio;
+    // GlobalContext.xrState.renderWidth[0] = this.window.innerWidth * this.window.devicePixelRatio / 2;
+    // GlobalContext.xrState.renderHeight[0] = this.window.innerHeight * this.window.devicePixelRatio;
 
+    await this.onrequestpresent();
+    
     const session = {
       addEventListener(e, fn) {
         if (e === 'end') {
@@ -516,7 +530,7 @@ class FakeVRDisplay extends VRDisplay {
     };
     _frame._pose = _pose;
 
-    return Promise.resolve(session);
+    return session;
   }
 
   supportsSession() {
