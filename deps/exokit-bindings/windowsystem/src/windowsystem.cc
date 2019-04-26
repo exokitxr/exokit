@@ -69,25 +69,12 @@ const char *composeFsh = ""
 "\n\
 in vec2 vUv;\n\
 out vec4 fragColor;\n\
-int texSamples = 4;\n\
-uniform sampler2DMS msTex;\n\
-uniform sampler2DMS msDepthTex;\n\
-uniform vec2 texSize;\n\
-\n\
-vec4 textureMultisample(sampler2DMS sampler, vec2 uv) {\n\
-  ivec2 iUv = ivec2(uv * texSize);\n\
-\n\
-  vec4 color = vec4(0.0);\n\
-  for (int i = 0; i < texSamples; i++) {\n\
-    color += texelFetch(sampler, iUv, i);\n\
-  }\n\
-  color /= float(texSamples);\n\
-  return color;\n\
-}\n\
+uniform sampler2D tex;\n\
+uniform sampler2D depthTex;\n\
 \n\
 void main() {\n\
-  fragColor = textureMultisample(msTex, vUv);\n\
-  gl_FragDepth = textureMultisample(msDepthTex, vUv).r;\n\
+  fragColor = texture2D(tex, vUv);\n\
+  gl_FragDepth = texture2D(depthTex, vUv).r;\n\
 }\n\
 ";
 
@@ -130,9 +117,11 @@ void InitializeLocalGlState(WebGLRenderingContext *gl) {
   {
     ComposeSpec *composeSpec = new ComposeSpec();
 
-    glGenVertexArrays(1, & composeSpec->composeVao);
+    // blit fbos
+    glGenFramebuffers(2, composeSpec->blitFbos);
 
     // vertex array
+    glGenVertexArrays(1, &composeSpec->composeVao);
     glBindVertexArray(composeSpec->composeVao);
 
     // vertex shader
@@ -189,19 +178,14 @@ void InitializeLocalGlState(WebGLRenderingContext *gl) {
       exout << "ML compose program failed to get attrib location for 'uv'" << std::endl;
       return;
     }
-    composeSpec->msTexLocation = glGetUniformLocation(composeSpec->composeProgram, "msTex");
-    if (composeSpec->msTexLocation == -1) {
-      exout << "ML compose program failed to get uniform location for 'msTex'" << std::endl;
+    composeSpec->texLocation = glGetUniformLocation(composeSpec->composeProgram, "tex");
+    if (composeSpec->texLocation == -1) {
+      exout << "ML compose program failed to get uniform location for 'tex'" << std::endl;
       return;
     }
-    composeSpec->msDepthTexLocation = glGetUniformLocation(composeSpec->composeProgram, "msDepthTex");
-    if (composeSpec->msDepthTexLocation == -1) {
-      exout << "ML compose program failed to get uniform location for 'msDepthTex'" << std::endl;
-      return;
-    }
-    composeSpec->texSizeLocation = glGetUniformLocation(composeSpec->composeProgram, "texSize");
-    if (composeSpec->texSizeLocation == -1) {
-      exout << "ML compose program failed to get uniform location for 'texSize'" << std::endl;
+    composeSpec->depthTexLocation = glGetUniformLocation(composeSpec->composeProgram, "depthTex");
+    if (composeSpec->depthTexLocation == -1) {
+      exout << "ML compose program failed to get uniform location for 'depthTex'" << std::endl;
       return;
     }
 
@@ -721,20 +705,39 @@ NAN_METHOD(DeleteSync) {
   } */
 }
 
+void BlitLayer(ComposeSpec *composeSpec, PlaneSpec *planeSpec, const LayerSpec &layer) {
+  if (layer.type == LayerType::IFRAME_3D || layer.type == LayerType::RAW_CANVAS) {
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, composeSpec->blitFbos[0]);
+    glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, layer.msTex, 0);
+    glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, layer.msDepthTex, 0);
+
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, composeSpec->blitFbos[1]);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, layer.tex, 0);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, layer.depthTex, 0);
+
+    glBlitFramebuffer(
+      0, 0,
+      layer.width, layer.height,
+      0, 0,
+      layer.width, layer.height,
+      GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT,
+      GL_NEAREST
+    );
+  }
+}
+
 void ComposeLayer(ComposeSpec *composeSpec, PlaneSpec *planeSpec, const LayerSpec &layer) {
-  if (layer.viewports[0] == nullptr) {
+  if (layer.type == LayerType::IFRAME_3D || layer.type == LayerType::RAW_CANVAS) {
     glBindVertexArray(composeSpec->composeVao);
     glUseProgram(composeSpec->composeProgram);
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, layer.msTex);
-    glUniform1i(composeSpec->msTexLocation, 0);
+    glBindTexture(GL_TEXTURE_2D, layer.tex);
+    glUniform1i(composeSpec->texLocation, 0);
 
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, layer.msDepthTex);
-    glUniform1i(composeSpec->msDepthTexLocation, 1);
-
-    glUniform2f(composeSpec->texSizeLocation, layer.width, layer.height);
+    glBindTexture(GL_TEXTURE_2D, layer.depthTex);
+    glUniform1i(composeSpec->depthTexLocation, 1);
 
     glViewport(0, 0, layer.width, layer.height);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
@@ -767,13 +770,14 @@ void ComposeLayers(WebGLRenderingContext *gl, GLuint fbo, const std::vector<Laye
   ComposeSpec *composeSpec = (ComposeSpec *)(gl->keys[GlKey::GL_KEY_COMPOSE]);
   PlaneSpec *planeSpec = (PlaneSpec *)(gl->keys[GlKey::GL_KEY_PLANE]);
 
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
-
-  glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
-
   for (size_t i = 0; i < layers.size(); i++) {
-    const LayerSpec &layer = layers[i];
-    ComposeLayer(composeSpec, planeSpec, layer);
+    BlitLayer(composeSpec, planeSpec, layers[i]);
+  }
+
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+  glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
+  for (size_t i = 0; i < layers.size(); i++) {
+    ComposeLayer(composeSpec, planeSpec, layers[i]);
   }
 
   if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
@@ -852,23 +856,25 @@ NAN_METHOD(ComposeLayers) {
             Local<Object> windowObj = Local<Object>::Cast(elementObj->Get(JS_STR("contentWindow")));
             int width = TO_INT32(windowObj->Get(JS_STR("width")));
             int height = TO_INT32(windowObj->Get(JS_STR("height")));
-            GLuint msTex, msDepthTex;
             Local<Object> framebufferObj = Local<Object>::Cast(JS_OBJ(elementObj->Get(JS_STR("contentDocument")))->Get(JS_STR("framebuffer")));
             // if (elementObj->Get(JS_STR("contentWindow"))->IsObject() && TO_UINT32(JS_OBJ(elementObj->Get(JS_STR("contentWindow")))->Get(JS_STR("phase"))) == 4) {
-              msTex = TO_UINT32(framebufferObj->Get(JS_STR("msTex")));
-              msDepthTex = TO_UINT32(framebufferObj->Get(JS_STR("msDepthTex")));
+            GLuint msTex = TO_UINT32(framebufferObj->Get(JS_STR("msTex")));
+            GLuint msDepthTex = TO_UINT32(framebufferObj->Get(JS_STR("msDepthTex")));
+            GLuint tex = TO_UINT32(framebufferObj->Get(JS_STR("tex")));
+            GLuint depthTex = TO_UINT32(framebufferObj->Get(JS_STR("depthTex")));
             /* } else {
               msTex = TO_UINT32(framebufferObj->Get(JS_STR("copyMsTex")));
               msDepthTex = TO_UINT32(framebufferObj->Get(JS_STR("copyMsDepthTex")));
             } */
 
             layers.push_back(LayerSpec{
+              LayerType::IFRAME_3D,
               width,
               height,
               msTex,
               msDepthTex,
-              0,
-              0,
+              tex,
+              depthTex,
               {nullptr,nullptr},
               {nullptr,nullptr},
               {nullptr,nullptr}
@@ -924,6 +930,7 @@ NAN_METHOD(ComposeLayers) {
             float *rightProjectionMatrix = (float *)((char *)rightProjectionMatrixFloat32Array->Buffer()->GetContents().Data() + rightProjectionMatrixFloat32Array->ByteOffset());
 
             layers.push_back(LayerSpec{
+              LayerType::IFRAME_2D,
               width,
               height,
               0,
@@ -955,6 +962,7 @@ NAN_METHOD(ComposeLayers) {
             int height = TO_INT32(elementObj->Get(JS_STR("height")));
 
             layers.push_back(LayerSpec{
+              LayerType::RAW_CANVAS,
               width,
               height,
               msTex,

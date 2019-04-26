@@ -27,6 +27,7 @@ enum class LayerType {
 
 class LayerSpec {
 public:
+  LayerType type;
   int width;
   int height;
   GLuint msTex;
@@ -40,13 +41,13 @@ public:
 
 class ComposeSpec {
 public:
+  GLuint blitFbos[2];
   GLuint composeVao;
   GLuint composeProgram;
   GLint positionLocation;
   GLint uvLocation;
   GLint msTexLocation;
   GLint msDepthTexLocation;
-  GLint texSizeLocation;
   GLuint positionBuffer;
   GLuint uvBuffer;
   GLuint indexBuffer;
