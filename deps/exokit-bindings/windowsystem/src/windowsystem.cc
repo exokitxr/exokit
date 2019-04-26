@@ -73,8 +73,8 @@ uniform sampler2D tex;\n\
 uniform sampler2D depthTex;\n\
 \n\
 void main() {\n\
-  fragColor = texture2D(tex, vUv);\n\
-  gl_FragDepth = texture2D(depthTex, vUv).r;\n\
+  fragColor = texture(tex, vUv);\n\
+  gl_FragDepth = texture(depthTex, vUv).r;\n\
 }\n\
 ";
 
