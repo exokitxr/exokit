@@ -614,7 +614,7 @@ void BlitLayer(ComposeSpec *composeSpec, PlaneSpec *planeSpec, const LayerSpec &
 }
 
 void ComposeLayer(ComposeSpec *composeSpec, PlaneSpec *planeSpec, const LayerSpec &layer) {
-  if (layer.type == LayerType::IFRAME_3D || layer.type == LayerType::RAW_CANVAS) {
+  if (layer.type == LayerType::IFRAME_3D || layer.type == LayerType::IFRAME_3D_REPROJECT || layer.type == LayerType::RAW_CANVAS) {
     glBindVertexArray(composeSpec->composeVao);
     glUseProgram(composeSpec->composeProgram);
 
@@ -725,10 +725,20 @@ NAN_METHOD(ComposeLayers) {
         LayerType layerType = LayerType::NONE;
         if (JS_OBJ(elementObj->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLIFrameElement"))) {
           if (
+            elementObj->Get(JS_STR("contentWindow"))->IsObject() &&
             elementObj->Get(JS_STR("contentDocument"))->IsObject() &&
             JS_OBJ(elementObj->Get(JS_STR("contentDocument")))->Get(JS_STR("framebuffer"))->IsObject()
           ) {
-            layerType = LayerType::IFRAME_3D;
+            Local<Object> contentWindowObj = JS_OBJ(elementObj->Get(JS_STR("contentWindow")));
+            if (TO_BOOL(contentWindowObj->Get(JS_STR("rendered")))) {
+              if (TO_UINT32(contentWindowObj->Get(JS_STR("phase"))) == 4) { // PHASES.COMPLETE
+                layerType = LayerType::IFRAME_3D;
+              } else {
+                layerType = LayerType::IFRAME_3D_REPROJECT;
+              }
+            } else {
+              // not rendered yet so do not compose
+            }
           } else if (elementObj->Get(JS_STR("browser"))->IsObject()) {
             layerType = LayerType::IFRAME_2D;
           }
@@ -744,15 +754,10 @@ NAN_METHOD(ComposeLayers) {
             int width = TO_INT32(windowObj->Get(JS_STR("width")));
             int height = TO_INT32(windowObj->Get(JS_STR("height")));
             Local<Object> framebufferObj = Local<Object>::Cast(JS_OBJ(elementObj->Get(JS_STR("contentDocument")))->Get(JS_STR("framebuffer")));
-            // if (elementObj->Get(JS_STR("contentWindow"))->IsObject() && TO_UINT32(JS_OBJ(elementObj->Get(JS_STR("contentWindow")))->Get(JS_STR("phase"))) == 4) {
             GLuint msTex = TO_UINT32(framebufferObj->Get(JS_STR("msTex")));
             GLuint msDepthTex = TO_UINT32(framebufferObj->Get(JS_STR("msDepthTex")));
             GLuint tex = TO_UINT32(framebufferObj->Get(JS_STR("tex")));
             GLuint depthTex = TO_UINT32(framebufferObj->Get(JS_STR("depthTex")));
-            /* } else {
-              msTex = TO_UINT32(framebufferObj->Get(JS_STR("copyMsTex")));
-              msDepthTex = TO_UINT32(framebufferObj->Get(JS_STR("copyMsDepthTex")));
-            } */
 
             layers.push_back(LayerSpec{
               LayerType::IFRAME_3D,
@@ -760,6 +765,30 @@ NAN_METHOD(ComposeLayers) {
               height,
               msTex,
               msDepthTex,
+              tex,
+              depthTex,
+              {nullptr,nullptr},
+              {nullptr,nullptr},
+              {nullptr,nullptr}
+            });
+            break;
+          }
+          case LayerType::IFRAME_3D_REPROJECT: {
+            Local<Object> windowObj = Local<Object>::Cast(elementObj->Get(JS_STR("contentWindow")));
+            int width = TO_INT32(windowObj->Get(JS_STR("width")));
+            int height = TO_INT32(windowObj->Get(JS_STR("height")));
+            Local<Object> framebufferObj = Local<Object>::Cast(JS_OBJ(elementObj->Get(JS_STR("contentDocument")))->Get(JS_STR("framebuffer")));
+            GLuint tex = TO_UINT32(framebufferObj->Get(JS_STR("tex")));
+            GLuint depthTex = TO_UINT32(framebufferObj->Get(JS_STR("depthTex")));
+
+            std::cout << "reprojection" << std::endl;
+
+            layers.push_back(LayerSpec{
+              LayerType::IFRAME_3D_REPROJECT,
+              width,
+              height,
+              0,
+              0,
               tex,
               depthTex,
               {nullptr,nullptr},

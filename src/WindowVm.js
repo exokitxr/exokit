@@ -18,6 +18,7 @@ const _makeWindow = (options = {}) => {
   window.id = id;
   window.tickAnimationFrame = type => window.runAsync(type);
   window.phase = 0;
+  window.rendered = false;
   window.promise = null;
   window.syncs = null;
   

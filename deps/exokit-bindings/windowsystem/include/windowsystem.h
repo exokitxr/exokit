@@ -21,6 +21,7 @@ namespace windowsystembase {
 enum class LayerType {
   NONE,
   IFRAME_3D,
+  IFRAME_3D_REPROJECT,
   IFRAME_2D,
   RAW_CANVAS,
 };

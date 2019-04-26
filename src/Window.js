@@ -1302,6 +1302,9 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
         const window = windows[i];
         if (window.syncs) {
           window.phase = PHASES.DONE;
+          if (!window.rendered) {
+            window.rendered = window.syncs.length > 0; // syncs means the client drew
+          }
           window.syncs = null;
         }
       }
