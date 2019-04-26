@@ -353,115 +353,6 @@ void InitializeLocalGlState(WebGLRenderingContext *gl) {
 }
 
 constexpr GLint MAX_TEXTURE_SIZE = 4096;
-/* void CreateHiddenRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint *pmsFbo, GLuint *pmsColorTex, GLuint *pmsDepthStencilTex, GLuint *pCopyMsFbo, GLuint *pCopyMsColorTex, GLuint *pCopyMsDepthStencilTex) {
-  const int samples = 4;
-
-  GLuint &msFbo = *pmsFbo;
-  GLuint &msColorTex = *pmsColorTex;
-  GLuint &msDepthStencilTex = *pmsDepthStencilTex;
-  GLuint &copyMsFbo = *pCopyMsFbo;
-  GLuint &copyMsColorTex = *pCopyMsColorTex;
-  GLuint &copyMsDepthStencilTex = *pCopyMsDepthStencilTex;
-
-  // NOTE: we create statically sized multisample textures because we cannot resize them later
-  {
-    glGenFramebuffers(1, &msFbo);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, msFbo);
-
-    glGenTextures(1, &msDepthStencilTex);
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex);
-    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
-#ifndef LUMIN
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_DEPTH24_STENCIL8, MAX_TEXTURE_SIZE, MAX_TEXTURE_SIZE/2, true);
-#else
-    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_DEPTH24_STENCIL8, MAX_TEXTURE_SIZE, MAX_TEXTURE_SIZE/2, true);
-#endif
-    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex, 0);
-
-    glGenTextures(1, &msColorTex);
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msColorTex);
-    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
-#ifndef LUMIN
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA8, MAX_TEXTURE_SIZE, MAX_TEXTURE_SIZE/2, true);
-#else
-    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA8, MAX_TEXTURE_SIZE, MAX_TEXTURE_SIZE/2, true);
-#endif
-    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, copyMsColorTex, 0);
-    
-    glClear(GL_DEPTH_BUFFER_BIT); // initialize to far depth
-  }
-  {
-    glGenFramebuffers(1, &copyMsFbo);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, copyMsFbo);
-
-    glGenTextures(1, &copyMsDepthStencilTex);
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, copyMsDepthStencilTex);
-    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
-#ifndef LUMIN
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_DEPTH24_STENCIL8, MAX_TEXTURE_SIZE, MAX_TEXTURE_SIZE/2, true);
-#else
-    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_DEPTH24_STENCIL8, MAX_TEXTURE_SIZE, MAX_TEXTURE_SIZE/2, true);
-#endif
-    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, copyMsDepthStencilTex, 0);
-
-    glGenTextures(1, &copyMsColorTex);
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, copyMsColorTex);
-    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
-#ifndef LUMIN
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA8, MAX_TEXTURE_SIZE, MAX_TEXTURE_SIZE/2, true);
-#else
-    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA8, MAX_TEXTURE_SIZE, MAX_TEXTURE_SIZE/2, true);
-#endif
-    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, msColorTex, 0);
-    
-    glClear(GL_DEPTH_BUFFER_BIT); // initialize to far depth
-  }
-
-  if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
-  } else {
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
-  }
-  if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D)) {
-    glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D));
-  } else {
-    glBindTexture(GL_TEXTURE_2D, 0);
-  }
-  if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D_MULTISAMPLE)) {
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D_MULTISAMPLE));
-  } else {
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
-  }
-  if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_CUBE_MAP)) {
-    glBindTexture(GL_TEXTURE_CUBE_MAP, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_CUBE_MAP));
-  } else {
-    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
-  }
-}
-
-NAN_METHOD(CreateHiddenRenderTarget) {
-  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
-  int width = TO_INT32(info[1]);
-  int height = TO_INT32(info[2]);
-
-  GLuint msFbo;
-  GLuint msColorTex;
-  GLuint msDepthStencilTex;
-  GLuint copyMsFbo;
-  GLuint copyMsColorTex;
-  GLuint copyMsDepthStencilTex;
-  CreateHiddenRenderTarget(gl, width, height, &msFbo, &msColorTex, &msDepthStencilTex, &copyMsFbo, &copyMsColorTex, &copyMsDepthStencilTex);
-
-  Local<Array> result = Array::New(Isolate::GetCurrent(), 6);
-  result->Set(0, JS_INT(msFbo));
-  result->Set(1, JS_INT(msColorTex));
-  result->Set(2, JS_INT(msDepthStencilTex));
-  result->Set(3, JS_INT(copyMsFbo));
-  result->Set(4, JS_INT(copyMsColorTex));
-  result->Set(5, JS_INT(copyMsDepthStencilTex));
-  info.GetReturnValue().Set(result);
-} */
-
 void CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint *pfbo, GLuint *pcolorTex, GLuint *pdepthStencilTex, GLuint *pmsFbo, GLuint *pmsColorTex, GLuint *pmsDepthStencilTex) {
   const int samples = 4;
 
@@ -565,10 +456,6 @@ NAN_METHOD(CreateRenderTarget) {
   result->Set(5, JS_INT(msDepthStencilTex));
   info.GetReturnValue().Set(result);
 }
-
-/* NAN_METHOD(ResizeHiddenRenderTarget) {
-  // nothing; we do not resize multisampled textures
-} */
 
 NAN_METHOD(ResizeRenderTarget) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
@@ -1011,9 +898,7 @@ NAN_METHOD(SetEventLoop) {
 }
 
 void Decorate(Local<Object> target) {
-  // Nan::SetMethod(target, "createHiddenRenderTarget", CreateHiddenRenderTarget);
   Nan::SetMethod(target, "createRenderTarget", CreateRenderTarget);
-  // Nan::SetMethod(target, "resizeHiddenRenderTarget", ResizeHiddenRenderTarget);
   Nan::SetMethod(target, "resizeRenderTarget", ResizeRenderTarget);
   Nan::SetMethod(target, "destroyRenderTarget", DestroyRenderTarget);
   Nan::SetMethod(target, "copyRenderTarget", CopyRenderTarget);
