@@ -928,9 +928,10 @@ if (bindings.nativeMl) {
         nativeWindow.setCurrentWindowContext(windowHandle);
 
         const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeWindow.createRenderTarget(context, width, height);
+        const [fbo2, tex2, depthTex2, msFbo2, msTex2, msDepthTex2] = nativeWindow.createRenderTarget(context, width, height);
 
         const {mlPresentState} = GlobalContext;
-        mlPresentState.mlContext.SetContentTexture(tex);
+        mlPresentState.mlContext.SetContentTexture(tex2);
 
         canvas.framebuffer = {
           width,
@@ -949,18 +950,19 @@ if (bindings.nativeMl) {
         xrState.renderHeight[0] = height;
 
         mlPresentState.mlGlContextId = context.id;
-        mlPresentState.mlFbo = fbo;
-        mlPresentState.mlTex = tex;
-        mlPresentState.mlDepthTex = depthTex;
-        mlPresentState.mlMsFbo = msFbo;
-        mlPresentState.mlMsTex = msTex;
-        mlPresentState.mlMsDepthTex = msDepthTex
+        mlPresentState.mlFbo = fbo2;
+        mlPresentState.mlTex = tex2;
+        mlPresentState.mlDepthTex = depthTex2;
+        mlPresentState.mlMsFbo = msFbo2;
+        mlPresentState.mlMsTex = msTex2;
+        mlPresentState.mlMsDepthTex = msDepthTex2;
 
         const _attribute = (name, value) => {
           if (name === 'width' || name === 'height') {
             nativeWindow.setCurrentWindowContext(windowHandle);
 
             nativeWindow.resizeRenderTarget(context, canvas.width, canvas.height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
+            nativeWindow.resizeRenderTarget(context, canvas.width, canvas.height, fbo2, tex2, depthTex2, msFbo2, msTex2, msDepthTex2);
           }
         };
         canvas.on('attribute', _attribute);
@@ -970,7 +972,16 @@ if (bindings.nativeMl) {
 
         context.setDefaultFramebuffer(msFbo);
 
-        return canvas.framebuffer;
+        return {
+          width,
+          height,
+          msFbo: msFbo2,
+          msTex: msTex2,
+          msDepthTex: msDepthTex2,
+          fbo: fbo2,
+          tex: tex2,
+          depthTex: depthTex2,
+        };
       } else if (canvas.ownerDocument.framebuffer) {
         const {width, height} = canvas;
         const {msFbo, msTex, msDepthTex, fbo, tex, depthTex} = canvas.ownerDocument.framebuffer;
