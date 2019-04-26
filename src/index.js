@@ -141,7 +141,7 @@ const xrState = (() => {
       return result;
     };
   };
-  const _makeTypedArray = _makeSab(1024);
+  const _makeTypedArray = _makeSab(4*1024);
 
   const result = {};
   result.isPresenting = _makeTypedArray(Uint32Array, 1);
