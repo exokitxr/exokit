@@ -1326,7 +1326,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       }
     }
 
-    let oculusVrGlContext, openVrGlContext, mlGlContext;
+    let oculusVrGlContext, openVrGlContext, oculusMobileVrGlContext, mlGlContext;
     if (oculusVrGlContext = _getOculusVrGlContext()) {
       // wait for frame
       await new Promise((accept, reject) => {
