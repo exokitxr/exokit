@@ -189,17 +189,23 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
     const title = `Exokit ${version}`;
     nativeWindow.setWindowTitle(windowHandle, title);
 
+    const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeWindow.createRenderTarget(gl, canvasWidth, canvasHeight, sharedColorTexture, sharedDepthStencilTexture, sharedMsColorTexture, sharedMsDepthStencilTexture);
+    gl.setDefaultFramebuffer(msFbo);
+    gl.framebuffer = {
+      msFbo,
+      msTex,
+      msDepthTex,
+      fbo,
+      tex,
+      depthTex,
+    };
+    gl.resize = (width, height) => {
+      nativeWindow.setCurrentWindowContext(windowHandle);
+      nativeWindow.resizeRenderTarget(gl, width, height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
+    };
+
     const {hidden} = document;
     if (hidden) {
-      const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeWindow.createRenderTarget(gl, canvasWidth, canvasHeight, sharedColorTexture, sharedDepthStencilTexture, sharedMsColorTexture, sharedMsDepthStencilTexture);
-
-      gl.setDefaultFramebuffer(msFbo);
-
-      gl.resize = (width, height) => {
-        nativeWindow.setCurrentWindowContext(windowHandle);
-        nativeWindow.resizeRenderTarget(gl, width, height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
-      };
-
       // TODO: handle multiple child canvases
       document.framebuffer = {
         canvas,
@@ -209,11 +215,6 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
         fbo,
         tex,
         depthTex,
-      };
-    } else {
-      gl.resize = (width, height) => {
-        nativeWindow.setCurrentWindowContext(windowHandle);
-        nativeWindow.resizeRenderTarget(gl, width, height, sharedFramebuffer, sharedColorTexture, sharedDepthStencilTexture, sharedMsFramebuffer, sharedMsColorTexture, sharedMsDepthStencilTexture);
       };
     }
 
@@ -1385,7 +1386,7 @@ const _startRenderLoop = () => {
             
             const width = vrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1);
             const height = vrPresentState.glContext.canvas.height;
-            nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, 0, width, height, width, height, true, false, false);
+            nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, 0, width, height, width * window.devicePixelRatio, height * window.devicePixelRatio, true, false, false);
           } else if (vrPresentState.glContext === context && vrPresentState.system && vrPresentState.hasPose) {
             if (vrPresentState.layers.length > 0) {
               const {openVRDisplay} = window[symbols.mrDisplaysSymbol];
@@ -1400,7 +1401,7 @@ const _startRenderLoop = () => {
 
             const width = vrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1);
             const height = vrPresentState.glContext.canvas.height;
-            nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, 0, width, height, width, height, true, false, false);
+            nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, 0, width, height, width * window.devicePixelRatio, height * window.devicePixelRatio, true, false, false);
           } else if (oculusMobileVrPresentState.glContext === context && oculusMobileVrPresentState.hasPose) {
             if (oculusMobileVrPresentState.layers.length > 0) {
               const {oculusMobileVrDisplay} = window[symbols.mrDisplaysSymbol];
@@ -1423,10 +1424,18 @@ const _startRenderLoop = () => {
 
             mlPresentState.mlContext.SubmitFrame(mlPresentState.mlTex, mlPresentState.mlGlContext.canvas.width, mlPresentState.mlGlContext.canvas.height);
             mlPresentState.mlHasPose = false;
-          } else if (fakePresentState.layers.length > 0) {
-            const {fakeVrDisplay} = window[symbols.mrDisplaysSymbol];
-            _decorateModelViewProjections(fakePresentState.layers, fakeVrDisplay, 1);
-            nativeWindow.composeLayers(context, 0, fakePresentState.layers);
+          } else {
+            if (fakePresentState.layers.length > 0) {
+              const {fakeVrDisplay} = window[symbols.mrDisplaysSymbol];
+              _decorateModelViewProjections(fakePresentState.layers, fakeVrDisplay, 1);
+              nativeWindow.composeLayers(context, context.framebuffer.fbo, fakePresentState.layers);
+            } else {
+              nativeWindow.blitFrameBuffer(context, context.framebuffer.msFbo, context.framebuffer.fbo, context.canvas.width, context.canvas.height, context.canvas.width, context.canvas.height, true, false, false);
+            }
+
+            const width = context.canvas.width * (args.blit ? 0.5 : 1);
+            const height = context.canvas.height;
+            nativeWindow.blitFrameBuffer(context, context.framebuffer.fbo, 0, width, height, width * window.devicePixelRatio, height * window.devicePixelRatio, true, false, false);
           }
         }
 
