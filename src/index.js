@@ -743,6 +743,9 @@ const _startTopRenderLoop = () => {
           accept
         );
       });
+      if (!immediate) {
+        return;
+      }
 
       if (mlPresentState.mlHasPose) {
         localVector.fromArray(transformArray, 0);
@@ -838,16 +841,16 @@ const _startTopRenderLoop = () => {
         }
       }
 
-      // update magic leap state
-      nativeMl.Update(mlPresentState.mlContext, mlGlContext); // gl context for mesh buffer population
+      // queue magic leap state updates
+      nativeBindings.nativeMl.Update(topVrPresentState.vrContext);
 
-      // prepare magic leap frame
+      /* // prepare magic leap frame
       mlPresentState.mlContext.PrepareFrame(
         mlGlContext, // gl context for depth population
         mlPresentState.mlFbo,
         xrState.renderWidth[0]*2,
         xrState.renderHeight[0],
-      );
+      ); */
     } else {
       /* await new Promise((accept, reject) => {
         const now = Date.now();

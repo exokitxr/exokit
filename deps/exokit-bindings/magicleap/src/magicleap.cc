@@ -15,7 +15,6 @@ namespace ml {
 
 const char application_name[] = "com.exokit.app";
 constexpr int CAMERA_SIZE[] = {960, 540};
-constexpr float meshingRange = 3.0f;
 constexpr float planeRange = 10.0f;
 
 application_context_t application_context;
@@ -546,19 +545,22 @@ MLPoll::~MLPoll() {} */
 
 // MeshBuffer
 
-MeshBuffer::MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint indexBuffer) :
-  positionBuffer(positionBuffer),
-  normalBuffer(normalBuffer),
-  indexBuffer(indexBuffer),
+MeshBuffer::MeshBuffer() :
   positions(nullptr),
   numPositions(0),
   normals(nullptr),
   indices(nullptr),
-  numIndices(0),
-  isNew(true),
-  isUnchanged(false)
+  numIndices(0)
   {}
-MeshBuffer::MeshBuffer(const MeshBuffer &meshBuffer) {
+MeshBuffer::MeshBuffer(MLTransform transform, float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices) :
+  transform(transform),
+  positions(positions),
+  numPositions(numPositions),
+  normals(normals),
+  indices(indices),
+  numIndices(numIndices)
+  {}
+/* MeshBuffer::MeshBuffer(const MeshBuffer &meshBuffer) {
   positionBuffer = meshBuffer.positionBuffer;
   normalBuffer = meshBuffer.normalBuffer;
   indexBuffer = meshBuffer.indexBuffer;
@@ -567,39 +569,57 @@ MeshBuffer::MeshBuffer(const MeshBuffer &meshBuffer) {
   normals = meshBuffer.normals;
   indices = meshBuffer.indices;
   numIndices = meshBuffer.numIndices;
-  isNew = meshBuffer.isNew;
-  isUnchanged = meshBuffer.isUnchanged;
+} */
+
+float getMaxRange() {
+  float range = 1.0f;
+  for (auto iter = meshers.begin(); iter != meshers.end(); iter++) {
+    MLMesher *mesher = *iter;
+    range = std::max(range, mesher->range);
+  }
 }
-MeshBuffer::MeshBuffer() : positionBuffer(0), normalBuffer(0), indexBuffer(0), positions(nullptr), numPositions(0), normals(nullptr), indices(nullptr), numIndices(0), isNew(true), isUnchanged(false) {}
 
-void MeshBuffer::setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, bool isNew, bool isUnchanged) {
-  glBindBuffer(GL_ARRAY_BUFFER, positionBuffer);
-  glBufferData(GL_ARRAY_BUFFER, numPositions * sizeof(positions[0]), positions, GL_DYNAMIC_DRAW);
-
-  glBindBuffer(GL_ARRAY_BUFFER, normalBuffer);
-  glBufferData(GL_ARRAY_BUFFER, numPositions * sizeof(normals[0]), normals, GL_DYNAMIC_DRAW);
-
-  glBindBuffer(GL_ARRAY_BUFFER, indexBuffer);
-  glBufferData(GL_ARRAY_BUFFER, numIndices * sizeof(indices[0]), indices, GL_DYNAMIC_DRAW);
-
-  this->positions = positions;
-  this->numPositions = numPositions;
-  this->normals = normals;
-  this->indices = indices;
-  this->numIndices = numIndices;
-  this->isNew = isNew;
-  this->isUnchanged = isUnchanged;
+MLMeshingLOD getMaxLod() {
+  MLMeshingLOD lod = MLMeshingLOD_Minimum;
+  for (auto iter = meshers.begin(); iter != meshers.end(); iter++) {
+    MLMesher *mesher = *iter;
+    lod = std::max(lod, mesher->lod);
+  }
 }
 
 // MLMesher
 
-MLMesher::MLMesher(Local<Object> windowObj, uv_loop_t *loop) : windowObj(windowObj), loop(loop) {}
+MLMesher::MLMesher(Local<Object> windowObj, uv_loop_t *loop, float range, MLMeshingLOD lod) : windowObj(windowObj), loop(loop), range(range), lod(lod) {}
 
 MLMesher::~MLMesher() {}
 
 NAN_METHOD(MLMesher::New) {
+  Local<Object> windowObj = Local<Object>::Cast(info[0]);
+  int lodValue = TO_INT32(info[1]);
+  float range = TO_FLOAT(info[2]);
   uv_loop_t *loop = windowsystembase::GetEventLoop();
-  MLMesher *mlMesher = new MLMesher(Local<Object>::Cast(info[0]), loop);
+  
+  MLMeshingLOD lod;
+  switch (lodValue) {
+    case 1: {
+      lod = MLMeshingLOD_Minimum;
+      break;
+    }
+    case 2: {
+      lod = MLMeshingLOD_Medium;
+      break;
+    }
+    case 3: {
+      lod = MLMeshingLOD_Maximum;
+      break;
+    }
+    default: {
+      lod = MLMeshingLOD_Minimum;
+      break;
+    }
+  }
+  
+  MLMesher *mlMesher = new MLMesher(windowObj, loop, range, lod);
   Local<Object> mlMesherObj = info.This();
   mlMesher->Wrap(mlMesherObj);
 
@@ -657,20 +677,14 @@ void MLMesher::Update() {
   types.reserve(dataCount);
   std::vector<std::string> ids;
   ids.reserve(dataCount);
-  std::vector<int> positionBuffers;
-  positionBuffers.reserve(dataCount);
   std::vector<float *> positionArrays;
   positionArrays.reserve(dataCount);
   std::vector<int> positionCounts;
   positionCounts.reserve(dataCount);
-  std::vector<int> normalBuffers;
-  normalBuffers.reserve(dataCount);
   std::vector<float *> normalArrays;
   normalArrays.reserve(dataCount);
   std::vector<int> normalCounts;
   normalCounts.reserve(dataCount);
-  std::vector<int> indexBuffers;
-  indexBuffers.reserve(dataCount);
   std::vector<uint16_t *> indexArrays;
   indexArrays.reserve(dataCount);
   std::vector<int> counts;
@@ -688,22 +702,19 @@ void MLMesher::Update() {
         const MeshBuffer &meshBuffer = iter->second;
 
         MLUpdateType type;
-        if (meshBuffer.isNew) {
+        if (meshRequestNewMap[id]) {
           type = MLUpdateType::NEW;
-        } else if (meshBuffer.isUnchanged) {
+        } else if (meshRequestUnchangedMap[id]) {
           type = MLUpdateType::UNCHANGED;
         } else {
           type = MLUpdateType::UPDATE;
         }
         types.push_back(type);
         ids.push_back(std::move(id));
-        positionBuffers.push_back(meshBuffer.positionBuffer);
         positionArrays.push_back(meshBuffer.positions);
         positionCounts.push_back(meshBuffer.numPositions);
-        normalBuffers.push_back(meshBuffer.normalBuffer);
         normalArrays.push_back(meshBuffer.normals);
         normalCounts.push_back(meshBuffer.numPositions);
-        indexBuffers.push_back(meshBuffer.indexBuffer);
         indexArrays.push_back(meshBuffer.indices);
         counts.push_back(meshBuffer.numIndices);
         
@@ -714,13 +725,10 @@ void MLMesher::Update() {
     } else {
       types.push_back(MLUpdateType::REMOVE);
       ids.push_back(std::move(id));
-      positionBuffers.push_back(0);
       positionArrays.push_back(nullptr);
       positionCounts.push_back(0);
-      normalBuffers.push_back(0);
       normalArrays.push_back(nullptr);
       normalCounts.push_back(0);
-      indexBuffers.push_back(0);
       indexArrays.push_back(nullptr);
       counts.push_back(0);
       
@@ -735,13 +743,10 @@ void MLMesher::Update() {
     transformMatrix,
     types{std::move(types)},
     ids{std::move(ids)},
-    positionBuffers{std::move(positionBuffers)},
     positionArrays{std::move(positionArrays)},
     positionCounts{std::move(positionCounts)},
-    normalBuffers{std::move(normalBuffers)},
     normalArrays{std::move(normalArrays)},
     normalCounts{std::move(normalCounts)},
-    indexBuffers{std::move(indexBuffers)},
     indexArrays{std::move(indexArrays)},
     counts{std::move(counts)},
     numResults
@@ -787,23 +792,14 @@ void MLMesher::Update() {
           Local<Float32Array> transformMatrixArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)transformMatrix.matrix_colmajor, 16 * sizeof(float)), 0, 16);
           obj->Set(JS_STR("transformMatrix"), transformMatrixArray);
 
-          Local<Object> positionBuffer = Nan::New<Object>();
-          positionBuffer->Set(JS_STR("id"), JS_INT(positionBuffers[i]));
-          obj->Set(JS_STR("positionBuffer"), positionBuffer);
           Local<Float32Array> positionArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), positionArrays[i], positionCounts[i] * sizeof(float)), 0, positionCounts[i]);
           obj->Set(JS_STR("positionArray"), positionArray);
           obj->Set(JS_STR("positionCount"), JS_INT(positionCounts[i]));
 
-          Local<Object> normalBuffer = Nan::New<Object>();
-          normalBuffer->Set(JS_STR("id"), JS_INT(normalBuffers[i]));
-          obj->Set(JS_STR("normalBuffer"), normalBuffer);
           Local<Float32Array> normalArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), normalArrays[i], normalCounts[i] * sizeof(float)), 0, normalCounts[i]);
           obj->Set(JS_STR("normalArray"), normalArray);
           obj->Set(JS_STR("normalCount"), JS_INT(positionCounts[i]));
 
-          Local<Object> indexBuffer = Nan::New<Object>();
-          indexBuffer->Set(JS_STR("id"), JS_INT(indexBuffers[i]));
-          obj->Set(JS_STR("indexBuffer"), indexBuffer);
           Local<Uint16Array> indexArray = Uint16Array::New(ArrayBuffer::New(Isolate::GetCurrent(), indexArrays[i], counts[i] * sizeof(uint16_t)), 0, counts[i]);
           obj->Set(JS_STR("indexArray"), indexArray);
           obj->Set(JS_STR("count"), JS_INT(counts[i]));
@@ -3567,7 +3563,7 @@ NAN_METHOD(MLContext::RequestGetPoses) {
   }
 }
 
-NAN_METHOD(MLContext::PrepareFrame) {
+/* NAN_METHOD(MLContext::PrepareFrame) {
   if (info[0]->IsObject() && info[1]->IsNumber() && info[2]->IsNumber() && info[3]->IsNumber()) {
     if (depthEnabled) {
       MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
@@ -3651,7 +3647,7 @@ NAN_METHOD(MLContext::PrepareFrame) {
   } else {
     Nan::ThrowError("MLContext::PrepareFrame: invalid arguments");
   }
-}
+} */
 
 NAN_METHOD(MLContext::SubmitFrame) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
@@ -3749,10 +3745,11 @@ NAN_METHOD(MLContext::SetContentTexture) {
 }
 
 NAN_METHOD(MLContext::RequestMeshing) {
-  if (info[0]->IsObject()) {
+  if (info[0]->IsObject() && info[1]->IsNumber()) {
     Local<Function> mlMesherCons = Nan::New(mlMesherConstructor);
     Local<Value> argv[] = {
       info[0],
+      info[1],
     };
     Local<Object> mlMesherObj = mlMesherCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(argv)/sizeof(argv[0]), argv).ToLocalChecked();
     info.GetReturnValue().Set(mlMesherObj);
@@ -4007,9 +4004,6 @@ void setFingerValue(float data[1 + 3]) {
 
 NAN_METHOD(MLContext::Update) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(Local<Object>::Cast(info[0]));
-  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[1]));
-  
-  windowsystem::SetCurrentWindowContext(gl->windowHandle);
 
   MLSnapshot *snapshot = nullptr;
 
@@ -4098,6 +4092,8 @@ NAN_METHOD(MLContext::Update) {
   }
 
   if ((meshers.size() > 0 || depthEnabled) && !meshInfoRequestPending && !meshRequestsPending) {
+    float range = getMaxRange();
+
     {
       // std::unique_lock<std::mutex> lock(mlContext->positionMutex);
 
@@ -4105,9 +4101,9 @@ NAN_METHOD(MLContext::Update) {
       // meshExtents.rotation =  mlContext->rotation;
       meshExtents.rotation = {0, 0, 0, 1};
     }
-    meshExtents.extents.x = meshingRange;
-    meshExtents.extents.y = meshingRange;
-    meshExtents.extents.z = meshingRange;
+    meshExtents.extents.x = range;
+    meshExtents.extents.y = range;
+    meshExtents.extents.z = range;
 
     MLResult result = MLMeshingRequestMeshInfo(meshTracker, &meshExtents, &meshInfoRequestHandle);
     if (result == MLResult_Ok) {
@@ -4157,6 +4153,8 @@ NAN_METHOD(MLContext::Update) {
     if (result == MLResult_Ok) {
       uint32_t dataCount = meshInfo.data_count;
 
+      MLMeshingLOD lod = getMaxLod();
+
       meshRequestNewMap.clear();
       meshRequestRemovedMap.clear();
       meshRequestUnchangedMap.clear();
@@ -4165,9 +4163,7 @@ NAN_METHOD(MLContext::Update) {
         const MLMeshingMeshState &state = meshBlockInfo.state;
         MLMeshingBlockRequest &meshBlockRequest = meshBlockRequests[i];
         meshBlockRequest.id = meshBlockInfo.id;
-        // meshBlockRequest.level = MLMeshingLOD_Minimum;
-        meshBlockRequest.level = MLMeshingLOD_Medium;
-        // meshBlockRequest.level = MLMeshingLOD_Maximum;
+        meshBlockRequest.level = lod;
 
         const std::string &id = id2String(meshBlockInfo.id);
         meshRequestNewMap[id] = (state == MLMeshingMeshState_New);
@@ -4219,42 +4215,35 @@ NAN_METHOD(MLContext::Update) {
       MLMeshingBlockMesh *blockMeshes = mesh.data;
       uint32_t dataCount = mesh.data_count;
 
+      // add new mesh buffers
       for (uint32_t i = 0; i < dataCount; i++) {
         MLMeshingBlockMesh &blockMesh = blockMeshes[i];
         const std::string &id = id2String(blockMesh.id);
 
         if (!meshRequestRemovedMap[id]) {
-          MeshBuffer *meshBuffer;
-          auto iter = meshBuffers.find(id);
-          if (iter != meshBuffers.end()) {
-            meshBuffer = &iter->second;
-          } else {
-            GLuint buffers[3];
-            glGenBuffers(sizeof(buffers)/sizeof(buffers[0]), buffers);
-            meshBuffers[id] = MeshBuffer(buffers[0], buffers[1], buffers[2]);
-            meshBuffer = &meshBuffers[id];
-          }
+          MLTransform transform;
+          MLSnapshotGetTransform(snapshot, &blockMesh.id, &transform);
 
-          meshBuffer->setBuffers((float *)(&blockMesh.vertex->values), blockMesh.vertex_count * 3, (float *)(&blockMesh.normal->values), blockMesh.index, blockMesh.index_count, meshRequestNewMap[id], meshRequestUnchangedMap[id]);
+          meshBuffers[id] = MeshBuffer(transform, (float *)(&blockMesh.vertex->values), blockMesh.vertex_count * 3, (float *)(&blockMesh.normal->values), blockMesh.index, blockMesh.index_count);
         } else {
-          auto iter = meshBuffers.find(id);
-          if (iter != meshBuffers.end()) {
-            MeshBuffer *meshBuffer = &iter->second;
-            GLuint buffers[3] = {
-              meshBuffer->positionBuffer,
-              meshBuffer->normalBuffer,
-              meshBuffer->indexBuffer,
-            };
-            glDeleteBuffers(sizeof(buffers)/sizeof(buffers[0]), buffers);
-            meshBuffers.erase(iter);
-          }
+          meshBuffers.erase(id);
         }
       }
 
-      if (gl->HasBufferBinding(GL_ARRAY_BUFFER)) {
-        glBindBuffer(GL_ARRAY_BUFFER, gl->GetBufferBinding(GL_ARRAY_BUFFER));
-      } else {
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
+      // remove outranged mesh buffers
+      float range = getMaxRange();
+      std::vector<std::string> removedIds;
+      for (auto iter = meshBuffers.begin(); iter != meshBuffers.end(); iter++) {
+        const std::string &id = iter->first;
+        MeshBuffer &meshBuffer = iter->second;
+        float distance = distanceTo(mlContext->position, meshBuffer.transform.position);
+        if (distance > range) {
+          meshRequestRemovedMap[id] = true;
+          removedIds.push_back(id);
+        }
+      }
+      for (auto iter = removedIds.begin(); iter != removedIds.end(); iter++) {
+        meshBuffers.erase(*iter);
       }
 
       std::for_each(meshers.begin(), meshers.end(), [&](MLMesher *m) {

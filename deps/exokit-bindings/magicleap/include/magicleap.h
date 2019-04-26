@@ -154,21 +154,15 @@ public:
 
 class MeshBuffer {
 public:
-  MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint indexBuffer);
-  MeshBuffer(const MeshBuffer &meshBuffer);
   MeshBuffer();
-  void setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, bool isNew, bool isUnchanged);
+  MeshBuffer(MLTransform transform, float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices);
 
-  GLuint positionBuffer;
-  GLuint normalBuffer;
-  GLuint indexBuffer;
+  MLTransform transform;
   float *positions;
   uint32_t numPositions;
   float *normals;
   uint16_t *indices;
   uint16_t numIndices;
-  bool isNew;
-  bool isUnchanged;
 };
 
 enum class MLUpdateType {
@@ -182,7 +176,7 @@ class MLMesher : public ObjectWrap {
 public:
   static Local<Function> Initialize(Isolate *isolate);
 
-  MLMesher(Local<Object> windowObj, uv_loop_t *loop);
+  MLMesher(Local<Object> windowObj, uv_loop_t *loop, float range, MLMeshingLOD lod);
   ~MLMesher();
 
   static NAN_METHOD(New);
@@ -195,6 +189,8 @@ public:
 // protected:
   Nan::Persistent<Object> windowObj;
   uv_loop_t *loop;
+  float range;
+  MLMeshingLOD lod;
   Nan::Persistent<Function> cb;
 };
 
@@ -318,7 +314,7 @@ public:
   static NAN_METHOD(Exit);
   // static NAN_METHOD(WaitGetPoses);
   static NAN_METHOD(RequestGetPoses);
-  static NAN_METHOD(PrepareFrame);
+  // static NAN_METHOD(PrepareFrame);
   static NAN_METHOD(SubmitFrame);
   static NAN_METHOD(IsPresent);
   static NAN_METHOD(IsSimulated);
