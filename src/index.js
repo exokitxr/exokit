@@ -735,8 +735,8 @@ const _startTopRenderLoop = () => {
         xrState.leftFov[i] = Math.atan(localFovArray[i]) / Math.PI * 180;
       } */
     } else if (topVrPresentState.hmdType === 'magicleap') {
-      mlPresentState.mlHasPose = await new Promise((accept, reject) => {
-        mlPresentState.mlContext.RequestGetPoses(
+      topVrPresentState.mlHasPose = await new Promise((accept, reject) => {
+        topVrPresentState.vrContext.RequestGetPoses(
           transformArray,
           projectionArray,
           controllersArray,
@@ -747,7 +747,7 @@ const _startTopRenderLoop = () => {
         return;
       }
 
-      if (mlPresentState.mlHasPose) {
+      if (topVrPresentState.mlHasPose) {
         localVector.fromArray(transformArray, 0);
         localQuaternion.fromArray(transformArray, 3);
         localVector2.set(1, 1, 1);
@@ -845,9 +845,9 @@ const _startTopRenderLoop = () => {
       nativeBindings.nativeMl.Update(topVrPresentState.vrContext);
 
       /* // prepare magic leap frame
-      mlPresentState.mlContext.PrepareFrame(
+      topVrPresentState.vrContext.PrepareFrame(
         mlGlContext, // gl context for depth population
-        mlPresentState.mlFbo,
+        topVrPresentState.mlFbo,
         xrState.renderWidth[0]*2,
         xrState.renderHeight[0],
       ); */
