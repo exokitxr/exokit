@@ -599,6 +599,8 @@ if (bindings.nativeOculusVR) {
     const layer = layers.find(layer => layer && layer.source && layer.source.tagName === 'CANVAS');
     if (layer) {
       const canvas = layer.source;
+      const {vrPresentState} = GlobalContext;
+      
       if (!vrPresentState.glContext) {
         let context = canvas._context;
         if (!(context && context.constructor && context.constructor.name === 'WebGLRenderingContext')) {
