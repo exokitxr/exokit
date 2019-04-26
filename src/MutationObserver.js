@@ -1,4 +1,5 @@
 const {Node, NodeList} = require('./DOM');
+const {process} = global;
 
 const emptyNodeList = new NodeList();
 
