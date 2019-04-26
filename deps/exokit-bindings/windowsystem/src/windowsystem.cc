@@ -781,8 +781,6 @@ NAN_METHOD(ComposeLayers) {
             GLuint tex = TO_UINT32(framebufferObj->Get(JS_STR("tex")));
             GLuint depthTex = TO_UINT32(framebufferObj->Get(JS_STR("depthTex")));
 
-            std::cout << "reprojection" << std::endl;
-
             layers.push_back(LayerSpec{
               LayerType::IFRAME_3D_REPROJECT,
               width,
