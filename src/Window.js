@@ -1895,6 +1895,11 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       }
     }
 
+    if (window.document.framebuffer) {
+      const {msFbo, msTex, msDepthTex, copyMsFbo, copyMsTex, copyMsDepthTex} = window.document.framebuffer;
+      nativeWindow.copyRenderTarget(window.document.framebufferContext, window.document.framebufferContext.width, window.document.framebufferContext.height, msFbo, msTex, msDepthTex, copyMsFbo, copyMsTex, copyMsDepthTex);
+    }
+
     for (let i = 0; i < windows.length; i++) {
       const window = windows[i];
       if (window.phase === PHASES.COMPLETE) {

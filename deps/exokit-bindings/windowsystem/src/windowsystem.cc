@@ -369,7 +369,116 @@ void InitializeLocalGlState(WebGLRenderingContext *gl) {
 }
 
 constexpr GLint MAX_TEXTURE_SIZE = 4096;
-void CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint sharedColorTex, GLuint sharedDepthStencilTex, GLuint sharedMsColorTex, GLuint sharedMsDepthStencilTex, GLuint *pfbo, GLuint *pcolorTex, GLuint *pdepthStencilTex, GLuint *pmsFbo, GLuint *pmsColorTex, GLuint *pmsDepthStencilTex) {
+void CreateHiddenRenderTarget(WebGLRenderingContexxt *gl, int width, int height, GLuint *pmsFbo, GLuint *pmsColorTex, GLuint *pmsDepthStencilTex, GLuint *pCopyMsFbo, GLuint *pCopyMsColorTex, GLuint *pCopyMsDepthStencilTex) {
+  const int samples = 4;
+
+  GLuint &msFbo = *pmsFbo;
+  GLuint &msColorTex = *pmsColorTex;
+  GLuint &msDepthStencilTex = *pmsDepthStencilTex;
+  GLuint &copyMsFbo = *pCopyMsFbo;
+  GLuint &copyMsColorTex = *pCopyMsColorTex;
+  GLuint &copyMsDepthStencilTex = *pCopyMsDepthStencilTex;
+
+  // NOTE: we create statically sized multisample textures because we cannot resize them later
+  {
+    glGenFramebuffers(1, &msFbo);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, msFbo);
+
+    glGenTextures(1, &msDepthStencilTex);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
+#ifndef LUMIN
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_DEPTH24_STENCIL8, MAX_TEXTURE_SIZE, MAX_TEXTURE_SIZE/2, true);
+#else
+    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_DEPTH24_STENCIL8, MAX_TEXTURE_SIZE, MAX_TEXTURE_SIZE/2, true);
+#endif
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex, 0);
+
+    glGenTextures(1, &msColorTex);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msColorTex);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
+#ifndef LUMIN
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA8, MAX_TEXTURE_SIZE, MAX_TEXTURE_SIZE/2, true);
+#else
+    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA8, MAX_TEXTURE_SIZE, MAX_TEXTURE_SIZE/2, true);
+#endif
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, msColorTex, 0);
+    
+    glClear(GL_DEPTH_BUFFER_BIT); // initialize to far depth
+  }
+  {
+    glGenFramebuffers(1, &copyMsFbo);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, copyMsFbo);
+
+    glGenTextures(1, &copyMsDepthStencilTex);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, copyMsDepthStencilTex);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
+#ifndef LUMIN
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_DEPTH24_STENCIL8, MAX_TEXTURE_SIZE, MAX_TEXTURE_SIZE/2, true);
+#else
+    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_DEPTH24_STENCIL8, MAX_TEXTURE_SIZE, MAX_TEXTURE_SIZE/2, true);
+#endif
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex, 0);
+
+    glGenTextures(1, &copyMsColorTex);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, copyMsColorTex);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
+#ifndef LUMIN
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA8, MAX_TEXTURE_SIZE, MAX_TEXTURE_SIZE/2, true);
+#else
+    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA8, MAX_TEXTURE_SIZE, MAX_TEXTURE_SIZE/2, true);
+#endif
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, msColorTex, 0);
+    
+    glClear(GL_DEPTH_BUFFER_BIT); // initialize to far depth
+  }
+
+  if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
+  } else {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
+  }
+  if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D)) {
+    glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D));
+  } else {
+    glBindTexture(GL_TEXTURE_2D, 0);
+  }
+  if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D_MULTISAMPLE)) {
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D_MULTISAMPLE));
+  } else {
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+  }
+  if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_CUBE_MAP)) {
+    glBindTexture(GL_TEXTURE_CUBE_MAP, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_CUBE_MAP));
+  } else {
+    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+  }
+}
+
+NAN_METHOD(CreateHiddenRenderTarget) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
+  int width = TO_INT32(info[1]);
+  int height = TO_INT32(info[2]);
+
+  GLuint msFbo;
+  GLuint msColorTex;
+  GLuint msDepthStencilTex;
+  GLuint copyMsFbo;
+  GLuint copyMsColorTex;
+  GLuint copyMsDepthStencilTex;
+  CreateRenderTarget(gl, width, height, &msFbo, &msColorTex, &msDepthStencilTex, &copyMsFbo, &copyMsColorTex, &copyMsDepthStencilTex);
+
+  Local<Array> result = Array::New(Isolate::GetCurrent(), 6);
+  result->Set(0, JS_NUM(msFbo));
+  result->Set(1, JS_NUM(msColorTex));
+  result->Set(2, JS_NUM(msDepthStencilTex));
+  result->Set(3, JS_NUM(copyMsFbo));
+  result->Set(4, JS_NUM(copyMsColorTex));
+  result->Set(5, JS_NUM(copyMsDepthStencilTex));
+  info.GetReturnValue().Set(result);
+}
+
+void CreateRenderTarget(WebGLRenderingContexxt *gl, int width, int height, GLuint *pfbo, GLuint *pcolorTex, GLuint *pdepthStencilTex, GLuint *pmsFbo, GLuint *pmsColorTex, GLuint *pmsDepthStencilTex) {
   const int samples = 4;
 
   GLuint &fbo = *pfbo;
@@ -384,11 +493,7 @@ void CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint
     glGenFramebuffers(1, &msFbo);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, msFbo);
 
-    if (!sharedMsDepthStencilTex) {
-      glGenTextures(1, &msDepthStencilTex);
-    } else {
-      msDepthStencilTex = sharedMsDepthStencilTex;
-    }
+    glGenTextures(1, &msDepthStencilTex);
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex);
     glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
 #if !defined(ANDROID) && !defined(LUMIN)
@@ -398,11 +503,7 @@ void CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint
 #endif
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex, 0);
 
-    if (!sharedMsColorTex) {
-      glGenTextures(1, &msColorTex);
-    } else {
-      msColorTex = sharedMsColorTex;
-    }
+    glGenTextures(1, &msColorTex);
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msColorTex);
     glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
 #if !defined(ANDROID) && !defined(LUMIN)
@@ -418,22 +519,14 @@ void CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint
     glGenFramebuffers(1, &fbo);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
 
-    if (!sharedDepthStencilTex) {
-      glGenTextures(1, &depthStencilTex);
-    } else {
-      depthStencilTex = sharedDepthStencilTex;
-    }
+    glGenTextures(1, &depthStencilTex);
     glBindTexture(GL_TEXTURE_2D, depthStencilTex);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width, height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthStencilTex, 0);
 
-    if (!sharedColorTex) {
-      glGenTextures(1, &colorTex);
-    } else {
-      colorTex = sharedColorTex;
-    }
+    glGenTextures(1, &colorTex);
     glBindTexture(GL_TEXTURE_2D, colorTex);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
@@ -469,10 +562,6 @@ NAN_METHOD(CreateRenderTarget) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
   int width = TO_INT32(info[1]);
   int height = TO_INT32(info[2]);
-  GLuint sharedColorTex = TO_UINT32(info[3]);
-  GLuint sharedDepthStencilTex = TO_UINT32(info[4]);
-  GLuint sharedMsColorTex = TO_UINT32(info[5]);
-  GLuint sharedMsDepthStencilTex = TO_UINT32(info[6]);
 
   GLuint fbo;
   GLuint colorTex;
@@ -481,7 +570,7 @@ NAN_METHOD(CreateRenderTarget) {
   GLuint msColorTex;
   GLuint msDepthStencilTex;
 
-  CreateRenderTarget(gl, width, height, sharedColorTex, sharedDepthStencilTex, sharedMsColorTex, sharedMsDepthStencilTex, &fbo, &colorTex, &depthStencilTex, &msFbo, &msColorTex, &msDepthStencilTex);
+  CreateRenderTarget(gl, width, height, &fbo, &colorTex, &depthStencilTex, &msFbo, &msColorTex, &msDepthStencilTex);
 
   Local<Array> result = Array::New(Isolate::GetCurrent(), 6);
   result->Set(0, JS_NUM(fbo));
@@ -491,6 +580,10 @@ NAN_METHOD(CreateRenderTarget) {
   result->Set(4, JS_NUM(msColorTex));
   result->Set(5, JS_NUM(msDepthStencilTex));
   info.GetReturnValue().Set(result);
+}
+
+NAN_METHOD(ResizeHiddenRenderTarget) {
+  // nothing; we do not resize multisampled textures
 }
 
 NAN_METHOD(ResizeRenderTarget) {
@@ -551,6 +644,33 @@ NAN_METHOD(DestroyRenderTarget) {
     glDeleteTextures(1, &depthTex);
   } else {
     Nan::ThrowError("DestroyRenderTarget: invalid arguments");
+  }
+}
+
+NAN_METHOD(CopyRenderTarget) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
+  int width = TO_INT32(info[1]);
+  int height = TO_INT32(info[2]);
+  GLuint srcFbo = TO_UINT32(info[3]);
+  // GLuint srcMsColorTex = TO_UINT32(info[4]);
+  // GLuint srcMsDepthStencilTex = TO_UINT32(info[5]);
+  GLuint dstFbo = TO_UINT32(info[6]);
+  // GLuint dstMsColorTex = TO_UINT32(info[7]);
+  // GLuint dstMsDepthStencilTex = TO_UINT32(info[8]);
+
+  glBindFramebuffer(GL_READ_FRAMEBUFFER, srcFbo);
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dstFbo);
+  glCopyTexImage2D(GL_TEXTURE_2D_MULTISAMPLE, 0, GL_RGBA8, 0, 0, width, height, 0);
+
+  if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
+  } else {
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->defaultFramebuffer);
+  }
+  if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
+  } else {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
   }
 }
 
@@ -861,9 +981,12 @@ NAN_METHOD(SetEventLoop) {
 }
 
 void Decorate(Local<Object> target) {
+  Nan::SetMethod(target, "createHiddenRenderTarget", CreateHiddenRenderTarget);
   Nan::SetMethod(target, "createRenderTarget", CreateRenderTarget);
+  Nan::SetMethod(target, "resizeHiddenRenderTarget", ResizeHiddenRenderTarget);
   Nan::SetMethod(target, "resizeRenderTarget", ResizeRenderTarget);
   Nan::SetMethod(target, "destroyRenderTarget", DestroyRenderTarget);
+  Nan::SetMethod(target, "copyRenderTarget", CopyRenderTarget);
   Nan::SetMethod(target, "getSync", GetSync);
   Nan::SetMethod(target, "waitSync", WaitSync);
   Nan::SetMethod(target, "deleteSync", DeleteSync);

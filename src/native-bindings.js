@@ -246,13 +246,13 @@ const _onGl3DConstruct = (gl, canvas) => {
 
     const {hidden} = document;
     if (hidden) {
-      const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeWindow.createRenderTarget(gl, canvasWidth, canvasHeight, sharedColorTexture, sharedDepthStencilTexture, sharedMsColorTexture, sharedMsDepthStencilTexture);
+      const [msFbo, msTex, msDepthTex, copyMsFbo, copyMsTex, copyMsDepthTex] = nativeWindow.createHiddenRenderTarget(gl, canvasWidth, canvasHeight);
 
       gl.setDefaultFramebuffer(msFbo);
 
       gl.resize = (width, height) => { // XXX run these on the main thread
         nativeWindow.setCurrentWindowContext(windowHandle);
-        nativeWindow.resizeRenderTarget(gl, width, height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
+        nativeWindow.resizeHiddenRenderTarget(gl, width, height, msFbo, msTex, msDepthTex, copyMsFbo, copyMsTex, copyMsDepthTex);
         
         window.windowEmit('resize', {
           width,
@@ -264,21 +264,25 @@ const _onGl3DConstruct = (gl, canvas) => {
         msFbo,
         msTex,
         msDepthTex,
-        fbo,
-        tex,
-        depthTex,
+        copyMsFbo,
+        copyMsTex,
+        copyMsDepthTex,
       };
+      window.document.framebufferContext = gl;
       window.windowEmit('framebuffer', window.document.framebuffer);
       window.windowEmit('resize', {
         width: canvas.width,
         height: canvas.height,
       });
-    } else {
+    } /* else {
+      // not hidden so framebuffer is managed automatically
+      gl.setDefaultFramebuffer(0);
+
       gl.resize = (width, height) => {
         nativeWindow.setCurrentWindowContext(windowHandle);
         nativeWindow.resizeRenderTarget(gl, width, height, sharedFramebuffer, sharedColorTexture, sharedDepthStencilTexture, sharedMsFramebuffer, sharedMsColorTexture, sharedMsDepthStencilTexture);
       };
-    }
+    } */
 
     const ondomchange = () => {
       process.nextTick(() => { // show/hide synchronously emits events
