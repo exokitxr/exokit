@@ -3453,7 +3453,7 @@ NAN_METHOD(MLContext::RequestGetPoses) {
 
         bool frameOk = (result == MLResult_Ok);
         if (frameOk) {
-          GLuint fbo;
+          /* GLuint fbo;
           glGenFramebuffers(1, &fbo);
           glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
           for (int i = 0; i < 2; i++) {
@@ -3465,7 +3465,7 @@ NAN_METHOD(MLContext::RequestGetPoses) {
             }
             glClear(GL_COLOR_BUFFER_BIT);
           }
-          glDeleteFramebuffers(1, &fbo);
+          glDeleteFramebuffers(1, &fbo); */
           
           mlContext->TickFloor();
 
