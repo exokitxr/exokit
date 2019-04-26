@@ -94,7 +94,7 @@ const _onGl3DConstruct = (gl, canvas) => {
   })();
 
   if (windowSpec) {
-    const [windowHandle, sharedFramebuffer, sharedColorTexture, sharedDepthStencilTexture, sharedMsFramebuffer, sharedMsColorTexture, sharedMsDepthStencilTexture, vao] = windowSpec;
+    const [windowHandle, vao] = windowSpec;
 
     gl.setWindowHandle(windowHandle);
     gl.setDefaultVao(vao);

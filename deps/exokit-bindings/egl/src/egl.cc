@@ -243,12 +243,6 @@ NAN_METHOD(InitWindow3D) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[1]));
   
   SetCurrentWindowContext(windowHandle);
-  
-  GLuint framebuffers[2];
-  GLuint framebufferTextures[4];
-    
-  glGenFramebuffers(sizeof(framebuffers)/sizeof(framebuffers[0]), framebuffers);
-  glGenTextures(sizeof(framebufferTextures)/sizeof(framebufferTextures[0]), framebufferTextures);
 
   windowsystembase::InitializeLocalGlState(gl);
 
@@ -264,15 +258,9 @@ NAN_METHOD(InitWindow3D) {
   glEnable(GL_PROGRAM_POINT_SIZE);
 #endif
 
-  Local<Array> result = Nan::New<Array>(8);
+  Local<Array> result = Nan::New<Array>(2);
   result->Set(0, pointerToArray(windowHandle));
-  result->Set(1, JS_INT(framebuffers[0]));
-  result->Set(2, JS_INT(framebufferTextures[0]));
-  result->Set(3, JS_INT(framebufferTextures[1]));
-  result->Set(4, JS_INT(framebuffers[1]));
-  result->Set(5, JS_INT(framebufferTextures[2]));
-  result->Set(6, JS_INT(framebufferTextures[3]));
-  result->Set(7, JS_INT(vao));
+  result->Set(1, JS_INT(vao));
   info.GetReturnValue().Set(result);
 }
 
