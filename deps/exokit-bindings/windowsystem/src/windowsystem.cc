@@ -930,7 +930,6 @@ void Decorate(Local<Object> target) {
   Nan::SetMethod(target, "createRenderTarget", CreateRenderTarget);
   Nan::SetMethod(target, "resizeRenderTarget", ResizeRenderTarget);
   Nan::SetMethod(target, "destroyRenderTarget", DestroyRenderTarget);
-  Nan::SetMethod(target, "copyRenderTarget", CopyRenderTarget);
   Nan::SetMethod(target, "getSync", GetSync);
   Nan::SetMethod(target, "waitSync", WaitSync);
   Nan::SetMethod(target, "deleteSync", DeleteSync);

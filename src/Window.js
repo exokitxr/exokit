@@ -1254,12 +1254,6 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
           }
         }
       }
-
-      /* if (window.document.framebuffer) {
-        nativeWindow.setCurrentWindowContext(window.document.framebufferContext.getWindowHandle());
-        const {msFbo, msTex, msDepthTex, copyMsFbo, copyMsTex, copyMsDepthTex} = window.document.framebuffer;
-        nativeWindow.copyRenderTarget(window.document.framebufferContext, window.document.framebufferContext.canvas.width, window.document.framebufferContext.canvas.height, msFbo, msTex, msDepthTex, copyMsFbo, copyMsTex, copyMsDepthTex);
-      } */
     };
     const _renderChildren = async () => {
       let timeout;
