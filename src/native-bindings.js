@@ -609,7 +609,7 @@ if (bindings.nativeOculusVR) {
         const windowHandle = context.getWindowHandle();
         nativeBindings.nativeWindow.setCurrentWindowContext(windowHandle);
 
-        const system = vrPresentState.system = vrPresentState.system || bindings.nativeOculusVR.Oculus_Init();
+        const system = vrPresentState.oculusSystem || bindings.nativeOculusVR.Oculus_Init();
         const lmContext = vrPresentState.lmContext || (nativeBindings.nativeLm && new nativeBindings.nativeLm());
 
         const {width: halfWidth, height} = system.GetRecommendedRenderTargetSize();
