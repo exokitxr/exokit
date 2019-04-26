@@ -1140,7 +1140,7 @@ NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool v
       glfwWindowHint(GLFW_BLUE_BITS, 8);
       glfwWindowHint(GLFW_DEPTH_BITS, 24);
       glfwWindowHint(GLFW_REFRESH_RATE, 0);
-      glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, 0);
+      // glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, 0);
 
       glfwSetErrorCallback([](int err, const char *errString) {
         fprintf(stderr, "%s", errString);
