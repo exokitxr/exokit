@@ -44,7 +44,7 @@ private:
   static NAN_METHOD(New);
 
   static NAN_METHOD(RequestGetPoses);
-  static NAN_METHOD(WaitGetPoses);
+  // static NAN_METHOD(WaitGetPoses);
   static NAN_METHOD(Submit);
 
   /// Create a singleton reference to a constructor function.
