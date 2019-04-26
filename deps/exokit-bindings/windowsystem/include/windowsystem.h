@@ -80,7 +80,6 @@ void ComposeLayers(WebGLRenderingContext *gl, const std::vector<LayerSpec> &laye
 NAN_METHOD(ComposeLayers);
 uv_loop_t *GetEventLoop();
 NAN_METHOD(GetEventLoop);
-NAN_METHOD(SetEventLoop);
 void Decorate(Local<Object> target);
 
 }

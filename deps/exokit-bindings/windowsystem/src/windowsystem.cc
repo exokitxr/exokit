@@ -907,21 +907,11 @@ NAN_METHOD(ComposeLayers) {
   }
 }
 
-thread_local uv_loop_t *eventLoop;
 uv_loop_t *GetEventLoop() {
-  return eventLoop;
+  return node::GetCurrentEventLoop(Isolate::GetCurrent());
 }
 NAN_METHOD(GetEventLoop) {
   info.GetReturnValue().Set(pointerToArray(GetEventLoop()));
-}
-NAN_METHOD(SetEventLoop) {
-  if (info[0]->IsArray()) {
-    Local<Array> loopArray = Local<Array>::Cast(info[0]);
-    uv_loop_t *loop = (uv_loop_t *)arrayToPointer(loopArray);
-    eventLoop = loop;
-  } else {
-    Nan::ThrowError("WindowSystem::SetEventLoop: invalid arguments");
-  }
 }
 
 void Decorate(Local<Object> target) {
@@ -933,7 +923,6 @@ void Decorate(Local<Object> target) {
   Nan::SetMethod(target, "deleteSync", DeleteSync);
   Nan::SetMethod(target, "composeLayers", ComposeLayers);
   Nan::SetMethod(target, "getEventLoop", GetEventLoop);
-  Nan::SetMethod(target, "setEventLoop", SetEventLoop);
 }
 
 }
