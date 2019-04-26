@@ -651,16 +651,36 @@ NAN_METHOD(CopyRenderTarget) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
   int width = TO_INT32(info[1]);
   int height = TO_INT32(info[2]);
-  GLuint srcFbo = TO_UINT32(info[3]);
-  // GLuint srcMsColorTex = TO_UINT32(info[4]);
-  // GLuint srcMsDepthStencilTex = TO_UINT32(info[5]);
-  GLuint dstFbo = TO_UINT32(info[6]);
-  // GLuint dstMsColorTex = TO_UINT32(info[7]);
-  // GLuint dstMsDepthStencilTex = TO_UINT32(info[8]);
+  // GLuint srcFbo = TO_UINT32(info[3]);
+  GLuint srcMsColorTex = TO_UINT32(info[4]);
+  GLuint srcMsDepthStencilTex = TO_UINT32(info[5]);
+  // GLuint dstFbo = TO_UINT32(info[6]);
+  GLuint dstMsColorTex = TO_UINT32(info[7]);
+  GLuint dstMsDepthStencilTex = TO_UINT32(info[8]);
 
-  glBindFramebuffer(GL_READ_FRAMEBUFFER, srcFbo);
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dstFbo);
-  glCopyTexImage2D(GL_TEXTURE_2D_MULTISAMPLE, 0, GL_RGBA8, 0, 0, width, height, 0);
+  {
+    GLuint fbos[2];
+    glGenFramebuffers(2, fbos);
+
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, fbos[0]);
+    glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, srcMsColorTex, 0);
+    glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, srcMsDepthStencilTex, 0);
+
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbos[1]);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, dstMsColorTex, 0);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, dstMsDepthStencilTex, 0);
+
+    glBlitFramebuffer(
+      0, 0,
+      width, height,
+      0, 0,
+      width, height,
+      GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT,
+      GL_NEAREST
+    );
+
+    glDeleteFramebuffers(2, fbos);
+  }
 
   if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
     glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
