@@ -1401,7 +1401,7 @@ const _startRenderLoop = () => {
             const width = vrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1);
             const height = vrPresentState.glContext.canvas.height;
             const {width: dWidth, height: dHeight} = nativeWindow.getFramebufferSize(windowHandle);
-            nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, 0, width, height, dWidth, dHeight, true, false, false);
+            nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, width, height, dWidth, dHeight, true, false, false);
           } else if (oculusMobileVrPresentState.glContext === context && oculusMobileVrPresentState.hasPose) {
             if (oculusMobileVrPresentState.layers.length > 0) {
               const {oculusMobileVrDisplay} = window[symbols.mrDisplaysSymbol];
