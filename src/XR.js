@@ -49,24 +49,30 @@ class XRDevice {
     this.window = window; // non-standard
     this.session = null; // non-standard
 
+    this.onrequestpresent = null;
+    this.onmakeswapchain = null;
+    this.onexitpresent = null;
+    this.onrequestanimationframe = null;
+    
     this._layers = [];
   }
   supportsSession() {
     return Promise.resolve(null);
   }
-  requestSession({exclusive = false, outputContext = null} = {}) {
+  async requestSession({exclusive = false, outputContext = null} = {}) {
     if (!this.session) {
       const session = new XRSession({
         device: this,
         exclusive,
         outputContext,
       });
+      await this.onrequestpresent();
       session.once('end', () => {
         this.session = null;
       });
       this.session = session;
     }
-    return Promise.resolve(this.session);
+    return this.session;
   }
   get layers() {
     return this._layers;
@@ -88,8 +94,6 @@ class XRSession extends EventTarget {
     this.device = device;
     this.exclusive = exclusive;
     this.outputContext = outputContext;
-
-    this.baseLayer = null;
 
     this._frame = new XRPresentationFrame(this);
     this._frameOfReference = new XRFrameOfReference();
@@ -114,6 +118,7 @@ class XRSession extends EventTarget {
     this._lastPresseds = [false, false];
     this._rafs = [];
   }
+  
   get depthNear() {
     return GlobalContext.xrState.depthNear[0];
   }
@@ -334,6 +339,9 @@ module.exports.XRSession = XRSession;
 
 class XRWebGLLayer {
   constructor(session, context, options = {}) {
+    this.session = session;
+    this.context = context;
+    
     const {
       antialias = true,
       depth = false,
@@ -342,37 +350,17 @@ class XRWebGLLayer {
       multiview = false,
       framebufferScaleFactor = 1,
     } = options;
-
-    this.context = context;
-
     this.antialias = antialias;
     this.depth = depth;
     this.stencil = stencil;
     this.alpha = alpha;
     this.multiview = multiview;
 
-    const presentSpec = session.device.onrequestpresent ?
-      session.device.onrequestpresent([{
-        source: context.canvas,
-      }])
-    :
-      {
-        width: context.drawingBufferWidth,
-        height: context.drawingBufferHeight,
-        msFbo: null,
-        msTex: 0,
-        msDepthTex: 0,
-        fbo: null,
-        tex: 0,
-        depthTex: 0,
-      };
-    const {width, height, msFbo} = presentSpec;
-
-    this.framebuffer = msFbo !== null ? {
+    const {msFbo} = this.session.device.onmakeswapchain(context);
+    
+    this.framebuffer = {
       id: msFbo,
-    } : null;
-    this.framebufferWidth = width;
-    this.framebufferHeight = height;
+    };
   }
   getViewport(view) {
     return view._viewport;
@@ -380,6 +368,21 @@ class XRWebGLLayer {
   requestViewportScaling(viewportScaleFactor) {
     throw new Error('not implemented'); // XXX
   }
+  
+  get framebuffer() {
+    return this.session._framebuffer;
+  }
+  set framebuffer(framebuffer) {}
+  
+  get framebufferWidth() {
+    return xrState.renderWidth[0]*2;
+  }
+  set framebufferWidth(framebufferWidth) {}
+  
+  get framebufferHeight() {
+    return xrState.renderHeight[0];
+  }
+  set framebufferHeight(framebufferHeight) {}
 }
 module.exports.XRWebGLLayer = XRWebGLLayer;
 
