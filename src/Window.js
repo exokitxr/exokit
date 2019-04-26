@@ -1215,6 +1215,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       localCbs[i] = null;
     }
   };
+  let childSyncs = [];
   const _tickAnimationFrameRaf = type => async () => {
     const _renderLocal = async () => {
       if (rafCbs.length > 0) {
@@ -1282,7 +1283,10 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
         Promise.all(windows.map(window => window.promise)),
       ]);
       clearTimeout(timeout);
-      const childSyncs = windows.map(window => window.syncs || []).flat();
+      for (let i = 0; i < childSyncs.length; i++) {
+        nativeWindow.deleteSync(childSyncs[i]);
+      }
+      childSyncs = windows.map(window => window.syncs || []).flat();
       for (let i = 0; i < GlobalContext.contexts.length; i++) {
         const context = GlobalContext.contexts[i];
         if (context.d === 3) {
@@ -1292,9 +1296,6 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
             nativeWindow.waitSync(childSyncs[j]);
           }
         }
-      }
-      for (let i = 0; i < childSyncs.length; i++) {
-        nativeWindow.deleteSync(childSyncs[i]);
       }
       for (let i = 0; i < windows.length; i++) {
         const window = windows[i];
