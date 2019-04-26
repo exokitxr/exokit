@@ -2779,10 +2779,20 @@ const _bootFakeDisplay = async () => {
         renderer.vr.enabled = true;
         renderer.vr.setDevice(display);
         renderer.vr.setAnimationLoop(animate);
-      } else {
-        console.log('no vr displays');
-        await _bootFakeDisplay();
-      }
+
+        if (window.browser && window.browser.magicleap) {
+          window.browser.magicleap.RequestDepthPopulation(true);
+          // renderer.autoClearDepth = false;
+        }
+
+        _openUrl('tutorial.html');
+        _updateRigLists();
+
+        console.log('loaded root in XR');
+      });
+    } else {
+      console.log('no vr displays');
+      await _bootFakeDisplay();
     }
   } else {
     await _bootFakeDisplay();
