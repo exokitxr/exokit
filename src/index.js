@@ -1384,7 +1384,9 @@ const _startRenderLoop = () => {
             
             const width = vrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1);
             const height = vrPresentState.glContext.canvas.height;
-            nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, 0, width, height, width * window.devicePixelRatio, height * window.devicePixelRatio, true, false, false);
+            const dWidth = !isMac ? width / window.devicePixelRatio : width * window.devicePixelRatio;
+            const dHeight = !isMac ? height / window.devicePixelRatio : height * window.devicePixelRatio;
+            nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, 0, width, height, dWidth, dHeight, true, false, false);
           } else if (vrPresentState.glContext === context && vrPresentState.system && vrPresentState.hasPose) {
             if (vrPresentState.layers.length > 0) {
               const {openVRDisplay} = window[symbols.mrDisplaysSymbol];
@@ -1399,7 +1401,9 @@ const _startRenderLoop = () => {
 
             const width = vrPresentState.glContext.canvas.width * (args.blit ? 0.5 : 1);
             const height = vrPresentState.glContext.canvas.height;
-            nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, 0, width, height, width * window.devicePixelRatio, height * window.devicePixelRatio, true, false, false);
+            const dWidth = !isMac ? width / window.devicePixelRatio : width * window.devicePixelRatio;
+            const dHeight = !isMac ? height / window.devicePixelRatio : height * window.devicePixelRatio;
+            nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, 0, width, height, dWidth, dHeight, true, false, false);
           } else if (oculusMobileVrPresentState.glContext === context && oculusMobileVrPresentState.hasPose) {
             if (oculusMobileVrPresentState.layers.length > 0) {
               const {oculusMobileVrDisplay} = window[symbols.mrDisplaysSymbol];
@@ -1433,7 +1437,9 @@ const _startRenderLoop = () => {
 
             const width = context.canvas.width * (args.blit ? 0.5 : 1);
             const height = context.canvas.height;
-            nativeWindow.blitFrameBuffer(context, context.framebuffer.fbo, 0, width, height, width * window.devicePixelRatio, height * window.devicePixelRatio, true, false, false);
+            const dWidth = !isMac ? width / window.devicePixelRatio : width * window.devicePixelRatio;
+            const dHeight = !isMac ? height / window.devicePixelRatio : height * window.devicePixelRatio;
+            nativeWindow.blitFrameBuffer(context, context.framebuffer.fbo, 0, width, height, dWidth, dHeight, true, false, false);
           }
         }
 
