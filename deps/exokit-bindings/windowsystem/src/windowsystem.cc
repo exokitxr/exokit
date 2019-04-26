@@ -504,8 +504,6 @@ NAN_METHOD(ResizeRenderTarget) {
   GLuint msColorTex = TO_UINT32(info[7]);
   GLuint msDepthStencilTex = TO_UINT32(info[8]);
 
-  const int samples = 4;
-
   {
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
 
