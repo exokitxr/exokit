@@ -681,24 +681,24 @@ NAN_METHOD(GetSync) {
 }
 
 NAN_METHOD(WaitSync) {
-  if (info[0]->IsArray()) {
+  // if (info[0]->IsArray()) {
     Local<Array> syncArray = Local<Array>::Cast(info[0]);
     GLsync sync = (GLsync)arrayToPointer(syncArray);
     glWaitSync(sync, 0, GL_TIMEOUT_IGNORED);
     // glDeleteSync(sync);
-  } else {
+  /* } else {
     Nan::ThrowError("WaitSync: invalid arguments");
-  }
+  } */
 }
 
 NAN_METHOD(DeleteSync) {
-  if (info[0]->IsArray()) {
+  // if (info[0]->IsArray()) {
     Local<Array> syncArray = Local<Array>::Cast(info[0]);
     GLsync sync = (GLsync)arrayToPointer(syncArray);
     glDeleteSync(sync);
-  } else {
+  /* } else {
     Nan::ThrowError("DeleteSync: invalid arguments");
-  }
+  } */
 }
 
 void ComposeLayer(ComposeSpec *composeSpec, PlaneSpec *planeSpec, const LayerSpec &layer) {
