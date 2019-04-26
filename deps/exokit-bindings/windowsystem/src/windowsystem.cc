@@ -363,7 +363,7 @@ void CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint
   GLuint &msColorTex = *pmsColorTex;
   GLuint &msDepthStencilTex = *pmsDepthStencilTex;
 
-  // NOTE: we create statically sized multisample textures because we cannot resize them later
+  // NOTE: we create statically sized multisampled textures because we cannot resize them later
   {
     glGenFramebuffers(1, &msFbo);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, msFbo);
