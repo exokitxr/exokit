@@ -1259,7 +1259,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       const timeoutPromise = new Promise((accept, reject) => {
         timeout = setTimeout(() => {
           accept();
-        }, 1000/60);
+        }, 1000/60); // XXX make this timeout accurate
       });
       for (let i = 0; i < windows.length; i++) {
         const window = windows[i];
