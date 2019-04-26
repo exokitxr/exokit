@@ -369,7 +369,7 @@ void InitializeLocalGlState(WebGLRenderingContext *gl) {
 }
 
 constexpr GLint MAX_TEXTURE_SIZE = 4096;
-void CreateHiddenRenderTarget(WebGLRenderingContexxt *gl, int width, int height, GLuint *pmsFbo, GLuint *pmsColorTex, GLuint *pmsDepthStencilTex, GLuint *pCopyMsFbo, GLuint *pCopyMsColorTex, GLuint *pCopyMsDepthStencilTex) {
+void CreateHiddenRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint *pmsFbo, GLuint *pmsColorTex, GLuint *pmsDepthStencilTex, GLuint *pCopyMsFbo, GLuint *pCopyMsColorTex, GLuint *pCopyMsDepthStencilTex) {
   const int samples = 4;
 
   GLuint &msFbo = *pmsFbo;
@@ -402,7 +402,7 @@ void CreateHiddenRenderTarget(WebGLRenderingContexxt *gl, int width, int height,
 #else
     glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA8, MAX_TEXTURE_SIZE, MAX_TEXTURE_SIZE/2, true);
 #endif
-    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, msColorTex, 0);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, copyMsColorTex, 0);
     
     glClear(GL_DEPTH_BUFFER_BIT); // initialize to far depth
   }
@@ -418,7 +418,7 @@ void CreateHiddenRenderTarget(WebGLRenderingContexxt *gl, int width, int height,
 #else
     glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_DEPTH24_STENCIL8, MAX_TEXTURE_SIZE, MAX_TEXTURE_SIZE/2, true);
 #endif
-    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex, 0);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, copyMsDepthStencilTex, 0);
 
     glGenTextures(1, &copyMsColorTex);
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, copyMsColorTex);
@@ -466,19 +466,19 @@ NAN_METHOD(CreateHiddenRenderTarget) {
   GLuint copyMsFbo;
   GLuint copyMsColorTex;
   GLuint copyMsDepthStencilTex;
-  CreateRenderTarget(gl, width, height, &msFbo, &msColorTex, &msDepthStencilTex, &copyMsFbo, &copyMsColorTex, &copyMsDepthStencilTex);
+  CreateHiddenRenderTarget(gl, width, height, &msFbo, &msColorTex, &msDepthStencilTex, &copyMsFbo, &copyMsColorTex, &copyMsDepthStencilTex);
 
   Local<Array> result = Array::New(Isolate::GetCurrent(), 6);
-  result->Set(0, JS_NUM(msFbo));
-  result->Set(1, JS_NUM(msColorTex));
-  result->Set(2, JS_NUM(msDepthStencilTex));
-  result->Set(3, JS_NUM(copyMsFbo));
-  result->Set(4, JS_NUM(copyMsColorTex));
-  result->Set(5, JS_NUM(copyMsDepthStencilTex));
+  result->Set(0, JS_INT(msFbo));
+  result->Set(1, JS_INT(msColorTex));
+  result->Set(2, JS_INT(msDepthStencilTex));
+  result->Set(3, JS_INT(copyMsFbo));
+  result->Set(4, JS_INT(copyMsColorTex));
+  result->Set(5, JS_INT(copyMsDepthStencilTex));
   info.GetReturnValue().Set(result);
 }
 
-void CreateRenderTarget(WebGLRenderingContexxt *gl, int width, int height, GLuint *pfbo, GLuint *pcolorTex, GLuint *pdepthStencilTex, GLuint *pmsFbo, GLuint *pmsColorTex, GLuint *pmsDepthStencilTex) {
+void CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint *pfbo, GLuint *pcolorTex, GLuint *pdepthStencilTex, GLuint *pmsFbo, GLuint *pmsColorTex, GLuint *pmsDepthStencilTex) {
   const int samples = 4;
 
   GLuint &fbo = *pfbo;
@@ -573,12 +573,12 @@ NAN_METHOD(CreateRenderTarget) {
   CreateRenderTarget(gl, width, height, &fbo, &colorTex, &depthStencilTex, &msFbo, &msColorTex, &msDepthStencilTex);
 
   Local<Array> result = Array::New(Isolate::GetCurrent(), 6);
-  result->Set(0, JS_NUM(fbo));
-  result->Set(1, JS_NUM(colorTex));
-  result->Set(2, JS_NUM(depthStencilTex));
-  result->Set(3, JS_NUM(msFbo));
-  result->Set(4, JS_NUM(msColorTex));
-  result->Set(5, JS_NUM(msDepthStencilTex));
+  result->Set(0, JS_INT(fbo));
+  result->Set(1, JS_INT(colorTex));
+  result->Set(2, JS_INT(depthStencilTex));
+  result->Set(3, JS_INT(msFbo));
+  result->Set(4, JS_INT(msColorTex));
+  result->Set(5, JS_INT(msDepthStencilTex));
   info.GetReturnValue().Set(result);
 }
 
