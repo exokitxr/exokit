@@ -175,13 +175,13 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
     gl.setWindowHandle(windowHandle);
     gl.setDefaultVao(vao);
 
-    const nativeWindowSize = nativeWindow.getFramebufferSize(windowHandle);
+    /* const nativeWindowSize = nativeWindow.getFramebufferSize(windowHandle);
     const nativeWindowHeight = nativeWindowSize.height;
     const nativeWindowWidth = nativeWindowSize.width;
 
     // Tell DOM how large the window is.
     window.innerHeight = nativeWindowSize.height;
-    window.innerWidth = nativeWindowSize.width;
+    window.innerWidth = nativeWindowSize.width; */
 
     const title = `Exokit ${version}`;
     nativeWindow.setWindowTitle(windowHandle, title);
@@ -1169,13 +1169,13 @@ nativeBindings.nativeWindow.setEventHandler((type, data) => {
         break;
       }
       case 'framebufferResize': {
-        const {width, height} = data;
+        /* const {width, height} = data;
         innerWidth = width;
         innerHeight = height;
 
         window.innerWidth = innerWidth / window.devicePixelRatio;
         window.innerHeight = innerHeight / window.devicePixelRatio;
-        window.dispatchEvent(new window.Event('resize'));
+        window.dispatchEvent(new window.Event('resize')); */
         break;
       }
       case 'keydown': {
@@ -2096,8 +2096,8 @@ const _startRenderLoop = () => {
 let currentRenderLoop = _startRenderLoop();
 
 const _bindWindow = (window, newWindowCb) => {
-  window.innerWidth = innerWidth;
-  window.innerHeight = innerHeight;
+  // window.innerWidth = innerWidth;
+  // window.innerHeight = innerHeight;
 
   window.on('navigate', newWindowCb);
   window.document.on('paste', e => {
