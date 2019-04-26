@@ -815,9 +815,7 @@ NAN_METHOD(ComposeLayers) {
         if (JS_OBJ(elementObj->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLIFrameElement"))) {
           if (
             elementObj->Get(JS_STR("contentDocument"))->IsObject() &&
-            JS_OBJ(elementObj->Get(JS_STR("contentDocument")))->Get(JS_STR("framebuffer"))->IsObject() &&
-            elementObj->Get(JS_STR("contentWindow"))->IsObject() &&
-            TO_UINT32(JS_OBJ(elementObj->Get(JS_STR("contentWindow")))->Get(JS_STR("phase"))) == 4 // PHASES.COMPLETE
+            JS_OBJ(elementObj->Get(JS_STR("contentDocument")))->Get(JS_STR("framebuffer"))->IsObject()
           ) {
             layerType = LayerType::IFRAME_3D;
           } else if (elementObj->Get(JS_STR("browser"))->IsObject()) {
@@ -831,22 +829,24 @@ NAN_METHOD(ComposeLayers) {
 
         switch (layerType) {
           case LayerType::IFRAME_3D: {
-            Local<Object> framebufferObj = Local<Object>::Cast(JS_OBJ(elementObj->Get(JS_STR("contentDocument")))->Get(JS_STR("framebuffer")));
-            // GLuint tex = TO_UINT32(framebufferObj->Get(JS_STR("tex")));
-            // GLuint depthTex = TO_UINT32(framebufferObj->Get(JS_STR("depthTex")));
-            // GLuint msTex = TO_UINT32(framebufferObj->Get(JS_STR("msTex")));
-            // GLuint msDepthTex = TO_UINT32(framebufferObj->Get(JS_STR("msDepthTex")));
-            GLuint copyMsTex = TO_UINT32(framebufferObj->Get(JS_STR("copyMsTex")));
-            GLuint copyMsDepthTex = TO_UINT32(framebufferObj->Get(JS_STR("copyMsDepthTex")));
             Local<Object> windowObj = Local<Object>::Cast(elementObj->Get(JS_STR("contentWindow")));
             int width = TO_INT32(windowObj->Get(JS_STR("width")));
             int height = TO_INT32(windowObj->Get(JS_STR("height")));
+            GLuint msTex, msDepthTex;
+            Local<Object> framebufferObj = Local<Object>::Cast(JS_OBJ(elementObj->Get(JS_STR("contentDocument")))->Get(JS_STR("framebuffer")));
+            if (elementObj->Get(JS_STR("contentWindow"))->IsObject() && TO_UINT32(JS_OBJ(elementObj->Get(JS_STR("contentWindow")))->Get(JS_STR("phase"))) == 4) {
+              msTex = TO_UINT32(framebufferObj->Get(JS_STR("msTex")));
+              msDepthTex = TO_UINT32(framebufferObj->Get(JS_STR("msDepthTex")));
+            } else {
+              msTex = TO_UINT32(framebufferObj->Get(JS_STR("copyMsTex")));
+              msDepthTex = TO_UINT32(framebufferObj->Get(JS_STR("copyMsDepthTex")));
+            }
 
             layers.push_back(LayerSpec{
               width,
               height,
-              copyMsTex,
-              copyMsDepthTex,
+              msTex,
+              msDepthTex,
               0,
               0,
               {nullptr,nullptr},
