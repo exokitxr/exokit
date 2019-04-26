@@ -16,7 +16,7 @@ public:
 
   void RequestPresent();
   static void handleAppCmd(struct android_app *app, int32_t cmd);
-  void CreateSwapChain(WebGLRenderingContext *gl, int width, int height);
+  void CreateSwapChain(int width, int height);
   void PollEvents(bool wait);
 
   static NAN_METHOD(New);

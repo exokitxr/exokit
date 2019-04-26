@@ -133,12 +133,8 @@ void OculusMobileContext::RequestPresent() {
   }
 }
 
-void OculusMobileContext::CreateSwapChain(WebGLRenderingContext *gl, int width, int height) {
+void OculusMobileContext::CreateSwapChain(int width, int height) {
   OculusMobileContext *oculusMobileContext = this;
-  /* Local<Object> oculusMobileContextObj = info.This();
-  OculusMobileContext *oculusMobileContext = ObjectWrap::Unwrap<OculusMobileContext>(oculusMobileContextObj);
-  int width = TO_INT32(info[0]);
-  int height = TO_INT32(info[1]); */
 
   // destroy old swap chain
   if (oculusMobileContext->hasSwapChain) {
@@ -384,14 +380,13 @@ NAN_METHOD(OculusMobileContext::GetRecommendedRenderTargetSize) {
 NAN_METHOD(OculusMobileContext::Submit) {
   Local<Object> oculusMobileContextObj = info.This();
   OculusMobileContext *oculusMobileContext = ObjectWrap::Unwrap<OculusMobileContext>(oculusMobileContextObj);
-  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
-  GLuint fboIdSource = TO_UINT32(info[1]);
-  int width = TO_INT32(info[2]);
-  int height = TO_INT32(info[3]);
+  GLuint fboIdSource = TO_UINT32(info[0]);
+  int width = TO_INT32(info[1]);
+  int height = TO_INT32(info[2]);
   int halfWidth = width/2;
 
   if (!oculusMobileContext->hasSwapChain || halfWidth != oculusMobileContext->swapChainMetrics[0] || height != oculusMobileContext->swapChainMetrics[1]) {
-    oculusMobileContext->CreateSwapChain(gl, halfWidth, height);
+    oculusMobileContext->CreateSwapChain(halfWidth, height);
   }
 
   glBindFramebuffer(GL_READ_FRAMEBUFFER, fboIdSource);
@@ -435,16 +430,6 @@ NAN_METHOD(OculusMobileContext::Submit) {
   vrapi_SubmitFrame2(oculusMobileContext->ovrState, &frameDesc);
 
   oculusMobileContext->swapChainIndex = (oculusMobileContext->swapChainIndex + 1) % oculusMobileContext->swapChainLength;
-
-  if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D)) {
-    glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D));
-  }
-  if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
-  }
-  if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
-  }
 }
 
 void OculusMobileContext::Destroy() {
@@ -454,10 +439,6 @@ void OculusMobileContext::Destroy() {
     for (int eye = 0; eye < VRAPI_FRAME_LAYER_EYE_MAX; eye++) {
       vrapi_DestroyTextureSwapChain(oculusMobileContext->swapChains[eye]);
     }
-  }
-
-  if (oculusMobileContext->fboId != 0) {
-    glDeleteFramebuffers(1, &oculusMobileContext->fboId);
   }
 }
 
