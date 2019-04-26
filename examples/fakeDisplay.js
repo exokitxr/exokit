@@ -31,16 +31,6 @@ window._makeFakeDisplay = () => {
       renderer.vr.setDevice(fakeDisplay);
       renderer.vr.setAnimationLoop(animate);
     }
-
-    const context = renderer.getContext();
-    const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = window.browser.createRenderTarget(context, canvas.width, canvas.height, 0, 0, 0, 0);
-    context.setDefaultFramebuffer(msFbo);
-    canvas.framebuffer = {
-      msTex,
-      msDepthTex,
-      tex,
-      depthTex,
-    };
   };
 
   return fakeDisplay;
