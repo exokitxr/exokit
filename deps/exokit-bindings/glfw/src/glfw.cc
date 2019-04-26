@@ -11,11 +11,7 @@ std::mutex windowHandleMutex;
 NATIVEwindow *sharedWindow = nullptr;
 std::map<NATIVEwindow *, EventHandler *> eventHandlerMap;
 std::map<uv_async_t *, EventHandler *> eventHandlerMap2;
-#ifndef TARGET_OS_MAC
-std::map<NATIVEwindow *, InjectionHandler *> injectionHandlerMap;
-#else
 InjectionHandler mainThreadInjectionHandler;
-#endif
 std::mutex eventHandlerMapMutex;
 std::mutex injectionHandlerMapMutex;
 int lastX = 0, lastY = 0; // XXX track this per-window
@@ -56,11 +52,7 @@ EventHandler::~EventHandler() {
   });
 }
 
-InjectionHandler::InjectionHandler()
-#ifndef TARGET_OS_MAC
-  : live(true)
-#endif
-  {}
+InjectionHandler::InjectionHandler() {}
 
 GLFWmonitor* _activeMonitor;
 GLFWmonitor* getMonitor() {
@@ -153,34 +145,86 @@ void QueueEvent(NATIVEwindow *window, std::function<void(std::function<void(int,
   }
 }
 
-#ifndef TARGET_OS_MAC
-void QueueInjection(NATIVEwindow *window, std::function<void(InjectionHandler *injectionHandler)> fn) {
-  InjectionHandler *injectionHandler;
-  {
-    std::lock_guard<std::mutex> lock(injectionHandlerMapMutex);
+bool glfwInitialized = false;
+void initializeGlfw() {
+  glewExperimental = GL_TRUE;
 
-    auto iter = injectionHandlerMap.find(window);
-    if (iter != injectionHandlerMap.end()) {
-      injectionHandler = iter->second;
-      injectionHandler->fns.push_back(fn);
-    } else {
-      injectionHandler = nullptr;
-    }
-  }
+  if (glfwInit() == GLFW_TRUE) {
+    atexit([]() {
+      glfwTerminate();
+    });
 
-  if (injectionHandler) {
-    glfwPostEmptyEvent();
+    glfwDefaultWindowHints();
+
+    // we use OpenGL 2.1, GLSL 1.20. Comment this for now as this is for GLSL 1.50
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    glfwWindowHint(GLFW_RESIZABLE, 1);
+    glfwWindowHint(GLFW_VISIBLE, 1);
+    glfwWindowHint(GLFW_DECORATED, 1);
+    glfwWindowHint(GLFW_RED_BITS, 8);
+    glfwWindowHint(GLFW_GREEN_BITS, 8);
+    glfwWindowHint(GLFW_BLUE_BITS, 8);
+    glfwWindowHint(GLFW_DEPTH_BITS, 24);
+    glfwWindowHint(GLFW_REFRESH_RATE, 0);
+    glfwWindowHint(GLFW_CONTEXT_RELEASE_BEHAVIOR, GLFW_RELEASE_BEHAVIOR_NONE);
+
+    glfwSetErrorCallback([](int err, const char *errString) {
+      fprintf(stderr, "GLFW error: %d: %s", err, errString);
+    });
+  } else {
+    exerr << "Failed to initialize GLFW" << std::endl;
+    abort();
   }
 }
-#else
+void handleInjections() {
+  std::lock_guard<std::mutex> lock(injectionHandlerMapMutex);
+
+  for (auto iter = mainThreadInjectionHandler.fns.begin(); iter != mainThreadInjectionHandler.fns.end(); iter++) {
+    std::function<void(InjectionHandler *)> &fn = *iter;
+    fn(&mainThreadInjectionHandler);
+  }
+  mainThreadInjectionHandler.fns.clear();
+}
 void QueueInjection(NATIVEwindow *window, std::function<void(InjectionHandler *injectionHandler)> fn) {
+  if (!glfwInitialized) {
+#ifndef TARGET_OS_MAC
+    uv_sem_t sem;
+    uv_sem_init(&sem, 0);
+
+    std::thread([&]() -> void {
+      initializeGlfw();
+
+      uv_sem_post(&sem);
+
+      for (;;) {
+        glfwWaitEvents();
+
+        handleInjections();
+      }
+    }).detach();
+
+    uv_sem_wait(&sem);
+    uv_sem_destroy(&sem);
+#else
+    initializeGlfw();
+#endif
+
+    glfwInitialized = true;
+  }
+
   {
     std::lock_guard<std::mutex> lock(injectionHandlerMapMutex);
 
     mainThreadInjectionHandler.fns.push_back(fn);
   }
-}
+
+#ifndef TARGET_OS_MAC
+  glfwPostEmptyEvent();
 #endif
+}
 
 // Window callbacks handling
 void APIENTRY windowPosCB(NATIVEwindow *window, int xpos, int ypos) {
@@ -908,44 +952,7 @@ NAN_METHOD(SetFullscreen) {
   });
 }
 
-bool glfwInitialized = false;
 NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool visible) {
-  if (!glfwInitialized) {
-    glewExperimental = GL_TRUE;
-
-    if (glfwInit() == GLFW_TRUE) {
-      atexit([]() {
-        glfwTerminate();
-      });
-
-      glfwDefaultWindowHints();
-
-      // we use OpenGL 2.1, GLSL 1.20. Comment this for now as this is for GLSL 1.50
-      glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-      glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-      glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-      glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-      glfwWindowHint(GLFW_RESIZABLE, 1);
-      glfwWindowHint(GLFW_VISIBLE, 1);
-      glfwWindowHint(GLFW_DECORATED, 1);
-      glfwWindowHint(GLFW_RED_BITS, 8);
-      glfwWindowHint(GLFW_GREEN_BITS, 8);
-      glfwWindowHint(GLFW_BLUE_BITS, 8);
-      glfwWindowHint(GLFW_DEPTH_BITS, 24);
-      glfwWindowHint(GLFW_REFRESH_RATE, 0);
-      glfwWindowHint(GLFW_CONTEXT_RELEASE_BEHAVIOR, GLFW_RELEASE_BEHAVIOR_NONE);
-
-      glfwSetErrorCallback([](int err, const char *errString) {
-        fprintf(stderr, "GLFW error: %d: %s", err, errString);
-      });
-
-      glfwInitialized = true;
-    } else {
-      exerr << "Failed to initialize GLFW" << std::endl;
-      abort();
-    }
-  }
-
   glfwWindowHint(GLFW_VISIBLE, visible);
 
   {
@@ -1015,89 +1022,47 @@ NAN_METHOD(CreateWindowHandle) {
 
   uv_sem_t sem;
   uv_sem_init(&sem, 0);
-#ifndef TARGET_OS_MAC
-  std::thread([&]() -> void {
-#else
+
   QueueInjection(nullptr, [&](InjectionHandler *injectionHandler) -> void {
-#endif
     windowHandle = CreateNativeWindow(width, height, initialVisible);
 
-    if (windowHandle) {
-      SetCurrentWindowContext(windowHandle);
+    SetCurrentWindowContext(windowHandle);
 
-      GLenum err = glewInit();
-      if (!err) {
-        glfwSwapInterval(0);
+    GLenum err = glewInit();
+    if (!err) {
+      glfwSwapInterval(0);
 
-        glfwSetInputMode(windowHandle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+      glfwSetInputMode(windowHandle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
-        // window callbacks
-        glfwSetWindowPosCallback(windowHandle, windowPosCB);
-        glfwSetWindowSizeCallback(windowHandle, windowSizeCB);
-        glfwSetWindowCloseCallback(windowHandle, windowCloseCB);
-        glfwSetWindowRefreshCallback(windowHandle, windowRefreshCB);
-        glfwSetWindowFocusCallback(windowHandle, windowFocusCB);
-        glfwSetWindowIconifyCallback(windowHandle, windowIconifyCB);
-        glfwSetFramebufferSizeCallback(windowHandle, windowFramebufferSizeCB);
-        glfwSetDropCallback(windowHandle, windowDropCB);
+      // window callbacks
+      glfwSetWindowPosCallback(windowHandle, windowPosCB);
+      glfwSetWindowSizeCallback(windowHandle, windowSizeCB);
+      glfwSetWindowCloseCallback(windowHandle, windowCloseCB);
+      glfwSetWindowRefreshCallback(windowHandle, windowRefreshCB);
+      glfwSetWindowFocusCallback(windowHandle, windowFocusCB);
+      glfwSetWindowIconifyCallback(windowHandle, windowIconifyCB);
+      glfwSetFramebufferSizeCallback(windowHandle, windowFramebufferSizeCB);
+      glfwSetDropCallback(windowHandle, windowDropCB);
 
-        // input callbacks
-        glfwSetKeyCallback(windowHandle, keyCB);
-        glfwSetMouseButtonCallback(windowHandle, mouseButtonCB);
-        glfwSetCursorPosCallback(windowHandle, cursorPosCB);
-        glfwSetCursorEnterCallback(windowHandle, cursorEnterCB);
-        glfwSetScrollCallback(windowHandle, scrollCB);
-      } else {
-        /* Problem: glewInit failed, something is seriously wrong. */
-        exerr << "Can't init GLEW (glew error " << (const char *)glewGetErrorString(err) << ")" << std::endl;
+      // input callbacks
+      glfwSetKeyCallback(windowHandle, keyCB);
+      glfwSetMouseButtonCallback(windowHandle, mouseButtonCB);
+      glfwSetCursorPosCallback(windowHandle, cursorPosCB);
+      glfwSetCursorEnterCallback(windowHandle, cursorEnterCB);
+      glfwSetScrollCallback(windowHandle, scrollCB);
+    } else {
+      /* Problem: glewInit failed, something is seriously wrong. */
+      exerr << "Can't init GLEW (glew error " << (const char *)glewGetErrorString(err) << ")" << std::endl;
 
-        DestroyNativeWindow(windowHandle);
+      DestroyNativeWindow(windowHandle);
 
-        windowHandle = nullptr;
-      }
-
-      SetCurrentWindowContext(nullptr);
+      windowHandle = nullptr;
     }
 
-#ifndef TARGET_OS_MAC
-    InjectionHandler *injectionHandler;
-    {
-      std::lock_guard<std::mutex> lock(injectionHandlerMapMutex);
-
-      injectionHandler = new InjectionHandler();
-      injectionHandlerMap[windowHandle] = injectionHandler;
-    }
-#endif
+    SetCurrentWindowContext(nullptr);
 
     uv_sem_post(&sem);
-
-#ifndef TARGET_OS_MAC
-    for (;;) {
-      glfwWaitEvents();
-
-      {
-        std::lock_guard<std::mutex> lock(injectionHandlerMapMutex);
-
-        if (injectionHandler->fns.size() > 0) {
-          for (auto iter = injectionHandler->fns.begin(); injectionHandler->live && iter != injectionHandler->fns.end(); iter++) {
-            std::function<void(InjectionHandler *)> &fn = *iter;
-            fn(injectionHandler);
-          }
-          injectionHandler->fns.clear();
-
-          if (!injectionHandler->live) {
-            break;
-          }
-        }
-      }
-    }
-
-    injectionHandlerMap.erase(windowHandle);
-    delete injectionHandler;
-  }).detach();
-#else
   });
-#endif
   uv_sem_wait(&sem);
   uv_sem_destroy(&sem);
 
@@ -1120,10 +1085,6 @@ NAN_METHOD(DestroyWindowHandle) {
     eventHandlerMap.erase(window);
     eventHandlerMap2.erase(handler->async.get());
     delete handler;
-
-#ifndef TARGET_OS_MAC
-    injectionHandler->live = false;
-#endif
   });
   uv_sem_wait(&sem);
   uv_sem_destroy(&sem);
@@ -1222,15 +1183,7 @@ NAN_METHOD(SetClipboard) {
 NAN_METHOD(PollEvents) {
   glfwPollEvents();
 
-  {
-    std::lock_guard<std::mutex> lock(injectionHandlerMapMutex);
-
-    for (auto iter = mainThreadInjectionHandler.fns.begin(); iter != mainThreadInjectionHandler.fns.end(); iter++) {
-      std::function<void(InjectionHandler *)> &fn = *iter;
-      fn(&mainThreadInjectionHandler);
-    }
-    mainThreadInjectionHandler.fns.clear();
-  }
+  handleInjections();
 }
 #endif
 

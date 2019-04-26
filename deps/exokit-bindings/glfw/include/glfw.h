@@ -42,9 +42,6 @@ namespace glfw {
   public:
     InjectionHandler();
 
-#ifndef TARGET_OS_MAC
-    bool live;
-#endif
     std::deque<std::function<void(InjectionHandler *injectionHandler)>> fns;
   };
   
