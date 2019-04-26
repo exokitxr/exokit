@@ -1030,9 +1030,11 @@ NAN_METHOD(CreateWindowHandle) {
 
     GLenum err = glewInit();
     if (!err) {
+      // swap interval
       glfwSwapInterval(0);
 
-      glfwSetInputMode(windowHandle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+      // input mode
+      // glfwSetInputMode(windowHandle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
       // window callbacks
       glfwSetWindowPosCallback(windowHandle, windowPosCB);
