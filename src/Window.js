@@ -426,7 +426,15 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
 
   window.innerWidth = defaultCanvasSize[0];
   window.innerHeight = defaultCanvasSize[1];
-  window.devicePixelRatio = 1;
+  Object.defineProperty(window, 'devicePixelRatio', {
+    get() {
+      if (!GlobalContext.xrState.devicePixelRatio[0]) {
+        GlobalContext.xrState.devicePixelRatio[0] = nativeWindow.getDevicePixelRatio();
+      }
+      return GlobalContext.xrState.devicePixelRatio[0];
+    },
+    set(devicePixelRatio) {},
+  });
   window.document = null;
   const location = new Location(options.url);
   Object.defineProperty(window, 'location', {

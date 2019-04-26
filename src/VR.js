@@ -381,8 +381,8 @@ class FakeVRDisplay extends VRDisplay {
 
   requestPresent(layers) {
     return Promise.resolve().then(() => {
-      GlobalContext.xrState.renderWidth[0] = this.window.innerWidth * this.window.devicePixelRatio / 2;
-      GlobalContext.xrState.renderHeight[0] = this.window.innerHeight * this.window.devicePixelRatio;
+      GlobalContext.xrState.renderWidth[0] = this.window.innerWidth / 2;
+      GlobalContext.xrState.renderHeight[0] = this.window.innerHeight;
 
       if (this.onrequestpresent) {
         this.onrequestpresent(layers);
@@ -411,8 +411,8 @@ class FakeVRDisplay extends VRDisplay {
   requestSession({exclusive = true} = {}) {
     const self = this;
 
-    GlobalContext.xrState.renderWidth[0] = this.window.innerWidth * this.window.devicePixelRatio / 2;
-    GlobalContext.xrState.renderHeight[0] = this.window.innerHeight * this.window.devicePixelRatio;
+    GlobalContext.xrState.renderWidth[0] = this.window.innerWidth / 2;
+    GlobalContext.xrState.renderHeight[0] = this.window.innerHeight;
 
     const session = {
       addEventListener(e, fn) {
