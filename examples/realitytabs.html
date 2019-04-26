@@ -2789,10 +2789,10 @@ const _bootFakeDisplay = async () => {
         _updateRigLists();
 
         console.log('loaded root in XR');
-      });
-    } else {
-      console.log('no vr displays');
-      await _bootFakeDisplay();
+      } else {
+        console.log('no vr displays');
+        await _bootFakeDisplay();
+      }
     }
   } else {
     await _bootFakeDisplay();
