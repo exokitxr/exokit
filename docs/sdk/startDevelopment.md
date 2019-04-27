@@ -12,7 +12,6 @@ The main project repository is at [`exokitxr/exokit`](https://github.com/exokitx
 git clone https://github.com/exokitxr/exokit.git
 ```
 
-> Note: Exokit Engine and Exokit Browser both run off of the same codebase.
 
 ## Install and build
 
