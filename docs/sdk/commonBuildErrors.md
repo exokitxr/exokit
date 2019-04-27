@@ -17,3 +17,6 @@ rm -rf node_modules
 npm cache clean
 ```
 
+### `<SkImage.h> not found`, or a missing header
+
+This means a prebuilt dependency did not extract. Clear your `npm`/`yarn` cache, `rm -Rf node_modules` and `npm install` again.
