@@ -79,6 +79,11 @@ const rightControllerQuaternionArray4 = new Float32Array(4);
 // oculus mobile
 const oculusMobilePoseFloat32Array = new Float32Array(3 + 4 + 1 + 4 + (16*2) + (16*2) + (16+5) + (16+5));
 
+// magic leap
+const transformArray = new Float32Array(7 * 2);
+const projectionArray = new Float32Array(16 * 2);
+const controllersArray = new Float32Array((1 + 3 + 4 + 6) * 2);
+
 const args = (() => {
   if (require.main === module) {
     const minimistArgs = minimist(process.argv.slice(2), {
