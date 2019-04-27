@@ -3533,13 +3533,13 @@ NAN_METHOD(MLContext::SubmitFrame) {
       if (result != MLResult_Ok) {
         ML_LOG(Error, "MLGraphicsSignalSyncObjectGL complained: %d", result);
       }
-      
-      result = MLGraphicsEndFrame(application_context.mlContext->graphics_client, application_context.mlContext->frame_handle);
-      if (result != MLResult_Ok) {
-        ML_LOG(Error, "MLGraphicsEndFrame complained: %d", result);
-      }
     }
-    
+
+    MLResult result = MLGraphicsEndFrame(application_context.mlContext->graphics_client, application_context.mlContext->frame_handle);
+    if (result != MLResult_Ok) {
+      ML_LOG(Error, "MLGraphicsEndFrame complained: %d", result);
+    }
+
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     
     /* if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
