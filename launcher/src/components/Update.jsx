@@ -23,9 +23,9 @@ class Update extends React.Component {
             });
     }
 
-    postMessage(){
+    postMessage(action){
         window.postMessage({
-            message: 'update'
+            action: action
         })
     }
 
@@ -51,7 +51,7 @@ class Update extends React.Component {
                         <div className="progress-bar progress-bar-striped progress-bar-animated w-75" role="progressbar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
                     </div>
                     <br/>
-                    <button onClick={() => this.postMessage()} type="button" className="btn btn-primary btn-lg m-2">Update</button>
+                    <button onClick={() => this.postMessage('update')} type="button" className="btn btn-primary btn-lg m-2">Update</button>
                 </div>
                 <div className="col-lg-1 col-md-1 col-sm-1 col-xs-1">
                 </div>
