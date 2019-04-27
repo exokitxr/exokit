@@ -380,7 +380,7 @@ const _startTopRenderLoop = () => {
         topVrPresentState.vrContext = new nativeBindings.nativeMl();
         topVrPresentState.vrContext.Present(topVrPresentState.windowHandle);
 
-        const {width: halfWidth, height} = topVrPresentState.vrContext.vrContext.GetSize();
+        const {width: halfWidth, height} = topVrPresentState.vrContext.GetSize();
         const width = halfWidth * 2;
         
         const [fbo, tex, depthTex] = nativeBindings.nativeWindow.createVrTopRenderTarget(width, height);
