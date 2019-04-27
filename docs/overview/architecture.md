@@ -18,8 +18,6 @@ The hardware-dependent parts are implemented as native bindings to Javascript. E
 
 ## Embeddability
 
-Exokit Engine runs on Windows, OSX, and Linux.
-
 You can `require('exokit')` into another Javascript environment.
 
 As far as the operating system is concerned, Exokit is a game. You can link Exokit to other apps such as webcam software, the Magic Leap simulator, and more.
