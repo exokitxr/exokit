@@ -10,7 +10,24 @@ examples: []
 
 Here are the main web specifications and third-party libraries implemented in Exokit.
 
-| Tech          | Web or Native API     | Spec  | Source |
+## Web
+
+| Tech          | Type     | Spec  | Source |
+| ------------- |:-------------:|:-----:|-------:|
+| WebVR      | Spec | [WebVR](https://developer.mozilla.org/en-US/docs/Web/API/WebVR_API) | [Source](https://github.com/exokitxr/exokit/blob/master/src/core.js) |
+| WebXR      | Spec | [WebXR](https://github.com/immersive-web/webxr) | [Source](https://github.com/exokitxr/exokit/blob/master/src/XR.js ) |
+| React      | Library | [React](https://reactjs.org/docs/getting-started.html) | [Source](https://github.com/exokitxr/exokit/blob/master/src/core.js) |
+| HTML5      | Spec  | [HTML5](https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/HTML5)  | [Source](https://github.com/exokitxr/exokit/blob/master/src/core.js) |
+| CSS        | Spec  | [CSS](https://developer.mozilla.org/en-US/docs/Web/CSS) | [Source](https://github.com/exokitxr/exokit/blob/master/src/core.js) |
+| THREE.js   | Library  | [THREE.js](https://threejs.org/docs/) | [Source](https://github.com/exokitxr/exokit/blob/master/lib/three-min.js ) |
+| Express    | Library  | [Express](https://expressjs.com/en/api.html) | [Source](https://github.com/exokitxr/exokit/blob/master/src/core.js) |
+| WebSockets | Spec  | [WebSockets](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API) | [Source](https://github.com/exokitxr/exokit/blob/master/src/core.js) |
+| FetchAPI   | Spec  | [Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API) | [Source](https://github.com/exokitxr/exokit/blob/master/src/core.js) |
+| Web Workers| Spec  | [Web Workers](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API) | [Source](https://github.com/exokitxr/exokit/blob/master/src/core.js) |
+
+## Native 
+
+| Tech          | Type     | Spec  | Source |
 | ------------- |:-------------:|:-----:|-------:|
 | WebVR      | Web | [WebVR](https://developer.mozilla.org/en-US/docs/Web/API/WebVR_API) | [Source](https://github.com/exokitxr/exokit/blob/master/src/core.js) |
 | WebXR      | Web | [WebXR](https://github.com/immersive-web/webxr) | [Source](https://github.com/exokitxr/exokit/blob/master/src/XR.js ) |
