@@ -3300,7 +3300,7 @@ NAN_METHOD(MLContext::Exit) {
 } */
 
 NAN_METHOD(MLContext::WaitGetPoses) {  
-  if (info[0]->IsFloat32Array() && info[1]->IsFloat32Array() && info[2]->IsFloat32Array() && info[3]->IsFunction()) {
+  if (info[0]->IsFloat32Array() && info[1]->IsFloat32Array() && info[2]->IsFloat32Array()) {
     MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
     Local<Float32Array> transformFloat32Array = Local<Float32Array>::Cast(info[0]);
     Local<Float32Array> projectionFloat32Array = Local<Float32Array>::Cast(info[1]);
