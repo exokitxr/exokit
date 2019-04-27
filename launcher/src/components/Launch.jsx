@@ -14,9 +14,9 @@ class Launch extends React.Component {
       };
     }
 
-    postMessage(){
+    postMessage(action){
         window.postMessage({
-            action: 'launch',
+            action: action,
             flags: this.state.flags,
             url: this.state.url
         })
@@ -50,7 +50,7 @@ class Launch extends React.Component {
                         <div className="form-group">
                             <input onChange={(e) => this.handleURLChange(e)} type="text" className="form-control" id="urlInput" placeholder="Enter URL"/>
                         </div>
-                        <button onClick={() => this.postMessage} type="button" className="btn btn-primary">Launch</button>
+                        <button onClick={() => this.postMessage('launch')} type="button" className="btn btn-primary">Launch</button>
                     </div>
 
                     <h3>Flags</h3>
