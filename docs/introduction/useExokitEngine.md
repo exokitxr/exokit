@@ -15,7 +15,7 @@ Install Exokit with [Exokit installer](installation.md).
 
 > Exokit Engine will have been included with the Exokit installer.
 
-## Open a WebGL site
+## Open an XR site
 
 To open a site in Exokit Engine, enter the `http`/`https` URL into the CLI. Here's an example:
 
