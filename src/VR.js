@@ -621,7 +621,6 @@ const controllerIDs = {
 };
 
 function getControllerID(vrDisplay, hand) {
-  if (!vrDisplay) { return; }
   if (vrDisplay.id === 'OpenVR' ||
       vrDisplay.id === 'GearVR' ||
       vrDisplay.id === 'OculusGo') {
