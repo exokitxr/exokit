@@ -656,12 +656,12 @@ const _startTopRenderLoop = () => {
         vrPresentState.lmContext.WaitGetPoses(handsArray);
       } */
     } else if (topVrPresentState.hmdType === 'oculusMobile') {
-      await new Promise((accept, reject) => {
-        topVrPresentState.hasPose = topVrPresentState.vrContext.WaitGetPoses(
+      topVrPresentState.hasPose = await new Promise((accept, reject) => {
+        const hasPose = topVrPresentState.vrContext.WaitGetPoses(
           oculusMobilePoseFloat32Array
         );
 
-        accept();
+        accept(hasPose);
       });
 
       // build hmd data
