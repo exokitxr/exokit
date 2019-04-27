@@ -2639,6 +2639,30 @@ NAN_METHOD(MLContext::Present) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
 
+  if (lifecycle_status != MLResult_Ok) {
+    ML_LOG(Error, "%s: ML Present called before lifecycle initialized.", application_name);
+    info.GetReturnValue().Set(Nan::Null());
+    return;
+  }
+
+  application_context.mlContext = mlContext;
+  application_context.window = window;
+   
+  // initialize perception system
+  
+  MLPerceptionSettings perception_settings;
+  if (MLPerceptionInitSettings(&perception_settings) != MLResult_Ok) {
+    ML_LOG(Error, "%s: Failed to initialize perception.", application_name);
+    info.GetReturnValue().Set(Nan::Null());
+    return;
+  }
+  if (MLPerceptionStartup(&perception_settings) != MLResult_Ok) {
+    ML_LOG(Error, "%s: Failed to startup perception.", application_name);
+    info.GetReturnValue().Set(Nan::Null());
+    return;
+  }
+
+  // initialize graphics subsystem
   MLGraphicsOptions graphics_options = {MLGraphicsFlags_Default, MLSurfaceFormat_RGBA8UNorm, MLSurfaceFormat_D32Float};
   MLHandle opengl_context = reinterpret_cast<MLHandle>(windowsystem::GetGLContext(window));
   {
@@ -2658,33 +2682,6 @@ NAN_METHOD(MLContext::Present) {
   
   glGenFramebuffers(1, &application_context.mlContext->dst_framebuffer_id);
 
-  if (lifecycle_status != MLResult_Ok) {
-    ML_LOG(Error, "%s: ML Present called before lifecycle initialized.", application_name);
-    info.GetReturnValue().Set(Nan::Null());
-    return;
-  }
-  
-  application_context.mlContext = mlContext;
-  application_context.window = window;
-   
-  // initialize perception system
-  
-  MLPerceptionSettings perception_settings;
-  if (MLPerceptionInitSettings(&perception_settings) != MLResult_Ok) {
-    ML_LOG(Error, "%s: Failed to initialize perception.", application_name);
-    info.GetReturnValue().Set(Nan::Null());
-    return;
-  }
-  if (MLPerceptionStartup(&perception_settings) != MLResult_Ok) {
-    ML_LOG(Error, "%s: Failed to startup perception.", application_name);
-    info.GetReturnValue().Set(Nan::Null());
-    return;
-  }
-  
-  // initialize graphics subsystem
-  uv_sem_post(&reqSem);
-  uv_sem_wait(&resSem);
-  
   // Now that graphics is connected, the app is ready to go
   if (MLLifecycleSetReadyIndication() != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to indicate lifecycle ready.", application_name);
