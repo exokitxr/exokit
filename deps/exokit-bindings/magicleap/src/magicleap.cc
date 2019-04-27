@@ -3413,7 +3413,7 @@ NAN_METHOD(MLContext::WaitGetPoses) {
     
     info.GetReturnValue().Set(JS_BOOL(frameOk));
   } else {
-    Nan::ThrowError("MLContext::RequestGetPoses: invalid arguments");
+    Nan::ThrowError("MLContext::WaitGetPoses: invalid arguments");
   }
 }
 
@@ -3541,7 +3541,7 @@ NAN_METHOD(MLContext::SubmitFrame) {
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    
+
     /* if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
       glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
     } else {
