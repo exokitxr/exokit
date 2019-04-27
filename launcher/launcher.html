@@ -133,11 +133,6 @@
       window.postMessage({lol: 'zol'});
     `);
 
-                console.log('post message 1');
-                iframe.contentWindow.postMessage({
-                    woot: 'toot',
-                });
-                console.log('post message 2');
             };
             iframe.onconsole = (message, source, line) => {
                 console.log(source + ':' + line + ': ' + message);

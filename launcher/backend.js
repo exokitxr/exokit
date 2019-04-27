@@ -65,7 +65,10 @@ function update(){
         currentProgress = ((chunkSize / downloadSize) * 100).toFixed(0);
         writeStream.write(d);
         if(prevProgress !== currentProgress){
-          console.log(currentProgress);
+          console.log(currentProgress + '%');
+          iframe.contentWindow.postMessage({
+              progress: currentProgress
+          })
         }
       });
 
@@ -79,6 +82,6 @@ function update(){
     });
 
     writeStream.on('finish', () => {
-        console.log('finsihed')
+        console.log('finished')
     });
 }

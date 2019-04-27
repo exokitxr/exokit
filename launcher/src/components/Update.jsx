@@ -7,7 +7,8 @@ class Update extends React.Component {
     constructor(props) {
       super(props);
       this.state = {
-          readme: ''
+          readme: '',
+          progress: ''
         };
         this.postMessage = this.postMessage.bind(this);
     }
@@ -27,6 +28,13 @@ class Update extends React.Component {
         window.postMessage({
             action: action
         })
+        window.onmessage = m => {
+            console.log('progress from backend: ', m.data.progress);
+            this.setState({
+                progress: m.data.progress
+            })
+            document.getElementById('progressBar').style.width = this.state.progress + '%';
+        };
     }
 
     render() {
@@ -46,9 +54,9 @@ class Update extends React.Component {
                 <div className="col-lg-1 col-md-1 col-sm-1 col-xs-1">
                 </div>
                 <div className="col-lg-10 col-md-10 col-sm-10 col-xs-10 p-5 text-center">
-                    <p>75%</p>
+                    <p>{this.state.progress}%</p>
                     <div className="progress">
-                        <div className="progress-bar progress-bar-striped progress-bar-animated w-75" role="progressbar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                        <div className="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow={this.state.progress} aria-valuemin="0" aria-valuemax="100" id="progressBar"></div>
                     </div>
                     <br/>
                     <button onClick={() => this.postMessage('update')} type="button" className="btn btn-primary btn-lg m-2">Update</button>
