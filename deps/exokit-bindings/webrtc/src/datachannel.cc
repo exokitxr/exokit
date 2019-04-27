@@ -23,9 +23,9 @@ using v8::Object;
 using v8::String;
 using v8::Value;
 
-Nan::Persistent<Function> DataChannel::constructor;
+thread_local Nan::Persistent<Function> DataChannel::constructor;
 #if NODE_MODULE_VERSION < 0x000C
-Nan::Persistent<Function> DataChannel::ArrayBufferConstructor;
+thread_local Nan::Persistent<Function> DataChannel::ArrayBufferConstructor;
 #endif
 
 DataChannelObserver::DataChannelObserver(std::shared_ptr<node_webrtc::PeerConnectionFactory> factory,

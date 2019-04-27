@@ -23,7 +23,7 @@ using v8::Object;
 using v8::String;
 using v8::Value;
 
-Nan::Persistent<Function> RTCStatsReport::constructor;
+thread_local Nan::Persistent<Function> RTCStatsReport::constructor;
 
 RTCStatsReport::RTCStatsReport(webrtc::StatsReport* report)
   : report(report) {}

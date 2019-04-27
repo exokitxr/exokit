@@ -86,7 +86,7 @@ class DataChannel
   // Nodejs wrapping.
   //
   static void Init(v8::Local<v8::Object> exports);
-  static Nan::Persistent<v8::Function> constructor;
+  static thread_local Nan::Persistent<v8::Function> constructor;
   static NAN_METHOD(New);
 
   static NAN_METHOD(Send);
@@ -119,7 +119,7 @@ class DataChannel
   BinaryType _binaryType;
 
 #if NODE_MODULE_VERSION < 0x000C
-  static Nan::Persistent<v8::Function> ArrayBufferConstructor;
+  static thread_local Nan::Persistent<v8::Function> ArrayBufferConstructor;
 
 #endif
 };

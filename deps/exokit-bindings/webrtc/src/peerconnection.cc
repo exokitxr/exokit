@@ -33,7 +33,7 @@ using v8::Uint32;
 using v8::Value;
 using v8::Array;
 
-Nan::Persistent<Function> PeerConnection::constructor;
+thread_local Nan::Persistent<Function> PeerConnection::constructor;
 
 //
 // PeerConnection

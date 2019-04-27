@@ -26,10 +26,10 @@ using v8::Uint32;
 using v8::Value;
 using v8::Array;
 
-Nan::Persistent<Function> PeerConnectionFactory::constructor;
-std::shared_ptr<PeerConnectionFactory> PeerConnectionFactory::_default;
-uv_mutex_t PeerConnectionFactory::_lock;
-int PeerConnectionFactory::_references = 0;
+thread_local Nan::Persistent<Function> PeerConnectionFactory::constructor;
+thread_local std::shared_ptr<PeerConnectionFactory> PeerConnectionFactory::_default;
+thread_local uv_mutex_t PeerConnectionFactory::_lock;
+thread_local int PeerConnectionFactory::_references = 0;
 
 PeerConnectionFactory::PeerConnectionFactory(rtc::scoped_refptr<webrtc::AudioDeviceModule> audioDeviceModule) {
   TRACE_CALL;
