@@ -752,19 +752,20 @@ const _startTopRenderLoop = () => {
         xrState.leftFov[i] = Math.atan(localFovArray[i]) / Math.PI * 180;
       } */
     } else if (topVrPresentState.hmdType === 'magicleap') {
-      topVrPresentState.mlHasPose = await new Promise((accept, reject) => {
-        topVrPresentState.vrContext.WaitGetPoses(
+      topVrPresentState.hasPose = await new Promise((accept, reject) => {
+        const hasPose = topVrPresentState.vrContext.WaitGetPoses(
           transformArray,
           projectionArray,
-          controllersArray,
-          accept
+          controllersArray
         );
+
+        accept(hasPose);
       });
       if (!immediate) {
         return;
       }
 
-      if (topVrPresentState.mlHasPose) {
+      if (topVrPresentState.hasPose) {
         localVector.fromArray(transformArray, 0);
         localQuaternion.fromArray(transformArray, 3);
         localVector2.set(1, 1, 1);
