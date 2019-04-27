@@ -37,4 +37,4 @@ Exokit includes additional support for interfacing with hardware like Magic Leap
 These are generally exposed on the `browser` object.
 
 
-**Read more at**: [Native APIs](nativeAPIs.md)
+**Read more at**: [Native APIs](apis/nativeAPIs.md)
