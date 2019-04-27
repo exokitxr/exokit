@@ -28,7 +28,7 @@ If the site uses [WebXR](https://immersive-web.github.io/webxr/), [WebGL](https:
 
 This means existing web documentation applies to Exokit as well.
 
-**Read more at**: [Web APIs](webAPIs.md)
+**Read more at**: [Web APIs](apis/webAPIs.md)
 
 ## Native integrations
 
