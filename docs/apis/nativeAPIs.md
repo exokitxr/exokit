@@ -42,6 +42,7 @@ The API is implemented as a set of C++ interface classes full of pure virtual fu
 
 - OVR from Oculus		
 - MLSDK from Magic Leap
+- gVR from Google 
 - Leap Motion
 - Chromium
 
