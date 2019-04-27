@@ -2647,7 +2647,7 @@ NAN_METHOD(MLContext::Present) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
 
   MLGraphicsOptions graphics_options = {MLGraphicsFlags_Default, MLSurfaceFormat_RGBA8UNorm, MLSurfaceFormat_D32Float};
-  MLHandle opengl_context = reinterpret_cast<MLHandle>(windowsystem::GetGLContext(application_context.window));
+  MLHandle opengl_context = reinterpret_cast<MLHandle>(windowsystem::GetGLContext(window));
   {
     MLResult result = MLGraphicsCreateClientGL(&graphics_options, opengl_context, &application_context.mlContext->graphics_client);
     if (result != MLResult_Ok) {
