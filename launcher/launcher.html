@@ -111,15 +111,15 @@
                 scene.add(screenQuad);
 
                 iframe.contentWindow.onmessage = m => {
-                    const data = JSON.stringify(m.data);
-                    console.log('parent got message: ' + data);
-                    fetch('http://localhost:3333/', {
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        method: 'POST',
-                        body: data
-                    })
+                    console.log(m.data.message);
+                    switch(m.data.message){
+                        case 'launch':
+                            launch();
+                            break;
+                        case 'update':
+                            update();
+                            break;
+                    }
                 };
 
                 iframe.runJs(`

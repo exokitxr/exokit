@@ -8,16 +8,25 @@ const process = require('os').platform();
         else{
         exokitPath = 'scripts/exokit.sh';
         }
-    const ls = spawn(exokitPath, []);
 
-    ls.stdout.on('data', (data) => {
-        console.log(`stdout: ${data}`);
-    });
+
+    function launch(){
+        console.log('launching...')
+        const ls = spawn(exokitPath, []);
+
+        ls.stdout.on('data', (data) => {
+            console.log(`stdout: ${data}`);
+        });
+        
+        ls.stderr.on('data', (data) => {
+            console.log(`stderr: ${data}`);
+        });
+        
+        ls.on('close', (code) => {
+            console.log(`child process exited with code ${code}`);
+        });
+    }
     
-    ls.stderr.on('data', (data) => {
-        console.log(`stderr: ${data}`);
-    });
-    
-    ls.on('close', (code) => {
-        console.log(`child process exited with code ${code}`);
-    });
+    function update(){
+        console.log('updating...')
+    }
