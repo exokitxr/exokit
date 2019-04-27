@@ -5,6 +5,13 @@ class Launch extends React.Component {
 
     constructor(props) {
       super(props);
+      this.postMessage = this.postMessage.bind(this);
+    }
+
+    postMessage(){
+        window.postMessage({
+            message: 'launch'
+        })
     }
 
     render() {
@@ -19,7 +26,7 @@ class Launch extends React.Component {
                         <div className="form-group">
                             <input type="text" className="form-control" id="urlInput" placeholder="Enter URL"/>
                         </div>
-                        <button type="button" className="btn btn-primary">Launch</button>
+                        <button onClick={() => this.postMessage()} type="button" className="btn btn-primary">Launch</button>
                     </div>
 
                     <h3>Flags</h3>

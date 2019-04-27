@@ -25,7 +25,7 @@ class Update extends React.Component {
 
     postMessage(){
         window.postMessage({
-            click: 'hello world'
+            message: 'update'
         })
     }
 

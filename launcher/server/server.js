@@ -1,4 +1,5 @@
 const express = require('express');
+const {spawn} = require('child_process');
 const bodyParser = require('body-parser')
 const app = express();
 const port = 3333;
@@ -6,18 +7,47 @@ const port = 3333;
 app.listen(port, () => console.log(`Launcher server listening on ${port}!`))
 app.use(bodyParser.json()); 
 
+let exokitPath;
+if(process.platform === 'win32'){
+  exokitPath = '..\\..\\scripts\\exokit.cmd';
+}
+else{
+  exokitPath = '../../scripts/exokit.sh';
+}
+
 // POST method route
 app.post('/', function (req, res) {
     console.log(req.body)
+    switch(req.body.message){
+      case 'update':
+        update();
+        break;
+      case 'launch':
+        launch();
+        break;
+    }
 })
 
-// let exokitPath;
-// if(process.platform === 'win32'){
-//   exokitPath = '..\\scripts\\exokit.cmd';
-// }
-// else{
-//   exokitPath = '../scripts/exokit.sh';
-// }
+function update(){
+  console.log('updating...')
+}
+
+function launch(){
+  console.log('launching...')
+  const ls = spawn(exokitPath, []);
+
+  ls.stdout.on('data', (data) => {
+    console.log(`stdout: ${data}`);
+  });
+  
+  ls.stderr.on('data', (data) => {
+    console.log(`stderr: ${data}`);
+  });
+  
+  ls.on('close', (code) => {
+    console.log(`child process exited with code ${code}`);
+  });
+}
 
 // // Accept communication from frontend, arg1 will always be the key to the function... arg2/arg3 is for extra data like a URL/flags.
 // ipcMain.on('asynchronous-message', (event, arg1, arg2, arg3) => {
