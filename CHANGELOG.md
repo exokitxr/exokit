@@ -1,3 +1,9 @@
+## v1.0 (May 2019)
+
+### Major Changes
+- Add Oculus Mobile APK build to Travis CI (#944)
+- Oculus Mobile SDK support (#897)
+
 ## v0.9 (April 2019)
 
 ### Major Changes
