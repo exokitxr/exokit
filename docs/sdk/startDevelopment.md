@@ -64,7 +64,7 @@ Here, you can enter:
 Exokit has a logging mode enabled by the `-l` flag:
 
 ```sh
-exokit -l https://emukit.exokit.org/
+exokit -l https://aframe.io/a-painter/ 
 ```
 
 The logs go in `$HOME/.exokit/log.txt`. For window that generally means `C:\username\.exokit\log.txt`.
