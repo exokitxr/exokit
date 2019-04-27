@@ -32,7 +32,7 @@ This means existing web documentation applies to Exokit as well.
 
 ## Native integrations
 
-Exokit includes additional support for interfacing with hardware like Magic Leap and Leap Motion.
+Exokit includes additional support for interfacing with hardware like Oculus, SteamVR, GoogleVR, Magic Leap and Leap Motion.
 
 These are generally exposed on the `browser` object.
 
