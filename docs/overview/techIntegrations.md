@@ -12,7 +12,7 @@ Here are the main web specifications and third-party libraries implemented in Ex
 
 ## Web
 
-| Tech          | Type     | Spec  | Source |
+| Tech          | Type     | Link  | in Exokit |
 | ------------- |:-------------:|:-----:|-------:|
 | WebVR      | Spec | [WebVR](https://developer.mozilla.org/en-US/docs/Web/API/WebVR_API) | [Source](https://github.com/exokitxr/exokit/blob/master/src/core.js) |
 | WebXR      | Spec | [WebXR](https://github.com/immersive-web/webxr) | [Source](https://github.com/exokitxr/exokit/blob/master/src/XR.js ) |
@@ -27,7 +27,7 @@ Here are the main web specifications and third-party libraries implemented in Ex
 
 ## Native 
 
-| Tech          | Type     | Spec  | Source |
+| Tech          | Type     | Link  | in Exokit |
 | ------------- |:-------------:|:-----:|-------:|
 | WebGL      | Spec | [WebGL](https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API) | [Source](https://github.com/exokitxr/exokit/tree/master/deps/exokit-bindings/webglcontext ) |
 | Canvas2d   | Spec | [Canvas 2D](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) | [Source]( https://github.com/exokitxr/exokit/tree/master/deps/exokit-bindings/canvas) |
