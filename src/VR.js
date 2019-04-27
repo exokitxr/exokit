@@ -634,7 +634,7 @@ let gamepads = null;
 function getGamepads(window) {
   const {oculusVRDisplay, openVRDisplay, oculusMobileVrDisplay, magicLeapARDisplay} = window[symbols.mrDisplaysSymbol];
   const presentingDisplay =
-    GlobalContext.fakeVrDisplayEnabled ||
+    (GlobalContext.fakeVrDisplayEnabled && GlobalContext.fakePresentState.fakeVrDisplay) ||
     (oculusVRDisplay.isPresenting && oculusVRDisplay) ||
     (openVRDisplay.isPresenting && openVRDisplay) ||
     (oculusMobileVrDisplay.isPresenting && oculusMobileVrDisplay) ||
