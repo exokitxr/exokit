@@ -73,12 +73,13 @@ The logs go in `$HOME/.exokit/log.txt`. For window that generally means `C:\user
 
 You can use the regular Node debugging tools to debug Exokit Engine. See the [debugging doc](debugging.md) for more information.
 
+## Troubleshooting
+
+See the [common build errors](commonBuildErrors.md) documentation for more info.
+
 ## Contributing
 
 See something? Please do [file an issue](https://github.com/exokitxr/exokit/issues)!
 
 Pull Requests are very much welcome as well.
 
-#### Troubleshooting
-
-See the [common build errors](commonBuildErrors.md) documentation for more info.
