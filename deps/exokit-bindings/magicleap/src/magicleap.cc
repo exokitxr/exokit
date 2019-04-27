@@ -54,13 +54,6 @@ void QueueCallback(uv_loop_t *loop, std::function<void()> fn) {
   uv_async_send(mlCallback->async.get());
 }
 
-uv_sem_t reqSem;
-uv_sem_t resSem;
-std::mutex reqMutex;
-std::mutex resMutex;
-std::deque<std::function<bool()>> reqCbs;
-std::deque<std::function<void()>> resCbs;
-
 // std::list<MLPoll *> polls;
 
 /* std::condition_variable  cameraRequestConditionVariable;
