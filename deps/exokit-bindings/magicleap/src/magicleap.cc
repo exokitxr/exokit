@@ -2627,7 +2627,7 @@ NAN_METHOD(MLContext::SetEventHandler) {
       uv_async_t *async = new uv_async_t();
       uv_loop_t *loop = windowsystembase::GetEventLoop();
       uv_async_init(loop, async, RunEventsInMainThread);
-      
+
       eventHandler = new EventHandler(async, handlerFn);
     }
   } else {
@@ -2694,7 +2694,7 @@ NAN_METHOD(MLContext::Present) {
   
   // initialize local graphics stack
 
-  windowsystem::SetCurrentWindowContext(window);
+  // windowsystem::SetCurrentWindowContext(window);
 
   /* unsigned int halfWidth = mlContext->render_targets_info.buffers[0].color.width;
   unsigned int width = halfWidth * 2;
@@ -3414,8 +3414,6 @@ NAN_METHOD(MLContext::WaitGetPoses) {
       ML_LOG(Error, "MLGraphicsBeginFrame complained: %d", result);
     }
     
-    uv_sem_post(&reqSem);
-    
     info.GetReturnValue().Set(JS_BOOL(frameOk));
   } else {
     Nan::ThrowError("MLContext::RequestGetPoses: invalid arguments");
@@ -3546,8 +3544,6 @@ NAN_METHOD(MLContext::SubmitFrame) {
     }
     
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    
-    uv_sem_post(&reqSem);
     
     /* if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
       glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
