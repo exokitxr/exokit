@@ -81,4 +81,4 @@ Pull Requests are very much welcome as well.
 
 #### Troubleshooting
 
-- `<SkImage.h> not found`, or a missing header: this means a prebuilt dependency did not extract. Clear your `npm`/`yarn` cache, `rm -Rf node_modules` and `npm install` again.
+See the [common build errors](commonBuildErrors.md) documentation for more info.
