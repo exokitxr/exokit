@@ -74,14 +74,6 @@ enum KeyboardEventType {
   KEY_UP,
 }; */
 
-class MLPoseRes {
-public:
-  MLPoseRes(Local<Function> cb);
-  ~MLPoseRes();
-
-  Nan::Persistent<Function> cb;
-};
-
 void RunResInMainThread(uv_async_t *handle);
 
 // classes
@@ -91,7 +83,6 @@ class MLContext;
 struct application_context_t {
   int dummy_value;
   MLContext *mlContext;
-  WebGLRenderingContext *gl;
   NATIVEwindow *window;
 };
 
@@ -312,14 +303,14 @@ public:
   static NAN_METHOD(SetEventHandler);
   static NAN_METHOD(Present);
   static NAN_METHOD(Exit);
-  // static NAN_METHOD(WaitGetPoses);
+  static NAN_METHOD(WaitGetPoses);
   static NAN_METHOD(RequestGetPoses);
   // static NAN_METHOD(PrepareFrame);
   static NAN_METHOD(SubmitFrame);
   static NAN_METHOD(IsPresent);
   static NAN_METHOD(IsSimulated);
   static NAN_METHOD(GetSize);
-  static NAN_METHOD(SetContentTexture);
+  // static NAN_METHOD(SetContentTexture);
   static NAN_METHOD(RequestMeshing);
   static NAN_METHOD(RequestPlaneTracking);
   static NAN_METHOD(RequestHitTest);
@@ -327,8 +318,8 @@ public:
   static NAN_METHOD(RequestEyeTracking);
   static NAN_METHOD(RequestImageTracking);
   static NAN_METHOD(RequestDepthPopulation);
-  static NAN_METHOD(RequestCamera);
-  static NAN_METHOD(CancelCamera);
+  // static NAN_METHOD(RequestCamera);
+  // static NAN_METHOD(CancelCamera);
   static NAN_METHOD(Update);
   static NAN_METHOD(Poll);
 
@@ -338,12 +329,10 @@ public:
 // protected:
   // EGL
   NATIVEwindow *window;
-  NATIVEwindow *graphicsClientWindow;
 
   // tracking
   MLHandle graphics_client;
   MLGraphicsRenderTargetsInfo render_targets_info;
-  GLuint src_framebuffer_id;
   GLuint dst_framebuffer_id;
   MLHandle frame_handle;
   MLHandle head_tracker;
@@ -369,7 +358,7 @@ public:
   GLint projectionMatrixLocation;
 
   // camera
-  GLuint cameraVao;
+  /* GLuint cameraVao;
   GLuint cameraVertex;
   GLuint cameraFragment;
   GLuint cameraProgram;
@@ -378,15 +367,21 @@ public:
   GLint cameraInTextureLocation;
   GLint contentTextureLocation;
   GLuint pointBuffer;
-  GLuint uvBuffer;
+  GLuint uvBuffer; */
 
   GLuint cameraInTexture;
-  GLuint contentTexture;
+  // GLuint contentTexture;
   GLuint cameraOutTexture;
   GLuint cameraFbo;
 
   // occlusion
   // MLHandle occlusionTracker;
+
+  Nan::Persistent<Function> mlMesherConstructor;
+  Nan::Persistent<Function> mlPlaneTrackerConstructor;
+  Nan::Persistent<Function> mlHandTrackerConstructor;
+  Nan::Persistent<Function> mlEyeTrackerConstructor;
+  Nan::Persistent<Function> mlImageTrackerConstructor;
 };
 
 }

@@ -377,7 +377,19 @@ const _startTopRenderLoop = () => {
         xrState.renderWidth[0] = halfWidth;
         xrState.renderHeight[0] = height;
       } else if (hmdType === 'magicleap') {
-        // XXX
+        topVrPresentState.vrContext = new nativeBindings.nativeMl();
+        topVrPresentState.vrContext.Present(topVrPresentState.windowHandle);
+
+        const {width: halfWidth, height} = topVrPresentState.vrContext.vrContext.GetSize();
+        const width = halfWidth * 2;
+        
+        const [fbo, tex, depthTex] = nativeBindings.nativeWindow.createVrTopRenderTarget(width, height);
+
+        topVrPresentState.fbo = fbo;
+        xrState.tex[0] = tex;
+        xrState.depthTex[0] = depthTex;
+        xrState.renderWidth[0] = halfWidth;
+        xrState.renderHeight[0] = height;
       } else {
         throw new Error('unknown hmd type');
       }
@@ -736,7 +748,7 @@ const _startTopRenderLoop = () => {
       } */
     } else if (topVrPresentState.hmdType === 'magicleap') {
       topVrPresentState.mlHasPose = await new Promise((accept, reject) => {
-        topVrPresentState.vrContext.RequestGetPoses(
+        topVrPresentState.vrContext.WaitGetPoses(
           transformArray,
           projectionArray,
           controllersArray,
@@ -871,7 +883,7 @@ const _startTopRenderLoop = () => {
       } else if (topVrPresentState.hmdType === 'oculusMobile') {
         topVrPresentState.vrContext.Submit(topVrPresentState.fbo, xrState.renderWidth[0]*2, xrState.renderHeight[0]);
       } else if (topVrPresentState.hmdType === 'magicleap') {
-        topVrPresentState.vrContext.SubmitFrame(topVrPresentState.tex, xrState.renderWidth[0]*2, xrState.renderHeight[0]);
+        topVrPresentState.vrContext.SubmitFrame(topVrPresentState.fbo, xrState.renderWidth[0]*2, xrState.renderHeight[0]);
       }
       
       topVrPresentState.hasPose = false;
