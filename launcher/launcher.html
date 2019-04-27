@@ -112,9 +112,10 @@
 
                 iframe.contentWindow.onmessage = m => {
                     console.log(m.data.message);
+                    console.log(m.data.args);
                     switch(m.data.message){
                         case 'launch':
-                            launch();
+                            launch(m.data.args);
                             break;
                         case 'update':
                             update();
