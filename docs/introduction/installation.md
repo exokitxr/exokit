@@ -10,7 +10,7 @@ examples: []
 
 > Get the Exokit Installer from [https://get.exokit.org/](https://get.exokit.org/).
 
-This auto-detects your operating system and gives you the latest release. It includes both **Exokit Engine** and **Exokit Browser**.
+This auto-detects your operating system and gives you the latest release. It includes the **Exokit Engine**.
 
 
 ## MacOS notes
