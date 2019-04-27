@@ -793,7 +793,8 @@ if (nativeBindings.nativeOculusMobileVr) {
         // fps = VR_FPS;
 
         const vrContext = oculusMobileVrPresentState.vrContext = oculusMobileVrPresentState.vrContext || nativeBindings.nativeOculusMobileVr.OculusMobile_Init(context.getWindowHandle());
-
+        const {oculusMobileVrDisplay} = window[symbols.mrDisplaysSymbol];
+        oculusMobileVrDisplay.id = nativeBindings.nativeOculusMobileVr.OculusMobile_GetDeviceType();
         const {width: halfWidth, height} = vrContext.GetRecommendedRenderTargetSize();
         const MAX_TEXTURE_SIZE = 4096;
         const MAX_TEXTURE_SIZE_HALF = MAX_TEXTURE_SIZE/2;
