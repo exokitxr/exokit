@@ -111,9 +111,8 @@
                 scene.add(screenQuad);
 
                 iframe.contentWindow.onmessage = m => {
-                    console.log(m.data.message);
-                    console.log(m.data.args);
-                    switch(m.data.message){
+                    console.log('POST from frontend: ', m.data);
+                    switch(m.data.action){
                         case 'launch':
                             launch(m.data.args);
                             break;

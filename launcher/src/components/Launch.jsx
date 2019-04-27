@@ -7,16 +7,24 @@ class Launch extends React.Component {
       super(props);
       this.postMessage = this.postMessage.bind(this);
       this.setFlag = this.setFlag.bind(this);
+      this.handleURLChange = this.handleURLChange.bind(this);
       this.state = {
-          flags: []
+          flags: [],
+          url: ''
       };
-
     }
 
     postMessage(){
         window.postMessage({
-            message: 'launch',
-            flags: this.state.flags
+            action: 'launch',
+            flags: this.state.flags,
+            url: this.state.url
+        })
+    }
+
+    handleURLChange(e){
+        this.setState({
+            url: e.target.value
         })
     }
 
@@ -28,7 +36,6 @@ class Launch extends React.Component {
         else{
             this.state.flags.splice(this.state.flags.indexOf(flag), 1);
         }
-        console.log('Flags', this.state.flags);
     }
 
     render() {
@@ -41,7 +48,7 @@ class Launch extends React.Component {
                     <div className="mb-4">
                         <h1>Reality Tab</h1>
                         <div className="form-group">
-                            <input type="text" className="form-control" id="urlInput" placeholder="Enter URL"/>
+                            <input onChange={(e) => this.handleURLChange(e)} type="text" className="form-control" id="urlInput" placeholder="Enter URL"/>
                         </div>
                         <button onClick={() => this.postMessage} type="button" className="btn btn-primary">Launch</button>
                     </div>
