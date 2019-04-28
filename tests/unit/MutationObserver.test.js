@@ -216,7 +216,7 @@ describe('MutationObserver', () => {
 
   describe('subtree', () => {
     beforeEach(async () => {
-      return await window.evalAsync(`
+      return await window.evalAsync(`new Promise((accept, reject) => {
         el.appendChild(childEl);
         
         var observerHelper = cb => {
@@ -225,8 +225,15 @@ describe('MutationObserver', () => {
           return observer;
         };
         window.observerHelper = observerHelper;
-        1;
-      `);
+
+        if (document.readyState !== 'complete') {
+          window.onload = () => {
+            accept();
+          };
+        } else {
+          accept();
+        }
+      })`);
     });
 
     it('detects nested setAttribute', async () => {
@@ -300,7 +307,9 @@ describe('MutationObserver', () => {
           const mutation = mutations[0];
           assert.equal(mutations.length, 1);
           assert.equal(mutation.type , 'characterData');
-          accept();
+          setTimeout(() => {
+            accept();
+          }, 10);
         });
         observer.observe(textNode, {characterData: true});
         textNode.data = 'zol';
@@ -319,7 +328,9 @@ describe('MutationObserver', () => {
           assert.equal(mutation.addedNodes.length, 1);
           assert.equal(mutation.addedNodes[0].id, 'child');
           assert.equal(mutation.type , 'childList');
-          accept();
+          setTimeout(() => {
+            accept();
+          }, 10);
         });
         el.appendChild(childEl);
       })`);
@@ -339,7 +350,7 @@ describe('MutationObserver', () => {
         
         setTimeout(() => {
           accept();
-        });
+        }, 10);
       })`);
     });
   });
