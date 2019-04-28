@@ -1,27 +1,22 @@
 /* global assert, describe, it */
-const fs = require('fs');
-const path = require('path');
-const {Response} = require('window-fetch');
-
-const GlobalContext = require('../../src/GlobalContext');
-
-const dummyHtml = fs.readFileSync(path.resolve(__dirname, './data/dummy.html'), 'utf-8');
+const exokit = require('../../src/index');
 
 describe('_parseDocument', () => {
-  it('parses basic document', () => {
-    const window = GlobalContext._makeWindow({
-      args: {},
-      dataPath: '',
-      url: 'https://test.com',
+  it('parses basic document', async () => {
+    const window = exokit({
+      require: true,
     });
-    // Stub fetch for script tag.
-    window.fetch = () => Promise.resolve(new Response(''));
-    const document = GlobalContext._parseDocument(dummyHtml, window);
-    window.document = document;
-    window.navigator.getVRDisplaysSync = () => [];
-    assert.ok(document);
-    assert.ok(document.head);
-    assert.ok(document.body);
-    assert.equal(document.querySelector('a').getAttribute('href'), 'test.html');
+    await window.evalAsync(`
+      const path = require('path');
+      const fs = require('fs');
+      const assert = require('assert');
+      
+      document.body.innerHTML = fs.readFileSync(path.resolve(${JSON.stringify(__dirname)}, './data/dummy.html'), 'utf8');
+      assert.ok(document);
+      assert.ok(document.head);
+      assert.ok(document.body);
+      assert.equal(document.querySelector('a').getAttribute('href'), 'test.html');
+    `);
+    return await window.destroy();
   });
 });

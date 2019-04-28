@@ -4,61 +4,70 @@ const exokit = require('../../../src/index');
 describe('requestAnimationFrame', () => {
   var window;
 
-  beforeEach(cb => {
-    exokit.load('data:text/html,<html></html>')
-      .then(o => {
-        window = o.window;
-        window.navigator.getVRDisplaysSync = () => [];
+  beforeEach(async () => {
+    window = await exokit.load('data:text/html,<html></html>');
+    
+    return await window.evalAsync(`
+      const assert = require('assert');
+      window.assert = assert;
+      const sinon = require('sinon');
+      window.sinon = sinon;
+      1;
+    `);
+  });
 
-        cb();
+  afterEach(async () => {
+    return await window.destroy();
+  });
+
+  it('raf', async () => {
+    return await window.evalAsync(`new Promise((accept, reject) => {
+      let rafed = false;
+      window.requestAnimationFrame(() => {
+        rafed = true;
+        
+        accept();
       });
+
+      assert.equal(rafed, false);
+    })`);
   });
 
-  afterEach(() => {
-    window.destroy();
-  });
+  it('cancel raf', async () => {
+    return await window.evalAsync(`new Promise((accept, reject) => {
+      let rafed = false;
+      const raf = window.requestAnimationFrame(() => {
+        rafed = true;
+      });
 
-  it('raf', cb => {
-    let rafed = false;
-    window.requestAnimationFrame(() => {
-      rafed = true;
-
-      cb();
-    });
-
-    assert.equal(rafed, false);
-  });
-
-  it('cancel raf', cb => {
-    let rafed = false;
-    const raf = window.requestAnimationFrame(() => {
-      rafed = true;
-    });
-
-    assert.equal(rafed, false);
-
-    window.cancelAnimationFrame(raf);
-
-    setTimeout(() => {
       assert.equal(rafed, false);
 
-      cb();
-    }, 100);
+      window.cancelAnimationFrame(raf);
+
+      setTimeout(() => {
+        assert.equal(rafed, false);
+
+        accept();
+      }, 100);
+    })`);
   });
 
-  it('catches errors', function (cb) {
-    const spy = this.sinon.spy();
-    function step () {
-      spy();
-      console.log(doesnotexist);
-    }
+  it('catches errors', async () => {
+    return await window.evalAsync(`new Promise((accept, reject) => {
+      const spy = sinon.spy();
+      function step () {
+        spy();
+        console.log(doesnotexist);
+      }
 
-    window.requestAnimationFrame(step);
-    window.requestAnimationFrame(step);
+      window.requestAnimationFrame(step);
+      window.requestAnimationFrame(step);
 
-    setTimeout(() => {
-      assert.equal(spy.callCount, 2);
-      cb();
-    }, 100);
+      setTimeout(() => {
+        assert.equal(spy.callCount, 2);
+
+        accept();
+      }, 100);
+    })`);
   });
 });
