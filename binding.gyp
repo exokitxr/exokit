@@ -7,7 +7,7 @@
           'conditions': [
             ['OS=="win"', {
               'sources': [
-                'exokit.cpp',
+                'cpp/exokit.cpp',
                 'deps/exokit-bindings/bindings/src/*.cc',
                 'deps/exokit-bindings/util/src/*.cc',
                 'deps/exokit-bindings/browser/src/*.cpp',
