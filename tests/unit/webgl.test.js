@@ -27,11 +27,9 @@ helpers.describeSkipCI('webgl', () => {
   describe('getExtension', () => {
     it('returns EXT_blend_minmax', async () => {
       return await window.evalAsync(`
-        try {
         ext = gl.getExtension('EXT_blend_minmax');
         assert.equal(typeof ext.MIN_EXT, 'number');
         assert.equal(typeof ext.MAX_EXT, 'number');
-        } catch(err) { console.warn(err.stack); }
       `);
     });
 
