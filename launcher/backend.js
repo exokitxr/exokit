@@ -60,12 +60,11 @@ function update(){
 
       res.on('data', (d) => {
         prevChunkSize = chunkSize;
-        prevProgress = ((prevChunkSize / downloadSize) * 100).toFixed(0);
+        prevProgress = ((prevChunkSize / downloadSize) * 100).toFixed(1);
         chunkSize += d.length;
-        currentProgress = ((chunkSize / downloadSize) * 100).toFixed(0);
+        currentProgress = ((chunkSize / downloadSize) * 100).toFixed(1);
         writeStream.write(d);
         if(prevProgress !== currentProgress){
-          console.log(currentProgress + '%');
           iframe.contentWindow.postMessage({
               progress: currentProgress
           })
