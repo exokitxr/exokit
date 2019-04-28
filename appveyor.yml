@@ -6,7 +6,7 @@ image:
 environment:
   nodejs_version: "11"
   PFX_KEY:
-    secure: rb5g/ykqdQek473qm/8WbnEQ6ItBfgcL1/ShqAMWLTH5+Z3Y45MHN2BB3UXdx067
+    secure: ewZJqEOOh1B8ZWAJyd2dikQZ9BtcN4Cv04WEirXNDT8m9J06ZHgsw8hVcYmTinw8 
 
 # Install scripts. (runs after repo cloning)
 install:
