@@ -1354,12 +1354,12 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       } */
     };
     const _renderChildren = async () => {
-      /* let timeout;
+      let timeout;
       const timeoutPromise = new Promise((accept, reject) => {
         timeout = setTimeout(() => {
           accept();
         }, 1000/60); // XXX make this timeout accurate
-      }); */
+      });
       for (let i = 0; i < windows.length; i++) {
         const window = windows[i];
         if (window.phase === PHASES.NULL) {
@@ -1374,10 +1374,10 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
         }
       }
       await Promise.race([
-        // timeoutPromise,
+        timeoutPromise,
         Promise.all(windows.map(window => window.promise)),
       ]);
-      // clearTimeout(timeout);
+      clearTimeout(timeout);
       /* for (let i = 0; i < childSyncs.length; i++) {
         nativeWindow.deleteSync(childSyncs[i]);
       }
