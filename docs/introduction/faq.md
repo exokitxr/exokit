@@ -8,7 +8,7 @@ order: 14
 
 # COMING SOON
 <details>
-  <summary>Click to expand!</summary>
+  <summary>Click to expand</summary>
   
 
 ## What is Exokit?  
