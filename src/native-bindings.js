@@ -231,6 +231,21 @@ const _onGl3DConstruct = (gl, canvas) => {
         }
       }
     });
+    
+    const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeWindow.createRenderTarget(gl, canvasWidth, canvasHeight);
+    gl.setDefaultFramebuffer(msFbo);
+    gl.framebuffer = {
+      msFbo,
+      msTex,
+      msDepthTex,
+      fbo,
+      tex,
+      depthTex,
+    };
+    gl.resize = (width, height) => {
+      nativeWindow.setCurrentWindowContext(windowHandle);
+      nativeWindow.resizeRenderTarget(gl, width, height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
+    };
 
     /* const nativeWindowSize = nativeWindow.getFramebufferSize(windowHandle);
     const nativeWindowHeight = nativeWindowSize.height;
