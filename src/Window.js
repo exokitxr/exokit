@@ -1651,7 +1651,9 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
   window.document.xrOffset = options.xrOffsetBuffer ? new XRRigidTransform(options.xrOffsetBuffer) : new XRRigidTransform();
 })(global);
 
-global.require = undefined;
+if (!options.require) {
+  global.require = undefined;
+}
 global.process = undefined;
 global.onrunasync = method => {
   if (method === 'tickAnimationFrame') {
