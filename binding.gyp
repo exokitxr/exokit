@@ -44,7 +44,6 @@
                 '<(module_root_dir)/deps/exokit-bindings',
                 '<(module_root_dir)/deps/exokit-bindings/utf8',
                 '<(module_root_dir)/deps/exokit-bindings/node',
-                '<(module_root_dir)/deps/exokit-bindings/native_app_glue',
                 '<(module_root_dir)/deps/exokit-bindings/util/include',
                 '<(module_root_dir)/deps/exokit-bindings/bindings/include',
                 '<(module_root_dir)/deps/exokit-bindings/canvas/include',
