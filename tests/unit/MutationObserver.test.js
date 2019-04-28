@@ -309,7 +309,7 @@ describe('MutationObserver', () => {
           assert.equal(mutation.type , 'characterData');
           setTimeout(() => {
             accept();
-          }, 10);
+          }, 100);
         });
         observer.observe(textNode, {characterData: true});
         textNode.data = 'zol';
@@ -330,7 +330,7 @@ describe('MutationObserver', () => {
           assert.equal(mutation.type , 'childList');
           setTimeout(() => {
             accept();
-          }, 10);
+          }, 100);
         });
         el.appendChild(childEl);
       })`);
@@ -350,7 +350,7 @@ describe('MutationObserver', () => {
         
         setTimeout(() => {
           accept();
-        }, 10);
+        }, 100);
       })`);
     });
   });
