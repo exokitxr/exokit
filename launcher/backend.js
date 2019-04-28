@@ -1,5 +1,6 @@
-const {spawn} = require('child_process');
-const process = require('os').platform();
+const { spawn } = require('child_process');
+const os = require('os');
+const platform = os.platform();
 
 const fs = require('fs');
 const https = require('https');
@@ -11,6 +12,8 @@ if(process.platform === 'win32'){
 else{
     exokitPath = 'scripts/exokit.sh';
 }
+
+console.log(os);
 
 function launch(flags){
     console.log('launching...')
@@ -25,6 +28,7 @@ function launch(flags){
     }
     spawn(exokitPath, [flagsString]);
 }
+
 
 function update(){
     console.log('updating...')
