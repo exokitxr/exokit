@@ -3206,6 +3206,8 @@ NAN_METHOD(WebGLRenderingContext::FramebufferTexture2D) {
 }
 
 NAN_METHOD(WebGLRenderingContext::BlitFramebuffer) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
   int sx = TO_UINT32(info[0]);
   int sy = TO_UINT32(info[1]);
   int sw = TO_UINT32(info[2]);
@@ -3225,6 +3227,8 @@ NAN_METHOD(WebGLRenderingContext::BlitFramebuffer) {
     mask,
     filter
   );
+
+  gl->dirty = true;
 
   // info.GetReturnValue().Set(Nan::Undefined());
 }

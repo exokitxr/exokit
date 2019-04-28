@@ -10,7 +10,7 @@ using namespace node;
 
 namespace browser {
 
-bool initializeEmbedded(const std::string &dataPath) {
+bool initializeEmbedded(const std::string &dataPath, const string &frameworkPath) {
   Servo2D::init();
   return true;
 }

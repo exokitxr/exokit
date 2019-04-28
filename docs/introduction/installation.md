@@ -8,13 +8,10 @@ source_code:
 examples: []
 ---
 
-> Get the Exokit Installer from [https://get.webmr.io/](https://get.webmr.io/).
+> Get the Exokit Installer from [https://get.exokit.org/](https://get.exokit.org/).
 
-This auto-detects your operating system and gives you the latest release. It includes both **Exokit Engine** and **Exokit Browser**.
+This auto-detects your operating system and gives you the latest release. It includes the **Exokit Engine**.
 
-## Visual guide
-
- <video src="https://cdn.rawgit.com/exokitxr/webmr-docs/master/website/static/media/exokitmediacopy/InstallVideo.mp4" width='100%' controls></video>
 
 ## MacOS notes
 

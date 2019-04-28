@@ -308,7 +308,7 @@ class VRDisplay extends EventEmitter {
   }
 
   submitFrame() {}
-  
+
   get layers() {
     return this._layers;
   }
@@ -388,8 +388,8 @@ class FakeVRDisplay extends VRDisplay {
   } */
 
   async requestPresent(layers) {
-    /* GlobalContext.xrState.renderWidth[0] = this.window.innerWidth * this.window.devicePixelRatio / 2;
-    GlobalContext.xrState.renderHeight[0] = this.window.innerHeight * this.window.devicePixelRatio; */
+    GlobalContext.xrState.renderWidth[0] = this.window.innerWidth / 2;
+    GlobalContext.xrState.renderHeight[0] = this.window.innerHeight;
 
     await this.onrequestpresent();
     
@@ -423,8 +423,8 @@ class FakeVRDisplay extends VRDisplay {
   async requestSession({exclusive = true} = {}) {
     const self = this;
 
-    // GlobalContext.xrState.renderWidth[0] = this.window.innerWidth * this.window.devicePixelRatio / 2;
-    // GlobalContext.xrState.renderHeight[0] = this.window.innerHeight * this.window.devicePixelRatio;
+    GlobalContext.xrState.renderWidth[0] = this.window.innerWidth / 2;
+    GlobalContext.xrState.renderHeight[0] = this.window.innerHeight;
 
     await this.onrequestpresent();
     
@@ -639,28 +639,42 @@ const getHMDType = () => {
 
 const createVRDisplay = () => new FakeVRDisplay();
 
-const oculusVRIdLeft = 'Oculus Touch (Left)';
-const oculusVRIdRight = 'Oculus Touch (Right)';
-const openVRId = 'OpenVR Gamepad';
+const controllerIDs = {
+  openvr: 'OpenVR Gamepad',
+  oculusMobile: 'Oculus Go',
+  openvrTracker: 'Tracker'
+  oculusGoLeft: 'Oculus Touch (Left)',
+  oculusGoRight: 'Oculus Touch (Right)',
+  oculusQuestLeft: 'Oculus Touch (Left)',
+  oculusQuestRight: 'Oculus Touch (Right)',
+};
+
+function getControllerID(hmdType, hand) {
+  return controllerIDs[hmdType] || controllerIDs[vrDisplay.id + hand.charAt(0).toUpperCase() + hand.slice(1)];
+}
+
 let gamepads = null;
 function getGamepads(window) {
-  // const {oculusVRDisplay, openVRDisplay, oculusMobileVrDisplay, magicLeapARDisplay} = window[symbols.mrDisplaysSymbol];
   if (GlobalContext.xrState.isPresenting[0]) {
     if (!gamepads) {
       const hmdType = getHMDType();
 
-      gamepads = Array(2 + maxNumTrackers);
+      let numGamepads = 2;
+      if (hmdType === 'openvr') {
+        numGamepads += maxNumTrackers;
+      }
+      gamepads = Array(numGamepads);
       for (let i = 0; i < gamepads.length; i++) {
         let hand, id;
         if (i === 0) {
           hand = 'left';
-          id = hmdType === 'oculus' ? oculusVRIdLeft : openVRId;
+          id = getControllerID(hmdType, hand);
         } else if (i === 1) {
           hand = 'right';
-          id = hmdType === 'oculus' ? oculusVRIdRight : openVRId;
+          id = getControllerID(hmdType, hand);
         } else {
           hand = null;
-          id = openVRId;
+          id = controllerIDs['openvrTracker'];
         }
         gamepads[i] = new Gamepad(hand, i, id);
       }

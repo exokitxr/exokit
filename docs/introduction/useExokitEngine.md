@@ -8,17 +8,13 @@ source_code:
 examples: []
 ---
 
-## Visual guide
-
-<video src="https://cdn.rawgit.com/exokitxr/webmr-docs/master/website/static/media/exokitmediacopy/ExokitBrowserHowto.mp4" width='100%' controls></video>
 
 ## Where do I get Exokit Engine?
 
 Install Exokit with [Exokit installer](installation.md).
 
-> Exokit Engine will have been included with the Exokit installer.
 
-## Open a WebGL site
+## Open an XR site
 
 To open a site in Exokit Engine, enter the `http`/`https` URL into the CLI. Here's an example:
 
@@ -62,6 +58,3 @@ The site may also listen for regular keyboard/mouse events to create an XR sessi
 
 There's a full [WebXR example](https://github.com/exokitxr/exokit/blob/master/examples/hello_xr.html) for you to play with on GitHub.
 
-You can see more Exokit Apps [here!](https://exokit.org/docs/exokitApps.html)
-
- <img src="https://cdn.rawgit.com/exokitxr/webmr-docs/media-upload/website/static/media/exokitmediacopy/WebXRExample.jpg" alt="Gif of example running"/>

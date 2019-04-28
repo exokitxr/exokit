@@ -596,7 +596,7 @@ module.exports.Range = Range;
 
 const getBoundDocumentElements = window => {
   const bind = (OldClass, makeClass) => {
-    const NewClass = makeClass((a, b, c, d) => Reflect.construct(OldClass, [window, a, b, c, d]));
+    const NewClass = makeClass((a, b, c, d) => new OldClass(window, a, b, c, d));
     NewClass.prototype = OldClass.prototype;
     NewClass.constructor = OldClass;
     return NewClass;

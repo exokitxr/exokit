@@ -33,6 +33,8 @@ const {XMLHttpRequest: XMLHttpRequestBase, FormData} = require('window-xhr');
 const fetch = require('window-fetch');
 const {Request, Response, Headers, Blob} = fetch;
 
+const core = require('./core.js');
+
 const WebSocket = require('ws/lib/websocket');
 const {
   /* getUserMedia,
@@ -530,7 +532,16 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
 
   window.innerWidth = defaultCanvasSize[0];
   window.innerHeight = defaultCanvasSize[1];
-  window.devicePixelRatio = 1;
+  Object.defineProperty(window, 'devicePixelRatio', {
+    get() {
+      if (!GlobalContext.xrState.devicePixelRatio[0]) {
+        GlobalContext.xrState.devicePixelRatio[0] = nativeWindow.getDevicePixelRatio();
+      }
+      return GlobalContext.xrState.devicePixelRatio[0];
+    },
+    set(devicePixelRatio) {},
+  });
+  window.document = null;
   const location = new Location(options.url);
   Object.defineProperty(window, 'location', {
     get() {
@@ -1159,7 +1170,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
   let loading = false;
   window.location.on('update', href => {
     if (!loading) {
-      exokit.load(href, {
+      core.load(href, {
         dataPath: options.dataPath,
       })
         .then(newWindow => {
@@ -1173,7 +1184,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
           const e = new ErrorEvent('error', {target: this});
           e.message = err.message;
           e.stack = err.stack;
-          this.dispatchEvent(e);
+          window.dispatchEvent(e);
         });
       loading = true;
     }
@@ -1250,10 +1261,10 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
             }
 
             if (vrPresentState.hmdType === 'fake' || vrPresentState.hmdType === 'oculus' || vrPresentState.hmdType === 'openvr') {
-              // console.log('compose', vrPresentState.msFbo, vrPresentState.fbo, context.canvas.width, context.canvas.height);
-              // nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, 0, context.canvas.width, context.canvas.height, context.canvas.width, context.canvas.height, true, false, false);
-              // console.log('compose', context.canvas.width, context.canvas.height);
-              nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, context.canvas.width, context.canvas.height, context.canvas.width, context.canvas.height, true, false, false);
+              const width = context.canvas.width * (args.blit ? 0.5 : 1);
+              const height = context.canvas.height;
+              const {width: dWidth, height: dHeight} = nativeWindow.getFramebufferSize(windowHandle);
+              nativeWindow.blitFrameBuffer(context, context.framebuffer.fbo, 0, width, height, dWidth, dHeight, true, false, false);
             }
           }
           

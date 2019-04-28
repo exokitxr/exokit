@@ -158,6 +158,10 @@ NAN_METHOD(GetFramebufferSize) {
   info.GetReturnValue().Set(result);
 }
 
+NAN_METHOD(GetDevicePixelRatio) {
+  info.GetReturnValue().Set(JS_NUM(1));
+}
+
 EGLContext GetGLContext(NATIVEwindow *window) {
   return window->context;
 }
@@ -364,6 +368,7 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "setWindowPos", egl::SetWindowPos);
   Nan::SetMethod(target, "getWindowPos", egl::GetWindowPos);
   Nan::SetMethod(target, "getFramebufferSize", egl::GetFramebufferSize);
+  Nan::SetMethod(target, "getDevicePixelRatio", egl::GetDevicePixelRatio);
   Nan::SetMethod(target, "iconifyWindow", egl::IconifyWindow);
   Nan::SetMethod(target, "restoreWindow", egl::RestoreWindow);
   Nan::SetMethod(target, "setEventHandler", egl::SetEventHandler);

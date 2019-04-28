@@ -83,7 +83,7 @@ void OculusMobileContext::handleAppCmd(struct android_app *app, int32_t cmd) {
 	}
 }
 
-Local<Function> OculusMobileContext::Initialize() {  
+Local<Function> OculusMobileContext::Initialize() {
   Nan::EscapableHandleScope scope;
 
   // constructor
@@ -263,11 +263,11 @@ NAN_METHOD(OculusMobileContext::WaitGetPoses) {
   float *controllerMatrixLeft = float32ArrayData + index;
   index += 16;
   float *controllerStateLeft = float32ArrayData + index;
-  index += 5;
+  index += 12;
   float *controllerMatrixRight = float32ArrayData + index;
   index += 16;
   float *controllerStateRight = float32ArrayData + index;
-  index += 5;
+  index += 12;
 
   oculusMobileContext->PollEvents(false);
 
@@ -312,10 +312,7 @@ NAN_METHOD(OculusMobileContext::WaitGetPoses) {
               if (remoteCaps.ControllerCapabilities & ovrControllerCaps_LeftHand) {
                 ovrTracking tracking;
                 vrapi_GetInputTrackingState(oculusMobileContext->ovrState, capsHeader.DeviceID, predictedDisplayTime, &tracking);
-                ovrVector3f pivot{-0.2, 1, 0};
-                ovrVector3f point{-0.2, 1, -0.2};
-                tracking.HeadPose.Pose.Position = ovrVector3f_RotateAboutPivot(&tracking.HeadPose.Pose.Orientation, &pivot, &point);
-                // const ovrMatrix4f &matrix = vrapi_GetViewMatrixFromPose(&tracking.HeadPose.Pose);
+
                 const ovrMatrix4f &matrix = vrapi_GetTransformFromPose(&tracking.HeadPose.Pose);
                 const ovrMatrix4f &matrix2 = ovrMatrix4f_Transpose(&matrix);
                 memcpy(controllerMatrixLeft, matrix2.M, sizeof(matrix2.M));
@@ -323,18 +320,38 @@ NAN_METHOD(OculusMobileContext::WaitGetPoses) {
                 ovrInputStateTrackedRemote remoteState;
                 remoteState.Header.ControllerType = ovrControllerType_TrackedRemote;
                 vrapi_GetCurrentInputState(oculusMobileContext->ovrState, capsHeader.DeviceID, &remoteState.Header);
-                controllerStateLeft[0] = remoteState.IndexTrigger;
-                controllerStateLeft[1] = remoteState.GripTrigger;
-                controllerStateLeft[2] = remoteState.TrackpadPosition.x;
-                controllerStateLeft[3] = remoteState.TrackpadPosition.y;
-                controllerStateLeft[4] = (remoteState.Buttons & ovrButton_Enter) ? 1 : (remoteState.TrackpadStatus ? 0.5 : 0);
-              } else if (remoteCaps.ControllerCapabilities & (ovrControllerCaps_RightHand|ovrControllerCaps_ModelOculusGo)) {
+                if (remoteCaps.ControllerCapabilities & ovrControllerCaps_ModelOculusGo ||
+                    remoteCaps.ControllerCapabilities & ovrControllerCaps_ModelGearVR) {
+                  controllerStateLeft[0] = remoteState.IndexTrigger;
+                  controllerStateLeft[1] = (remoteState.Buttons & ovrButton_Enter) ? 1 : 0;
+                  controllerStateLeft[2] = (remoteState.Buttons & ovrButton_Back) ? 1 : 0;
+                  controllerStateLeft[3] = remoteState.TrackpadPosition.x;
+                  controllerStateLeft[4] = remoteState.TrackpadPosition.y;
+                } else {
+                  // Buttons
+                  controllerStateLeft[0] = (remoteState.Buttons & ovrButton_X) ? 1 : 0;
+                  controllerStateLeft[1] = (remoteState.Buttons & ovrButton_Y) ? 1 : 0;
+                  controllerStateLeft[2] = (remoteState.Buttons & ovrButton_LThumb) ? 1 : 0;
+                  controllerStateLeft[3] = (remoteState.Buttons & ovrButton_Enter) ? 1 : 0;
+
+                  // Triggers
+                  controllerStateLeft[4] = remoteState.IndexTrigger;
+                  controllerStateLeft[5] = remoteState.GripTrigger;
+
+                  // Touches
+                  controllerStateLeft[6] = (remoteState.Touches & ovrTouch_X) ? 1 : 0;
+                  controllerStateLeft[7] = (remoteState.Touches & ovrTouch_Y) ? 1 : 0;
+                  controllerStateLeft[8] = (remoteState.Touches & ovrTouch_Joystick) ? 1 : 0;
+                  controllerStateLeft[9] = (remoteState.Touches & ovrTouch_IndexTrigger) ? 1 : 0;
+
+                  // Thumbstick axis.
+                  controllerStateLeft[10] = remoteState.Joystick.x;
+                  controllerStateLeft[11] = remoteState.Joystick.y;
+                }
+              } else if (remoteCaps.ControllerCapabilities & ovrControllerCaps_RightHand) {
                 ovrTracking tracking;
                 vrapi_GetInputTrackingState(oculusMobileContext->ovrState, capsHeader.DeviceID, predictedDisplayTime, &tracking);
-                ovrVector3f pivot{0.2, 1, 0};
-                ovrVector3f point{0.2, 1, -0.2};
-                tracking.HeadPose.Pose.Position = ovrVector3f_RotateAboutPivot(&tracking.HeadPose.Pose.Orientation, &pivot, &point);
-                // const ovrMatrix4f &matrix = vrapi_GetViewMatrixFromPose(&tracking.HeadPose.Pose);
+
                 const ovrMatrix4f &matrix = vrapi_GetTransformFromPose(&tracking.HeadPose.Pose);
                 const ovrMatrix4f &matrix2 = ovrMatrix4f_Transpose(&matrix);
                 memcpy(controllerMatrixRight, matrix2.M, sizeof(matrix2.M));
@@ -342,11 +359,35 @@ NAN_METHOD(OculusMobileContext::WaitGetPoses) {
                 ovrInputStateTrackedRemote remoteState;
                 remoteState.Header.ControllerType = ovrControllerType_TrackedRemote;
                 vrapi_GetCurrentInputState(oculusMobileContext->ovrState, capsHeader.DeviceID, &remoteState.Header);
-                controllerStateRight[0] = remoteState.IndexTrigger;
-                controllerStateRight[1] = remoteState.GripTrigger;
-                controllerStateRight[2] = remoteState.TrackpadPosition.x;
-                controllerStateRight[3] = remoteState.TrackpadPosition.y;
-                controllerStateRight[4] = (remoteState.Buttons & ovrButton_Enter) ? 1 : (remoteState.TrackpadStatus ? 0.5 : 0);
+
+                if (remoteCaps.ControllerCapabilities & ovrControllerCaps_ModelOculusGo ||
+                    remoteCaps.ControllerCapabilities & ovrControllerCaps_ModelGearVR) {
+                  controllerStateRight[0] = remoteState.IndexTrigger;
+                  controllerStateRight[1] = (remoteState.Buttons & ovrButton_Enter) ? 1 : 0;
+                  controllerStateRight[2] = (remoteState.Buttons & ovrButton_Back) ? 1 : 0;
+                  controllerStateRight[3] = remoteState.TrackpadPosition.x;
+                  controllerStateRight[4] = remoteState.TrackpadPosition.y;
+                } else {
+                  // Buttons
+                  controllerStateRight[0] = (remoteState.Buttons & ovrButton_A) ? 1 : 0;
+                  controllerStateRight[1] = (remoteState.Buttons & ovrButton_B) ? 1 : 0;
+                  controllerStateRight[2] = (remoteState.Buttons & ovrButton_RThumb) ? 1 : 0;
+                  controllerStateRight[3] = (remoteState.Buttons & ovrButton_Enter) ? 1 : 0;
+
+                  // Triggers
+                  controllerStateRight[4] = remoteState.IndexTrigger;
+                  controllerStateRight[5] = remoteState.GripTrigger;
+
+                  // Touches
+                  controllerStateRight[6] = (remoteState.Touches & ovrTouch_A) ? 1 : 0;
+                  controllerStateRight[7] = (remoteState.Touches & ovrTouch_B) ? 1 : 0;
+                  controllerStateRight[8] = (remoteState.Touches & ovrTouch_Joystick) ? 1 : 0;
+                  controllerStateRight[9] = (remoteState.Touches & ovrTouch_IndexTrigger) ? 1 : 0;
+
+                    // Thumbstick axis.
+                  controllerStateRight[10] = remoteState.Joystick.x;
+                  controllerStateRight[11] = remoteState.Joystick.y;
+                }
               } else {
                 // not a hand
               }

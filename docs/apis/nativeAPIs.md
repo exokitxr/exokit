@@ -8,11 +8,11 @@ parent_section: api
 
 ## WebGL
 
-WebGL (Web Graphics Library) is a JavaScript API for rendering interactive 3D and 2D graphics within any compatible web browser without the use of plug-ins. WebGL does so by introducing an API that closely conforms to OpenGL ES 2.0 that can be used in HTML5 \<canvas\> elements.
+WebGL (Web Graphics Library) is a JavaScript API for rendering interactive 3D and 2D graphics within any compatible web browser without the use of plug-ins. WebGL does so by introducing an API that closely conforms to OpenGL ES 2.0 that can be used in HTML5 <canvas\> elements.
 
-## Canvas2d
+## Canvas2D
 
-Added in HTML5, the HTML \<canvas\> element can be used to draw graphics via scripting in JavaScript. For example, it can be used to draw graphs, make photo compositions, create animations, or even do real-time video processing or rendering.
+Added in HTML5, the HTML <canvas\> element can be used to draw graphics via scripting in JavaScript. For example, it can be used to draw graphs, make photo compositions, create animations, or even do real-time video processing or rendering.
 
 ## WebAudio
 
@@ -24,7 +24,6 @@ WebRTC (Web Real-Time Communications) is a technology which enables Web applicat
 
  The set of standards that comprises WebRTC makes it possible to share data and perform teleconferencing peer-to-peer, without requiring that the user install plug-ins or any other third-party software.
 
-WebRTC consists of several interrelated APIs and protocols which work together to achieve this. The documentation you'll find here will help you understand the fundamentals of WebRTC, how to set up and use both data and media connections, and more.
 
 ## Node
 
@@ -43,6 +42,7 @@ The API is implemented as a set of C++ interface classes full of pure virtual fu
 
 - OVR from Oculus		
 - MLSDK from Magic Leap
+- gVR from Google 
 - Leap Motion
 - Chromium
 

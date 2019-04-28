@@ -23,12 +23,15 @@ extern JNIEnv *androidJniEnv;
 
 namespace oculusmobile {
 
+extern ovrJava java;
+
 extern Nan::Persistent<v8::Function> oculusMobileContextConstructor;
 extern Nan::Persistent<v8::Object> oculusMobileContext;
 
 /// inline IVRSystem *OculusMobile_Init( EVRInitError *peError, EVRApplicationType eApplicationType );
 NAN_METHOD(OculusMobile_Init);
 NAN_METHOD(OculusMobile_IsHmdPresent);
+NAN_METHOD(OculusMobile_GetDeviceType);
 
 }
 

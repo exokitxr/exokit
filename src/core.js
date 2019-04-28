@@ -7,13 +7,15 @@ const symbols = require('./symbols');
 const {_getBaseUrl, _download} = require('./utils');
 const {_makeWindow} = require('./WindowVm');
 
-const exokit = (htmlString, options) => {
+const exokit = module.exports;
+exokit.make = (htmlString, options) => {
   if (typeof htmlString === 'object') {
     options = htmlString;
     htmlString = undefined;
   }
   htmlString = htmlString || '';
   options = options || {};
+
   options.url = options.url || 'http://127.0.0.1/';
   options.baseUrl = options.baseUrl || options.url;
   options.dataPath = options.dataPath || __dirname;
@@ -72,7 +74,7 @@ exokit.load = (src, options = {}) => {
         baseUrl = _getBaseUrl(src);
       }
 
-      return exokit(htmlString, {
+      return exokit.make(htmlString, {
         url: options.url || src,
         baseUrl,
         dataPath: options.dataPath,
@@ -98,7 +100,6 @@ exokit.setArgs = newArgs => {
 exokit.setVersion = newVersion => {
   GlobalContext.version = newVersion;
 };
-module.exports = exokit;
 
 if (require.main === module) {
   if (process.argv.length === 3) {

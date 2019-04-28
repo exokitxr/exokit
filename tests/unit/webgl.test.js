@@ -6,7 +6,7 @@ helpers.describeSkipCI('webgl', () => {
   var window;
   
   beforeEach(async () => {
-    window = exokit({
+    window = exokit.make({
       require: true,
     });
     

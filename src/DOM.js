@@ -1966,7 +1966,8 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                     context,
                     this.width||context.canvas.ownerDocument.defaultView.innerWidth,
                     this.height||context.canvas.ownerDocument.defaultView.innerHeight,
-                    path.join(this.ownerDocument.defaultView[symbols.optionsSymbol].dataPath, '.cef')
+                    path.join(this.ownerDocument.defaultView[symbols.optionsSymbol].dataPath, '.cef'),
+                    path.join(__dirname, '..', 'node_modules', 'native-browser-deps-macos', 'lib3', 'macos', 'Chromium Embedded Framework.framework')
                   );
                   
                   this.browser.onconsole = (message, source, line) => {
@@ -3126,7 +3127,7 @@ function _hash(s) {
 
 const getBoundDOMElements = window => {
   const bind = (OldClass, makeClass) => {
-    const NewClass = makeClass((a, b, c, d) => Reflect.construct(OldClass, [window, a, b, c, d]));
+    const NewClass = makeClass((a, b, c, d) => new OldClass(window, a, b, c, d));
     NewClass.prototype = OldClass.prototype;
     NewClass.constructor = OldClass;
     return NewClass;

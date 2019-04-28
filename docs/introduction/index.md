@@ -14,12 +14,15 @@ examples:
 
 Exokit is an **engine that runs XR experiences made with regular web code**. It emulates a web browser on top of Node.js, providing native hooks for WebGL, WebXR, WebAudio, and other standard APIs for immersive experiences. It works with web pages and your favorite frameworks like A-Frame.
 
-:eyeglasses: **Exokit targets the following platforms**:
-* Desktop VR (Steam compatible)
+:eyeglasses: **Exokit currently targets the following platforms**:
+* OpenVR Desktop VR (Steam compatible)
+* Oculus Desktop (Oculus Rift/Rift S)
+* Oculus Mobile (Oculus Quest/Go, GearVR)
 * Magic Leap
-* Mobile AR (ARKit / ARCore) *
-* Mobile VR (Daydream / Gear VR) *
-* Standalone VR (Oculus Quest/Go) *
+* iOS ARKit *
+* Android ARCore *
+* Google VR (Daydream / Cardboard / Mirage Solo) *
+* any XR device, start a [pull request](https://github.com/exokitxr/exokit/compare) with a native binding if it isn't listed here! *
 
 \* not supported yet
 
@@ -145,6 +148,8 @@ Exokit runs on Windows, macOS, Linux (x64), Linux (ARM64), and Magic Leap (ARM64
 
 - OpenGL
 - OpenVR (Steam VR)
+- Oculus
+- Oculus Mobile
 - Magic Leap
 - Leap Motion
 
@@ -164,7 +169,6 @@ Exokit:
 2. Read through the documentation to get a grasp.
 
 3. Stay in Touch:
-- [Join our Slack](https://join.slack.com/t/exokit/shared_invite/enQtNDI3NjcxNzYwMDIxLWU2NmFmOTEzMzk4NWNiYjRhMjVkYzcyNjg5YjUyMzZkYWM1ZGI4M2IwYWZiMjNlMTJjMDlkM2U3Y2JiNTc2M2Q) for development.
 - [Join our Discord](https://discord.gg/Apk6cZN) for hanging out.
 - [Follow @exokitxr on Twitter](https://twitter.com/exokitxr) for updates.
 

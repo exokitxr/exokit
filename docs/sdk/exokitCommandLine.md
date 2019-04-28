@@ -20,11 +20,11 @@ parent_section: sdk
 ## Launch a URL with Exokit
 
 ```sh
-./exokit.cmd http://yourFileURL.com/
+./scripts/exokit.cmd http://yourFileURL.com/
 ```
 
 ## Launch a local file with Exokit
 
 ```sh
-./exokit.cmd /your/File/Path.html
+./scripts/exokit.cmd /your/File/Path.html
 ```

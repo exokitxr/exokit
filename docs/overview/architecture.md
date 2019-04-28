@@ -10,17 +10,13 @@ examples: []
 
 ## Overview
 
- <img style="display: block !important" src="https://cdn.rawgit.com/exokitxr/webmr-docs/media-upload/website/static/media/exokitmediacopy/architecture.jpg" alt="Diagram of Node on bottom, running a layer of javascript, linked to native bindings, and then a device/headset on top"/>
-
 Exokit Engine is a Node module.
 
-The core is Javascript, which fetches HTML, runs `<script>` tags, and provides all of the regular mixed reality web APIs like WebGL/WebXR/WebAudio.
+The core is Javascript, which fetches HTML, runs `<script>` tags, and provides all of the regular XR web APIs like WebGL/WebXR/WebAudio.
 
-The hardware-dependent parts are implemented as native bindings to Javascript. Exokit Engine uses GLFW for contexts, OpenGL for graphics, OpenVR for VR, ARCore for mobile AR, Leap Motion for hands detection, and a lot more, check out our [Integrations](https://exokit.org/docs/techIntegrations.html) page for a more complete list.
+The hardware-dependent parts are implemented as native bindings to Javascript. Exokit Engine uses GLFW for contexts, OpenGL for graphics, OpenVR for VR, ARCore for mobile AR, Leap Motion for hands detection, and a lot more, check out our [Integrations](https://exokit.org/docs/overview/techIntegrations.html) page for a more complete list.
 
 ## Embeddability
-
-Exokit Engine runs on Windows, OSX, and Linux.
 
 You can `require('exokit')` into another Javascript environment.
 

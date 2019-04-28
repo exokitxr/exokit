@@ -3,7 +3,7 @@ node_js:
 - '11'
 env:
   matrix:
-    secure: CTziiKsHYCjdRYftawXT7oBMFm3nOQNRc+ZFv0rUxTaGkw9ImwuxBv6yqMGh6YfykIe94aFNwV+oN8vbuG9NZ56xotAW7mt4r/eCQRnutm54IoJV4SoCdBlgRFPk26nRafnogmDq/pH7lzLI7csDvup0ABF3R6Ysji19vR4LnNIotahdOtyt5jHBnn60XxibluCy6q03Xg2bw1UNjGFN0PVrw5wpPnpB3WugEkyd4Nos5US7q80KC3ltThw1c9TYDz38rryghMnm0lPe1/ruxCMzHx9KLwZl/D3Bikxf2YLaifwphf5NIkAQiAUpaYcMamBZsABxtzE45+TBhSc4sKGJL+ZuFwXAp/gbBbxgtY+9BKHnV78v1+bcAY4Geb8kKAsUgN7Q3Tqk0mjy+L4pML2BXyD5v7x8ev9MRfKbamx1GRX+XvP1pDVLFCHsT4cnPoUoE4SjXma9s6ry0cvN2crkVfRk1KQJhbpYphmQHVfY49nNN77es0Uo+T51w5zHfvzjWwx12C1rauX5s2tdmm3mkSUNgSMsu4egE7LoGARZYqlxRlpmjzvwhDo2jKhMPnOE9lbmH9v6s3BeizMSHbtKDRgpaH1G4dqwC/rL+vIf5ED/Sfm3KEdAVadk0U8E4a3L5jqTYbSLYT1wvYCZmvvt47OKQY9ubuFkhLRht9M=
+    secure: IKkxnHrFU46DF5bs1q/bldg2sAbRWAoIqHuv4ddzAgv+0Oxbg9oD8mC9DmJ77wglMt7ErLKmHxG4qImGgHTZWPTgW3oSaFkIfT32YdsLh/6tewIZmjsffjBse3yP2hpTAx2qMeCBeRTuxTqQqQ8xMuZK2i08YFnYEMJ8FSd9pJnu7FUCZ1s8sYnwHp5YctGdMLkWNVkEVyI9dAHSPsBYyC1aSEeKUOmlqUc07kJVVknG+EOX95QqGtnRIB274+Kdj64g9dX0447sRWzDM+3gK4TXKxaOqdp/YCgWtILa33u1RBwxmv4CEseRYUsr9HSHfZMaY0EPlFqSXDZD0emNVUgttnD+KyIE1Mo3pUAcc+Gkr4TePTmi+EieBw/Re5Nv3ChEBpOYL9a6GFb+MKMDzLhU6PaFQU0SaaVYkFhhpRvCr7O1Sr4Tz+814A8x32ZCEx/ER37CjB5UN0HsHgPAS4T/jNE1QC7gSX6pNBu5JQRevruWE/gZI20J6EqXR26hPhGInf175Ho4W3+GZ7Cur4sdgcXevm1mt+ZcMQEqIs0NI1TZDxfUEa3smp14fbo/ehtasTNPWwGx4hw2dgtT6/cUBzWECHExydt/e5hw41IlYKW8VW0/kC9/l+n7A/lVBbhGfV2XMXdYLcvpySAihLVou3G/rQeFGmA80Ag5vp0=
     secure: MP84r8nsLXPBijsGNglKWZEOvTjVcDJwcsm708S3kw0HxtbYHPfDVxAFV9iCSff9mCCNeUP/uTCw4e0MxzqtoLirj+qzWI8EDqLDxB/YsAdANm5Puq+7QYWvgK6HwYmq8guMfeZuT8DTlzSRPjDMIlUHJsv7rGatoD4BCEYUOs20mDoEkujjWeYoMAF6w/TIm/HukAFO71E2uIGysE77b9/1QbbYLtEF8f94k5mJliWS1sLQ1dGGHrw+mKVdJqB5oueDhJatF/29eEGLxiBOJACn291Xl1Vyfqj+le+7XX4qwvCRAVUySrkLFbVbf1B+lQHCaI4LFrqWsIGrjxk8bT7NRJQSCxi4tqRu96gn8nGFgetMkeryJrtB7G1/AYjBpvjq1VGAhbWWAWZB4fqdsvOPWDD2jBhLCRMWHSZ6cFERddfZScsenu4ksGnBZZ7Gd8zo/86HRakeHVJxwvprei3MW4P9xfR64+CoWAphhDPZivj/N7MBq8HmAva2cZHBajVR7DE+GenmyzcTFWpAwNO3WAcUJL3kGFW1eI4fUY2HPa0kDITdbJ1ryHDn//nTPbDwzWmK5xY71P1zP8kaBJawJ54bYdw/YCd/WNq9pNoknQ6WJu4RUdHBNroVOINZslIWWNWK93M9FVchNerNXaOytYHBD8bVfEhtVnlSzPU=
 matrix:
   include:
@@ -86,6 +86,8 @@ matrix:
       build/Release/exokit.node
     - mkdir -p /tmp/Exokit.app/Contents/MacOS
     - cp -R * /tmp/Exokit.app/Contents/MacOS
+    - mkdir -p /tmp/Exokit.app/Contents/Resources
+    - cp -R metadata/icon.icns /tmp/Exokit.app/Contents/Resources
     - cp metadata/Info.plist /tmp/Exokit.app/Contents
     - tar -czf exokit-macos-full.tar.gz --exclude=".*" --exclude="*.tar.gz" *
     - rm -R node
