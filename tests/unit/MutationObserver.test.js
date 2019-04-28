@@ -28,6 +28,7 @@ describe('MutationObserver', () => {
         return observer;
       };
       window.observerHelper = observerHelper;
+      1;
     `);
   });
 
@@ -217,6 +218,7 @@ describe('MutationObserver', () => {
           return observer;
         };
         window.observerHelper = observerHelper;
+        1;
       `);
     });
 
