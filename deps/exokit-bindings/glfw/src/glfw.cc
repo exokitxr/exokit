@@ -886,7 +886,7 @@ NAN_METHOD(GetFramebufferSize) {
 }
 
 double GetDevicePixelRatio() {
-  NATIVEwindow *window = CreateNativeWindow(100, 100, false, nullptr);
+  NATIVEwindow *window = CreateNativeWindow(100, 100, false);
   int width, height;
   glfwGetFramebufferSize(window, &width, &height);
   glfwDestroyWindow(window);
