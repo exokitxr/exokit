@@ -38,13 +38,14 @@ const _makeWindow = (options = {}) => {
   window.destroy = (destroy => function() {
     GlobalContext.windows.splice(GlobalContext.windows.indexOf(window), 1);
 
-    return new Promise((accept, reject) => {
+    return Promise.resolve(); // XXX
+    /* return new Promise((accept, reject) => {
       destroy.apply(this, arguments);
 
       window.on('exit', () => {
         accept();
       });
-    });
+    }); */
   })(window.destroy);
   
   GlobalContext.windows.push(window);
