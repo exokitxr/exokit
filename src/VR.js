@@ -650,7 +650,7 @@ const controllerIDs = {
 };
 
 function getControllerID(hmdType, hand) {
-  return controllerIDs[hmdType] || controllerIDs[vrDisplay.id + hand.charAt(0).toUpperCase() + hand.slice(1)];
+  return controllerIDs[hmdType] || controllerIDs[hmdType + hand.charAt(0).toUpperCase() + hand.slice(1)];
 }
 
 let gamepads = null;
