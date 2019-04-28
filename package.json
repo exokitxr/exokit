@@ -17,7 +17,7 @@
     "rebuild": "shx rm -rf node_modules && npm cache clean --force && npm install",
     "serve": "serve examples",
     "start": "node --experimental-worker .",
-    "test": "node node_modules/mocha/bin/mocha --experimental-worker --full-trace --exit --bail tests/unit/__setup.test.js tests/unit/*.test.js tests/unit/**/*.test.js",
+    "test": "node node_modules/mocha/bin/mocha --experimental-worker --full-trace --exit --bail --timeout 5000 tests/unit/__setup.test.js tests/unit/*.test.js tests/unit/**/*.test.js",
     "test:watch": "npm run test -- --watch"
   },
   "repository": {
