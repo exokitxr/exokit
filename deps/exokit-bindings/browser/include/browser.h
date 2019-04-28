@@ -35,6 +35,7 @@ protected:
   static NAN_METHOD(New);
   static NAN_METHOD(UpdateAll);
   static NAN_METHOD(Load);
+  static NAN_METHOD(Resize);
   static NAN_GETTER(WidthGetter);
   static NAN_SETTER(WidthSetter);
   static NAN_GETTER(HeightGetter);

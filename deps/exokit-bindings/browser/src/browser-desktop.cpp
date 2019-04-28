@@ -213,6 +213,17 @@ EmbeddedBrowser createEmbedded(
 void destroyEmbedded(EmbeddedBrowser browser_) {
   browser_->GetHost()->CloseBrowser(false);
 }
+std::pair<int, int> getEmbeddedSize(EmbeddedBrowser browser_) {
+  auto renderHandler = ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler;
+  return std::pair<int, int>(renderHandler->width, renderHandler->height);
+}
+void setEmbeddedSize(EmbeddedBrowser browser_, int width, int height) {
+  auto renderHandler = ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler;
+  renderHandler->width = width;
+  renderHandler->height = height;
+
+  browser_->GetHost()->WasResized();
+}
 int getEmbeddedWidth(EmbeddedBrowser browser_) {
   return ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler->width;
 }

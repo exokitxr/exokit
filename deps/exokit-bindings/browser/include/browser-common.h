@@ -77,6 +77,8 @@ EmbeddedBrowser createEmbedded(
 );
 void destroyEmbedded(EmbeddedBrowser browser_);
 void embeddedDoMessageLoopWork();
+std::pair<int, int> getEmbeddedSize(EmbeddedBrowser browser_);
+void setEmbeddedSize(EmbeddedBrowser browser_, int width, int height);
 int getEmbeddedWidth(EmbeddedBrowser browser_);
 void setEmbeddedWidth(EmbeddedBrowser browser_, int width);
 int getEmbeddedHeight(EmbeddedBrowser browser_);

@@ -42,7 +42,7 @@ Local<Object> Browser::Initialize(Isolate *isolate) {
   // prototype
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
   Nan::SetMethod(proto, "load", Load);
-  // Nan::SetMethod(proto, "resize", Resize);
+  Nan::SetMethod(proto, "resize", Resize);
   Nan::SetAccessor(proto, JS_STR("width"), WidthGetter, WidthSetter);
   Nan::SetAccessor(proto, JS_STR("height"), HeightGetter, HeightSetter);
   Nan::SetAccessor(proto, JS_STR("onloadstart"), OnLoadStartGetter, OnLoadStartSetter);
@@ -218,11 +218,6 @@ void Browser::loadImmediate(const std::string &url) {
   );
 }
 
-/* void Browser::resize(int w, int h) {
-  ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler->resize(w, h);
-	browser_->GetHost()->WasResized();
-} */
-
 NAN_METHOD(Browser::UpdateAll) {
   if (embeddedInitialized) {
     QueueOnBrowserThread([]() -> void {
@@ -243,6 +238,14 @@ NAN_METHOD(Browser::Load) {
   } else {
     return Nan::ThrowError("Browser::Load: invalid arguments");
   }
+}
+
+NAN_METHOD(Browser::Resize) {
+  Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
+  int width = TO_INT32(info[0]);
+  int height = TO_INT32(info[1]);
+
+  setEmbeddedSize(browser->browser_, width, height);
 }
 
 NAN_GETTER(Browser::WidthGetter) {
