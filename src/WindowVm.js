@@ -35,15 +35,16 @@ const _makeWindow = (options = {}) => {
   window.on('error', err => {
     console.warn(err.stack);
   });
-  /* window.on('exit', () => {
-    window.emit('destroy');
-  }); */
   window.destroy = (destroy => function() {
-    destroy.apply(this, arguments);
-    
-    window.emit('destroy');
-    
     GlobalContext.windows.splice(GlobalContext.windows.indexOf(window), 1);
+
+    return new Promise((accept, reject) => {
+      destroy.apply(this, arguments);
+
+      window.on('exit', () => {
+        accept();
+      });
+    });
   })(window.destroy);
   
   GlobalContext.windows.push(window);
