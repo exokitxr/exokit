@@ -21,6 +21,8 @@ const {XMLHttpRequest: XMLHttpRequestBase, FormData} = require('window-xhr');
 const fetch = require('window-fetch');
 const {Request, Response, Headers, Blob} = fetch;
 
+const core = require('./core.js');
+
 const WebSocket = require('ws/lib/websocket');
 const {
   /* getUserMedia,
@@ -1251,7 +1253,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   let loading = false;
   window.location.on('update', href => {
     if (!loading) {
-      exokit.load(href, {
+      core.load(href, {
         dataPath: options.dataPath,
       })
         .then(newWindow => {
@@ -1267,7 +1269,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
           const e = new ErrorEvent('error', {target: this});
           e.message = err.message;
           e.stack = err.stack;
-          this.dispatchEvent(e);
+          window.dispatchEvent(e);
         });
       loading = true;
     }

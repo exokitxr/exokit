@@ -2339,7 +2339,7 @@ const _start = () => {
       _bindWindow(newWindow, _bindReplWindow);
       window = newWindow;
     };
-    _bindReplWindow(core('', {
+    _bindReplWindow(core.make('', {
       dataPath,
     }));
 
