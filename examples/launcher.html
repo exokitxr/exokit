@@ -168,6 +168,9 @@ function init() {
   });
   window.addEventListener('resize', e => {
     console.log('got resize', window.innerWidth, window.innerHeight);
+
+    iframe.width = window.innerWidth;
+    iframe.height = window.innerHeight;
   });
 }
 
