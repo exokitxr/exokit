@@ -114,7 +114,7 @@
                     console.log('POST from frontend: ', m.data);
                     switch(m.data.action){
                         case 'launch':
-                            launch(m.data.args);
+                            launch(m.data.flags, m.data.url);
                             break;
                         case 'update':
                             update();
