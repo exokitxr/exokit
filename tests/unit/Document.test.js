@@ -3,7 +3,7 @@ const exokit = require('../../src/index');
 
 describe('_parseDocument', () => {
   it('parses basic document', async () => {
-    const window = exokit({
+    const window = exokit.make({
       require: true,
     });
     await window.evalAsync(`
