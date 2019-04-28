@@ -484,7 +484,7 @@
         }],
         ['"<!(echo $LUMIN)"=="1"', {
           'sources': [
-            'exokit.cpp',
+            'cpp/exokit.cpp',
             '<!@(ls -1 deps/exokit-bindings/bindings/src/*.cc)',
             '<!@(ls -1 deps/exokit-bindings/util/src/*.cc)',
             '<!@(ls -1 deps/exokit-bindings/browser/src/*.cpp)',
