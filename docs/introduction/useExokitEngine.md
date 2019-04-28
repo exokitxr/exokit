@@ -13,7 +13,6 @@ examples: []
 
 Install Exokit with [Exokit installer](installation.md).
 
-> Exokit Engine will have been included with the Exokit installer.
 
 ## Open an XR site
 
