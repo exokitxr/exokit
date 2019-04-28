@@ -273,7 +273,6 @@ const xrState = (() => {
   return result;
 })();
 GlobalContext.xrState = xrState;
-GlobalContext.fakeVrDisplayEnabled = false; // XXX globalize this
 
 let innerWidth = 1280; // XXX do not track this globally
 let innerHeight = 1024;
