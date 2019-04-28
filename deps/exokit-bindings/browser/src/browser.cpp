@@ -264,7 +264,7 @@ NAN_SETTER(Browser::WidthSetter) {
     int width = TO_INT32(value);
     
     QueueOnBrowserThread([browser, width]() -> void {
-      setEmbeddedHeight(browser->browser_, width);
+      setEmbeddedWidth(browser->browser_, width);
     });
   }
 }
