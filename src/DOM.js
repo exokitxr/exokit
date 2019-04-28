@@ -2078,9 +2078,12 @@ class HTMLIFrameElement extends HTMLSrcableElement {
         } else {
           this.d = null;
         }
-      } else if (name === 'width' || name === 'height') {
+      } else if (name === 'width') {
         if (this.browser) {
           this.browser.width = this.width;
+        }
+      } else if (name === 'height') {
+        if (this.browser) {
           this.browser.height = this.height;
         }
       }
