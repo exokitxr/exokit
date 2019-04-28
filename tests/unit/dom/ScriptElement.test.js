@@ -36,7 +36,7 @@ describe('ScriptElement', () => {
     });
 
     it('Insert <script async=false>', async () => {
-      return await window.evalAsync(`
+      return await window.evalAsync(`new Promise((accept, reject) => {
         let count = 0;
         let err = null;
         window.check = i => {
@@ -47,7 +47,11 @@ describe('ScriptElement', () => {
           count++;
 
           if (count === 2) {
-            cb(err);
+            if (!err) {
+              accept();
+            } else {
+              reject(err);
+            }
           }
         };
 
@@ -73,7 +77,7 @@ describe('ScriptElement', () => {
         }
 
         1;
-      `);
+      })`);
     });
   });
 });
