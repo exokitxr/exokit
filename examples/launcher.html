@@ -157,7 +157,7 @@ function init() {
     }
   });
   window.addEventListener('keyup', e => {
-  iframe.sendKeyUp(e.keyCode,{shiftKey:e.shiftKey,ctrlKey:e.ctrlKey,altKey:e.altKey});
+    iframe.sendKeyUp(e.keyCode,{shiftKey:e.shiftKey,ctrlKey:e.ctrlKey,altKey:e.altKey});
   });
   window.addEventListener('keypress', e => {
     if (e.keyCode === 114 && e.ctrlKey) { // Ctrl-R
