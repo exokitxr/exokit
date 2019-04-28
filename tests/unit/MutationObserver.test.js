@@ -9,7 +9,7 @@ describe('MutationObserver', () => {
       require: true,
     });
 
-    return await window.evalAsync(`
+    return await window.evalAsync(`new Promise((accept, reject) => {
       const assert = require('assert');
       window.assert = assert;
     
@@ -28,8 +28,15 @@ describe('MutationObserver', () => {
         return observer;
       };
       window.observerHelper = observerHelper;
-      1;
-    `);
+
+      if (document.readyState !== 'complete') {
+        window.onload = () => {
+          accept();
+        };
+      } else {
+        accept();
+      }
+    })`);
   });
 
   afterEach(async () => {
