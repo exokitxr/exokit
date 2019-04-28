@@ -21,6 +21,8 @@ const _makeWindow = (options = {}) => {
   window.promise = null;
   // window.syncs = null;
 
+  window.evalAsync = scriptString => window.runAsync(JSON.stringify({method: 'eval', scriptString}));
+
   window.on('resize', ({width, height}) => {
     console.log('got resize', width, height);
     window.width = width;

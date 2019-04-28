@@ -1669,6 +1669,8 @@ global.onrunasync = method => {
     } else {
       return Promise.reject(new Error(`unexpected window response`));
     }
+  } else if (/^\{"method":"eval"/.test(method)) {
+    return Promise.resolve(eval(JSON.parse(method).scriptString));
   } else {
     return Promise.reject(new Error(`invalid window async method: ${method}`));
   }
