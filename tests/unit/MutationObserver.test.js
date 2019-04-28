@@ -307,9 +307,7 @@ describe('MutationObserver', () => {
           const mutation = mutations[0];
           assert.equal(mutations.length, 1);
           assert.equal(mutation.type , 'characterData');
-          setTimeout(() => {
-            accept();
-          }, 100);
+          accept();
         });
         observer.observe(textNode, {characterData: true});
         textNode.data = 'zol';
@@ -328,9 +326,7 @@ describe('MutationObserver', () => {
           assert.equal(mutation.addedNodes.length, 1);
           assert.equal(mutation.addedNodes[0].id, 'child');
           assert.equal(mutation.type , 'childList');
-          setTimeout(() => {
-            accept();
-          }, 100);
+          accept();
         });
         el.appendChild(childEl);
       })`);
@@ -348,9 +344,7 @@ describe('MutationObserver', () => {
         el.setAttribute('data-foo', 'foo');
         childEl.setAttribute('data-bar', 'bar');
         
-        setTimeout(() => {
-          accept();
-        }, 100);
+        accept();
       })`);
     });
   });
