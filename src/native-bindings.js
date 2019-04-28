@@ -232,12 +232,12 @@ const _onGl3DConstruct = (gl, canvas) => {
       }
     });
 
-    const nativeWindowSize = nativeWindow.getFramebufferSize(windowHandle);
+    /* const nativeWindowSize = nativeWindow.getFramebufferSize(windowHandle);
     const nativeWindowHeight = nativeWindowSize.height;
     const nativeWindowWidth = nativeWindowSize.width;
 
     // Calculate devicePixelRatio.
-    window.devicePixelRatio = nativeWindowWidth / canvasWidth;
+    window.devicePixelRatio = nativeWindowWidth / canvasWidth; */
 
     // Tell DOM how large the window is.
     // window.innerHeight = nativeWindowHeight / window.devicePixelRatio;
