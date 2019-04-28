@@ -7,7 +7,7 @@ describe('HTMLAnchorElement', () => {
   var el;
 
   beforeEach(function () {
-    window = exokit().window;
+    window = exokit.make().window;
     document = window.document;
     el = document.createElement('a');
   });

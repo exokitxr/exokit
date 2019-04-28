@@ -9,7 +9,7 @@ describe('MutationObserver', () => {
   var MutationObserver;
 
   beforeEach(done => {
-    const o = exokit();
+    const o = exokit.make();
     window = o.window;
     window.navigator.getVRDisplaysSync = () => [];
     document = o.document;

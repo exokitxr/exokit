@@ -6,7 +6,7 @@ describe('utils._normalizeProtoype', () => {
   var window;
 
   beforeEach(() => {
-    const o = exokit();
+    const o = exokit.make();
     window = o.window;
   });
 

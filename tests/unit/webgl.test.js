@@ -8,7 +8,7 @@ helpers.describeSkipCI('webgl', () => {
   var window;
 
   beforeEach(() => {
-    window = exokit().window;
+    window = exokit.make().window;
     gl = window.WebGLRenderingContext(window.document.createElement('canvas'));
   });
 

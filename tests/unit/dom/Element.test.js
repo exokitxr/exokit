@@ -7,7 +7,7 @@ describe('Element', () => {
   var el;
 
   beforeEach(() => {
-    const o = exokit();
+    const o = exokit.make();
     window = o.window;
     window.navigator.getVRDisplaysSync = () => [];
     document = o.document;
