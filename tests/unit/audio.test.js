@@ -11,7 +11,7 @@ helpers.describeSkipCI('audio', () => {
   var window;
 
   beforeEach(() => {
-    const o = exokit();
+    const o = exokit.make();
     window = o.window;
 
     window.navigator.getVRDisplaysSync = () => [];
