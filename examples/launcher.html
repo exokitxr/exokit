@@ -138,6 +138,7 @@ function init() {
     iframe.sendMouseMove(e.clientX, e.clientY);
   });
   window.addEventListener('mousedown', e => {
+    console.log('mouse down', e.clientX, e.clientY, e.button)
     iframe.sendMouseDown(e.clientX, e.clientY, e.button); 
   });
   window.addEventListener('mouseup', e => {
@@ -164,6 +165,9 @@ function init() {
     } else {
       iframe.sendKeyPress(e.keyCode,{shiftKey:e.shiftKey,ctrlKey:e.ctrlKey,altKey:e.altKey});
     }
+  });
+  window.addEventListener('resize', e => {
+    console.log('got resize', window.innerWidth, window.innerHeight);
   });
 }
 
