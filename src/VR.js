@@ -641,7 +641,7 @@ function getGamepads(window) {
 
   if (presentingDisplay) {
     if (!gamepads) {
-      const numGamepads = 2;
+      let numGamepads = 2;
       if (presentingDisplay === openVRDisplay) {
         numGamepads += maxNumTrackers;
       }
