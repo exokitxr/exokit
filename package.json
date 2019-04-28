@@ -88,7 +88,7 @@
     "window-fetch": "0.0.10",
     "window-selector": "0.0.6",
     "window-xhr": "0.0.29",
-    "worker-native": "0.0.39",
+    "worker-native": "0.0.40",
     "ws": "^6.2.0"
   },
   "devDependencies": {
