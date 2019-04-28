@@ -134,47 +134,35 @@ function init() {
   };
   document.body.appendChild(iframe);
 
-  focused = true;
-
   window.addEventListener('mousemove', e => {
     iframe.sendMouseMove(e.clientX, e.clientY);
   });
   window.addEventListener('mousedown', e => {
     iframe.sendMouseDown(e.clientX, e.clientY, e.button); 
-
-    focused = true;
   });
   window.addEventListener('mouseup', e => {
     iframe.sendMouseUp(e.clientX, e.clientY, e.button);
   });
   window.addEventListener('wheel', e => {
-    if (focused) {
-      iframe.sendMouseWheel(e.clientX, e.clientY, e.deltaX, -e.deltaY);
-    }
+    iframe.sendMouseWheel(e.clientX, e.clientY, e.deltaX, -e.deltaY);
   });
   window.addEventListener('keydown', e => {
-    if (focused) {
-      if (e.keyCode === 37 && e.altKey) { // Alt-Left
-        iframe.back();
-      } else if (e.keyCode === 39 && e.altKey) { // Alt-Right
-        iframe.forward();
-      } else {
-        iframe.sendKeyDown(e.keyCode,{shiftKey:e.shiftKey,ctrlKey:e.ctrlKey,altKey:e.altKey});
-      }
+    if (e.keyCode === 37 && e.altKey) { // Alt-Left
+      iframe.back();
+    } else if (e.keyCode === 39 && e.altKey) { // Alt-Right
+      iframe.forward();
+    } else {
+      iframe.sendKeyDown(e.keyCode,{shiftKey:e.shiftKey,ctrlKey:e.ctrlKey,altKey:e.altKey});
     }
   });
   window.addEventListener('keyup', e => {
-    if (focused) {
-      iframe.sendKeyUp(e.keyCode,{shiftKey:e.shiftKey,ctrlKey:e.ctrlKey,altKey:e.altKey});
-    }
+  iframe.sendKeyUp(e.keyCode,{shiftKey:e.shiftKey,ctrlKey:e.ctrlKey,altKey:e.altKey});
   });
   window.addEventListener('keypress', e => {
-    if (focused) {
-      if (e.keyCode === 114 && e.ctrlKey) { // Ctrl-R
-        iframe.reload();
-      } else {
-        iframe.sendKeyPress(e.keyCode,{shiftKey:e.shiftKey,ctrlKey:e.ctrlKey,altKey:e.altKey});
-      }
+    if (e.keyCode === 114 && e.ctrlKey) { // Ctrl-R
+      iframe.reload();
+    } else {
+      iframe.sendKeyPress(e.keyCode,{shiftKey:e.shiftKey,ctrlKey:e.ctrlKey,altKey:e.altKey});
     }
   });
 }
