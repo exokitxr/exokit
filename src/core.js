@@ -245,7 +245,8 @@ const _runHtml = (element, window) => {
 };
 GlobalContext._runHtml = _runHtml;
 
-const exokit = (s = '', options = {}) => {
+const exokit = module.exports;
+exokit.make = (s = '', options = {}) => {
   options.url = options.url || 'http://127.0.0.1/';
   options.baseUrl = options.baseUrl || options.url;
   options.dataPath = options.dataPath || __dirname;
@@ -303,7 +304,7 @@ exokit.load = (src, options = {}) => {
         baseUrl = utils._getBaseUrl(src);
       }
 
-      return exokit(htmlString, {
+      return exokit.make(htmlString, {
         url: options.url || src,
         baseUrl,
         dataPath: options.dataPath,
@@ -330,7 +331,6 @@ exokit.setArgs = newArgs => {
 exokit.setVersion = newVersion => {
   GlobalContext.version = newVersion;
 };
-module.exports = exokit;
 
 if (require.main === module) {
   if (process.argv.length === 3) {
