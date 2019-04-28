@@ -642,7 +642,7 @@ const createVRDisplay = () => new FakeVRDisplay();
 const controllerIDs = {
   openvr: 'OpenVR Gamepad',
   oculusMobile: 'Oculus Go',
-  openvrTracker: 'Tracker'
+  openvrTracker: 'Tracker',
   oculusGoLeft: 'Oculus Touch (Left)',
   oculusGoRight: 'Oculus Touch (Right)',
   oculusQuestLeft: 'Oculus Touch (Left)',
