@@ -18,4 +18,8 @@ body {
   height: 45px;
   margin: 10px;
 }
+.row{
+  margin-left: 0;
+  margin-right: 0;
+}
 

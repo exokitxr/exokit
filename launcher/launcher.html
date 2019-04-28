@@ -1,0 +1,197 @@
+<!doctype html>
+<html>
+
+<body>
+    <script src="three.js"></script>
+    <script src="backend.js"></script>
+    <script>
+        let renderer, scene, camera, screenQuad, iframe;
+
+        window.ScreenQuad = (() => {
+
+            const defaultQuad = new THREE.PlaneBufferGeometry(2, 2, window.innerWidth, window.innerHeight);
+            const uvs = defaultQuad.attributes.uv.array;
+            const numUvs = uvs.length / 2;
+            for (let i = 0; i < numUvs; i++) {
+                uvs[i * 2 + 1] = 1 - uvs[i * 2 + 1];
+            }
+
+            const vertexShader = `\
+        varying vec2 vUv;
+        void main() {
+          gl_Position = vec4(position.xy, 1., 1.);
+          vUv = uv;
+        }
+      `;
+            const fragmentShader = `\
+        varying vec2 vUv;
+        uniform sampler2D uTexture;
+        void main() {
+          gl_FragColor = texture2D(uTexture, vUv);
+        }
+      `;
+
+            function ScreenQuad(params) {
+
+                params = params || {};
+
+                THREE.Mesh.apply(this, [defaultQuad, new THREE.ShaderMaterial({
+
+                    uniforms: {
+                        uTexture: {
+                            type: 't',
+                            value: params.texture,
+                        },
+                    },
+
+                    vertexShader,
+
+                    fragmentShader,
+
+                    transparent: true,
+
+                })]);
+
+                this.frustumCulled = false;
+
+                this.renderOrder = -1;
+
+                //end mesh setup
+
+            }
+
+            ScreenQuad.prototype = Object.create(THREE.Mesh.prototype);
+
+            ScreenQuad.constructor = ScreenQuad;
+
+            return ScreenQuad
+
+        })();
+
+        function init() {
+            renderer = new THREE.WebGLRenderer({
+                antialias: true,
+                alpha: true,
+            });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+
+            document.body.appendChild(renderer.domElement);
+
+            scene = new THREE.Scene();
+            scene.matrixAutoUpdate = false;
+
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            scene.add(camera);
+
+            iframe = document.createElement('iframe');
+            iframe.width = window.innerWidth;
+            iframe.height = window.innerHeight;
+            iframe.d = 2;
+            iframe.src = 'launcher/build/index.html';
+            iframe.onload = () => {
+                const texture = new THREE.Texture(
+                    null,
+                    THREE.UVMapping,
+                    THREE.ClampToEdgeWrapping,
+                    THREE.ClampToEdgeWrapping,
+                    THREE.NearestFilter,
+                    THREE.NearestFilter,
+                    THREE.RGBAFormat,
+                    THREE.UnsignedByteType,
+                    16
+                );
+                const properties = renderer.properties.get(texture);
+                properties.__webglTexture = iframe.texture;
+                properties.__webglInit = true;
+
+                screenQuad = new ScreenQuad({
+                    texture,
+                });
+                scene.add(screenQuad);
+
+                iframe.contentWindow.onmessage = m => {
+                    console.log('POST from frontend: ', m.data);
+                    switch(m.data.action){
+                        case 'launch':
+                            launch(m.data.flags, m.data.url);
+                            break;
+                        case 'update':
+                            update();
+                            break;
+                    }
+                };
+
+                iframe.runJs(`
+      // document.body.style.background = '#000080';
+      // console.log('run js log ' + typeof window.postMessage + ' ' + window.postMessage.toString());
+
+      window.onmessage = m => {
+        console.log('child got message: ' + JSON.stringify(m.data));
+      };
+
+      window.postMessage({lol: 'zol'});
+    `);
+
+            };
+            iframe.onconsole = (message, source, line) => {
+                console.log(source + ':' + line + ': ' + message);
+            };
+            document.body.appendChild(iframe);
+
+            focused = true;
+
+            window.addEventListener('mousemove', e => {
+                iframe.sendMouseMove(e.clientX, e.clientY);
+            });
+            window.addEventListener('mousedown', e => {
+                iframe.sendMouseDown(e.clientX, e.clientY, e.button);
+
+                focused = true;
+            });
+            window.addEventListener('mouseup', e => {
+                iframe.sendMouseUp(e.clientX, e.clientY, e.button);
+            });
+            window.addEventListener('wheel', e => {
+                if (focused) {
+                    iframe.sendMouseWheel(e.clientX, e.clientY, e.deltaX, -e.deltaY);
+                }
+            });
+            window.addEventListener('keydown', e => {
+                if (focused) {
+                    if (e.keyCode === 37 && e.altKey) { // Alt-Left
+                        iframe.back();
+                    } else if (e.keyCode === 39 && e.altKey) { // Alt-Right
+                        iframe.forward();
+                    } else {
+                        iframe.sendKeyDown(e.keyCode, { shiftKey: e.shiftKey, ctrlKey: e.ctrlKey, altKey: e.altKey });
+                    }
+                }
+            });
+            window.addEventListener('keyup', e => {
+                if (focused) {
+                    iframe.sendKeyUp(e.keyCode, { shiftKey: e.shiftKey, ctrlKey: e.ctrlKey, altKey: e.altKey });
+                }
+            });
+            window.addEventListener('keypress', e => {
+                if (focused) {
+                    if (e.keyCode === 114 && e.ctrlKey) { // Ctrl-R
+                        iframe.reload();
+                    } else {
+                        iframe.sendKeyPress(e.keyCode, { shiftKey: e.shiftKey, ctrlKey: e.ctrlKey, altKey: e.altKey });
+                    }
+                }
+            });
+        }
+
+        init();
+
+        function animate() {
+            renderer.render(scene, camera);
+        }
+        renderer.setAnimationLoop(animate);
+
+    </script>
+</body>
+
+</html>
