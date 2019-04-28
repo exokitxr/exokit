@@ -24,7 +24,6 @@ WebRTC (Web Real-Time Communications) is a technology which enables Web applicat
 
  The set of standards that comprises WebRTC makes it possible to share data and perform teleconferencing peer-to-peer, without requiring that the user install plug-ins or any other third-party software.
 
-WebRTC consists of several interrelated APIs and protocols which work together to achieve this. The documentation you'll find here will help you understand the fundamentals of WebRTC, how to set up and use both data and media connections, and more.
 
 ## Node
 
@@ -43,6 +42,7 @@ The API is implemented as a set of C++ interface classes full of pure virtual fu
 
 - OVR from Oculus		
 - MLSDK from Magic Leap
+- gVR from Google 
 - Leap Motion
 - Chromium
 

@@ -14,11 +14,16 @@ examples: []
 
 This project enables developers to build XR experiences using the same code that runs on the web. Exokit engine is written on top of Node and emulates a web browser, providing native hooks for WebGL, WebXR, WebAudio, and other APIs used in immersive experiences.
 
-### Exokit targets the following platforms:
-- Desktop VR (Steam compatible)
-- Mobile AR (ARKit / ARCore)
-- Magic Leap
-- Mobile VR (Daydream / Gear VR)
+
+:eyeglasses: **Exokit currently targets the following platforms**:
+* OpenVR Desktop VR (Steam compatible)
+* Oculus Desktop (Oculus Rift/Rift S)
+* Oculus Mobile (Oculus Quest/Go, GearVR)
+* Magic Leap
+* iOS ARKit *
+* Android ARCore *
+* Google VR (Daydream / Cardboard / Mirage Solo) *
+* any XR device, start a [pull request](https://github.com/exokitxr/exokit/compare) with a native binding if it isn't listed here! *
 
 ### Since Exokit supports anything that runs on the web, it powers experiences built with:
 - Three.js

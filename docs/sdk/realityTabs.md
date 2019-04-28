@@ -2,7 +2,7 @@
 title: Reality Tabs
 type: sdk
 layout: docs
-order: 5
+order: 6
 parent_section: sdk
 ---
 
