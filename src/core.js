@@ -7,7 +7,13 @@ const symbols = require('./symbols');
 const {_getBaseUrl, _download} = require('./utils');
 const {_makeWindow} = require('./WindowVm');
 
-const exokit = (htmlString = '', options = {}) => {
+const exokit = (htmlString, options) => {
+  if (typeof htmlString === 'object') {
+    options = htmlString;
+    htmlString = undefined;
+  }
+  htmlString = htmlString || '';
+  options = options || {};
   options.url = options.url || 'http://127.0.0.1/';
   options.baseUrl = options.baseUrl || options.url;
   options.dataPath = options.dataPath || __dirname;
