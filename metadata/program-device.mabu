@@ -15,7 +15,7 @@ KIND = program
 # mabu determines the source type by the file extension
 # and invokes the C/C++ compiler or assembler as appropriate.
 #
-SRCS = ../main.cpp
+SRCS = ../cpp/android.cpp
 
 # Include paths for any language are specified here.
 #
