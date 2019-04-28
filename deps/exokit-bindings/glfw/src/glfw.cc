@@ -1080,13 +1080,15 @@ NAN_METHOD(DestroyWindowHandle) {
 
   uv_sem_t sem;
   uv_sem_init(&sem, 0);
-  QueueInjection(window, [window](InjectionHandler *injectionHandler) -> void {
+  QueueInjection(window, [&](InjectionHandler *injectionHandler) -> void {
     DestroyNativeWindow(window);
 
     EventHandler *handler = eventHandlerMap[window];
     eventHandlerMap.erase(window);
     eventHandlerMap2.erase(handler->async.get());
     delete handler;
+    
+    uv_sem_post(&sem);
   });
   uv_sem_wait(&sem);
   uv_sem_destroy(&sem);
