@@ -632,9 +632,6 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     window.navigator.xr = new XR.XR(window);
   }
 
-  /* window.destroy = function() {
-    this._emit('destroy', {window: this});
-  }; */
   window.URL = URL;
   window.console = console;
   window.alert = console.log;
@@ -1103,38 +1100,6 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       Node.prototype._emit.apply(this, arguments);
     }
   };
- /* Object.defineProperty(window, 'onload', {
-    get() {
-      return window[symbols.disabledEventsSymbol]['load'] !== undefined ? window[symbols.disabledEventsSymbol]['load'] : _elementGetter(window, 'load');
-    },
-    set(onload) {
-      if (nativeVm.isCompiling()) {
-        this[symbols.disabledEventsSymbol]['load'] = onload;
-      } else {
-        if (window[symbols.disabledEventsSymbol]['load'] !== undefined) {
-          this[symbols.disabledEventsSymbol]['load'] = onload;
-        } else {
-          _elementSetter(window, 'load', onload);
-        }
-      }
-    },
-  });
-  Object.defineProperty(window, 'onerror', {
-    get() {
-      return window[symbols.disabledEventsSymbol]['error'] !== undefined ? window[symbols.disabledEventsSymbol]['error'] : _elementGetter(window, 'error');
-    },
-    set(onerror) {
-      if (nativeVm.isCompiling()) {
-        window[symbols.disabledEventsSymbol]['error'] = onerror;
-      } else {
-        if (window[symbols.disabledEventsSymbol]['error'] !== undefined) {
-          window[symbols.disabledEventsSymbol]['error'] = onerror;
-        } else {
-          _elementSetter(window, 'error', onerror);
-        }
-      }
-    },
-  }); */
   Object.defineProperty(window, 'onload', {
     get() {
       return _elementGetter(window, 'load');
@@ -1225,8 +1190,6 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
             context.flush();
           }
 
-          /* const isVisible = nativeWindow.isVisible(windowHandle) || context === vrPresentState.glContext;
-          if (isVisible) { */
           if (context === vrPresentState.glContext) {
             nativeWindow.bindVrChildFbo(context, vrPresentState.fbo, xrState.tex[0], xrState.depthTex[0]);
 
@@ -1267,10 +1230,6 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
               nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, width, height, dWidth, dHeight, true, false, false);
             }
           }
-          
-          /* const width = context.canvas.width;
-          const height = context.canvas.height;
-          nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, 0, width, height, width, height, true, false, false); */
 
           if (isMac) {
             context.bindFramebufferRaw(context.FRAMEBUFFER, null);
@@ -1294,18 +1253,6 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       for (let i = 0; i < contexts.length; i++) {
         const context = contexts[i];
         context.finish && context.finish();
-        
-        /* if (context.finish && GlobalContext.id === 2) {
-          const pixels = new Uint8Array(1280*1024*4);
-          context.readPixels(0, 0, 1280, 1024, context.RGBA, context.UNSIGNED_BYTE, pixels); 
-          let count = 0;
-          for (let i = 0; i < pixels.length; i++) {
-            if (pixels[i]) {
-              count++;
-            }
-          }
-          console.log('finish', count);
-        } */
       }
       
       for (let i = 0; i < windows.length; i++) {
@@ -1339,19 +1286,6 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
 
         _clearLocalCbs(); // release garbage
       }
-
-      /* if (type === 'child') {
-        for (let i = 0; i < GlobalContext.contexts.length; i++) {
-          const context = GlobalContext.contexts[i];
-
-          if (context.isDirty && context.isDirty()) {
-            nativeWindow.setCurrentWindowContext(context.getWindowHandle());
-            syncs.push(nativeWindow.getSync());
-
-            context.clearDirty();
-          }
-        }
-      } */
     };
     const _renderChildren = async () => {
       let timeout;
@@ -1365,8 +1299,6 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
         if (window.phase === PHASES.NULL) {
           window.promise = window.runAsync('tickAnimationFrame')
             .then(syncs => {
-              // console.log('got syncs', syncs[0]);
-              // window.syncs = syncs;
               window.phase = PHASES.RENDERED;
               window.promise = null;
             });
@@ -1378,45 +1310,15 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
         Promise.all(windows.map(window => window.promise)),
       ]);
       clearTimeout(timeout);
-      /* for (let i = 0; i < childSyncs.length; i++) {
-        nativeWindow.deleteSync(childSyncs[i]);
-      }
-      childSyncs = windows.map(window => window.syncs || []).flat();
-      for (let i = 0; i < GlobalContext.contexts.length; i++) {
-        const context = GlobalContext.contexts[i];
-        if (context.d === 3) {
-          nativeWindow.setCurrentWindowContext(context.getWindowHandle());
-
-          for (let j = 0; j < childSyncs.length; j++) {
-            if (GlobalContext.id === 1) {
-              console.log('wait sync', GlobalContext.id, i, childSyncs[j]);
-            }
-            nativeWindow.waitSync(childSyncs[j]);
-          }
-        }
-      } */
-      /* for (let i = 0; i < windows.length; i++) {
-        const window = windows[i];
-        if (window.syncs) {
-          window.phase = PHASES.DONE;
-          if (!window.rendered) {
-            window.rendered = window.syncs.length > 0; // syncs means the client drew
-          }
-          window.syncs = null;
-        }
-      } */
     };
     
     _emitXrEvents();
 
-    // const syncs = [];
     const childPromises = _renderChildren();
     _renderLocal();
     await childPromises;
     
     _composeLayers();
-
-    // return syncs;
   };
   
   const _makeMrDisplays = () => {
@@ -1442,18 +1344,6 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       if (!window.document.hidden) {
         const [fbo, msFbo, msTex, msDepthTex] = nativeWindow.createVrChildRenderTarget(context, xrState.renderWidth[0]*2, xrState.renderHeight[0]);
         context.setDefaultFramebuffer(msFbo);
-        
-        // console.log('make top level', xrState.renderWidth[0]*2, xrState.renderHeight[0], fbo, xrState.tex[0], xrState.depthTex[0]);
-
-        /* context.resize = (width, height) => {
-          nativeWindow.setCurrentWindowContext(windowHandle);
-          nativeWindow.resizeRenderTarget(context, width, height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
-
-          window.windowEmit('resize', {
-            width,
-            height,
-          });
-        }; */
 
         vrPresentState.glContext = context;
         vrPresentState.fbo = fbo;
@@ -1539,120 +1429,10 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       vrPresentState.layers = layers;
     };
 
-    /* const oculusVRDisplay = new VRDisplay('OculusVR');
-    _bindMRDisplay(oculusVRDisplay);
-    oculusVRDisplay.onrequestpresent = layers => nativeOculusVR.requestPresent(layers);
-    oculusVRDisplay.onexitpresent = () => nativeOculusVR.exitPresent();
-    oculusVRDisplay.onlayers = layers => {
-      vrPresentState.layers = layers;
-    };
-
-    const openVRDevice = new XR.XRDevice('OpenVR', window);
-    openVRDevice.onrequestpresent = layers => nativeOpenVR.requestPresent(layers);
-    openVRDevice.onexitpresent = () => nativeOpenVR.exitPresent();
-    openVRDevice.onrequestanimationframe = _makeRequestAnimationFrame(window);
-    openVRDevice.oncancelanimationframe = window.cancelAnimationFrame;
-    openVRDevice.requestSession = (requestSession => function() {
-      return requestSession.apply(this, arguments)
-        .then(session => {
-          openVRDisplay.isPresenting = true;
-          session.once('end', () => {
-            openVRDisplay.isPresenting = false;
-          });
-          return session;
-        });
-    })(openVRDevice.requestSession);
-    openVRDevice.onlayers = layers => {
-      vrPresentState.layers = layers;
-    };
-
-    const oculusVRDevice = new XR.XRDevice('OculusVR', window);
-    oculusVRDevice.onrequestpresent = layers => nativeOculusVR.requestPresent(layers);
-    oculusVRDevice.onexitpresent = () => nativeOculusVR.exitPresent();
-    oculusVRDevice.onrequestanimationframe = _makeRequestAnimationFrame(window);
-    oculusVRDevice.oncancelanimationframe = window.cancelAnimationFrame;
-    oculusVRDevice.requestSession = (requestSession => function() {
-      return requestSession.apply(this, arguments)
-        .then(session => {
-          oculusVRDisplay.isPresenting = true;
-          session.once('end', () => {
-            oculusVRDisplay.isPresenting = false;
-          });
-          return session;
-        });
-    })(oculusVRDevice.requestSession);
-    oculusVRDevice.onlayers = layers => {
-      vrPresentState.layers = layers;
-    };
-
-    const oculusMobileVrDisplay = new VRDisplay('OculusMobileVR');
-    _bindMRDisplay(oculusMobileVrDisplay);
-    oculusMobileVrDisplay.onrequestpresent = layers => nativeOculusMobileVr.requestPresent(layers);
-    oculusMobileVrDisplay.onexitpresent = () => nativeOculusMobileVr.exitPresent();
-    oculusMobileVrDisplay.onlayers = layers => {
-      vrPresentState.layers = layers;
-    };
-
-    const oculusMobileVrDevice = new XR.XRDevice('OculusMobileVR', window);
-    oculusMobileVrDevice.onrequestpresent = layers => nativeOculusMobileVr.requestPresent(layers);
-    oculusMobileVrDevice.onexitpresent = () => nativeOculusMobileVr.exitPresent();
-    oculusMobileVrDevice.onrequestanimationframe = _makeRequestAnimationFrame(window);
-    oculusMobileVrDevice.oncancelanimationframe = window.cancelAnimationFrame;
-    oculusMobileVrDevice.requestSession = (requestSession => function() {
-      return requestSession.apply(this, arguments)
-        .then(session => {
-          oculusMobileVrDisplay.isPresenting = true;
-          session.once('end', () => {
-            oculusMobileVrDisplay.isPresenting = false;
-          });
-          return session;
-        });
-    })(oculusMobileVrDevice.requestSession);
-    oculusMobileVrDevice.onlayers = layers => {
-      vrPresentState.layers = layers;
-    };
-
-    const magicLeapARDisplay = new VRDisplay('AR');
-    _bindMRDisplay(magicLeapARDisplay);
-    magicLeapARDisplay.onrequestpresent = layers => nativeMl.requestPresent(layers);
-    magicLeapARDisplay.onexitpresent = () => nativeMl.exitPresent();
-    magicLeapARDisplay.onrequesthittest = _makeOnRequestHitTest(window);
-    magicLeapARDisplay.onlayers = layers => {
-      vrPresentState.layers = layers;
-    };
-
-    const magicLeapARDevice = new XR.XRDevice('AR', window);
-    magicLeapARDevice.onrequestpresent = layers => nativeMl.requestPresent(layers);
-    magicLeapARDevice.onexitpresent = () => nativeMl.exitPresent();
-    magicLeapARDevice.onrequestanimationframe = _makeRequestAnimationFrame(window);
-    magicLeapARDevice.oncancelanimationframe = window.cancelAnimationFrame;
-    magicLeapARDevice.requestSession = (requestSession => function() {
-      return requestSession.apply(this, arguments)
-        .then(session => {
-          magicLeapARDisplay.isPresenting = true;
-          session.once('end', () => {
-            magicLeapARDisplay.isPresenting = false;
-          });
-          return session;
-        });
-    })(magicLeapARDevice.requestSession);
-    magicLeapARDevice.onrequesthittest = _makeOnRequestHitTest(window);
-    magicLeapARDevice.onlayers = layers => {
-      vrPresentState.layers = layers;
-    }; */
-
     return {
       fakeVrDisplay,
       vrDisplay,
       vrDevice,
-      /* openVRDisplay,
-      oculusVRDisplay,
-      openVRDevice,
-      oculusVRDevice,
-      oculusMobileVrDisplay,
-      oculusMobileVrDevice,
-      magicLeapARDisplay,
-      magicLeapARDevice, */
     };
   };
   window[symbols.mrDisplaysSymbol] = _makeMrDisplays();
