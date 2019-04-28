@@ -33,12 +33,12 @@ describe('HTMLSrcableElement', () => {
 
   describe('<img>', () => {
     it('can setAttribute', async () => {
-      return await window.evalAsync(`
+      return await window.evalAsync(`new Promise((accept, reject) => {
         el = document.createElement('img');
-        el.onload = () => { done(); };
-        el.onerror = err => { done(err); };
+        el.onload = () => { accept(); };
+        el.onerror = err => { reject(err); };
         el.setAttribute('src', \`${TEST_URL}/test.png\`);
-      `);
+      })`);
     });
 
     it('can set src', async () => {
