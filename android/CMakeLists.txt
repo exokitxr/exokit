@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.6.0)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -Wall -Werror")
-add_library(native-main SHARED ${CMAKE_SOURCE_DIR}/../main.cpp ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c)
+add_library(native-main SHARED ${CMAKE_SOURCE_DIR}/../cpp/android.cpp ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c)
 
 include_directories( SYSTEM ${CMAKE_SOURCE_DIR}/../node_modules/nan )
 include_directories( SYSTEM ${CMAKE_SOURCE_DIR}/../deps/exokit-bindings/util/include )
