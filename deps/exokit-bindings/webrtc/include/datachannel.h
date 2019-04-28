@@ -23,6 +23,8 @@
 
 #include "peerconnectionfactory.h"
 
+#include "windowsystem.h"
+
 #undef ERROR
 
 namespace node_webrtc {

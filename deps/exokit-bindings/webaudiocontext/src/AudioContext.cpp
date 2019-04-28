@@ -2,8 +2,6 @@
 
 namespace webaudio {
 
-unique_ptr<lab::AudioContext> _defaultAudioContext = nullptr;
-
 lab::AudioContext *getDefaultAudioContext(float sampleRate) {
   if (!_defaultAudioContext) {
     _defaultAudioContext = lab::MakeRealtimeAudioContext(sampleRate);
@@ -33,7 +31,7 @@ Local<Object> AudioContext::Initialize(Isolate *isolate, Local<Value> audioListe
   );
 #endif
 
-  uv_async_init(uv_default_loop(), &threadAsync, RunInMainThread);
+  uv_async_init(windowsystembase::GetEventLoop(), &threadAsync, RunInMainThread);
   uv_sem_init(&threadSemaphore, 0);
 
   /* atexit([]{
@@ -502,9 +500,10 @@ void RunInMainThread(uv_async_t *handle) {
   uv_sem_post(&threadSemaphore);
 }
 
-function<void()> threadFn;
-uv_async_t threadAsync;
-uv_sem_t threadSemaphore;
+thread_local unique_ptr<lab::AudioContext> _defaultAudioContext;
+thread_local function<void()> threadFn;
+thread_local uv_async_t threadAsync;
+thread_local uv_sem_t threadSemaphore;
 
 }
 

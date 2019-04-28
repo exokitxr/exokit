@@ -21,6 +21,7 @@
 #include <MediaStreamTrack.h>
 #include <MicrophoneMediaStream.h>
 #include <AudioDestinationGenericImpl.h>
+#include <windowsystem.h>
 
 using namespace std;
 using namespace v8;
@@ -91,9 +92,10 @@ public:
 void QueueOnMainThread(lab::ContextRenderLock &r, function<void()> &&newThreadFn);
 void RunInMainThread(uv_async_t *handle);
 
-extern function<void()> threadFn;
-extern uv_async_t threadAsync;
-extern uv_sem_t threadSemaphore;
+extern thread_local unique_ptr<lab::AudioContext> _defaultAudioContext;
+extern thread_local function<void()> threadFn;
+extern thread_local uv_async_t threadAsync;
+extern thread_local uv_sem_t threadSemaphore;
 
 }
 

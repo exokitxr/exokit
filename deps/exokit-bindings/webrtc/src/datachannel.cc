@@ -70,7 +70,7 @@ void DataChannelObserver::QueueEvent(DataChannel::AsyncEventType type, void* dat
 }
 
 DataChannel::DataChannel(node_webrtc::DataChannelObserver* observer)
-  : loop(uv_default_loop()),
+  : loop(windowsystembase::GetEventLoop()),
     _binaryType(DataChannel::ARRAY_BUFFER) {
   uv_mutex_init(&lock);
   uv_async_init(loop, &async, reinterpret_cast<uv_async_cb>(Run));

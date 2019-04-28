@@ -24,6 +24,7 @@
 #include "webrtc/rtc_base/scoped_ref_ptr.h"
 
 #include "peerconnectionfactory.h"
+#include "windowsystem.h"
 
 namespace node_webrtc {
 
