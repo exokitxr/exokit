@@ -26,5 +26,5 @@ parent_section: sdk
 ## Launch a local file with Exokit
 
 ```sh
-./exokit.cmd /your/File/Path.html
+./scripts/exokit.cmd /your/File/Path.html
 ```
