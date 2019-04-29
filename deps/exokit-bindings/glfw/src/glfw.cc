@@ -891,16 +891,29 @@ NAN_METHOD(GetFramebufferSize) {
   info.GetReturnValue().Set(result);
 }
 
-double GetDevicePixelRatio() {
-  NATIVEwindow *window = CreateNativeWindow(100, 100, false);
+double GetDevicePixelRatio(NATIVEwindow *window) {
   int width, height;
-  glfwGetFramebufferSize(window, &width, &height);
-  glfwDestroyWindow(window);
-  return (double)width/100.0;
+
+  uv_sem_t sem;
+  uv_sem_init(&sem, 0);
+
+  QueueInjection(window, [&](InjectionHandler *injectionHandler) -> void {
+    NATIVEwindow *window = CreateNativeWindow(100, 100, false);
+    glfwGetFramebufferSize(window, &width, &height);
+    glfwDestroyWindow(window);
+
+    uv_sem_post(&sem);
+  });
+
+  uv_sem_wait(&sem);
+  uv_sem_destroy(&sem);
+
+  return static_cast<double>(width)/100.0;
 }
 
 NAN_METHOD(GetDevicePixelRatio) {
-  double devicePixelRatio = GetDevicePixelRatio();
+  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+  double devicePixelRatio = GetDevicePixelRatio(window);
   info.GetReturnValue().Set(JS_NUM(devicePixelRatio));
 }
 
