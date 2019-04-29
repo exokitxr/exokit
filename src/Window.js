@@ -469,7 +469,7 @@ class DataTransferItem {
 
 class Worker {
   constructor(src) {
-    this.worker = nativeWorker.make({
+    this.worker = new nativeWorker({
       initModule: path.join(__dirname, 'Worker.js'),
       args: {
         src,

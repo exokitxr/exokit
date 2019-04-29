@@ -2,16 +2,10 @@ const path = require('path');
 const {isMainThread} = require('worker_threads');
 const {process} = global;
 
-const exokitNode = isMainThread ?
-  require(path.join(__dirname, '..', 'build', 'Release', 'exokit.node'))
-:
-  requireNative('exokit.node');
+const exokitNode = require(path.join(__dirname, '..', 'build', 'Release', 'exokit.node'));
 const {nativeWindow} = exokitNode;
 
 const nativeWorker = require('worker-native');
-if (isMainThread) {
-  nativeWorker.setNativeRequire('exokit.node', exokitNode.initFunctionAddress);
-}
 
 const webGlToOpenGl = require('webgl-to-opengl');
 const symbols = require('./symbols');
