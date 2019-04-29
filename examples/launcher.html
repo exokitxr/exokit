@@ -83,8 +83,8 @@ function init() {
   scene.add(camera);
 
   iframe = document.createElement('iframe');
-  iframe.width = window.innerWidth;
-  iframe.height = window.innerHeight;
+  iframe.width = window.innerWidth * window.devicePixelRatio;
+  iframe.height = window.innerHeight * window.devicePixelRatio;
   iframe.d = 2;
   iframe.src = 'examples/launcher/build/index.html';
   iframe.onload = () => {
@@ -169,14 +169,15 @@ function init() {
   window.addEventListener('resize', e => {
     console.log('got resize', window.innerWidth, window.innerHeight);
 
-    iframe.width = window.innerWidth;
-    iframe.height = window.innerHeight;
+    iframe.width = window.innerWidth * window.devicePixelRatio;
+    iframe.height = window.innerHeight * window.devicePixelRatio;
   });
 }
 
 init();
 
 function animate() {
+  // console.log('animate');
   renderer.render(scene, camera);
 }
 renderer.setAnimationLoop(animate);
