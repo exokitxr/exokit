@@ -153,7 +153,7 @@ NAN_METHOD(GetFramebufferSize) {
 
 void GetScreenSize(int *width, int *height) {
   *width = 2048;
-  *width = 2048;
+  *height = 2048;
 }
 
 NAN_METHOD(GetScreenSize) {
