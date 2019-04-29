@@ -5,6 +5,7 @@
 #include <node.h>
 #include <nan.h>
 
+#include <list>
 #include <functional>
 
 #include <webgl.h>
@@ -31,6 +32,8 @@ public:
   
   // CefBrowserProcessHandler methods:
   virtual void OnContextInitialized() override;
+  
+  virtual void OnScheduleMessagePumpWork(int64 delay_ms) override;
 
 protected:
   std::string dataPath;
@@ -100,7 +103,8 @@ public:
 
 // protected:
   int width;
-	int height;
+  int height;
+  // bool resized;
   std::function<void(const RectList &, const void *, int, int)> onPaint;
 
 	// CefBase interface
@@ -132,6 +136,9 @@ public:
 private:
 	IMPLEMENT_REFCOUNTING(BrowserClient);
 };
+
+extern std::mutex browsersMutex;
+extern std::list<EmbeddedBrowser> browsers;
 
 }
 

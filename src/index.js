@@ -144,8 +144,8 @@ GlobalContext.windows = windows;
 // const _getTopWindow = () => windows.find(window => window.top === window);
 
 nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
-  const canvasWidth = canvas.width || innerWidth;
-  const canvasHeight = canvas.height || innerHeight;
+  const canvasWidth = canvas.width;
+  const canvasHeight = canvas.height;
 
   gl.canvas = canvas;
 
@@ -282,8 +282,8 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
 };
 
 nativeBindings.nativeCanvasRenderingContext2D.onconstruct = (ctx, canvas) => {
-  const canvasWidth = canvas.width || innerWidth;
-  const canvasHeight = canvas.height || innerHeight;
+  const canvasWidth = canvas.width;
+  const canvasHeight = canvas.height;
 
   ctx.canvas = canvas;
 
@@ -475,6 +475,7 @@ class XRState {
       }
       return result;
     })();
+    this.metrics = _makeTypedArray(Uint32Array, 2);
     this.devicePixelRatio = _makeTypedArray(Uint32Array, 1);
   }
 }
@@ -1169,16 +1170,24 @@ nativeBindings.nativeWindow.setEventHandler((type, data) => {
         }
         break;
       }
-      case 'framebufferResize': {
-        /* const {width, height} = data;
+      case 'windowResize': {
+        const {width, height} = data;
+        window.innerWidth = width;
+        window.innerHeight = height;
+
+        window.dispatchEvent(new window.Event('resize'));
+        break;
+      }
+      /* case 'framebufferResize': {
+        const {width, height} = data;
         innerWidth = width;
         innerHeight = height;
 
         window.innerWidth = innerWidth / window.devicePixelRatio;
         window.innerHeight = innerHeight / window.devicePixelRatio;
-        window.dispatchEvent(new window.Event('resize')); */
+        window.dispatchEvent(new window.Event('resize'));
         break;
-      }
+      } */
       case 'keydown': {
         let handled = false;
         if (data.keyCode === 27) { // ESC
@@ -1298,8 +1307,6 @@ nativeBindings.nativeWindow.setEventHandler((type, data) => {
   }
 });
 
-let innerWidth = 1280; // XXX do not track this globally
-let innerHeight = 1024;
 // let fps = DEFAULT_FPS;
 const isMac = os.platform() === 'darwin';
 
