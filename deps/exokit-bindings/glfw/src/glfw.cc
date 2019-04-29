@@ -15,6 +15,10 @@ InjectionHandler mainThreadInjectionHandler;
 std::mutex eventHandlerMapMutex;
 std::mutex injectionHandlerMapMutex;
 int lastX = 0, lastY = 0; // XXX track this per-window
+#ifdef TARGET_OS_MAC
+std::thread::id mainThreadId;
+bool hasMainThreadId = false;
+#endif
 
 void RunEventInWindowThread(uv_async_t *async) {
   Nan::HandleScope scope;
@@ -221,6 +225,10 @@ void QueueInjection(NATIVEwindow *window, std::function<void(InjectionHandler *i
 
 #ifndef TARGET_OS_MAC
   glfwPostEmptyEvent();
+#else
+  if (std::this_thread::get_id() == mainThreadId) {
+    handleInjections();
+  }
 #endif
 }
 
@@ -1565,6 +1573,13 @@ NAN_METHOD(PollEvents) {
 } */
 
 Local<Object> makeWindow() {
+#ifdef TARGET_OS_MAC
+  if (!glfw::hasMainThreadId) {
+    glfw::mainThreadId = std::this_thread::get_id();
+    glfw::hasMainThreadId = true;
+  }
+#endif
+
   Isolate *isolate = Isolate::GetCurrent();
   v8::EscapableHandleScope scope(isolate);
 
