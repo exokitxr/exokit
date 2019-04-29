@@ -13,7 +13,6 @@ const {Blob} = fetch;
 const htmlUnescape = require('unescape');
 
 const bindings = require('./native-bindings');
-const {defaultCanvasSize} = require('./constants');
 const {Event, EventTarget, MessageEvent, MouseEvent, ErrorEvent} = require('./Event');
 const GlobalContext = require('./GlobalContext');
 const symbols = require('./symbols');
@@ -2102,7 +2101,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
   }
   
   get width() {
-    return parseInt(this.getAttribute('width') || defaultCanvasSize[0] + '', 10);
+    return parseInt(this.getAttribute('width') || bindings.nativeWindow.getScreenSize()[0]/2 + '', 10);
   }
   set width(value) {
     if (typeof value === 'number' && isFinite(value)) {
@@ -2110,7 +2109,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
     }
   }
   get height() {
-    return parseInt(this.getAttribute('height') || defaultCanvasSize[1] + '', 10);
+    return parseInt(this.getAttribute('height') || bindings.nativeWindow.getScreenSize()[1]/2 + '', 10);
   }
   set height(value) {
     if (typeof value === 'number' && isFinite(value)) {
@@ -2223,7 +2222,7 @@ class HTMLCanvasElement extends HTMLElement {
   }
 
   get width() {
-    return parseInt(this.getAttribute('width') || defaultCanvasSize[0] + '', 10);
+    return parseInt(this.getAttribute('width') || bindings.nativeWindow.getScreenSize()[0]/2 + '', 10);
   }
   set width(value) {
     if (typeof value === 'number' && isFinite(value)) {
@@ -2231,7 +2230,7 @@ class HTMLCanvasElement extends HTMLElement {
     }
   }
   get height() {
-    return parseInt(this.getAttribute('height') || defaultCanvasSize[1] + '', 10);
+    return parseInt(this.getAttribute('height') || bindings.nativeWindow.getScreenSize()[1]/2 + '', 10);
   }
   set height(value) {
     if (typeof value === 'number' && isFinite(value)) {

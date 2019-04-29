@@ -22,7 +22,7 @@ const replHistory = require('repl.history');
 const minimist = require('minimist');
 
 const {version} = require('../package.json');
-const {defaultCanvasSize, defaultEyeSeparation, maxNumTrackers} = require('./constants.js');
+const {defaultEyeSeparation, maxNumTrackers} = require('./constants.js');
 const symbols = require('./symbols');
 const {THREE} = core;
 
@@ -144,8 +144,8 @@ GlobalContext.windows = windows;
 // const _getTopWindow = () => windows.find(window => window.top === window);
 
 nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
-  const canvasWidth = canvas.width || defaultCanvasSize[0];
-  const canvasHeight = canvas.height || defaultCanvasSize[1];
+  const canvasWidth = canvas.width;
+  const canvasHeight = canvas.height;
 
   gl.canvas = canvas;
 
@@ -282,8 +282,8 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
 };
 
 nativeBindings.nativeCanvasRenderingContext2D.onconstruct = (ctx, canvas) => {
-  const canvasWidth = canvas.width || defaultCanvasSize[0];
-  const canvasHeight = canvas.height || defaultCanvasSize[1];
+  const canvasWidth = canvas.width;
+  const canvasHeight = canvas.height;
 
   ctx.canvas = canvas;
 
@@ -475,6 +475,7 @@ class XRState {
       }
       return result;
     })();
+    this.metrics = _makeTypedArray(Uint32Array, 2);
     this.devicePixelRatio = _makeTypedArray(Uint32Array, 1);
   }
 }
