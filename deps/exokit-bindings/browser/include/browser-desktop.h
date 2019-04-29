@@ -32,6 +32,8 @@ public:
   
   // CefBrowserProcessHandler methods:
   virtual void OnContextInitialized() override;
+  
+  virtual void OnScheduleMessagePumpWork(int64 delay_ms) override;
 
 protected:
   std::string dataPath;
@@ -102,7 +104,7 @@ public:
 // protected:
   int width;
   int height;
-  bool resized;
+  // bool resized;
   std::function<void(const RectList &, const void *, int, int)> onPaint;
 
 	// CefBase interface

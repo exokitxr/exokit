@@ -18,10 +18,8 @@ Browser::Browser(WebGLRenderingContext *gl, int width, int height) : gl(gl), win
   windowsystem::SetCurrentWindowContext(gl->windowHandle);
 
   glGenTextures(1, &tex);
-
-#ifdef LUMIN
-  window = windowsystem::CreateNativeWindow(width, height, true, gl->windowHandle);
-#endif
+  
+  window = windowsystem::CreateNativeWindow(1, 1, false, gl->windowHandle);
 }
 
 Browser::~Browser() {}
@@ -220,7 +218,7 @@ void Browser::loadImmediate(const std::string &url) {
 
 NAN_METHOD(Browser::UpdateAll) {
   if (embeddedInitialized) {
-    embeddedUpdate();
+    // embeddedUpdate();
     
     QueueOnBrowserThread([]() -> void {
       embeddedDoMessageLoopWork();
