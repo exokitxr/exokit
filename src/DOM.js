@@ -1931,7 +1931,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
           url = 'data:text/html,' + encodeURIComponent(`<!doctype html><html><head><script>${match[1]}</script></head></html>`);
         }
         if (!/^(?:https?|file):/.test(url)) {
-          url = 'file://' + path.join(process.cwd(), url);
+          url = 'file://' + path.join(__dirname, url);
         }
 
         this.ownerDocument.resources.addResource((onprogress, cb) => {
