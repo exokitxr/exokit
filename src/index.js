@@ -197,6 +197,7 @@ const xrState = (() => {
   result.isPresenting = _makeTypedArray(Uint32Array, 1);
   result.renderWidth = _makeTypedArray(Float32Array, 1);
   result.renderHeight = _makeTypedArray(Float32Array, 1);
+  result.metrics = _makeTypedArray(Uint32Array, 2);
   result.devicePixelRatio = _makeTypedArray(Uint32Array, 1);
   result.depthNear = _makeTypedArray(Float32Array, 1);
   result.depthNear[0] = 0.1;
