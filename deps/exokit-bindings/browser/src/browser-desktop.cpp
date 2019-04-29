@@ -85,6 +85,15 @@ bool initializeEmbedded(const std::string &dataPath, const std::string &framewor
 	return CefInitialize2(args, settings, app, nullptr);
 }
 
+void embeddedUpdate(EmbeddedBrowser browser_) {
+  auto renderHandler = ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler;
+  if (renderHandler->resized) {
+    browser_->GetHost()->WasResized();
+
+    renderHandler->resized = false;
+  }
+}
+
 void embeddedDoMessageLoopWork() {
   cef_do_message_loop_work();
 }
@@ -148,16 +157,16 @@ EmbeddedBrowser createEmbedded(
   );
   
   RenderHandler *render_handler_ = new RenderHandler(
-    [gl, tex, textureWidth, textureHeight, width, height](const CefRenderHandler::RectList &dirtyRects, const void *buffer, int width, int height) -> void {
+    [gl, tex, textureWidth, textureHeight](const CefRenderHandler::RectList &dirtyRects, const void *buffer, int width, int height) -> void {
       RunOnMainThread([&]() -> void {
         windowsystem::SetCurrentWindowContext(gl->windowHandle);
         
         glBindTexture(GL_TEXTURE_2D, tex);
-        glPixelStorei(GL_UNPACK_ROW_LENGTH, width); // XXX save/restore these
 
         if (*textureWidth != width || *textureHeight != height) {
-          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); // XXX save/restore these
+          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+          glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
           glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
           glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
 // #ifndef LUMIN
@@ -165,10 +174,12 @@ EmbeddedBrowser createEmbedded(
 // #else
           // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
 // #endif
-        
+
           *textureWidth = width;
           *textureHeight = height;
         }
+
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
 
         for (size_t i = 0; i < dirtyRects.size(); i++) {
           const CefRect &rect = dirtyRects[i];
@@ -215,25 +226,28 @@ void setEmbeddedSize(EmbeddedBrowser browser_, int width, int height) {
   auto renderHandler = ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler;
   renderHandler->width = width;
   renderHandler->height = height;
-
-  browser_->GetHost()->WasResized();
+  renderHandler->resized = true;
 }
 int getEmbeddedWidth(EmbeddedBrowser browser_) {
   return ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler->width;
 }
 void setEmbeddedWidth(EmbeddedBrowser browser_, int width) {
-  ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler->width = width;
+  auto renderHandler = ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler;
+  renderHandler->width = width;
+  renderHandler->resized = true;
   
-  browser_->GetHost()->WasResized();
+  // browser_->GetHost()->WasResized();
   // browser->browser_->GetHost()->Invalidate(PET_VIEW);
 }
 int getEmbeddedHeight(EmbeddedBrowser browser_) {
   return ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler->height;
 }
 void setEmbeddedHeight(EmbeddedBrowser browser_, int height) {
-  ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler->height = height;
+  auto renderHandler = ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler;
+  renderHandler->height = height;
+  renderHandler->resized = true;
   
-  browser_->GetHost()->WasResized();
+  // browser_->GetHost()->WasResized();
   // browser->browser_->GetHost()->Invalidate(PET_VIEW);
 }
 void embeddedGoBack(EmbeddedBrowser browser_) {
@@ -386,7 +400,7 @@ bool DisplayHandler::OnConsoleMessage(CefRefPtr<CefBrowser> browser, cef_log_sev
 
 // RenderHandler
 
-RenderHandler::RenderHandler(OnPaintFn onPaint, int width, int height) : onPaint(onPaint), width(width), height(height) {}
+RenderHandler::RenderHandler(OnPaintFn onPaint, int width, int height) : onPaint(onPaint), width(width), height(height), resized(false) {}
 
 RenderHandler::~RenderHandler() {}
 

@@ -100,7 +100,8 @@ public:
 
 // protected:
   int width;
-	int height;
+  int height;
+  bool resized;
   std::function<void(const RectList &, const void *, int, int)> onPaint;
 
 	// CefBase interface

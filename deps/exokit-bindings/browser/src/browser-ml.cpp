@@ -103,6 +103,9 @@ void destroyEmbedded(EmbeddedBrowser browser_) {
   browser_->deInit();
   browsers.erase(std::find(browsers.begin(), browsers.end(), browser_));
 }
+void embeddedUpdate(EmbeddedBrowser browser_) {
+  // nothing
+}
 void embeddedDoMessageLoopWork() {
   // exout << "do message loop work 1 " << browsers.size() << std::endl;
 
