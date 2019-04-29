@@ -191,13 +191,8 @@ void handleInjections() {
 void QueueInjection(NATIVEwindow *window, std::function<void(InjectionHandler *injectionHandler)> fn) {
   if (!glfwInitialized) {
 #ifndef TARGET_OS_MAC
-    uv_sem_t sem;
-    uv_sem_init(&sem, 0);
-
     std::thread([&]() -> void {
       initializeGlfw();
-
-      uv_sem_post(&sem);
 
       for (;;) {
         glfwWaitEvents();
@@ -205,9 +200,6 @@ void QueueInjection(NATIVEwindow *window, std::function<void(InjectionHandler *i
         handleInjections();
       }
     }).detach();
-
-    uv_sem_wait(&sem);
-    uv_sem_destroy(&sem);
 #else
     {
       std::lock_guard<std::mutex> lock(injectionHandlerMapMutex);
