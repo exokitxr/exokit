@@ -5,8 +5,6 @@ const {process} = global;
 const exokitNode = require(path.join(__dirname, '..', 'build', 'Release', 'exokit.node'));
 const {nativeWindow} = exokitNode;
 
-const nativeWorker = require('worker-native');
-
 const webGlToOpenGl = require('webgl-to-opengl');
 const symbols = require('./symbols');
 const GlobalContext = require('./GlobalContext');
@@ -459,8 +457,6 @@ if (bindings.nativeAudio) {
   })(bindings.nativeAudio.AudioContext);
   bindings.nativeAudio.PannerNode.setPath(path.join(require.resolve('native-audio-deps').slice(0, -'index.js'.length), 'assets', 'hrtf'));
 }
-
-bindings.nativeWorker = nativeWorker;
 
 if (bindings.nativeOpenVR) {
 	bindings.nativeOpenVR.EVRInitError = {
