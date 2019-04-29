@@ -151,6 +151,16 @@ NAN_METHOD(GetFramebufferSize) {
   info.GetReturnValue().Set(result);
 }
 
+NAN_METHOD(GetScreenSize) {
+  int width, height;
+  GetFramebufferSize(window, &width, &height);
+  
+  Local<Array> result = Nan::New<Array>(2);
+  result->Set(0, JS_INT(width));
+  result->Set(1, JS_INT(height));
+  info.GetReturnValue().Set(result);
+}
+
 NAN_METHOD(GetDevicePixelRatio) {
   info.GetReturnValue().Set(JS_NUM(1));
 }
@@ -373,6 +383,7 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "setWindowPos", egl::SetWindowPos);
   Nan::SetMethod(target, "getWindowPos", egl::GetWindowPos);
   Nan::SetMethod(target, "getFramebufferSize", egl::GetFramebufferSize);
+  Nan::SetMethod(target, "getScreenSize", egl::GetScreenSize);
   Nan::SetMethod(target, "getDevicePixelRatio", egl::GetDevicePixelRatio);
   Nan::SetMethod(target, "iconifyWindow", egl::IconifyWindow);
   Nan::SetMethod(target, "restoreWindow", egl::RestoreWindow);
