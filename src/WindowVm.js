@@ -130,7 +130,7 @@ module.exports.WorkerVm = WorkerVm;
 
 const _makeWindow = (options = {}) => {
   const id = Atomics.add(GlobalContext.xrState.id, 0, 1) + 1;
-  const window = new nativeWorker({
+  const window = new WorkerVm({
     initModule: path.join(__dirname, 'Window.js'),
     args: {
       options,

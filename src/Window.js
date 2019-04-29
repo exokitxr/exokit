@@ -24,6 +24,7 @@ const {
   },
 } = require('worker_threads');
 
+const {WorkerVm} = require('./WindowVm.js');
 const {FileReader} = require('./File.js');
 
 const mkdirp = require('mkdirp');
@@ -110,7 +111,6 @@ const {
   nativeMl,
   nativeBrowser,
   nativeWindow,
-  nativeWorker,
 } = require('./native-bindings');
 
 const PHASES = (() => {
@@ -469,7 +469,7 @@ class DataTransferItem {
 
 class Worker {
   constructor(src) {
-    this.worker = new nativeWorker({
+    this.worker = new WorkerVm({
       initModule: path.join(__dirname, 'Worker.js'),
       args: {
         src,
