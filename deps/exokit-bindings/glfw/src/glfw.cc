@@ -144,13 +144,8 @@ void GetScreenSize(int *width, int *height) {
   
   GLFWmonitor *monitor = glfwGetPrimaryMonitor();
   const GLFWvidmode *videoMode = glfwGetVideoMode(monitor);
-  int width = videoMode->width;
-  int height = videoMode->height;
-  
-  Local<Array> result = Nan::New<Array>(2);
-  result->Set(0, JS_INT(width));
-  result->Set(1, JS_INT(height));
-  info.GetReturnValue().Set(result);
+  *width = videoMode->width;
+  *height = videoMode->height;
 }
 
 NAN_METHOD(GetScreenSize) {
