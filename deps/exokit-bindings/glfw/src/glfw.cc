@@ -42,7 +42,47 @@ NAN_METHOD(SetTime) {
   glfwSetTime(time);
 } */
 
+bool glfwInitialized = false;
+void initializeGlfw() {
+  if (!glfwInitialized) {
+    glewExperimental = GL_TRUE;
+
+    if (glfwInit() == GLFW_TRUE) {
+      atexit([]() {
+        glfwTerminate();
+      });
+
+      glfwDefaultWindowHints();
+
+      // we use OpenGL 2.1, GLSL 1.20. Comment this for now as this is for GLSL 1.50
+      glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+      glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+      glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+      glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+      glfwWindowHint(GLFW_RESIZABLE, 1);
+      glfwWindowHint(GLFW_VISIBLE, 1);
+      glfwWindowHint(GLFW_DECORATED, 1);
+      glfwWindowHint(GLFW_RED_BITS, 8);
+      glfwWindowHint(GLFW_GREEN_BITS, 8);
+      glfwWindowHint(GLFW_BLUE_BITS, 8);
+      glfwWindowHint(GLFW_DEPTH_BITS, 24);
+      glfwWindowHint(GLFW_REFRESH_RATE, 0);
+
+      glfwSetErrorCallback([](int err, const char *errString) {
+        fprintf(stderr, "%s", errString);
+      });
+
+      glfwInitialized = true;
+    } else {
+      exerr << "Failed to initialize GLFW" << std::endl;
+      abort();
+    }
+  }
+}
+
 NAN_METHOD(GetMonitors) {
+  initializeGlfw();
+  
   int monitor_count, mode_count, xpos, ypos, width, height;
   int i, j;
   GLFWmonitor **monitors = glfwGetMonitors(&monitor_count);
@@ -91,10 +131,26 @@ NAN_METHOD(GetMonitors) {
 }
 
 NAN_METHOD(SetMonitor) {
+  initializeGlfw();
+  
   int index = TO_INT32(info[0]);
   int monitor_count;
   GLFWmonitor **monitors = glfwGetMonitors(&monitor_count);
   _activeMonitor = monitors[index];
+}
+
+NAN_METHOD(GetScreenSize) {
+  initializeGlfw();
+  
+  GLFWmonitor *monitor = glfwGetPrimaryMonitor();
+  const GLFWvidmode *videoMode = glfwGetVideoMode(monitor);
+  int width = videoMode->width;
+  int height = videoMode->height;
+  
+  Local<Array> result = Nan::New<Array>(2);
+  result->Set(0, JS_INT(width));
+  result->Set(1, JS_INT(height));
+  info.GetReturnValue().Set(result);
 }
 
 /* @Module: Window handling */
@@ -1128,42 +1184,8 @@ NAN_METHOD(ExtensionSupported) {
   info.GetReturnValue().Set(JS_BOOL(glfwExtensionSupported(*str)==1));
 } */
 
-bool glfwInitialized = false;
 NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool visible, NATIVEwindow *sharedWindow) {
-  if (!glfwInitialized) {
-    glewExperimental = GL_TRUE;
-
-    if (glfwInit() == GLFW_TRUE) {
-      atexit([]() {
-        glfwTerminate();
-      });
-
-      glfwDefaultWindowHints();
-
-      // we use OpenGL 2.1, GLSL 1.20. Comment this for now as this is for GLSL 1.50
-      glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-      glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-      glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-      glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-      glfwWindowHint(GLFW_RESIZABLE, 1);
-      glfwWindowHint(GLFW_VISIBLE, 1);
-      glfwWindowHint(GLFW_DECORATED, 1);
-      glfwWindowHint(GLFW_RED_BITS, 8);
-      glfwWindowHint(GLFW_GREEN_BITS, 8);
-      glfwWindowHint(GLFW_BLUE_BITS, 8);
-      glfwWindowHint(GLFW_DEPTH_BITS, 24);
-      glfwWindowHint(GLFW_REFRESH_RATE, 0);
-
-      glfwSetErrorCallback([](int err, const char *errString) {
-        fprintf(stderr, "%s", errString);
-      });
-
-      glfwInitialized = true;
-    } else {
-      exerr << "Failed to initialize GLFW" << std::endl;
-      abort();
-    }
-  }
+  initializeGlfw();
 
   glfwWindowHint(GLFW_VISIBLE, visible);
   
@@ -1752,8 +1774,9 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "hide", glfw::Hide);
   Nan::SetMethod(target, "isVisible", glfw::IsVisible);
   Nan::SetMethod(target, "setFullscreen", glfw::SetFullscreen);
-  Nan::SetMethod(target, "setMonitor", glfw::SetMonitor);
   Nan::SetMethod(target, "getMonitors", glfw::GetMonitors);
+  Nan::SetMethod(target, "setMonitor", glfw::SetMonitor);
+  Nan::SetMethod(target, "getScreenSize", glfw::GetScreenSize);
   Nan::SetMethod(target, "exitFullscreen", glfw::ExitFullscreen);
   Nan::SetMethod(target, "setWindowTitle", glfw::SetWindowTitle);
   Nan::SetMethod(target, "getWindowSize", glfw::GetWindowSize);
