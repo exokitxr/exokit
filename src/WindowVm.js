@@ -1,6 +1,132 @@
+const {EventEmitter} = require('events');
 const path = require('path');
-const {nativeWindow, nativeWorker} = require('./native-bindings');
+const {Worker} = require('worker_threads');
 const GlobalContext = require('./GlobalContext');
+
+const windowBasePath = path.join(__dirname, 'WindowBase.js');
+class WorkerVm extends EventEmitter {
+  constructor(options = {}) {
+    super();
+
+    const worker = new Worker(windowBasePath, {
+      workerData: {
+        initModule: options.initModule,
+        args: options.args,
+      },
+    });
+    worker.on('message', m => {
+      switch (m.method) {
+        case 'response': {
+          const fn = this.queue[m.requestKey];
+
+          if (fn) {
+            fn(m.error, m.result);
+          } else {
+            console.warn(`unknown response request key: ${m.requestKey}`);
+          }
+          break;
+        }
+        case 'postMessage': {
+          this.emit('message', m);
+          break;
+        }
+        case 'emit': {
+          this.emit(m.type, m.event);
+          break;
+        }
+        default: {
+          throw new Error(`worker got unknown message type '${m.method}'`);
+          break;
+        }
+      }
+    });
+    worker.on('error', err => {
+      this.emit('error', err);
+    });
+    worker.on('exit', () => {
+      this.emit('exit');
+    });
+
+    this.worker = worker;
+    this.requestKeys = 0;
+    this.queue = {};
+  }
+
+  queueRequest(fn) {
+    const requestKey = this.requestKeys++;
+    this.queue[requestKey] = fn;
+    return requestKey;
+  }
+
+  runRepl(jsString, transferList) {
+    return new Promise((accept, reject) => {
+      const requestKey = this.queueRequest((err, result) => {
+        if (!err) {
+          accept(result);
+        } else {
+          reject(err);
+        }
+      });
+      this.worker.postMessage({
+        method: 'runRepl',
+        jsString,
+        requestKey,
+      }, transferList);
+    });
+  }
+  runAsync(jsString, arg, transferList) {
+    return new Promise((accept, reject) => {
+      const requestKey = this.queueRequest((err, result) => {
+        if (!err) {
+          accept(result);
+        } else {
+          reject(err);
+        }
+      });
+      this.worker.postMessage({
+        method: 'runAsync',
+        jsString,
+        arg,
+        requestKey,
+      }, transferList);
+    });
+  }
+  postMessage(message, transferList) {
+    this.worker.postMessage({
+      method: 'postMessage',
+      message,
+    }, transferList);
+  }
+  
+  destroy() {
+    const symbols = Object.getOwnPropertySymbols(this.worker);
+    const publicPortSymbol = symbols.find(s => s.toString() === 'Symbol(kPublicPort)');
+    const publicPort = this.worker[publicPortSymbol];
+    publicPort.close();
+  }
+
+  get onmessage() {
+    return this.listeners('message')[0];
+  }
+  set onmessage(onmessage) {
+    this.on('message', onmessage);
+  }
+
+  get onerror() {
+    return this.listeners('error')[0];
+  }
+  set onerror(onerror) {
+    this.on('error', onerror);
+  }
+  
+  get onexit() {
+    return this.listeners('exit')[0];
+  }
+  set onexit(onexit) {
+    this.on('exit', onexit);
+  }
+}
+module.exports.WorkerVm = WorkerVm;
 
 const _makeWindow = (options = {}) => {
   const id = Atomics.add(GlobalContext.xrState.id, 0, 1) + 1;
