@@ -10,13 +10,6 @@ using namespace node;
 
 namespace browser {
 
-void CefDoMessageLoopWork2() {
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Execute
-  cef_do_message_loop_work();
-}
-
 CefRefPtr<CefBrowser> CreateBrowserSync(
     const CefWindowInfo& windowInfo,
     CefRefPtr<CefClient> client,
@@ -74,7 +67,7 @@ bool initializeEmbedded(const std::string &dataPath, const std::string &framewor
 #endif
 
   CefMainArgs args;
-  
+
 	CefSettings settings;
   // settings.log_severity = LOGSEVERITY_VERBOSE;
   // CefString(&settings.resources_dir_path) = resourcesPath;
@@ -85,14 +78,32 @@ bool initializeEmbedded(const std::string &dataPath, const std::string &framewor
   CefString(&settings.framework_dir_path).FromString(frameworkPath);
 #endif
   settings.no_sandbox = true;
+  // settings.multi_threaded_message_loop = false;
+  settings.external_message_pump = true;
   
   SimpleApp *app = new SimpleApp(dataPath);
   
 	return CefInitialize2(args, settings, app, nullptr);
 }
 
+/* void embeddedUpdate() {
+  {
+    std::lock_guard<std::mutex> lock(browsersMutex);
+
+    for (auto iter = browsers.begin(); iter != browsers.end(); iter++) {
+      EmbeddedBrowser browser_ = *iter;
+      auto renderHandler = ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler;
+      if (renderHandler->resized) {
+        browser_->GetHost()->WasResized();
+
+        renderHandler->resized = false;
+      }
+    }
+  }
+} */
+
 void embeddedDoMessageLoopWork() {
-  CefDoMessageLoopWork2();
+  cef_do_message_loop_work();
 }
 
 EmbeddedBrowser createEmbedded(
@@ -113,7 +124,7 @@ EmbeddedBrowser createEmbedded(
   std::function<void(const std::string &)> onmessage
 ) {
   EmbeddedBrowser browser_ = getBrowser();
-  
+
   if (width == 0) {
     width = ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler->width;
   }
@@ -127,6 +138,12 @@ EmbeddedBrowser createEmbedded(
     
     *textureWidth = 0;
     *textureHeight = 0;
+    
+    {
+      std::lock_guard<std::mutex> lock(browsersMutex);
+
+      browsers.erase(std::find(browsers.begin(), browsers.end(), browser_));
+    }
   }
   
   LoadHandler *load_handler_ = new LoadHandler(
@@ -154,49 +171,53 @@ EmbeddedBrowser createEmbedded(
   );
   
   RenderHandler *render_handler_ = new RenderHandler(
-    [gl, tex, textureWidth, textureHeight, width, height](const CefRenderHandler::RectList &dirtyRects, const void *buffer, int width, int height) -> void {
-      RunOnMainThread([&]() -> void {
-        windowsystem::SetCurrentWindowContext(gl->windowHandle);
-        
-        glBindTexture(GL_TEXTURE_2D, tex);
-        glPixelStorei(GL_UNPACK_ROW_LENGTH, width); // XXX save/restore these
+    [window, tex, textureWidth, textureHeight](const CefRenderHandler::RectList &dirtyRects, const void *buffer, int width, int height) -> void {
+      // std::cout << "paint 1 " << tex << std::endl;
+      
+      windowsystem::SetCurrentWindowContext(window);
 
-        if (*textureWidth != width || *textureHeight != height) {
-          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-          glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
-          glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
-// #ifndef LUMIN
-          glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
-// #else
-          // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
-// #endif
-        
-          *textureWidth = width;
-          *textureHeight = height;
-        }
+      glBindTexture(GL_TEXTURE_2D, tex);
 
-        for (size_t i = 0; i < dirtyRects.size(); i++) {
-          const CefRect &rect = dirtyRects[i];
-          
-          glPixelStorei(GL_UNPACK_SKIP_PIXELS, rect.x);
-          glPixelStorei(GL_UNPACK_SKIP_ROWS, rect.y);
-// #ifndef LUMIN
-          glTexSubImage2D(GL_TEXTURE_2D, 0, rect.x, rect.y, rect.width, rect.height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, buffer);
-// #else
-          // glTexSubImage2D(GL_TEXTURE_2D, 0, rect.x, rect.y, rect.width, rect.height, GL_BGRA_EXT, GL_UNSIGNED_BYTE, buffer);
-// #endif
-        }
-
+      if (*textureWidth != width || *textureHeight != height) {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); // XXX save/restore these
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
         glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
         glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
-        if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D)) {
-          glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D));
-        } else {
-          glBindTexture(GL_TEXTURE_2D, 0);
-        }
-      });
+// #ifndef LUMIN
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+// #else
+        // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
+// #endif
+
+        *textureWidth = width;
+        *textureHeight = height;
+      }
+
+      glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
+
+      for (size_t i = 0; i < dirtyRects.size(); i++) {
+        const CefRect &rect = dirtyRects[i];
+        
+        glPixelStorei(GL_UNPACK_SKIP_PIXELS, rect.x);
+        glPixelStorei(GL_UNPACK_SKIP_ROWS, rect.y);
+// #ifndef LUMIN
+        glTexSubImage2D(GL_TEXTURE_2D, 0, rect.x, rect.y, rect.width, rect.height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, buffer);
+// #else
+        // glTexSubImage2D(GL_TEXTURE_2D, 0, rect.x, rect.y, rect.width, rect.height, GL_BGRA_EXT, GL_UNSIGNED_BYTE, buffer);
+// #endif
+      }
+      
+      glFinish();
+
+      /* glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+      glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
+      glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
+      if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D)) {
+        glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D));
+      } else {
+        glBindTexture(GL_TEXTURE_2D, 0);
+      } */
     },
     width,
     height
@@ -208,27 +229,59 @@ EmbeddedBrowser createEmbedded(
   // browserSettings.windowless_frame_rate = 60; // 30 is default
   BrowserClient *client = new BrowserClient(load_handler_, display_handler_, render_handler_);
   
-  return CreateBrowserSync(window_info, client, url, browserSettings, nullptr);
+  EmbeddedBrowser result = CreateBrowserSync(window_info, client, url, browserSettings, nullptr);
+  
+  {
+    std::lock_guard<std::mutex> lock(browsersMutex);
+
+    browsers.push_back(result);
+  }
+  
+  return result;
 }
 void destroyEmbedded(EmbeddedBrowser browser_) {
+  {
+    std::lock_guard<std::mutex> lock(browsersMutex);
+
+    browsers.erase(std::find(browsers.begin(), browsers.end(), browser_));
+  }
+  
   browser_->GetHost()->CloseBrowser(false);
+}
+std::pair<int, int> getEmbeddedSize(EmbeddedBrowser browser_) {
+  auto renderHandler = ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler;
+  return std::pair<int, int>(renderHandler->width, renderHandler->height);
+}
+void setEmbeddedSize(EmbeddedBrowser browser_, int width, int height) {
+  auto renderHandler = ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler;
+  renderHandler->width = width;
+  renderHandler->height = height;
+
+  browser_->GetHost()->WasResized();
+  // renderHandler->resized = true;
 }
 int getEmbeddedWidth(EmbeddedBrowser browser_) {
   return ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler->width;
 }
 void setEmbeddedWidth(EmbeddedBrowser browser_, int width) {
-  ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler->width = width;
-  
+  auto renderHandler = ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler;
+  renderHandler->width = width;
   browser_->GetHost()->WasResized();
+  // renderHandler->resized = true;
+  
+  // browser_->GetHost()->WasResized();
   // browser->browser_->GetHost()->Invalidate(PET_VIEW);
 }
 int getEmbeddedHeight(EmbeddedBrowser browser_) {
   return ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler->height;
 }
 void setEmbeddedHeight(EmbeddedBrowser browser_, int height) {
-  ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler->height = height;
-  
+  auto renderHandler = ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler;
+  renderHandler->height = height;
   browser_->GetHost()->WasResized();
+  // renderHandler->resized = true;
+  
+  // browser_->GetHost()->WasResized();
   // browser->browser_->GetHost()->Invalidate(PET_VIEW);
 }
 void embeddedGoBack(EmbeddedBrowser browser_) {
@@ -342,6 +395,12 @@ void SimpleApp::OnContextInitialized() {
   // CEF_REQUIRE_UI_THREAD();
 }
 
+void SimpleApp::OnScheduleMessagePumpWork(int64 delay_ms) {
+  if (embeddedInitialized) {
+    cef_do_message_loop_work();
+  }
+}
+
 // LoadHandler
 
 LoadHandler::LoadHandler(std::function<void()> onLoadStart, std::function<void()> onLoadEnd, std::function<void(int, const std::string &, const std::string &)> onLoadError) : onLoadStart(onLoadStart), onLoadEnd(onLoadEnd), onLoadError(onLoadError) {}
@@ -381,7 +440,7 @@ bool DisplayHandler::OnConsoleMessage(CefRefPtr<CefBrowser> browser, cef_log_sev
 
 // RenderHandler
 
-RenderHandler::RenderHandler(OnPaintFn onPaint, int width, int height) : onPaint(onPaint), width(width), height(height) {}
+RenderHandler::RenderHandler(OnPaintFn onPaint, int width, int height) : onPaint(onPaint), width(width), height(height)/*, resized(false)*/ {}
 
 RenderHandler::~RenderHandler() {}
 
@@ -405,6 +464,9 @@ BrowserClient::BrowserClient(LoadHandler *loadHandler, DisplayHandler *displayHa
   m_loadHandler(loadHandler), m_displayHandler(displayHandler), m_renderHandler(renderHandler)/*, m_lifespanHandler(lifespanHandler)*/ {}
 
 BrowserClient::~BrowserClient() {}
+
+std::mutex browsersMutex;
+std::list<EmbeddedBrowser> browsers;
 
 }
 

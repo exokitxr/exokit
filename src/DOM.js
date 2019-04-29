@@ -17,7 +17,6 @@ const {Blob} = fetch;
 const htmlUnescape = require('unescape');
 
 const bindings = require('./native-bindings');
-const {defaultCanvasSize} = require('./constants');
 const {Event, EventTarget, MessageEvent, MouseEvent, ErrorEvent} = require('./Event');
 const {_makeWindow} = require('./WindowVm');
 const GlobalContext = require('./GlobalContext');
@@ -1955,6 +1954,8 @@ class HTMLIFrameElement extends HTMLSrcableElement {
         if (match) {
           url = 'data:text/html,' + encodeURIComponent(`<!doctype html><html><head><script>${match[1]}</script></head></html>`);
         }
+        const oldUrl = url;
+        url = utils._makeNormalizeUrl(this.ownerDocument.defaultView[symbols.optionsSymbol].baseUrl)(url);
 
         this.ownerDocument.resources.addResource((onprogress, cb) => {
           (async () => {
@@ -2099,9 +2100,12 @@ class HTMLIFrameElement extends HTMLSrcableElement {
         } else {
           this.d = null;
         }
-      } else if (name === 'width' || name === 'height') {
+      } else if (name === 'width') {
         if (this.browser) {
           this.browser.width = this.width;
+        }
+      } else if (name === 'height') {
+        if (this.browser) {
           this.browser.height = this.height;
         }
       }
@@ -2120,7 +2124,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
   }
   
   get width() {
-    return parseInt(this.getAttribute('width') || defaultCanvasSize[0] + '', 10);
+    return parseInt(this.getAttribute('width') || bindings.nativeWindow.getScreenSize()[0]/2 + '', 10);
   }
   set width(value) {
     if (typeof value === 'number' && isFinite(value)) {
@@ -2128,7 +2132,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
     }
   }
   get height() {
-    return parseInt(this.getAttribute('height') || defaultCanvasSize[1] + '', 10);
+    return parseInt(this.getAttribute('height') || bindings.nativeWindow.getScreenSize()[1]/2 + '', 10);
   }
   set height(value) {
     if (typeof value === 'number' && isFinite(value)) {
@@ -2241,7 +2245,7 @@ class HTMLCanvasElement extends HTMLElement {
   }
 
   get width() {
-    return parseInt(this.getAttribute('width') || defaultCanvasSize[0] + '', 10);
+    return parseInt(this.getAttribute('width') || bindings.nativeWindow.getScreenSize()[0]/2 + '', 10);
   }
   set width(value) {
     if (typeof value === 'number' && isFinite(value)) {
@@ -2249,7 +2253,7 @@ class HTMLCanvasElement extends HTMLElement {
     }
   }
   get height() {
-    return parseInt(this.getAttribute('height') || defaultCanvasSize[1] + '', 10);
+    return parseInt(this.getAttribute('height') || bindings.nativeWindow.getScreenSize()[1]/2 + '', 10);
   }
   set height(value) {
     if (typeof value === 'number' && isFinite(value)) {

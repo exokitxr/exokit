@@ -76,7 +76,10 @@ EmbeddedBrowser createEmbedded(
   std::function<void(const std::string &)> onmessage
 );
 void destroyEmbedded(EmbeddedBrowser browser_);
+// void embeddedUpdate();
 void embeddedDoMessageLoopWork();
+std::pair<int, int> getEmbeddedSize(EmbeddedBrowser browser_);
+void setEmbeddedSize(EmbeddedBrowser browser_, int width, int height);
 int getEmbeddedWidth(EmbeddedBrowser browser_);
 void setEmbeddedWidth(EmbeddedBrowser browser_, int width);
 int getEmbeddedHeight(EmbeddedBrowser browser_);
@@ -98,7 +101,7 @@ void embeddedRunJs(EmbeddedBrowser browser_, const std::string &jsString, const 
 void QueueOnBrowserThread(std::function<void()> fn);
 // void QueueOnBrowserThreadFront(std::function<void()> fn);
 
-void RunOnMainThread(std::function<void()> fn);
+// void RunOnMainThread(std::function<void()> fn);
 void QueueOnMainThread(std::function<void()> fn);
 void MainThreadAsync(uv_async_t *handle);
 

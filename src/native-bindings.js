@@ -98,7 +98,15 @@ const _onGl3DConstruct = (gl, canvas) => {
           }
           break;
         }
-        case 'framebufferResize': {
+        case 'windowResize': {
+          const {width, height} = data;
+          window.innerWidth = width;
+          window.innerHeight = height;
+
+          window.dispatchEvent(new window.Event('resize'));
+          break;
+        }
+        /* case 'framebufferResize': {
           const {width, height} = data;
           // innerWidth = width;
           // innerHeight = height;
@@ -107,7 +115,7 @@ const _onGl3DConstruct = (gl, canvas) => {
           window.innerHeight = height / window.devicePixelRatio;
           window.dispatchEvent(new window.Event('resize'));
           break;
-        }
+        } */
         case 'keydown': {
           let handled = false;
           if (data.keyCode === 27) { // ESC

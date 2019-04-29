@@ -73,7 +73,7 @@ const {
   getHMDType,
 } = require('./VR.js');
 
-const {defaultCanvasSize, maxNumTrackers} = require('./constants');
+const {maxNumTrackers} = require('./constants');
 const GlobalContext = require('./GlobalContext');
 const symbols = require('./symbols');
 const {urls} = require('./urls');
@@ -530,8 +530,32 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
   window.parent = options.parent || window;
   window.top = options.top || window;
 
-  window.innerWidth = defaultCanvasSize[0];
-  window.innerHeight = defaultCanvasSize[1];
+  Object.defineProperty(window, 'innerWidth', {
+    get() {
+      if (!GlobalContext.xrState.metrics[0]) {
+        const screenSize = nativeWindow.getScreenSize();
+        GlobalContext.xrState.metrics[0] = screenSize[0]/2;
+        // GlobalContext.xrState.metrics[1] = screenSize[1]/2;
+      }
+      return GlobalContext.xrState.metrics[0];
+    },
+    set(innerWidth) {
+      GlobalContext.xrState.metrics[0] = innerWidth;
+    },
+  });
+  Object.defineProperty(window, 'innerHeight', {
+    get() {
+      if (!GlobalContext.xrState.metrics[1]) {
+        const screenSize = nativeWindow.getScreenSize();
+        // GlobalContext.xrState.metrics[0] = screenSize[0]/2;
+        GlobalContext.xrState.metrics[1] = screenSize[1]/2;
+      }
+      return GlobalContext.xrState.metrics[1];
+    },
+    set(innerHeight) {
+      GlobalContext.xrState.metrics[1] = innerHeight;
+    },
+  });
   Object.defineProperty(window, 'devicePixelRatio', {
     get() {
       if (!GlobalContext.xrState.devicePixelRatio[0]) {

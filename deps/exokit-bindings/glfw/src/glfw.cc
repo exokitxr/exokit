@@ -116,19 +116,29 @@ NAN_METHOD(GetMonitors) {
   info.GetReturnValue().Set(js_monitors);
 }
 
-NAN_METHOD(SetMonitor) {
+NAN_METHOD(SetMonitor) {  
   int index = TO_INT32(info[0]);
   int monitor_count;
   GLFWmonitor **monitors = glfwGetMonitors(&monitor_count);
   _activeMonitor = monitors[index];
 }
 
-/* void NAN_INLINE(CallEmitter(int argc, Local<Value> argv[])) {
-  if (eventHandler && !(*eventHandler).IsEmpty()) {
-    Local<Function> eventHandlerFn = Nan::New(*eventHandler);
-    eventHandlerFn->Call(Isolate::GetCurrent()->GetCurrentContext(), Nan::Null(), argc, argv);
-  }
-} */
+void GetScreenSize(int *width, int *height) {  
+  GLFWmonitor *monitor = glfwGetPrimaryMonitor();
+  const GLFWvidmode *videoMode = glfwGetVideoMode(monitor);
+  *width = videoMode->width;
+  *height = videoMode->height;
+}
+
+NAN_METHOD(GetScreenSize) {
+  int width, height;
+  GetScreenSize(&width, &height);
+
+  Local<Array> result = Nan::New<Array>(2);
+  result->Set(0, JS_INT(width));
+  result->Set(1, JS_INT(height));
+  info.GetReturnValue().Set(result);
+}
 
 void QueueEvent(NATIVEwindow *window, std::function<void(std::function<void(int, Local<Value> *)>)> fn) {
   EventHandler *eventHandler;
@@ -1608,8 +1618,9 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "setVisibility", glfw::SetVisibility);
   Nan::SetMethod(target, "isVisible", glfw::IsVisible);
   Nan::SetMethod(target, "setFullscreen", glfw::SetFullscreen);
-  Nan::SetMethod(target, "setMonitor", glfw::SetMonitor);
   Nan::SetMethod(target, "getMonitors", glfw::GetMonitors);
+  Nan::SetMethod(target, "setMonitor", glfw::SetMonitor);
+  Nan::SetMethod(target, "getScreenSize", glfw::GetScreenSize);
   Nan::SetMethod(target, "setWindowTitle", glfw::SetWindowTitle);
   Nan::SetMethod(target, "getWindowSize", glfw::GetWindowSize);
   Nan::SetMethod(target, "setWindowSize", glfw::SetWindowSize);

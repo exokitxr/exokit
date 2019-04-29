@@ -103,6 +103,9 @@ void destroyEmbedded(EmbeddedBrowser browser_) {
   browser_->deInit();
   browsers.erase(std::find(browsers.begin(), browsers.end(), browser_));
 }
+void embeddedUpdate() {
+  // nothing
+}
 void embeddedDoMessageLoopWork() {
   // exout << "do message loop work 1 " << browsers.size() << std::endl;
 
@@ -115,6 +118,13 @@ void embeddedDoMessageLoopWork() {
   }
   
   // exout << "do message loop work 2 " << browsers.size() << std::endl;
+}
+std::pair<int, int> getEmbeddedSize(EmbeddedBrowser browser_) {
+  return std::pair<int, int>(browser_->getWidth(), browser_->getHeight());
+}
+void setEmbeddedSize(EmbeddedBrowser browser_, int width, int height) {
+  browser_->setWidth(width);
+  browser_->setHeight(height);
 }
 int getEmbeddedWidth(EmbeddedBrowser browser_) {
   return browser_->getWidth();

@@ -1,0 +1,10 @@
+#Launch{
+    color: white;
+}
+#Launch #howto{
+    background-color: #ffffff0f;
+    height: 500px;
+    padding: 20px;
+    border-radius: 5px;
+    overflow-y: 5px;
+}

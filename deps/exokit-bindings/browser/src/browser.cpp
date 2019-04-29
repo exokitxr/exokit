@@ -16,12 +16,10 @@ namespace browser {
 
 Browser::Browser(WebGLRenderingContext *gl, int width, int height) : gl(gl), window(nullptr), width(width), height(height), tex(0), textureWidth(0), textureHeight(0) {
   windowsystem::SetCurrentWindowContext(gl->windowHandle);
-  
-  glGenTextures(1, &tex);
 
-#ifdef LUMIN
+  glGenTextures(1, &tex);
+  
   window = windowsystem::CreateNativeWindow(width, height, true);
-#endif
 }
 
 Browser::~Browser() {}
@@ -37,7 +35,7 @@ Local<Object> Browser::Initialize(Isolate *isolate) {
   // prototype
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
   Nan::SetMethod(proto, "load", Load);
-  // Nan::SetMethod(proto, "resize", Resize);
+  Nan::SetMethod(proto, "resize", Resize);
   Nan::SetAccessor(proto, JS_STR("width"), WidthGetter, WidthSetter);
   Nan::SetAccessor(proto, JS_STR("height"), HeightGetter, HeightSetter);
   Nan::SetAccessor(proto, JS_STR("onloadstart"), OnLoadStartGetter, OnLoadStartSetter);
@@ -219,17 +217,12 @@ void Browser::loadImmediate(const std::string &url) {
   );
 }
 
-/* void Browser::resize(int w, int h) {
-  ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler->resize(w, h);
-	browser_->GetHost()->WasResized();
-} */
-
 NAN_METHOD(Browser::UpdateAll) {
   if (embeddedInitialized) {
+    // embeddedUpdate();
+    
     QueueOnBrowserThread([]() -> void {
-      // exout << "browser update 1" << std::endl;
       embeddedDoMessageLoopWork();
-      // exout << "browser update 2" << std::endl;
     });
   }
 }
@@ -244,6 +237,14 @@ NAN_METHOD(Browser::Load) {
   } else {
     return Nan::ThrowError("Browser::Load: invalid arguments");
   }
+}
+
+NAN_METHOD(Browser::Resize) {
+  Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
+  int width = TO_INT32(info[0]);
+  int height = TO_INT32(info[1]);
+
+  setEmbeddedSize(browser->browser_, width, height);
 }
 
 NAN_GETTER(Browser::WidthGetter) {
@@ -262,7 +263,7 @@ NAN_SETTER(Browser::WidthSetter) {
     int width = TO_INT32(value);
     
     QueueOnBrowserThread([browser, width]() -> void {
-      setEmbeddedHeight(browser->browser_, width);
+      setEmbeddedWidth(browser->browser_, width);
     });
   }
 }
