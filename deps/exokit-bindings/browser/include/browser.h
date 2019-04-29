@@ -89,9 +89,6 @@ protected:
   Nan::Persistent<Function> onmessage;
 };
 
-extern std::mutex browsersMutex;
-extern std::vector<Browser *> browsers;
-
 }
 
 #endif

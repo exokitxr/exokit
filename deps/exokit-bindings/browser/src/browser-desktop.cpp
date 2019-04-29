@@ -10,7 +10,6 @@ using namespace node;
 
 namespace browser {
 
-
 CefRefPtr<CefBrowser> CreateBrowserSync(
     const CefWindowInfo& windowInfo,
     CefRefPtr<CefClient> client,
@@ -85,12 +84,19 @@ bool initializeEmbedded(const std::string &dataPath, const std::string &framewor
 	return CefInitialize2(args, settings, app, nullptr);
 }
 
-void embeddedUpdate(EmbeddedBrowser browser_) {
-  auto renderHandler = ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler;
-  if (renderHandler->resized) {
-    browser_->GetHost()->WasResized();
+void embeddedUpdate() {
+  {
+    std::lock_guard<std::mutex> lock(browsersMutex);
 
-    renderHandler->resized = false;
+    for (auto iter = browsers.begin(); iter != browsers.end(); iter++) {
+      EmbeddedBrowser browser_ = *iter;
+      auto renderHandler = ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler;
+      if (renderHandler->resized) {
+        browser_->GetHost()->WasResized();
+
+        renderHandler->resized = false;
+      }
+    }
   }
 }
 
@@ -116,7 +122,7 @@ EmbeddedBrowser createEmbedded(
   std::function<void(const std::string &)> onmessage
 ) {
   EmbeddedBrowser browser_ = getBrowser();
-  
+
   if (width == 0) {
     width = ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler->width;
   }
@@ -130,6 +136,12 @@ EmbeddedBrowser createEmbedded(
     
     *textureWidth = 0;
     *textureHeight = 0;
+    
+    {
+      std::lock_guard<std::mutex> lock(browsersMutex);
+
+      browsers.erase(std::find(browsers.begin(), browsers.end(), browser_));
+    }
   }
   
   LoadHandler *load_handler_ = new LoadHandler(
@@ -213,9 +225,23 @@ EmbeddedBrowser createEmbedded(
   // browserSettings.windowless_frame_rate = 60; // 30 is default
   BrowserClient *client = new BrowserClient(load_handler_, display_handler_, render_handler_);
   
-  return CreateBrowserSync(window_info, client, url, browserSettings, nullptr);
+  EmbeddedBrowser result = CreateBrowserSync(window_info, client, url, browserSettings, nullptr);
+  
+  {
+    std::lock_guard<std::mutex> lock(browsersMutex);
+
+    browsers.push_back(result);
+  }
+  
+  return result;
 }
 void destroyEmbedded(EmbeddedBrowser browser_) {
+  {
+    std::lock_guard<std::mutex> lock(browsersMutex);
+
+    browsers.erase(std::find(browsers.begin(), browsers.end(), browser_));
+  }
+  
   browser_->GetHost()->CloseBrowser(false);
 }
 std::pair<int, int> getEmbeddedSize(EmbeddedBrowser browser_) {
@@ -424,6 +450,9 @@ BrowserClient::BrowserClient(LoadHandler *loadHandler, DisplayHandler *displayHa
   m_loadHandler(loadHandler), m_displayHandler(displayHandler), m_renderHandler(renderHandler)/*, m_lifespanHandler(lifespanHandler)*/ {}
 
 BrowserClient::~BrowserClient() {}
+
+std::mutex browsersMutex;
+std::list<EmbeddedBrowser> browsers;
 
 }
 

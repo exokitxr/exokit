@@ -22,21 +22,9 @@ Browser::Browser(WebGLRenderingContext *gl, int width, int height) : gl(gl), win
 #ifdef LUMIN
   window = windowsystem::CreateNativeWindow(width, height, true, gl->windowHandle);
 #endif
-
-  {
-    std::lock_guard<std::mutex> lock(browsersMutex);
-
-    browsers.push_back(this);
-  }
 }
 
-Browser::~Browser() {
-  {
-    std::lock_guard<std::mutex> lock(browsersMutex);
-
-    browsers.erase(std::find(browsers.begin(), browsers.end(), this));
-  }
-}
+Browser::~Browser() {}
 
 Local<Object> Browser::Initialize(Isolate *isolate) {
   uv_async_init(uv_default_loop(), &mainThreadAsync, MainThreadAsync);
@@ -232,14 +220,8 @@ void Browser::loadImmediate(const std::string &url) {
 
 NAN_METHOD(Browser::UpdateAll) {
   if (embeddedInitialized) {
-    {
-      std::lock_guard<std::mutex> lock(browsersMutex);
-
-      for (auto iter = browsers.begin(); iter != browsers.end(); iter++) {
-        embeddedUpdate((*iter)->browser_);
-      }
-    }
-
+    embeddedUpdate();
+    
     QueueOnBrowserThread([]() -> void {
       embeddedDoMessageLoopWork();
     });
@@ -652,8 +634,5 @@ NAN_GETTER(Browser::TextureGetter) {
   textureObj->Set(JS_STR("id"), JS_INT(browser->tex));
   info.GetReturnValue().Set(textureObj);
 }
-
-std::mutex browsersMutex;
-std::vector<Browser *> browsers;
 
 }

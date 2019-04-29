@@ -103,7 +103,7 @@ void destroyEmbedded(EmbeddedBrowser browser_) {
   browser_->deInit();
   browsers.erase(std::find(browsers.begin(), browsers.end(), browser_));
 }
-void embeddedUpdate(EmbeddedBrowser browser_) {
+void embeddedUpdate() {
   // nothing
 }
 void embeddedDoMessageLoopWork() {

@@ -5,6 +5,7 @@
 #include <node.h>
 #include <nan.h>
 
+#include <list>
 #include <functional>
 
 #include <webgl.h>
@@ -133,6 +134,9 @@ public:
 private:
 	IMPLEMENT_REFCOUNTING(BrowserClient);
 };
+
+extern std::mutex browsersMutex;
+extern std::list<EmbeddedBrowser> browsers;
 
 }
 
