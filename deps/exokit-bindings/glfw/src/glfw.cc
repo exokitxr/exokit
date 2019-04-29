@@ -209,7 +209,13 @@ void QueueInjection(NATIVEwindow *window, std::function<void(InjectionHandler *i
     uv_sem_wait(&sem);
     uv_sem_destroy(&sem);
 #else
-    initializeGlfw();
+    {
+      std::lock_guard<std::mutex> lock(injectionHandlerMapMutex);
+
+      mainThreadInjectionHandler.fns.push_back([](InjectionHandler *injectionHandler) -> void {
+        initializeGlfw();
+      });
+    }
 #endif
 
     glfwInitialized = true;
