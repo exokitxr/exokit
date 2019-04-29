@@ -152,12 +152,9 @@ NAN_METHOD(GetFramebufferSize) {
 }
 
 NAN_METHOD(GetScreenSize) {
-  int width, height;
-  GetFramebufferSize(window, &width, &height);
-  
   Local<Array> result = Nan::New<Array>(2);
-  result->Set(0, JS_INT(width));
-  result->Set(1, JS_INT(height));
+  result->Set(0, JS_INT(1280));
+  result->Set(1, JS_INT(1024));
   info.GetReturnValue().Set(result);
 }
 
