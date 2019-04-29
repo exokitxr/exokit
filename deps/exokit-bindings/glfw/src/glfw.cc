@@ -139,7 +139,7 @@ NAN_METHOD(SetMonitor) {
   _activeMonitor = monitors[index];
 }
 
-NAN_METHOD(GetScreenSize) {
+void GetScreenSize(int *width, int *height) {
   initializeGlfw();
   
   GLFWmonitor *monitor = glfwGetPrimaryMonitor();
@@ -147,6 +147,16 @@ NAN_METHOD(GetScreenSize) {
   int width = videoMode->width;
   int height = videoMode->height;
   
+  Local<Array> result = Nan::New<Array>(2);
+  result->Set(0, JS_INT(width));
+  result->Set(1, JS_INT(height));
+  info.GetReturnValue().Set(result);
+}
+
+NAN_METHOD(GetScreenSize) {
+  int width, height;
+  GetScreenSize(&width, &height);
+
   Local<Array> result = Nan::New<Array>(2);
   result->Set(0, JS_INT(width));
   result->Set(1, JS_INT(height));
