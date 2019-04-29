@@ -1118,7 +1118,7 @@ NAN_METHOD(SetEventHandler) {
     Local<Array> windowHandle = Local<Array>::Cast(info[0]);
     Local<Function> handlerFn = Local<Function>::Cast(info[1]);
 
-    NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+    NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(windowHandle);
     {
       std::lock_guard<std::mutex> lock(eventHandlerMapMutex);
 
