@@ -10,12 +10,6 @@ using namespace node;
 
 namespace browser {
 
-void CefDoMessageLoopWork2() {
-  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
-
-  // Execute
-  cef_do_message_loop_work();
-}
 
 CefRefPtr<CefBrowser> CreateBrowserSync(
     const CefWindowInfo& windowInfo,
@@ -92,7 +86,7 @@ bool initializeEmbedded(const std::string &dataPath, const std::string &framewor
 }
 
 void embeddedDoMessageLoopWork() {
-  CefDoMessageLoopWork2();
+  cef_do_message_loop_work();
 }
 
 EmbeddedBrowser createEmbedded(
