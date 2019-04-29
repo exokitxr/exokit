@@ -120,11 +120,10 @@ void embeddedDoMessageLoopWork() {
   // exout << "do message loop work 2 " << browsers.size() << std::endl;
 }
 std::pair<int, int> getEmbeddedSize(EmbeddedBrowser browser_) {
-  auto renderHandler = ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler;
   return std::pair<int, int>(browser_->getWidth(), browser_->getHeight());
 }
 void setEmbeddedSize(EmbeddedBrowser browser_, int width, int height) {
-  browser_->setWidth(width)
+  browser_->setWidth(width);
   browser_->setHeight(height);
 }
 int getEmbeddedWidth(EmbeddedBrowser browser_) {
