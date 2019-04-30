@@ -266,7 +266,7 @@ const xrState = (() => {
     return result;
   })();
   result.id = _makeTypedArray(Uint32Array, 1);
-  result.vrRequest = _makeTypedArray(Uint32Array, 2);
+  result.vrRequest = _makeTypedArray(Uint32Array, 4); // method, id, width, height
   result.tex = _makeTypedArray(Uint32Array, 1);
   result.depthTex = _makeTypedArray(Uint32Array, 1);
   result.fakeVrDisplayEnabled = _makeTypedArray(Uint32Array, 1);
@@ -323,8 +323,9 @@ const _startTopRenderLoop = () => {
       nativeBindings.nativeWindow.setCurrentWindowContext(topVrPresentState.windowHandle);
       
       if (hmdType === 'fake') {
-        const {width: halfWidth, height} = {width: 1280/2, height: 1024}; // XXX get recommended render target size
-        const width = halfWidth * 2;
+        const width = xrState.vrRequest[2];
+        const height = xrState.vrRequest[3];
+        const halfWidth = width/2;
 
         const [fbo, tex, depthTex] = nativeBindings.nativeWindow.createVrTopRenderTarget(width, height);
 

@@ -1352,6 +1352,8 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
           vrPresentState.responseAccept = accept;
 
           xrState.vrRequest[1] = GlobalContext.id;
+          xrState.vrRequest[2] = window.innerWidth;
+          xrState.vrRequest[3] = window.innerHeight;
           xrState.vrRequest[0] = 1; // requestPresent
         });
 
