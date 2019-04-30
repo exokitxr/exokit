@@ -25,7 +25,6 @@ An example of how to use these flags:
 |`-f`|`--frame`|Get GL call list with arguments to console log|
 |`-m`|`--minimalFrame`|Get GL call list to console log|
 |`-q`|`--quit`|Quit and exit process|
-|`-b`|`--blit`|Enabling halves the canvas width|
 |`-l`|`--log`|Output log to log.txt|
 |`-r`|`--replace`|Replace with a local file|
 |`-u`|`--require`|Require native modules|
