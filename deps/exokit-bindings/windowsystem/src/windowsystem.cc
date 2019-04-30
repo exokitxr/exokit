@@ -357,7 +357,7 @@ void CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint
   const int samples = 4;
 
   int msWidth, msHeight;
-  windowsystem::GetScreenSize(&msWidth, &msHeight);
+  windowsystem::GetScreenSize(gl->windowHandle, &msWidth, &msHeight);
 
   GLuint &fbo = *pfbo;
   GLuint &colorTex = *pcolorTex;

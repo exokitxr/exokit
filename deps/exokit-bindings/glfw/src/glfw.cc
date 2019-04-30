@@ -58,88 +58,6 @@ EventHandler::~EventHandler() {
 
 InjectionHandler::InjectionHandler() {}
 
-GLFWmonitor* _activeMonitor;
-GLFWmonitor* getMonitor() {
-  if (_activeMonitor) {
-    return _activeMonitor;
-  } else {
-    GLFWmonitor *monitor = glfwGetPrimaryMonitor();
-    return monitor;
-  }
-}
-
-NAN_METHOD(GetMonitors) {
-  int monitor_count, mode_count, xpos, ypos, width, height;
-  int i, j;
-  GLFWmonitor **monitors = glfwGetMonitors(&monitor_count);
-  GLFWmonitor *primary = glfwGetPrimaryMonitor();
-  const GLFWvidmode *mode, *modes;
-
-  Local<Array> js_monitors = Nan::New<Array>(monitor_count);
-  Local<Object> js_monitor, js_mode;
-  Local<Array> js_modes;
-  for(i=0; i<monitor_count; i++){
-    js_monitor = Nan::New<Object>();
-    js_monitor->Set(JS_STR("is_primary"), JS_BOOL(monitors[i] == primary));
-    js_monitor->Set(JS_STR("index"), JS_INT(i));
-
-    js_monitor->Set(JS_STR("name"), JS_STR(glfwGetMonitorName(monitors[i])));
-
-    glfwGetMonitorPos(monitors[i], &xpos, &ypos);
-    js_monitor->Set(JS_STR("pos_x"), JS_INT(xpos));
-    js_monitor->Set(JS_STR("pos_y"), JS_INT(ypos));
-
-    glfwGetMonitorPhysicalSize(monitors[i], &width, &height);
-    js_monitor->Set(JS_STR("width_mm"), JS_INT(width));
-    js_monitor->Set(JS_STR("height_mm"), JS_INT(height));
-
-    mode = glfwGetVideoMode(monitors[i]);
-    js_monitor->Set(JS_STR("width"), JS_INT(mode->width));
-    js_monitor->Set(JS_STR("height"), JS_INT(mode->height));
-    js_monitor->Set(JS_STR("rate"), JS_INT(mode->refreshRate));
-
-    modes = glfwGetVideoModes(monitors[i], &mode_count);
-    js_modes = Nan::New<Array>(mode_count);
-    for(j=0; j<mode_count; j++){
-      js_mode = Nan::New<Object>();
-      js_mode->Set(JS_STR("width"), JS_INT(modes[j].width));
-      js_mode->Set(JS_STR("height"), JS_INT(modes[j].height));
-      js_mode->Set(JS_STR("rate"), JS_INT(modes[j].refreshRate));
-      // NOTE: Are color bits necessary?
-      js_modes->Set(JS_INT(j), js_mode);
-    }
-    js_monitor->Set(JS_STR("modes"), js_modes);
-
-    js_monitors->Set(JS_INT(i), js_monitor);
-  }
-
-  info.GetReturnValue().Set(js_monitors);
-}
-
-NAN_METHOD(SetMonitor) {  
-  int index = TO_INT32(info[0]);
-  int monitor_count;
-  GLFWmonitor **monitors = glfwGetMonitors(&monitor_count);
-  _activeMonitor = monitors[index];
-}
-
-void GetScreenSize(int *width, int *height) {  
-  GLFWmonitor *monitor = glfwGetPrimaryMonitor();
-  const GLFWvidmode *videoMode = glfwGetVideoMode(monitor);
-  *width = videoMode->width;
-  *height = videoMode->height;
-}
-
-NAN_METHOD(GetScreenSize) {
-  int width, height;
-  GetScreenSize(&width, &height);
-
-  Local<Array> result = Nan::New<Array>(2);
-  result->Set(0, JS_INT(width));
-  result->Set(1, JS_INT(height));
-  info.GetReturnValue().Set(result);
-}
-
 void QueueEvent(NATIVEwindow *window, std::function<void(std::function<void(int, Local<Value> *)>)> fn) {
   EventHandler *eventHandler;
   {
@@ -240,6 +158,100 @@ void QueueInjection(NATIVEwindow *window, std::function<void(InjectionHandler *i
     handleInjections();
   }
 #endif
+}
+
+GLFWmonitor* _activeMonitor;
+GLFWmonitor* getMonitor() {
+  if (_activeMonitor) {
+    return _activeMonitor;
+  } else {
+    GLFWmonitor *monitor = glfwGetPrimaryMonitor();
+    return monitor;
+  }
+}
+
+NAN_METHOD(GetMonitors) {
+  int monitor_count, mode_count, xpos, ypos, width, height;
+  int i, j;
+  GLFWmonitor **monitors = glfwGetMonitors(&monitor_count);
+  GLFWmonitor *primary = glfwGetPrimaryMonitor();
+  const GLFWvidmode *mode, *modes;
+
+  Local<Array> js_monitors = Nan::New<Array>(monitor_count);
+  Local<Object> js_monitor, js_mode;
+  Local<Array> js_modes;
+  for(i=0; i<monitor_count; i++){
+    js_monitor = Nan::New<Object>();
+    js_monitor->Set(JS_STR("is_primary"), JS_BOOL(monitors[i] == primary));
+    js_monitor->Set(JS_STR("index"), JS_INT(i));
+
+    js_monitor->Set(JS_STR("name"), JS_STR(glfwGetMonitorName(monitors[i])));
+
+    glfwGetMonitorPos(monitors[i], &xpos, &ypos);
+    js_monitor->Set(JS_STR("pos_x"), JS_INT(xpos));
+    js_monitor->Set(JS_STR("pos_y"), JS_INT(ypos));
+
+    glfwGetMonitorPhysicalSize(monitors[i], &width, &height);
+    js_monitor->Set(JS_STR("width_mm"), JS_INT(width));
+    js_monitor->Set(JS_STR("height_mm"), JS_INT(height));
+
+    mode = glfwGetVideoMode(monitors[i]);
+    js_monitor->Set(JS_STR("width"), JS_INT(mode->width));
+    js_monitor->Set(JS_STR("height"), JS_INT(mode->height));
+    js_monitor->Set(JS_STR("rate"), JS_INT(mode->refreshRate));
+
+    modes = glfwGetVideoModes(monitors[i], &mode_count);
+    js_modes = Nan::New<Array>(mode_count);
+    for(j=0; j<mode_count; j++){
+      js_mode = Nan::New<Object>();
+      js_mode->Set(JS_STR("width"), JS_INT(modes[j].width));
+      js_mode->Set(JS_STR("height"), JS_INT(modes[j].height));
+      js_mode->Set(JS_STR("rate"), JS_INT(modes[j].refreshRate));
+      // NOTE: Are color bits necessary?
+      js_modes->Set(JS_INT(j), js_mode);
+    }
+    js_monitor->Set(JS_STR("modes"), js_modes);
+
+    js_monitors->Set(JS_INT(i), js_monitor);
+  }
+
+  info.GetReturnValue().Set(js_monitors);
+}
+
+NAN_METHOD(SetMonitor) {  
+  int index = TO_INT32(info[0]);
+  int monitor_count;
+  GLFWmonitor **monitors = glfwGetMonitors(&monitor_count);
+  _activeMonitor = monitors[index];
+}
+
+void GetScreenSize(NATIVEwindow *window, int *width, int *height) {
+  uv_sem_t sem;
+  uv_sem_init(&sem, 0);
+
+  QueueInjection(window, [&](InjectionHandler *injectionHandler) -> void {
+    GLFWmonitor *monitor = glfwGetPrimaryMonitor();
+    const GLFWvidmode *videoMode = glfwGetVideoMode(monitor);
+    *width = videoMode->width;
+    *height = videoMode->height;
+
+    uv_sem_post(&sem);
+  });
+
+  uv_sem_wait(&sem);
+  uv_sem_destroy(&sem);
+}
+
+NAN_METHOD(GetScreenSize) {
+  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+  
+  int width, height;
+  GetScreenSize(window, &width, &height);
+
+  Local<Array> result = Nan::New<Array>(2);
+  result->Set(0, JS_INT(width));
+  result->Set(1, JS_INT(height));
+  info.GetReturnValue().Set(result);
 }
 
 // Window callbacks handling
