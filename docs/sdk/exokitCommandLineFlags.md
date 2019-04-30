@@ -16,19 +16,19 @@ An example of how to use these flags:
 |Short-Form Flag|Long-Form Flag|Description|
 |-|-|-|
 |`-v`|`--version`|Version of Exokit Engine|
-|`-h`|`--home`|Launch Exokit Browser|
-|`-t`|`--tab`|Reality Tab|
+|`-h`|`--home`|Loads realitytabs.html home (default)|
+|`-t`|`--tab`|Load a URL as a reality Tab|
 |`-w`|`--webgl`|WebGL|
-|`-x`|`--xr`|WebXR|
-|`-p`|`--perf`|Performance logging to Console|
+|`-x`|`--xr`|By default loads both WebXR and WebVR, `-x webvr` loads WebVR specifically|
+|`-p`|`--perf`|Performance logging to console|
 |`-s`|`--size`|Size|
 |`-f`|`--frame`|Frame|
 |`-m`|`--minimalFrame`|minimalFrame|
 |`-q`|`--quit`|Quit|
 |`-b`|`--blit`|Blit|
-|`-l`|`--log`|Log to log.txt|
+|`-l`|`--log`|Output log to log.txt|
 |`-i`|`--image`|Image|
 |`-r`|`--replace`|Replace|
-|`-u`|`--require`|Require|
-|`-n`|`--headless`|Headless|
-|`-d`|`--download`|Download|
+|`-u`|`--require`|Require native modules|
+|`-n`|`--headless`|Run Exokit in headless mode|
+|`-d`|`--download`|Download site to `downloads` directory|
