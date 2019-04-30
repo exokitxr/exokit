@@ -35,26 +35,12 @@ after_test:
       mkdir dist
       .\buildtools\iscc "$pwd\metadata\exokit.iss" "/dMyAppVersion=$version" /odist /qp
       mv dist\*.exe exokit-win-x64.exe
-      rm -R -fo dist
-      & "C:/Program Files (x86)/Microsoft SDKs/Windows/v7.1A/Bin/SignTool.exe" sign /f .\metadata\codesign-windows.pfx /t http://timestamp.comodoca.com/authenticode /p "$env:PFX_KEY" exokit-win-x64.exe
-      7z a exokit-windows-full.zip * -xr'!.git' -xr'!buildtools' -xr'!exokit-win-x64.exe'
 
 artifacts:
-  - path: "exokit-windows-full.zip"
-    name: exokit-windows-full
   - path: "exokit-win-x64.exe"
     name: exokit-windows-installer
 
 deploy:
-  - provider: GitHub
-    description: 'Exokit git'
-    auth_token:
-      secure: ewZJqEOOh1B8ZWAJyd2dikQZ9BtcN4Cv04WEirXNDT8m9J06ZHgsw8hVcYmTinw8
-    artifact: "exokit-windows-full.zip"
-    draft: false
-    prerelease: false
-    on:
-      appveyor_repo_tag: true
   - provider: GitHub
     description: 'Exokit installer'
     auth_token:
