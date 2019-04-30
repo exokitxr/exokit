@@ -25,7 +25,7 @@ namespace node {
   int Start(int argc, char* argv[]);
 }
 
-#include "build/libexokit/dlibs.h"
+#include "../build/libexokit/dlibs.h"
 
 namespace node {
   extern std::map<std::string, std::pair<void *, bool>> dlibs;
