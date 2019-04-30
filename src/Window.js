@@ -1253,6 +1253,11 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
               const {width: dWidth, height: dHeight} = nativeWindow.getFramebufferSize(windowHandle);
               nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, width, height, dWidth, dHeight, true, false, false);
             }
+          } else {
+            const width = context.canvas.width * (args.blit ? 0.5 : 1);
+            const height = context.canvas.height;
+            const {width: dWidth, height: dHeight} = nativeWindow.getFramebufferSize(windowHandle);
+            nativeWindow.blitFrameBuffer(context, context.framebuffer.msFbo, 0, width, height, dWidth, dHeight, true, false, false);
           }
 
           if (isMac) {
