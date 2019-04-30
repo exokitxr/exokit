@@ -1955,7 +1955,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
           url = 'data:text/html,' + encodeURIComponent(`<!doctype html><html><head><script>${match[1]}</script></head></html>`);
         }
         const oldUrl = url;
-        url = utils._makeNormalizeUrl(this.ownerDocument.defaultView[symbols.optionsSymbol].baseUrl)(url);
+        url = _makeNormalizeUrl(this.ownerDocument.defaultView[symbols.optionsSymbol].baseUrl)(url);
 
         this.ownerDocument.resources.addResource((onprogress, cb) => {
           (async () => {
