@@ -760,6 +760,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window.DocumentFragment = DocumentFragment;
   window.DocumentType = DocumentType;
   window.DOMImplementation = DOMImplementation;
+  window.Range = Range;
 
   const {
     Element,
