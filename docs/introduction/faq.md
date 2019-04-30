@@ -6,10 +6,7 @@ parent_section: introduction
 order: 14
 ---
 
-# COMING SOON
-<details>
-  <summary>Click to expand</summary>
-  
+A few of commonly asked Exokit questions.
 
 ## What is Exokit?  
 
@@ -32,18 +29,21 @@ order: 14
 ## What frameworks does Exokit support?
 
 ## What devices/platforms can Exokit export to?
+The Exokit Engine aspires to export natively to any XR device. Currently Exokit can export to a variety of Standalone VR, Standalone Augmneted Reality, Desktop VR, Mobile devices such as: Oculus Quest, Oculus Go, HTC Vive, Oculus Rift, Oculus Rift S.
 
 ## What is the architecture of Exokit?
 
-## How does Exokit benchmark against other engines/XR browsers?
-
 ## What web APIs does Exokit support?
+Some of the [Web APIs](../apis/webAPIs) that the Exokit Engine supports are: WebVR, WebXR, THREE.js, websockets, web workers, fetch, HTML, express, react.
 
 ## What native APIs does Exokit support?
+Some of the [Native APIs](../apis/nativeAPIs) that the Exokit Engine supports are: WebGL, Canvas2D, WebAudio, WebRTC, Node, OpenVR, oVR, Magic Leap, Leap Motion, Oculus Mobile, Chromium.
 
 ## What are reality tabs?
+Reality Tabs are [`<iframe>`](../apis/iframeAPI)'s with added ability to do volumetric manipulation.
 
 ## Can reality tabs interact with eachother?
+Yes, reality tabs can interact with eachother via `postMessage`.
 
 
 --------------------------------------------
@@ -65,4 +65,3 @@ order: 14
 
 ## What is the future of XR?
 
-</details>
