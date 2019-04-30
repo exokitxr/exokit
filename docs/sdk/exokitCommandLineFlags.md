@@ -18,7 +18,7 @@ An example of how to use these flags:
 |`-v`|`--version`|Version of Exokit Engine|
 |`-h`|`--home`|Loads realitytabs.html home (default)|
 |`-t`|`--tab`|Load a URL as a reality Tab|
-|`-w`|`--webgl`|WebGL|
+|`-w`|`--webgl`|Exposes WebGL, by default Exokit exposes WebGL2|
 |`-x`|`--xr`|By default loads both WebXR and WebVR, `-x webvr` loads WebVR specifically|
 |`-p`|`--perf`|Performance logging to console|
 |`-s`|`--size`|Set window size|
