@@ -21,14 +21,13 @@ An example of how to use these flags:
 |`-w`|`--webgl`|WebGL|
 |`-x`|`--xr`|By default loads both WebXR and WebVR, `-x webvr` loads WebVR specifically|
 |`-p`|`--perf`|Performance logging to console|
-|`-s`|`--size`|Size|
-|`-f`|`--frame`|Frame|
-|`-m`|`--minimalFrame`|minimalFrame|
-|`-q`|`--quit`|Quit|
-|`-b`|`--blit`|Blit|
+|`-s`|`--size`|Set window size|
+|`-f`|`--frame`|Get GL call list with arguments to console log|
+|`-m`|`--minimalFrame`|Get GL call list to console log|
+|`-q`|`--quit`|Quit and exit process|
+|`-b`|`--blit`|Enabling halves the canvas width|
 |`-l`|`--log`|Output log to log.txt|
-|`-i`|`--image`|Image|
-|`-r`|`--replace`|Replace|
+|`-r`|`--replace`|Replace with a local file|
 |`-u`|`--require`|Require native modules|
 |`-n`|`--headless`|Run Exokit in headless mode|
 |`-d`|`--download`|Download site to `downloads` directory|
