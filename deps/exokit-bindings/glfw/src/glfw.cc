@@ -850,6 +850,27 @@ NAN_METHOD(SetCurrentWindowContext) {
   SetCurrentWindowContext(window);
 }
 
+NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool visible) {
+  glfwWindowHint(GLFW_VISIBLE, visible);
+
+  {
+    std::lock_guard<std::mutex> lock(windowHandleMutex);
+
+    if (!sharedWindow) {
+      sharedWindow = glfwCreateWindow(1, 1, "Exokit", nullptr, nullptr);
+    }
+  }
+  NATIVEwindow *window = glfwCreateWindow(width, height, "Exokit", nullptr, sharedWindow);
+  if (!window) {
+    exerr << "Can't create GLFW window" << std::endl;
+    abort();
+  }
+  return window;
+}
+void DestroyNativeWindow(NATIVEwindow *window) {
+  glfwDestroyWindow(window);
+}
+
 /* NAN_METHOD(DestroyWindow) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   glfwDestroyWindow(window);
@@ -1006,27 +1027,6 @@ NAN_METHOD(SetFullscreen) {
   });
 }
 
-NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool visible) {
-  glfwWindowHint(GLFW_VISIBLE, visible);
-
-  {
-    std::lock_guard<std::mutex> lock(windowHandleMutex);
-
-    if (!sharedWindow) {
-      sharedWindow = glfwCreateWindow(1, 1, "Exokit", nullptr, nullptr);
-    }
-  }
-  NATIVEwindow *window = glfwCreateWindow(width, height, "Exokit", nullptr, sharedWindow);
-  if (!window) {
-    exerr << "Can't create GLFW window" << std::endl;
-    abort();
-  }
-  return window;
-}
-void DestroyNativeWindow(NATIVEwindow *window) {
-  glfwDestroyWindow(window);
-}
-
 NAN_METHOD(InitWindow3D) {
   NATIVEwindow *windowHandle = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[1]));
@@ -1067,11 +1067,7 @@ NAN_METHOD(InitWindow2D) {
   info.GetReturnValue().Set(result);
 }
 
-NAN_METHOD(CreateWindowHandle) {
-  unsigned int width = info[0]->IsNumber() ? TO_UINT32(info[0]) : 1;
-  unsigned int height = info[1]->IsNumber() ?  TO_UINT32(info[1]) : 1;
-  bool initialVisible = TO_BOOL(info[2]);
-
+NATIVEwindow *CreateWindowHandle(unsigned int width, unsigned int height, bool initialVisible) {
   NATIVEwindow *windowHandle;
 
   uv_sem_t sem;
@@ -1121,6 +1117,16 @@ NAN_METHOD(CreateWindowHandle) {
   });
   uv_sem_wait(&sem);
   uv_sem_destroy(&sem);
+  
+  return windowHandle;
+}  
+
+NAN_METHOD(CreateWindowHandle) {
+  unsigned int width = info[0]->IsNumber() ? TO_UINT32(info[0]) : 1;
+  unsigned int height = info[1]->IsNumber() ?  TO_UINT32(info[1]) : 1;
+  bool initialVisible = TO_BOOL(info[2]);
+  
+  NATIVEwindow *windowHandle = CreateWindowHandle(width, height, initialVisible);
 
   if (windowHandle) {
     info.GetReturnValue().Set(pointerToArray(windowHandle));

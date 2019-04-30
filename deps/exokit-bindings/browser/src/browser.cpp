@@ -19,7 +19,7 @@ Browser::Browser(WebGLRenderingContext *gl, int width, int height) : gl(gl), win
 
   glGenTextures(1, &tex);
   
-  window = windowsystem::CreateNativeWindow(width, height, true);
+  window = windowsystem::CreateWindowHandle(1, 1, false);
 }
 
 Browser::~Browser() {}

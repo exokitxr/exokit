@@ -299,12 +299,16 @@ NAN_METHOD(InitWindow2D) {
   info.GetReturnValue().Set(result);
 }
 
+NATIVEwindow *CreateWindowHandle(unsigned int width, unsigned int height, bool initialVisible) {
+  return CreateNativeWindow(width, height, initialVisible);
+}
+
 NAN_METHOD(CreateWindowHandle) {
   unsigned int width = info[0]->IsNumber() ? TO_UINT32(info[0]) : 1;
   unsigned int height = info[1]->IsNumber() ? TO_UINT32(info[1]) : 1;
   bool initialVisible = info[2]->IsBoolean() ? TO_BOOL(info[2]) : false;
 
-  NATIVEwindow *windowHandle = CreateNativeWindow(width, height, initialVisible);
+  NATIVEwindow *windowHandle = CreateWindowHandle(width, height, initialVisible);
 
   info.GetReturnValue().Set(pointerToArray(windowHandle));
 }
