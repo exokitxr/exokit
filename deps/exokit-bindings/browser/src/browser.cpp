@@ -14,7 +14,7 @@ namespace browser {
 
 // Browser
 
-Browser::Browser(WebGLRenderingContext *gl, int width, int height) : gl(gl), window(nullptr), width(width), height(height), tex(0), textureWidth(0), textureHeight(0) {
+Browser::Browser(WebGLRenderingContext *gl, int width, int height, float scale) : gl(gl), window(nullptr), width(width), height(height), scale(scale), tex(0), textureWidth(0), textureHeight(0) {
   windowsystem::SetCurrentWindowContext(gl->windowHandle);
 
   glGenTextures(1, &tex);
@@ -43,6 +43,7 @@ Local<Object> Browser::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "resize", Resize);
   Nan::SetAccessor(proto, JS_STR("width"), WidthGetter, WidthSetter);
   Nan::SetAccessor(proto, JS_STR("height"), HeightGetter, HeightSetter);
+  Nan::SetAccessor(proto, JS_STR("scale"), ScaleGetter, ScaleSetter);
   Nan::SetAccessor(proto, JS_STR("onloadstart"), OnLoadStartGetter, OnLoadStartSetter);
   Nan::SetAccessor(proto, JS_STR("onloadend"), OnLoadEndGetter, OnLoadEndSetter);
   Nan::SetAccessor(proto, JS_STR("onloaderror"), OnLoadErrorGetter, OnLoadErrorSetter);
@@ -73,14 +74,16 @@ NAN_METHOD(Browser::New) {
     info[0]->IsObject() && JS_OBJ(JS_OBJ(info[0])->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("WebGLRenderingContext")) &&
     info[1]->IsNumber() &&
     info[2]->IsNumber() &&
-    info[3]->IsString()
+    info[3]->IsNumber() &&
+    info[4]->IsString()
   ) {
     WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
     int width = TO_INT32(info[1]);
     int height = TO_INT32(info[2]);
-    Nan::Utf8String dataPathValue(Local<String>::Cast(info[3]));
+    float scale = TO_FLOAT(info[3]);
+    Nan::Utf8String dataPathValue(Local<String>::Cast(info[4]));
     std::string dataPath(*dataPathValue, dataPathValue.length());
-    Nan::Utf8String frameworkPathValue(Local<String>::Cast(info[4]));
+    Nan::Utf8String frameworkPathValue(Local<String>::Cast(info[5]));
     std::string frameworkPath(*frameworkPathValue, frameworkPathValue.length());
 
     if (!embeddedInitialized) {
@@ -109,7 +112,7 @@ NAN_METHOD(Browser::New) {
       embeddedInitialized = true;
     }
 
-    Browser *browser = new Browser(gl, width, height);
+    Browser *browser = new Browser(gl, width, height, scale);
     Local<Object> browserObj = info.This();
     browser->Wrap(browserObj);
     
@@ -139,6 +142,7 @@ void Browser::loadImmediate(const std::string &url) {
     tex,
     width,
     height,
+    scale,
     &textureWidth,
     &textureHeight,
     [this]() -> EmbeddedBrowser {
@@ -283,6 +287,26 @@ NAN_SETTER(Browser::HeightSetter) {
 
     QueueOnBrowserThread([browser, height]() -> void {
       setEmbeddedHeight(browser->browser_, height);
+    });
+  }
+}
+NAN_GETTER(Browser::ScaleGetter) {
+  Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
+  if (browser->browser_) {
+    float scale = getEmbeddedScale(browser->browser_);
+    Local<Number> scaleValue = Nan::New<Number>(scale);
+    info.GetReturnValue().Set(scaleValue);
+  } else {
+    info.GetReturnValue().Set(Nan::New<Number>(0));
+  }
+}
+NAN_SETTER(Browser::ScaleSetter) {
+  Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
+  if (browser->browser_) {
+    float scale = TO_FLOAT(value);
+    
+    QueueOnBrowserThread([browser, scale]() -> void {
+      setEmbeddedScale(browser->browser_, scale);
     });
   }
 }

@@ -85,6 +85,7 @@ function init() {
   iframe = document.createElement('iframe');
   iframe.width = window.innerWidth;
   iframe.height = window.innerHeight;
+  iframe.devicePixelRatio = window.devicePixelRatio;
   iframe.d = 2;
   iframe.src = 'launcher/build/index.html';
   iframe.onload = () => {

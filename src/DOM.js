@@ -1943,6 +1943,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                     context,
                     this.width||context.canvas.ownerDocument.defaultView.innerWidth,
                     this.height||context.canvas.ownerDocument.defaultView.innerHeight,
+                    this.devicePixelRatio||1,
                     path.join(this.ownerDocument.defaultView[symbols.optionsSymbol].dataPath, '.cef'),
                     path.join(__dirname, '..', 'node_modules', 'native-browser-deps-macos', 'lib3', 'macos', 'Chromium Embedded Framework.framework')
                   );
@@ -2084,6 +2085,10 @@ class HTMLIFrameElement extends HTMLSrcableElement {
         if (this.browser) {
           this.browser.height = this.height;
         }
+      } else if (name === 'devicePixelRatio') {
+        if (this.browser) {
+          this.browser.scale = this.devicePixelRatio;
+        }
       }
     });
     this.on('destroy', () => {
@@ -2113,6 +2118,14 @@ class HTMLIFrameElement extends HTMLSrcableElement {
   set height(value) {
     if (typeof value === 'number' && isFinite(value)) {
       this.setAttribute('height', value);
+    }
+  }
+  get devicePixelRatio() {
+    return parseInt(this.getAttribute('devicePixelRatio') || 1 + '', 10);
+  }
+  set devicePixelRatio(value) {
+    if (typeof value === 'number' && isFinite(value)) {
+      this.setAttribute('devicePixelRatio', value);
     }
   }
   
