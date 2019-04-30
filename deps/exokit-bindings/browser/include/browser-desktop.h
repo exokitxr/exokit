@@ -5,6 +5,7 @@
 #include <node.h>
 #include <nan.h>
 
+#include <math.h>
 #include <list>
 #include <functional>
 
@@ -92,7 +93,7 @@ class RenderHandler : public CefRenderHandler {
 public:
   typedef std::function<void(const RectList &, const void *, int, int)> OnPaintFn;
   
-	RenderHandler(OnPaintFn onPaint, int width, int height);
+	RenderHandler(OnPaintFn onPaint, int width, int height, float scale);
   ~RenderHandler();
 
 	// void resize(int w, int h);
@@ -104,6 +105,7 @@ public:
 // protected:
   int width;
   int height;
+  float scale;
   // bool resized;
   std::function<void(const RectList &, const void *, int, int)> onPaint;
 
