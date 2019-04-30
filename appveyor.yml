@@ -6,7 +6,7 @@ image:
 environment:
   nodejs_version: "11"
   PFX_KEY:
-    secure: ewZJqEOOh1B8ZWAJyd2dikQZ9BtcN4Cv04WEirXNDT8m9J06ZHgsw8hVcYmTinw8 
+    secure: ewZJqEOOh1B8ZWAJyd2dikQZ9BtcN4Cv04WEirXNDT8m9J06ZHgsw8hVcYmTinw8
 
 # Install scripts. (runs after repo cloning)
 install:
@@ -38,27 +38,14 @@ after_test:
       rm -R -fo dist
       & "C:/Program Files (x86)/Microsoft SDKs/Windows/v7.1A/Bin/SignTool.exe" sign /f .\metadata\codesign-windows.pfx /t http://timestamp.comodoca.com/authenticode /p "$env:PFX_KEY" exokit-win-x64.exe
       7z a exokit-windows-full.zip * -xr'!.git' -xr'!buildtools' -xr'!exokit-win-x64.exe'
-      rm -r -fo node
-      7z a exokit-windows.zip * -xr'!.git' -xr'!buildtools' -xr'!exokit-win-x64.exe' -xr'!exokit-windows-full.zip'
 
 artifacts:
-  - path: "exokit-windows.zip"
-    name: exokit-windows
   - path: "exokit-windows-full.zip"
     name: exokit-windows-full
   - path: "exokit-win-x64.exe"
     name: exokit-windows-installer
 
 deploy:
-  - provider: GitHub
-    description: 'Exokit git'
-    auth_token:
-      secure: ewZJqEOOh1B8ZWAJyd2dikQZ9BtcN4Cv04WEirXNDT8m9J06ZHgsw8hVcYmTinw8
-    artifact: "exokit-windows.zip"
-    draft: false
-    prerelease: false
-    on:
-      appveyor_repo_tag: true
   - provider: GitHub
     description: 'Exokit git'
     auth_token:
