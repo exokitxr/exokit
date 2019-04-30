@@ -275,9 +275,6 @@ const xrState = (() => {
 })();
 GlobalContext.xrState = xrState;
 
-let innerWidth = 1280; // XXX do not track this globally
-let innerHeight = 1024;
-
 const topVrPresentState = {
   hmdType: null,
   windowHandle: null,
@@ -1307,8 +1304,8 @@ if (require.main === module) {
       const w = parseInt(match[1], 10);
       const h = parseInt(match[2], 10);
       if (w > 0 && h > 0) {
-        innerWidth = w;
-        innerHeight = h;
+        xrState.metrics[0] = w;
+        xrState.metrics[1] = h;
       }
     }
   }
