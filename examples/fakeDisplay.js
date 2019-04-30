@@ -30,7 +30,7 @@ window._makeFakeDisplay = () => {
             }
             return result;
           })();
-          renderer.setSize(fullWidth / window.devicePixelRatio, height / window.devicePixelRatio);
+          renderer.setSize(fullWidth, height);
           
           accept();
         });
@@ -49,7 +49,7 @@ window._makeFakeDisplay = () => {
       renderer.vr.setAnimationLoop(animate);
       
       const {renderWidth: width, renderHeight: height} = display.getEyeParameters('left');
-      renderer.setSize(width / window.devicePixelRatio * 2, height / window.devicePixelRatio);
+      renderer.setSize(width * 2, height);
     }
   };
 
