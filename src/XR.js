@@ -121,6 +121,12 @@ class XRSession extends EventTarget {
   set layers(layers) {
     this.device.layers = layers;
   }
+  get texture() {
+    return {
+      id: GlobalContext.xrState.tex[0],
+    };
+  }
+  set texture(texture) {}
   get hidden() {
     return GlobalContext.xrState.hidden[0] != 0;
   }
