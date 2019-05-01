@@ -6,40 +6,31 @@ order: 4
 parent_section: guides
 ---
 
-This guide explains how to package your XR site with the Exokit Engine as an MPK for the Magic Leap One headset.
+This guide explains how to package your XR site with the Exokit Engine as an DMG application for macOS.
 
 ## Set default site
-In the Exokit [main.cpp](https://github.com/exokitxr/exokit/blob/f10dadf0013de0a35a5e72046140a0345987ab80/main.cpp#L416) is where you will find the default site that the Exokit MPK will load into. Change the `jsString` to your site URL or file path.
+In the Exokit [`scripts/exokit-macos`](https://github.com/exokitxr/exokit/blob/master/scripts/exokit-macos#L17) is where you will find the default site that the Exokit DMG application will load into. Change the argument passed in to your site URL or file path.
 
 ## Prerequisites
-Node `11.6.0`
 Latest Exokit
 
-## Install the Magic Leap SDK
-
-Sign in as a Magic Leap creator:
-https://www.magicleap.com/creator
-
-Download the Package Manager:
-https://creator.magicleap.com/downloads/lumin-sdk/overview
-
-Once the package manager is opened, download the 0.19.0 version of the SDK.
-
-## Build MPK
-
-Confirm that `MLSDK` in `version-ml.sh` points to the Magic Leap SDK directory
-```sh
-cd exokit
-# edit MLSDK path in ./scripts/version-ml.sh
-```
-
-Build the MPK
-```sh
-./scripts/build-ml.sh
-```
-
-If you want to now install and run into your plugged in device using mldb
-```sh
-./scripts/install-ml.sh
-./scripts/run-ml.sh
-```
+## Build dmg
+- npm install -g appdmg
+ - curl "https://nodejs.org/dist/v11.6.0/node-v11.6.0-darwin-x64.tar.gz" >node.tar.gz
+ - tar -zxf node.tar.gz
+ - rm node.tar.gz
+ - mv node-v11.6.0-darwin-x64 node
+ - export PATH="$(pwd)/node/bin:$PATH"
+ - unset NVM_NODEJS_ORG_MIRROR
+ - "./node/bin/npm install --no-optional"
+ - export TEST_ENV=ci
+ - "./node/bin/npm run test"
+ - install_name_tool -change '@rpath/OpenVR.framework/Versions/A/OpenVR' '@loader_path/../../node_modules/native-openvr-deps/bin/osx64/OpenVR.framework/Versions/A/OpenVR'
+   build/Release/exokit.node
+ - mkdir -p /tmp/Exokit.app/Contents/MacOS
+ - cp -R * /tmp/Exokit.app/Contents/MacOS
+ - mkdir -p /tmp/Exokit.app/Contents/Resources
+ - cp -R metadata/icon.icns /tmp/Exokit.app/Contents/Resources
+ - cp metadata/Info.plist /tmp/Exokit.app/Contents
+ - rm -R node
+- ./scripts/exokit-codesign-macos.sh
