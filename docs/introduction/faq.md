@@ -39,11 +39,11 @@ Some of the [Web APIs](../apis/webAPIs) that the Exokit Engine supports are: Web
 ## What native APIs does Exokit support?
 Some of the [Native APIs](../apis/nativeAPIs) that the Exokit Engine supports are: WebGL, Canvas2D, WebAudio, WebRTC, Node, OpenVR, oVR, Magic Leap, Leap Motion, Oculus Mobile, Chromium.
 
-## What are reality tabs?
-Reality Tabs are [`<iframe>`](../apis/iframeAPI)'s with added ability to do volumetric manipulation.
+## What are reality layers?
+Reality Layers are [`<iframe>`](../apis/iframeAPI)'s with added ability to do volumetric manipulation.
 
-## Can reality tabs interact with eachother?
-Yes, reality tabs can interact with eachother via `postMessage`.
+## Can reality layers interact with eachother?
+Yes, reality layers can interact with eachother via `postMessage`.
 
 
 --------------------------------------------
@@ -59,4 +59,3 @@ You can find download links on the [home page](https://exokit.org/).
 
 ## How can I start developing on Exokit?
 The easiest way to get started is to clone the [Exokit repo](https://github.com/exokitxr/exokit) and then load into an XR site.
-
