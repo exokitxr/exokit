@@ -1,5 +1,5 @@
 ---
-title: iframe Reality Tabs 
+title: iframe Reality Layers
 type: api
 layout: docs
 order: 1
@@ -20,11 +20,9 @@ Create an iframe:
 - `iframe.scale`
     - The scale vector as an array.
 - `iframe.orientation`
-    - The orientation quaternion as an array. 
+    - The orientation quaternion as an array.
 - `iframe.d`
-    - The dimensions of the iframe. `2` gives you DOM-to-texture. `3` gives you reality tabs.
+    - The dimensions of the iframe. `2` gives you DOM-to-texture. `3` gives you reality layers.
 
 then the `iframe` needs to be put onto the session layers:
 `display.session.layers.push(iframe);`
-
-
