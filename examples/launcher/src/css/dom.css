@@ -1,0 +1,46 @@
+.Dom {
+  display: flex;
+  flex: 1;
+  list-style: none;
+  margin: 0;
+  padding: 5px 0;
+}
+
+.Dom .dom-item {
+  padding: 0 10px;
+  font-family: monospace;
+  font-size: 11px;
+  flex: 1;
+  cursor: pointer;
+  user-select: none;
+}
+.Dom .dom-item.open > .dom-item-label .dom-item-arrow {
+  color: #888;
+  transform: rotatez(90deg);
+}
+.Dom .dom-item.open > .dom-item-children {
+  display: flex;
+}
+
+.Dom .dom-item .dom-item-label {
+  display: flex;
+}
+
+.Dom .dom-item > .dom-item-label .dom-item-arrow {
+  color: #444;
+  transform: none;
+}
+
+.Dom .dom-item .dom-item-label .dom-item-name {
+  padding-left: 3px;
+}
+
+.Dom .dom-item .dom-item-children {
+  display: none;
+  flex-direction: column;
+}
+
+.Dom .dom-item .dom-item-text {
+  color: #666;
+  white-space: pre;
+}
