@@ -1,9 +1,9 @@
 ---
-title: Overview 
+title: Overview
 section_title: API
 type: api
 layout: docs
-parent_section: docs 
+parent_section: docs
 order: 0
 section_order: 5
 source_code:
@@ -26,21 +26,25 @@ Here are the main web specifications and third-party libraries implemented in Ex
 | WebSockets | Spec  | [WebSockets](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API) | [Source](https://github.com/exokitxr/exokit/blob/master/src/core.js) |
 | Fetch API   | Spec  | [Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API) | [Source](https://github.com/exokitxr/exokit/blob/master/src/core.js) |
 | Web Workers| Spec  | [Web Workers](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API) | [Source](https://github.com/exokitxr/exokit/blob/master/src/core.js) |
-
-## Native 
-
-| Tech          | Type     | Link  | in Exokit |
-| ------------- |:-------------:|:-----:|-------:|
 | WebGL      | Spec | [WebGL](https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API) | [Source](https://github.com/exokitxr/exokit/tree/master/deps/exokit-bindings/webglcontext ) |
 | Canvas API   | Spec | [Canvas 2D](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) | [Source]( https://github.com/exokitxr/exokit/tree/master/deps/exokit-bindings/canvas) |
 | WebAudio   | Spec | [WebAudio](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) | [Source](https://github.com/exokitxr/exokit/tree/master/deps/exokit-bindings/webaudiocontext ) |
 | WebRTC     | Spec | [WebRTC](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API) | [Source](https://github.com/exokitxr/exokit/tree/master/deps/exokit-bindings ) |
+
+## Native
+
+| Tech          | Type     | Link  | in Exokit |
+| ------------- |:-------------:|:-----:|-------:|
 | OpenVR     | SDK | [OpenVR](https://github.com/ValveSoftware/openvr/wiki/API-Documentation) | [Source]( https://github.com/exokitxr/exokit/tree/master/deps/openvr) |
-| OVR        | SDK | [OVR from Oculus](https://developer.oculus.com/) | [Source]( https://github.com/exokitxr/exokit/tree/master/deps/exokit-bindings) |
+| OVR        | SDK | [OVR from Oculus](https://developer.oculus.com/documentation/pcsdk/latest/concepts/pcsdk-intro/) | [Source]( https://github.com/exokitxr/exokit/tree/master/deps/oculus) |
+| Oculus Mobile| SDK | [Oculus Mobile SDK](https://developer.oculus.com/documentation/mobilesdk/latest/concepts/book-intro/) | [Source]( https://github.com/exokitxr/exokit/tree/master/deps/oculus-mobile) |
+| Google VR| SDK | [Google VR SDK](https://developers.google.com/vr/reference/) | [Source](https://github.com/exokitxr/exokit/tree/master/deps/exokit-bindings/ ) |
 | Magic Leap       | SDK | [Magic Leap SDK](https://www.magicleap.com/creator) | [Source](https://github.com/exokitxr/exokit/tree/master/deps/exokit-bindings/magicleap ) |
 | Leap Motion| SDK | [Leap Motion Orion](https://developer.leapmotion.com/orion/) | [Source](https://github.com/exokitxr/exokit/tree/master/deps/exokit-bindings/leapmotion ) |
+| Zed| SDK | [Zed SDK](https://www.stereolabs.com/developers/) | [Source](https://github.com/exokitxr/exokit/tree/master/deps/exokit-bindings/ ) |
 
-## Platforms 
+
+## Platforms
 
 | Tech          | Type     | Link  | in Exokit |
 | ------------- |:-------------:|:-----:|-------:|
