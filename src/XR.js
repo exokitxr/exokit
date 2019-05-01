@@ -53,8 +53,6 @@ class XRDevice {
     this.onmakeswapchain = null;
     this.onexitpresent = null;
     this.onrequestanimationframe = null;
-    
-    this._layers = [];
   }
   supportsSession() {
     return Promise.resolve(null);
@@ -73,16 +71,6 @@ class XRDevice {
       this.session = session;
     }
     return this.session;
-  }
-  get layers() {
-    return this._layers;
-  }
-  set layers(layers) {
-    this._layers = layers;
-
-    if (this.onlayers) {
-      this.onlayers(layers);
-    }
   }
 }
 module.exports.XRDevice = XRDevice;
