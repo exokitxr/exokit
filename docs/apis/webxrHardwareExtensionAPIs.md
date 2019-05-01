@@ -1,5 +1,5 @@
 ---
-title: Native APIs
+title: WebXR Hardware Extensions APIs
 type: api
 layout: docs
 order: 2
