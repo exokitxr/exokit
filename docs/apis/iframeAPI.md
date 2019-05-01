@@ -28,6 +28,3 @@ then the `iframe` needs to be put onto the session layers:
 `display.session.layers.push(iframe);`
 
 
-## More Info
-
-For a more high-level look at Reality Tabs and iframes in the Exokit engine, check out our [Reality Tabs overview](../sdk/realityTabs).
