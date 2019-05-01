@@ -15,22 +15,47 @@ In the Exokit [`scripts/exokit-macos`](https://github.com/exokitxr/exokit/blob/m
 Latest Exokit
 
 ## Build dmg
-- npm install -g appdmg
- - curl "https://nodejs.org/dist/v11.6.0/node-v11.6.0-darwin-x64.tar.gz" >node.tar.gz
- - tar -zxf node.tar.gz
- - rm node.tar.gz
- - mv node-v11.6.0-darwin-x64 node
- - export PATH="$(pwd)/node/bin:$PATH"
- - unset NVM_NODEJS_ORG_MIRROR
- - "./node/bin/npm install --no-optional"
- - export TEST_ENV=ci
- - "./node/bin/npm run test"
- - install_name_tool -change '@rpath/OpenVR.framework/Versions/A/OpenVR' '@loader_path/../../node_modules/native-openvr-deps/bin/osx64/OpenVR.framework/Versions/A/OpenVR'
-   build/Release/exokit.node
- - mkdir -p /tmp/Exokit.app/Contents/MacOS
- - cp -R * /tmp/Exokit.app/Contents/MacOS
- - mkdir -p /tmp/Exokit.app/Contents/Resources
- - cp -R metadata/icon.icns /tmp/Exokit.app/Contents/Resources
- - cp metadata/Info.plist /tmp/Exokit.app/Contents
- - rm -R node
-- ./scripts/exokit-codesign-macos.sh
+
+Navigate to the Exokit directory
+```sh
+cd exokit
+```
+
+Install [appdmg](https://github.com/LinusU/node-appdmg)
+```sh
+npm install -g appdmg
+```
+
+Install and extract the necessary Node.js version
+```sh
+curl "https://nodejs.org/dist/v11.6.0/node-v11.6.0-darwin-x64.tar.gz" >node.tar.gz
+tar -zxf node.tar.gz
+rm node.tar.gz
+mv node-v11.6.0-darwin-x64 node
+```
+
+Export Node.js path and build Exokit module
+```sh
+export PATH="$(pwd)/node/bin:$PATH"
+unset NVM_NODEJS_ORG_MIRROR
+"./node/bin/npm install --no-optional"
+install_name_tool -change '@rpath/OpenVR.framework/Versions/A/OpenVR' '@loader_path/../../node_modules/native-openvr-deps/bin/osx64/OpenVR.framework/Versions/A/OpenVR' build/Release/exokit.node
+```
+
+Copy all Exokit files to a temp directory
+```sh
+mkdir -p /tmp/Exokit.app/Contents/MacOS
+cp -R * /tmp/Exokit.app/Contents/MacOS
+```
+
+Copy Exokit metadata to appropriate directories
+```sh
+mkdir -p /tmp/Exokit.app/Contents/Resources
+cp -R metadata/icon.icns /tmp/Exokit.app/Contents/Resources
+cp metadata/Info.plist /tmp/Exokit.app/Contents
+```
+
+Run build script
+```sh
+./scripts/exokit-codesign-macos.sh
+```
