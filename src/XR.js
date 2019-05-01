@@ -121,6 +121,12 @@ class XRSession extends EventTarget {
   set layers(layers) {
     this.device.layers = layers;
   }
+  get hidden() {
+    return GlobalContext.xrState.hidden[0] != 0;
+  }
+  set hidden(hidden) {
+    GlobalContext.xrState.hidden[0] = hidden ? 1 : 0;
+  }
   requestFrameOfReference(type, options = {}) {
     // const {disableStageEmulation = false, stageEmulationHeight  = 0} = options;
     return Promise.resolve(this._frameOfReference);
