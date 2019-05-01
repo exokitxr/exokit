@@ -38,7 +38,7 @@ class Engine extends React.Component {
         }
     }
     
-    menuClassNames(item) {
+    menuItemClassNames(item) {
       const classNames = ['menu-item'];
       if (item === this.state.item) {
         classNames.push('open');
@@ -46,7 +46,15 @@ class Engine extends React.Component {
       return classNames.join(' ');
     }
     
-    urlPopupClassNames(item) {
+    menuItemPopupClassNames(item) {
+      const classNames = ['menu-item-popup'];
+      if (item === this.state.item) {
+        classNames.push('open');
+      }
+      return classNames.join(' ');
+    }
+    
+    urlPopupClassNames() {
       const classNames = ['url-popup'];
       if (this.state.urlFocus) {
         classNames.push('open');
@@ -74,17 +82,37 @@ class Engine extends React.Component {
       return (
         <div id="Engine">
           <div className="row menu">
-            <div className={this.menuClassNames('file')} onClick={() => this.open('file')}>
-              File
+            <div className={this.menuItemClassNames('file')} onClick={() => this.open('file')}>
+              <div className={this.menuItemPopupClassNames('file')}>
+                <div className="menu-item-popup-item">
+                  New A-Frame...
+                </div>
+              </div>
+              <div>File</div>
             </div>
-            <div className={this.menuClassNames('import')}onClick={() => this.open('import')}>
-              Import
+            <div className={this.menuItemClassNames('import')}onClick={() => this.open('import')}>
+              <div className={this.menuItemPopupClassNames('import')}>
+                <div className="menu-item-popup-item">
+                  New A-Frame...
+                </div>
+              </div>
+              <div>Import</div>
             </div>
-            <div className={this.menuClassNames('export')} onClick={() => this.open('export')}>
-              Export
+            <div className={this.menuItemClassNames('export')} onClick={() => this.open('export')}>
+              <div className={this.menuItemPopupClassNames('export')}>
+                <div className="menu-item-popup-item">
+                  New A-Frame...
+                </div>
+              </div>
+              <div>Export</div>
             </div>
-            <div className={this.menuClassNames('about')} onClick={() => this.open('about')}>
-              About
+            <div className={this.menuItemClassNames('about')} onClick={() => this.open('about')}>
+              <div className={this.menuItemPopupClassNames('about')}>
+                <div className="menu-item-popup-item">
+                  New A-Frame...
+                </div>
+              </div>
+              <div>About</div>
             </div>
             <div class="url">
               <div className={this.urlPopupClassNames()}>
