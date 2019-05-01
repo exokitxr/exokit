@@ -8,7 +8,8 @@ parent_section: docs
 section_order: 3
 ---
 
-This doc covers common errors when building the Exokit engine and their solutions.
+## Common build errors
+This section covers common errors when building the Exokit engine and their solutions.
 
 ### `Error: Cannot find module './build/Release/vm_one.node'`
 
