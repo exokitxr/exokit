@@ -277,6 +277,7 @@ const xrState = (() => {
   result.vrRequest = _makeTypedArray(Uint32Array, 2);
   result.tex = _makeTypedArray(Uint32Array, 1);
   result.depthTex = _makeTypedArray(Uint32Array, 1);
+  result.hidden = _makeTypedArray(Uint32Array, 1);
   result.fakeVrDisplayEnabled = _makeTypedArray(Uint32Array, 1);
 
   return result;
