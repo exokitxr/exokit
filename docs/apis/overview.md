@@ -1,9 +1,11 @@
 ---
-title: Tech Integrations
-type: overview
+title: Overview 
+section_title: API
+type: api
 layout: docs
-parent_section: overview
-order: 3
+parent_section: docs 
+order: 0
+section_order: 5
 source_code:
 examples: []
 ---
