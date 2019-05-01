@@ -917,7 +917,7 @@ const _startTopRenderLoop = () => {
   const _topRenderLoop = async () => {
     if (args.performance) {
       if (timestamps.frames >= TIMESTAMP_FRAMES) {
-        console.log(`${(TIMESTAMP_FRAMES/(timestamps.total/1000)).toFixed(0)} FPS | ${timestamps.idle}ms idle | ${timestamps.wait}ms wait | ${timestamps.events}ms events | ${timestamps.media}ms media | ${timestamps.user}ms user | ${timestamps.submit}ms submit`);
+        console.log(`${(TIMESTAMP_FRAMES/(timestamps.total/1000)).toFixed(0)} FPS | ${timestamps.idle/TIMESTAMP_FRAMES}ms idle | ${timestamps.wait/TIMESTAMP_FRAMES}ms wait | ${timestamps.prepare/TIMESTAMP_FRAMES}ms prepare | ${timestamps.events/TIMESTAMP_FRAMES}ms events | ${timestamps.media/TIMESTAMP_FRAMES}ms media | ${timestamps.user/TIMESTAMP_FRAMES}ms user | ${timestamps.submit/TIMESTAMP_FRAMES}ms submit`);
 
         timestamps.frames = 0;
         timestamps.idle = 0;

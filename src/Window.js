@@ -818,6 +818,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
   window.DocumentFragment = DocumentFragment;
   window.DocumentType = DocumentType;
   window.DOMImplementation = DOMImplementation;
+  window.Range = Range;
 
   const {
     Element,

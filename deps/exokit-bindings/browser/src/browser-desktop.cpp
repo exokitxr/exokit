@@ -113,6 +113,7 @@ EmbeddedBrowser createEmbedded(
   GLuint tex,
   int width,
   int height,
+  float scale,
   int *textureWidth,
   int *textureHeight,
   std::function<EmbeddedBrowser()> getBrowser,
@@ -147,8 +148,9 @@ EmbeddedBrowser createEmbedded(
   }
   
   LoadHandler *load_handler_ = new LoadHandler(
-    [getBrowser, onloadstart]() -> void {
+    [getBrowser, onloadstart, scale]() -> void {
       getBrowser()->GetMainFrame()->ExecuteJavaScript(CefString("window.postMessage = m => {console.log('<postMessage>' + JSON.stringify(m));};"), CefString("<bootstrap>"), 1);
+      getBrowser()->GetHost()->SetZoomLevel(log(scale)/log(1.2));
       
       onloadstart();
     },
@@ -220,7 +222,8 @@ EmbeddedBrowser createEmbedded(
       } */
     },
     width,
-    height
+    height,
+    scale
   );
   
   CefWindowInfo window_info;
@@ -258,6 +261,7 @@ void setEmbeddedSize(EmbeddedBrowser browser_, int width, int height) {
   renderHandler->height = height;
 
   browser_->GetHost()->WasResized();
+  setEmbeddedScale(browser_, getEmbeddedScale(browser_));
   // renderHandler->resized = true;
 }
 int getEmbeddedWidth(EmbeddedBrowser browser_) {
@@ -267,6 +271,7 @@ void setEmbeddedWidth(EmbeddedBrowser browser_, int width) {
   auto renderHandler = ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler;
   renderHandler->width = width;
   browser_->GetHost()->WasResized();
+  setEmbeddedScale(browser_, getEmbeddedScale(browser_));
   // renderHandler->resized = true;
   
   // browser_->GetHost()->WasResized();
@@ -279,10 +284,21 @@ void setEmbeddedHeight(EmbeddedBrowser browser_, int height) {
   auto renderHandler = ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler;
   renderHandler->height = height;
   browser_->GetHost()->WasResized();
+  setEmbeddedScale(browser_, getEmbeddedScale(browser_));
   // renderHandler->resized = true;
   
   // browser_->GetHost()->WasResized();
   // browser->browser_->GetHost()->Invalidate(PET_VIEW);
+}
+float getEmbeddedScale(EmbeddedBrowser browser_) {
+  auto renderHandler = ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler;
+  float scale = renderHandler->scale;
+  return scale;
+}
+void setEmbeddedScale(EmbeddedBrowser browser_, float scale) {
+  auto renderHandler = ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler;
+  renderHandler->scale = scale;
+  browser_->GetHost()->SetZoomLevel(log(scale)/log(1.2));
 }
 void embeddedGoBack(EmbeddedBrowser browser_) {
   browser_->GoBack();
@@ -440,7 +456,7 @@ bool DisplayHandler::OnConsoleMessage(CefRefPtr<CefBrowser> browser, cef_log_sev
 
 // RenderHandler
 
-RenderHandler::RenderHandler(OnPaintFn onPaint, int width, int height) : onPaint(onPaint), width(width), height(height)/*, resized(false)*/ {}
+RenderHandler::RenderHandler(OnPaintFn onPaint, int width, int height, float scale) : onPaint(onPaint), width(width), height(height), scale(scale)/*, resized(false)*/ {}
 
 RenderHandler::~RenderHandler() {}
 

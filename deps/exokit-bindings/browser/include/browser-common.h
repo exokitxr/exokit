@@ -65,6 +65,7 @@ EmbeddedBrowser createEmbedded(
   GLuint tex,
   int width,
   int height,
+  float scale,
   int *textureWidth,
   int *textureHeight,
   std::function<EmbeddedBrowser()> getBrowser,
@@ -84,6 +85,8 @@ int getEmbeddedWidth(EmbeddedBrowser browser_);
 void setEmbeddedWidth(EmbeddedBrowser browser_, int width);
 int getEmbeddedHeight(EmbeddedBrowser browser_);
 void setEmbeddedHeight(EmbeddedBrowser browser_, int height);
+float getEmbeddedScale(EmbeddedBrowser browser_);
+void setEmbeddedScale(EmbeddedBrowser browser_, float scale);
 void embeddedGoBack(EmbeddedBrowser browser_);
 void embeddedGoForward(EmbeddedBrowser browser_);
 void embeddedReload(EmbeddedBrowser browser_);
