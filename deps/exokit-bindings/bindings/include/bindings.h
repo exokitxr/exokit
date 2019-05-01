@@ -18,9 +18,10 @@
 #include <webrtc.h>
 // Stub out on Android for now until get libcef working on Android.
 #if !defined(ANDROID)
-  #include <browser.h>
+#include <browser.h>
 #endif
 #if _WIN32
+#include <zed.h>
 #include <leapmotion.h>
 #endif
 #if defined(LUMIN)

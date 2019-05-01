@@ -97,6 +97,9 @@ void InitExports(Local<Object> exports) {
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeMl"), ml);
 #endif
 
+  Local<Value> zed = makeZed();
+  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeZed"), zed);
+
 #if defined(ANDROID)
 #define NATIVE_PLATFORM "android"
 #elif defined(LUMIN)
