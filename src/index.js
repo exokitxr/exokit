@@ -2462,7 +2462,7 @@ if (require.main === module) {
     }
   }
   if (args.frame || args.minimalFrame) {
-    bindings.nativeGl = (OldWebGLRenderingContext => {
+    nativeBindings.nativeGl = (OldWebGLRenderingContext => {
       function WebGLRenderingContext() {
         const result = Reflect.construct(OldWebGLRenderingContext, arguments);
         for (const k in result) {
@@ -2483,7 +2483,7 @@ if (require.main === module) {
         WebGLRenderingContext[k] = OldWebGLRenderingContext[k];
       }
       return WebGLRenderingContext;
-    })(bindings.nativeGl);
+    })(nativeBindings.nativeGl);
   }
 
   _prepare()
