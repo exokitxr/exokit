@@ -63,3 +63,31 @@ Read more at the [Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fe
 Web Workers makes it possible to run a script operation in a background thread separate from the main execution thread of a web application. The advantage of this is that laborious processing can be performed in a separate thread, allowing the main (usually the UI) thread to run without being blocked/slowed down.
 
 Read more at the [Web Workers](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers) API documentation.
+
+## WebGL
+
+WebGL (Web Graphics Library) is a JavaScript API for rendering interactive 3D and 2D graphics within any compatible web browser without the use of plug-ins. WebGL does so by introducing an API that closely conforms to OpenGL ES 2.0 that can be used in HTML5 <canvas\> elements.
+
+Read more at the [WebGL](https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API) API documentation.
+
+## Canvas
+
+Added in HTML5, the HTML <canvas\> element can be used to draw graphics via scripting in JavaScript. For example, it can be used to draw graphs, make photo compositions, create animations, or even do real-time video processing or rendering.
+
+Read more at the [Canvas](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) API documentation.
+
+## WebAudio
+
+The Web Audio API provides a powerful and versatile system for controlling audio on the Web, allowing developers to choose audio sources, add effects to audio, create audio visualizations, apply spatial effects (such as panning) and much more.
+
+Read more at the [WebAudio](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) API documentation.
+
+## WebRTC
+
+WebRTC (Web Real-Time Communications) is a technology which enables Web applications and sites to capture and optionally stream audio and/or video media, as well as to exchange arbitrary data between browsers without requiring an intermediary. The set of standards that comprises WebRTC makes it possible to share data and perform teleconferencing peer-to-peer, without requiring that the user install plug-ins or any other third-party software.
+
+Read more at the [WebRTC](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API) API documentation.
+
+## More Info
+
+For more information, check out the [API overview](../overview).
