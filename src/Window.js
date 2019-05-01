@@ -1223,7 +1223,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
               nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, width, height, width, height, true, false, false);
             }
 
-            if (vrPresentState.hmdType === 'fake' || vrPresentState.hmdType === 'oculus' || vrPresentState.hmdType === 'openvr') {
+            if ((vrPresentState.hmdType === 'fake' || vrPresentState.hmdType === 'oculus' || vrPresentState.hmdType === 'openvr') && !GlobalContext.xrState.hidden[0]) {
               const {width: dWidth, height: dHeight} = nativeWindow.getFramebufferSize(windowHandle);
               nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, width, height, dWidth, dHeight, true, false, false);
             }
