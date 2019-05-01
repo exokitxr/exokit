@@ -1,9 +1,11 @@
 ---
-title: Common Build Errors 
+title: Build from Source
+section_title: SDK
 type: sdk
 layout: docs
-order: 2
-parent_section: sdk
+order: 0
+parent_section: docs
+section_order: 3
 ---
 
 This doc covers common errors when building the Exokit engine and their solutions.
