@@ -10,6 +10,8 @@ using namespace node;
 
 namespace browser {
 
+constexpr double ZOOM_LOG = 1.15;
+
 CefRefPtr<CefBrowser> CreateBrowserSync(
     const CefWindowInfo& windowInfo,
     CefRefPtr<CefClient> client,
@@ -150,7 +152,7 @@ EmbeddedBrowser createEmbedded(
   LoadHandler *load_handler_ = new LoadHandler(
     [getBrowser, onloadstart, scale]() -> void {
       getBrowser()->GetMainFrame()->ExecuteJavaScript(CefString("window.postMessage = m => {console.log('<postMessage>' + JSON.stringify(m));};"), CefString("<bootstrap>"), 1);
-      getBrowser()->GetHost()->SetZoomLevel(log(scale)/log(1.2));
+      setEmbeddedScale(getBrowser(), scale);
       
       onloadstart();
     },
@@ -298,7 +300,7 @@ float getEmbeddedScale(EmbeddedBrowser browser_) {
 void setEmbeddedScale(EmbeddedBrowser browser_, float scale) {
   auto renderHandler = ((BrowserClient *)browser_->GetHost()->GetClient().get())->m_renderHandler;
   renderHandler->scale = scale;
-  browser_->GetHost()->SetZoomLevel(log(scale)/log(1.2));
+  browser_->GetHost()->SetZoomLevel(log(scale)/log(ZOOM_LOG));
 }
 void embeddedGoBack(EmbeddedBrowser browser_) {
   browser_->GoBack();
