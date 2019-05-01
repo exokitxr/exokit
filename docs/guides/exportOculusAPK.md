@@ -1,5 +1,5 @@
 ---
-title: Export XR site to Oculus Mobile APK 
+title: Export XR site to Oculus Mobile APK
 section_title: Guides
 type: guides
 layout: docs
@@ -11,7 +11,7 @@ section_order: 2
 This guide explains how to package your XR site with the Exokit Engine as an APK for Oculus Mobile (Oculus Go, Oculus Quest) devices.
 
 ## Set default site
-In the Exokit [main.cpp](https://github.com/exokitxr/exokit/blob/f10dadf0013de0a35a5e72046140a0345987ab80/main.cpp#L416) is where you will find the default site that the Exokit APK will load into. Change the `jsString` to your site URL or file path.
+In the Exokit [`main.cpp`](https://github.com/exokitxr/exokit/blob/f10dadf0013de0a35a5e72046140a0345987ab80/main.cpp#L416) is where you will find the default site that the Exokit APK will load into. Change the `jsString` to your site URL or file path.
 
 # OPTION 1- Docker
 The upside of docker is that it requires minimal environment setup. The downside is that is will do _every_ instruction _everytime_ it is ran.
@@ -105,9 +105,3 @@ If you want to now install and run into your plugged in device using adb
 ./scripts/install-android.sh
 ./scripts/run-android.sh
 ```
-
-
-
-
-
-
