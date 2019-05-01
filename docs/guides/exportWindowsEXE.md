@@ -1,5 +1,5 @@
 ---
-title: Export XR site to Windows EXE 
+title: Export XR site to Windows EXE
 type: guides
 layout: docs
 order: 3
@@ -9,37 +9,23 @@ parent_section: guides
 This guide explains how to package your XR site with the Exokit Engine as an MPK for the Magic Leap One headset.
 
 ## Set default site
-In the Exokit [main.cpp](https://github.com/exokitxr/exokit/blob/f10dadf0013de0a35a5e72046140a0345987ab80/main.cpp#L416) is where you will find the default site that the Exokit MPK will load into. Change the `jsString` to your site URL or file path.
+In the Exokit [`scripts/exokit.sh`](https://github.com/exokitxr/exokit/blob/master/scripts/exokit.sh#L17) is where you will find the default site that the Exokit EXE application will load into. Change the argument passed in to your site URL or file path.
 
 ## Prerequisites
-Node `11.6.0`
 Latest Exokit
 
-## Install the Magic Leap SDK
-
-Sign in as a Magic Leap creator:
-https://www.magicleap.com/creator
-
-Download the Package Manager:
-https://creator.magicleap.com/downloads/lumin-sdk/overview
-
-Once the package manager is opened, download the 0.19.0 version of the SDK.
-
-## Build MPK
-
-Confirm that `MLSDK` in `version-ml.sh` points to the Magic Leap SDK directory
-```sh
-cd exokit
-# edit MLSDK path in ./scripts/version-ml.sh
-```
-
-Build the MPK
-```sh
-./scripts/build-ml.sh
-```
-
-If you want to now install and run into your plugged in device using mldb
-```sh
-./scripts/install-ml.sh
-./scripts/run-ml.sh
-```
+## Build exe
+wget "https://nodejs.org/dist/v11.6.0/node-v11.6.0-win-x64.zip" -OutFile node.zip
+7z x node.zip
+rm node.zip
+mv node-v11.6.0-win-x64 node
+$env:Path = "$pwd\node;$env:Path";
+.\node\npm install --no-optional
+$env:TEST_ENV = 'ci'
+.\node\npm run test
+# bash scripts/testRun.sh
+set version "$env:APPVEYOR_REPO_TAG_NAME"
+if ([string]::IsNullOrEmpty("$version")) { set version "$env:APPVEYOR_REPO_COMMIT".Substring(0, 8) }
+mkdir dist
+.\buildtools\iscc "$pwd\metadata\exokit.iss" "/dMyAppVersion=$version" /odist /qp
+mv dist\*.exe exokit-win-x64.exe
