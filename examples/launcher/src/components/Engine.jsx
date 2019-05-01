@@ -38,9 +38,17 @@ class Engine extends React.Component {
         }
     }
     
-    classNames(item) {
+    menuClassNames(item) {
       const classNames = ['menu-item'];
       if (item === this.state.item) {
+        classNames.push('open');
+      }
+      return classNames.join(' ');
+    }
+    
+    urlPopupClassNames(item) {
+      const classNames = ['url-popup'];
+      if (this.state.urlFocus) {
         classNames.push('open');
       }
       return classNames.join(' ');
@@ -53,39 +61,54 @@ class Engine extends React.Component {
         this.setState({item: null});
       }
     }
+    
+    focus() {
+      this.setState({urlFocus: true});
+    }
+    
+    blur() {
+      this.setState({urlFocus: false});
+    }
 
     render() {
       return (
         <div id="Engine">
-            <div className="row menu">
-                <div className={this.classNames('file')} onClick={() => this.open('file')}>
-                  File
-                </div>
-                <div className={this.classNames('import')}onClick={() => this.open('import')}>
-                  Import
-                </div>
-                <div className={this.classNames('export')} onClick={() => this.open('export')}>
-                  Export
-                </div>
-                <div className={this.classNames('about')} onClick={() => this.open('about')}>
-                  About
-                </div>
+          <div className="row menu">
+            <div className={this.menuClassNames('file')} onClick={() => this.open('file')}>
+              File
             </div>
-            <div className="engine-split">
-              <div className="engine-left">
-                <div className="engine-render">
-                </div>
-                <div className="engine-shell">[x] exokit</div>
-              </div>
-              <div className="engine-right">
-                <ul>
-                  <li>&lt;html&gt;</li>
-                  <li>&lt;body&gt;</li>
-                </ul>
-              </div>
+            <div className={this.menuClassNames('import')}onClick={() => this.open('import')}>
+              Import
             </div>
+            <div className={this.menuClassNames('export')} onClick={() => this.open('export')}>
+              Export
+            </div>
+            <div className={this.menuClassNames('about')} onClick={() => this.open('about')}>
+              About
+            </div>
+            <div class="url">
+              <div className={this.urlPopupClassNames()}>
+                <div className="url-item">3D Reality Tab</div>
+                <div className="url-item">2D Reality Tab</div>
+              </div>
+              <input type="text" className="url-input" value="https://aframe.io/a-painter" onFocus={() => this.focus()} onBlur={() => this.blur()}/>
+            </div>
+          </div>
+          <div className="engine-split">
+            <div className="engine-left">
+              <div className="engine-render">
+              </div>
+              <div className="engine-shell">[x] exokit</div>
+            </div>
+            <div className="engine-right">
+              <ul>
+                <li>&lt;html&gt;</li>
+                <li>&lt;body&gt;</li>
+              </ul>
+            </div>
+          </div>
         </div>
-        );
+      );
     }
   }
 
