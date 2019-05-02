@@ -7,12 +7,9 @@ const http = require('http');
 const https = require('https');
 const crypto = require('crypto');
 const os = require('os');
-const repl = require('repl');
 const util = require('util');
 const {URL} = url;
 const {TextEncoder, TextDecoder} = util;
-const {process} = global;
-
 const {XRRigidTransform} = require('./XR.js');
 const {performance} = require('perf_hooks');
 const {
@@ -32,7 +29,6 @@ const {FileReader} = require('./File.js');
 
 const mkdirp = require('mkdirp');
 const ws = require('ws');
-const replHistory = require('repl.history');
 const {XMLHttpRequest: XMLHttpRequestBase, FormData} = require('window-xhr');
 
 const fetch = require('window-fetch');
@@ -207,7 +203,6 @@ const windows = [];
 GlobalContext.windows = windows;
 const contexts = [];
 GlobalContext.contexts = contexts;
-const commands = [];
 
 const vrPresentState = {
   /* vrContext: null,
@@ -970,110 +965,6 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       RequestCamera: nativeMl.RequestCamera,
     } : null,
     monitors: new MonitorManager(),
-    createRepl(o = {}) {
-      o.history = o.history !== false;
-      o.autoexit = o.autoexit !== false;
-
-      let iface = null;
-
-      const prompt = '[x] ';
-
-      const replEval = async (cmd, context, filename, callback) => {
-        cmd = cmd.slice(0, -1); // remove trailing \n
-
-        let result, err;
-        let match;
-
-        if (/^[a-z]+:\/\//.test(cmd)) {
-          cmd = `window.location.href = ${JSON.stringify(cmd)};`;
-        } else if (/^\s*<(?:\!\-*)?[a-z]/i.test(cmd)) {
-          cmd = `(() => {
-            const e = window.document.createElement('div');
-            e.innerHTML = ${JSON.stringify(cmd)};
-            if (e.childNodes.length === 0) {
-              return window._ = undefined;
-            } else if (e.childNodes.length === 1) {
-              return window._ = e.childNodes[0];
-            } else {
-              return window._ = e.childNodes;
-            }
-          })();`;
-        } else if (match = cmd.match(/^\s*(?:const|var|let)?\s*([a-z][a-z0-9]*)\s*=\s*(<(?:\!\-*)?[a-z].*)$/im)) {
-          const name = match[1];
-          const src = match[2];
-          cmd = `(() => {
-            const name = ${JSON.stringify(name)};
-            const e = window.document.createElement('div');
-            e.innerHTML = ${JSON.stringify(src)};
-            if (e.childNodes.length === 0) {
-              return window[name] = window._ = undefined;
-            } else if (e.childNodes.length === 1) {
-              return window[name] = window._ = e.childNodes[0];
-            } else {
-              return window[name] = window._ = e.childNodes;
-            }
-          })();`;
-        }
-        try {
-          result = eval(cmd);
-        } catch(e) {
-          err = e;
-        }
-
-        if (!err) {
-          /* if (result !== undefined) {
-            r.setPrompt(prompt);
-          } */
-        } else {
-          if (err.name === 'SyntaxError') {
-            err = new repl.Recoverable(err);
-          }
-        }
-
-        commands.push(cmd);
-
-        callback(err, {[util.inspect.custom]() { return result; }});
-
-        process.stdout.write(prompt);
-      };
-      const args = {
-        prompt: '',
-        eval: replEval,
-      };
-      if (o.custom) {
-        args.input = new stream.PassThrough();
-        args.output = new stream.PassThrough();
-        args.output.setEncoding('utf8');
-        args.output.on('data', s => {
-          iface.onoutput && iface.onoutput(s);
-        });
-
-        iface = {
-          write(s) {
-            args.input.write(s);
-          },
-          onoutput: null,
-        };
-      } else {
-        args.input = process.stdin;
-        args.output = process.stdout;
-      }
-      const r = repl.start(args);
-      if (o.history) {
-        global.process = new EventEmitter(); // hack
-        replHistory(r, path.join(options.dataPath, '.repl_history'));
-        global.process = undefined;
-      }
-      if (o.autoexit) {
-        r.on('exit', () => {
-          process.exit();
-        });
-      }
-
-      process.stdout.write(prompt);
-
-      return iface;
-    },
   };
   window.DOMParser = class DOMParser {
     parseFromString(htmlString, type) {
@@ -1269,8 +1160,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
   let loading = false;
   window.location.on('update', href => {
     if (!loading) {
-      window.emit('navigate', {href});
-      /* core.load(href, {
+      core.load(href, {
         dataPath: options.dataPath,
       })
         .then(newWindow => {
@@ -1285,22 +1175,10 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
           e.message = err.message;
           e.stack = err.stack;
           window.dispatchEvent(e);
-        }); */
+        });
       loading = true;
     }
   });
-  /* window.document.on('paste', e => {
-    e.clipboardData = new window.DataTransfer();
-    const clipboardContents = nativeWindow.getClipboard().slice(0, 256);
-    const dataTransferItem = new window.DataTransferItem('string', 'text/plain', clipboardContents);
-    e.clipboardData.items.push(dataTransferItem);
-  }); */
-  /* if (args.quit) {
-    window.document.resources.addEventListener('drain', () => {
-      console.log('drain');
-      process.exit();
-    });
-  } */
 
   const rafCbs = [];
   window[symbols.rafCbsSymbol] = rafCbs;
