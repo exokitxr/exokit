@@ -48,7 +48,7 @@
 }
 #Engine .menu .url-input {
   display: flex;
-  min-width: 300px;
+  width: 300px;
   padding-left: 10px;
   background-color: #444;
   border: 0;
@@ -99,22 +99,6 @@
   flex: 1;
   background-color: #222;
   border-left: 2px solid #111;
-}
-#Engine .engine-right ul {
-  display: block;
-  list-style: none;
-  margin: 0;
-  padding: 5px 0;
-}
-#Engine .engine-right ul li {
-  min-width: 200px;
-  padding: 0 10px;
-  font-family: monospace;
-  font-size: 11px;
-  cursor: pointer;
-}
-#Engine .engine-right ul li:hover {
-  background-color: #333;
 }
 #Engine .engine-render {
   flex: 1;
