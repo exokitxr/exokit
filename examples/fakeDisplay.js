@@ -48,7 +48,7 @@ window._makeFakeDisplay = () => {
       renderer.vr.setDevice(fakeDisplay);
       renderer.vr.setAnimationLoop(animate);
       
-      const {renderWidth: width, renderHeight: height} = display.getEyeParameters('left');
+      const {renderWidth: width, renderHeight: height} = fakeDisplay.getEyeParameters('left');
       renderer.setSize(width * 2, height);
     }
 
