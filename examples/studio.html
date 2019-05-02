@@ -1887,7 +1887,7 @@ const intersectionSpecs = [
   null,
   null,
 ];
-window.addEventListener('keydown', e => {
+window.addEventListener('keydown', e => { // XXX port launcher event handling
   if (window.document.pointerLockElement) {
     switch (e.which) {
       case 87: { // W
@@ -2843,7 +2843,7 @@ const _bootFakeDisplay = async () => {
   fakeDisplay = _makeFakeDisplay();
   fakeDisplay.position.set(0, 1.6, 0);
   fakeDisplay.pushUpdate();
-  fakeDisplay.hidden = true;
+  fakeDisplay.hidden = true; // XXX can be an actual hidden check
 
   await fakeDisplay.enter({
     renderer,

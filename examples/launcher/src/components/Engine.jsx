@@ -1,5 +1,15 @@
 import React from 'react';
+import Dom from './Dom';
 import '../css/engine.css';
+
+const _objectHtml = el => {
+  return {
+    nodeType: el.nodeType || 0,
+    tagName: el.tagName || '',
+    nodeValue: el.nodeType === Node.TEXT_NODE ? el.nodeValue : '',
+    childNodes: Array.from(el.childNodes).map(_objectHtml),
+  };
+};
 
 class Engine extends React.Component {
 
@@ -10,7 +20,17 @@ class Engine extends React.Component {
       this.handleURLChange = this.handleURLChange.bind(this);
       this.state = {
           flags: [],
-          url: ''
+          url: '',
+          root: (() => {
+            const html = document.createElement('html');
+            html.innerHTML = `
+<ul>
+  <li>lol</li>
+  <li>zol</li>
+</ul>
+`.replace(/\n/g, '');
+            return _objectHtml(html);
+          })(),
       };
     }
 
@@ -129,10 +149,7 @@ class Engine extends React.Component {
               <div className="engine-shell">[x] exokit</div>
             </div>
             <div className="engine-right">
-              <ul>
-                <li>&lt;html&gt;</li>
-                <li>&lt;body&gt;</li>
-              </ul>
+              <Dom root={this.state.root}/>
             </div>
           </div>
         </div>

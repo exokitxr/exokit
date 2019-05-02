@@ -3,11 +3,11 @@
   flex: 1;
   list-style: none;
   margin: 0;
-  padding: 5px 0;
+  padding: 0;
+  border-top: 3px solid #111;
 }
 
 .Dom .dom-item {
-  padding: 0 10px;
   font-family: monospace;
   font-size: 11px;
   flex: 1;
@@ -22,8 +22,13 @@
   display: flex;
 }
 
-.Dom .dom-item .dom-item-label {
+.Dom .dom-item > .dom-item-label {
   display: flex;
+}
+.Dom .dom-item.hover > .dom-item-label,
+.Dom .dom-item.hover > .dom-item-text
+{
+  background-color: #333;
 }
 
 .Dom .dom-item > .dom-item-label .dom-item-arrow {
@@ -31,16 +36,16 @@
   transform: none;
 }
 
-.Dom .dom-item .dom-item-label .dom-item-name {
+.Dom .dom-item > .dom-item-label .dom-item-name {
   padding-left: 3px;
 }
 
-.Dom .dom-item .dom-item-children {
+.Dom .dom-item > .dom-item-children {
   display: none;
   flex-direction: column;
 }
 
-.Dom .dom-item .dom-item-text {
+.Dom .dom-item > .dom-item-text {
   color: #666;
   white-space: pre;
 }

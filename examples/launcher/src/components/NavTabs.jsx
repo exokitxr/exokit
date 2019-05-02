@@ -95,16 +95,16 @@ class NavTabs extends React.Component {
         <div id="NavTabs">
           <ul className="nav nav-pills p-2">
             <li className="nav-item">
-              <a className="nav-link active" id="engine" onClick={() => this.toggleTab('engine')} href="#">Engine</a>
+              <a href="#" className="nav-link active" id="engine" onClick={() => this.toggleTab('engine')} href="#">Engine</a>
             </li>
             <li className="nav-item">
-              <a className="nav-link" id="launch" onClick={() => this.toggleTab('launch')} href="#">Launch</a>
+              <a href="#" className="nav-link" id="launch" onClick={() => this.toggleTab('launch')} href="#">Launch</a>
             </li>
             <li className="nav-item">
-              <a className="nav-link" id="update" onClick={() => this.toggleTab('update')} href="#">Update</a>
+              <a href="#" className="nav-link" id="update" onClick={() => this.toggleTab('update')} href="#">Update</a>
             </li>
             <li className="nav-item">
-              <a className="nav-link" id="social" onClick={() => this.toggleTab('social')} href="#">Social</a>
+              <a href="#" className="nav-link" id="social" onClick={() => this.toggleTab('social')} href="#">Social</a>
             </li>
           </ul>
           <img id="logo" src={logo}></img>
