@@ -10,7 +10,7 @@
     <script src="xrmp.js"></script>
     <script src="xrmp-three.js"></script>
     <script>
-let display, fakeDisplay, tabs = [], tabId = 0, xrmp, lastPresseds = [false, false], lastAxes = [[0.5, 0.5], [0.5, 0.5]], lastPadToucheds = [false, false], scrollFactors = [0, 0], scaleFactors = [1, 1];
+let display, fakeDisplay, tabs = [], tabId = 0, xrmp, lastPresseds = [false, false], lastAxes = [[0.5, 0.5], [0.5, 0.5]], lastPadToucheds = [false, false], scrollFactors = [0, 0], scaleFactors = [1, 1], viewport = new THREE.Vector4();
 
 const links = [
   {
@@ -851,16 +851,20 @@ const ScreenQuad = (() => {
     void main() {
       gl_Position = vec4(position.xy, 1., 1.);
       gl_Position.xy = (gl_Position.xy+1.)/2.;
-      gl_Position.xy = uViewport.xy + (gl_Position.xy * (uViewport.zw - uViewport.xy));
+      gl_Position.xy = uViewport.xy + (gl_Position.xy * uViewport.zw);
       gl_Position.xy = (gl_Position.xy*2.)-1.;
       vUv = uv;
     }
   `;
   const fragmentShader = `\
+    // uniform vec4 uViewport;
     varying vec2 vUv;
     uniform sampler2D uTexture;
     void main() {
       gl_FragColor = texture2D(uTexture, vUv);
+      /* if (uViewport.z < 1.) {
+        gl_FragColor.a = 0.5;
+      } */
     }
   `;
 
@@ -877,7 +881,7 @@ const ScreenQuad = (() => {
         },
         uViewport: {
           type: 'v4',
-          value: params.viewport ? new THREE.Vector4().fromArray(params.viewport) : new THREE.Vector4(0, 0, 1, 1),
+          value: params.viewport ? params.viewport : new THREE.Vector4(0, 0, 1, 1),
         },
       },
 
@@ -951,14 +955,19 @@ const {
 
       iframe.contentWindow.onmessage = m => {
         console.log('POST from frontend: ', m.data);
-        switch(m.data.action){
+        switch (m.data.method){
+          case 'viewport':
+            viewport.set(m.data.viewport[0], 1 - m.data.viewport[1] - m.data.viewport[3], m.data.viewport[2], m.data.viewport[3]);
+            break;
+        }
+        /* switch (m.data.action){
           case 'launch':
             launch(m.data.flags, m.data.url);
             break;
           case 'update':
             update();
             break;
-        }
+        } */
       };
 
       iframe.runJs(`
@@ -2864,13 +2873,14 @@ const _bootFakeDisplay = async () => {
     THREE.UnsignedByteType,
     1
   );
-  console.log('fake display texture', fakeDisplay.texture);
+  // console.log('fake display texture', fakeDisplay.texture);
   const properties = composeRenderer.properties.get(texture);
   properties.__webglTexture = fakeDisplay.texture;
   properties.__webglInit = true;
+
   const screenQuad = new ScreenQuad({
     texture,
-    viewport: [0, 0.25, 0.725, 0.82],
+    viewport,
   });
   composeScene.add(screenQuad);
 
