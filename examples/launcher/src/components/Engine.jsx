@@ -100,20 +100,26 @@ class Engine extends React.Component {
       return classNames.join(' ');
     }
     
-    open(item) {
-      if (this.state.item !== item) {
-        this.setState({item});
-      } else {
-        this.setState({item: null});
-      }
+    openMenu(item) {
+      const open = this.state.item !== item;
+      this.setState({item: open ? item : null}, () => {
+        this.postMenuStatus();
+      });
     }
     
     focusUrlInput() {
-      this.setState({urlFocus: true});
+      this.setState({
+        item: null,
+        urlFocus: true,
+      }, () => {
+        this.postMenuStatus();
+      });
     }
     
     blurUrlInput() {
-      this.setState({urlFocus: false});
+      this.setState({urlFocus: false}, () => {
+        this.postMenuStatus();
+      });
     }
     
     onEngineRenderClick() {
@@ -122,12 +128,19 @@ class Engine extends React.Component {
         target: 'engineRender',
       });
     }
+    
+    postMenuStatus() {
+      window.postMessage({
+        method: 'menu',
+        open: this.state.urlFocus || this.state.item !== null,
+      });
+    }
 
     render() {
       return (
         <div id="Engine">
           <div className="row menu">
-            <div className={this.menuItemClassNames('file')} onClick={() => this.open('file')}>
+            <div className={this.menuItemClassNames('file')} onClick={() => this.openMenu('file')}>
               <div className={this.menuItemPopupClassNames('file')}>
                 <div className="menu-item-popup-item">
                   New A-Frame...
@@ -135,7 +148,7 @@ class Engine extends React.Component {
               </div>
               <div>File</div>
             </div>
-            <div className={this.menuItemClassNames('import')}onClick={() => this.open('import')}>
+            <div className={this.menuItemClassNames('import')}onClick={() => this.openMenu('import')}>
               <div className={this.menuItemPopupClassNames('import')}>
                 <div className="menu-item-popup-item">
                   New A-Frame...
@@ -143,7 +156,7 @@ class Engine extends React.Component {
               </div>
               <div>Import</div>
             </div>
-            <div className={this.menuItemClassNames('export')} onClick={() => this.open('export')}>
+            <div className={this.menuItemClassNames('export')} onClick={() => this.openMenu('export')}>
               <div className={this.menuItemPopupClassNames('export')}>
                 <div className="menu-item-popup-item">
                   New A-Frame...
@@ -151,7 +164,7 @@ class Engine extends React.Component {
               </div>
               <div>Export</div>
             </div>
-            <div className={this.menuItemClassNames('about')} onClick={() => this.open('about')}>
+            <div className={this.menuItemClassNames('about')} onClick={() => this.openMenu('about')}>
               <div className={this.menuItemPopupClassNames('about')}>
                 <div className="menu-item-popup-item">
                   New A-Frame...
