@@ -10,7 +10,7 @@
     <script src="xrmp.js"></script>
     <script src="xrmp-three.js"></script>
     <script>
-let display, fakeDisplay, tabs = [], tabId = 0, xrmp, lastPresseds = [false, false], lastAxes = [[0.5, 0.5], [0.5, 0.5]], lastPadToucheds = [false, false], scrollFactors = [0, 0], scaleFactors = [1, 1], viewport = new THREE.Vector4();
+let display, fakeDisplay, tabs = [], tabId = 0, xrmp, lastPresseds = [false, false], lastAxes = [[0.5, 0.5], [0.5, 0.5]], lastPadToucheds = [false, false], scrollFactors = [0, 0], scaleFactors = [1, 1], viewport = new THREE.Vector4(), composeScreenQuad;
 
 const links = [
   {
@@ -966,7 +966,18 @@ const {
             renderer.domElement.requestPointerLock();
             _bindEventTarget('xr');
           }
-          // viewport.set(m.data.viewport[0], 1 - m.data.viewport[1] - m.data.viewport[3], m.data.viewport[2], m.data.viewport[3]);
+          break;
+        }
+        case 'menu': {
+          if (m.data.open) {
+            composeScene.remove(composeScreenQuad); // XXX can elide the render entirely
+          } else {
+            composeScene.add(composeScreenQuad);
+          }
+          break;
+        }
+        default: {
+          console.warn(`got unknown ui iframe message: ${m.data.method}`);
           break;
         }
       }
@@ -2954,27 +2965,30 @@ const _bootFakeDisplay = async () => {
   
   display = fakeDisplay;
 
-  const texture = new THREE.Texture(
-    null,
-    THREE.UVMapping,
-    THREE.ClampToEdgeWrapping,
-    THREE.ClampToEdgeWrapping,
-    THREE.LinearFilter,
-    THREE.LinearFilter,
-    THREE.RGBAFormat,
-    THREE.UnsignedByteType,
-    1
-  );
-  // console.log('fake display texture', fakeDisplay.texture);
-  const properties = composeRenderer.properties.get(texture);
-  properties.__webglTexture = fakeDisplay.texture;
-  properties.__webglInit = true;
+  composeScreenQuad = (() => {
+    const texture = new THREE.Texture(
+      null,
+      THREE.UVMapping,
+      THREE.ClampToEdgeWrapping,
+      THREE.ClampToEdgeWrapping,
+      THREE.LinearFilter,
+      THREE.LinearFilter,
+      THREE.RGBAFormat,
+      THREE.UnsignedByteType,
+      1
+    );
+    // console.log('fake display texture', fakeDisplay.texture);
+    const properties = composeRenderer.properties.get(texture);
+    properties.__webglTexture = fakeDisplay.texture;
+    properties.__webglInit = true;
 
-  const screenQuad = new ScreenQuad({
-    texture,
-    viewport,
-  });
-  composeScene.add(screenQuad);
+    const screenQuad = new ScreenQuad({
+      texture,
+      viewport,
+    });
+    return screenQuad;
+  })();
+  composeScene.add(composeScreenQuad);
 
   const tabUrl = (() => {
     const {t = 'examples/tutorial.html'} = query;
