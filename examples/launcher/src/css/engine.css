@@ -104,12 +104,3 @@
   flex: 1;
   background-color: #000;
 }
-#Engine .engine-shell {
-  min-height: 100px;
-  padding: 5px;
-  background-color: #333;
-  border-top: 2px solid #222;
-  font-family: monospace;
-  font-size: 11px;
-  white-space: pre-wrap;
-}

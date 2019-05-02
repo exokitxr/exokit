@@ -1,5 +1,6 @@
 import React from 'react';
 import Dom from './Dom';
+import Console from './Console';
 import '../css/engine.css';
 
 const _objectHtml = el => {
@@ -145,7 +146,7 @@ class Engine extends React.Component {
             <div className="engine-left">
               <div className="engine-render">
               </div>
-              <div className="engine-shell">[x] exokit</div>
+              <Console/>
             </div>
             <div className="engine-right">
               <Dom root={this.state.root}/>
