@@ -2028,6 +2028,8 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                 this.browser.load(url);
               }
             } else {
+              console.log('load url', url);
+              
               const res = await this.ownerDocument.defaultView.fetch(url);
               if (this.epoch !== localEpoch) {
                 return;
@@ -2219,6 +2221,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
     this.browser && this.browser.sendMouseUp(x, y, button);
   }
   sendMouseWheel(x, y, deltaX, deltaY) {
+    console.log('send wheel', x, y, deltaX, deltaY);
     this.browser && this.browser.sendMouseWheel(x, y, deltaX, deltaY);
   }
   sendKeyDown(key, modifiers) {

@@ -2,6 +2,7 @@ const {EventEmitter} = require('events');
 const path = require('path');
 const {Worker} = require('worker_threads');
 const GlobalContext = require('./GlobalContext');
+const {process} = global;
 
 const windowBasePath = path.join(__dirname, 'WindowBase.js');
 class WorkerVm extends EventEmitter {
