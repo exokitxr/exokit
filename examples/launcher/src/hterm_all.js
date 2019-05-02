@@ -10284,6 +10284,7 @@ hterm.ScrollPort.prototype.decorate = function(div, callback) {
 
   this.iframe_ = div.ownerDocument.createElement('iframe');
   this.iframe_.style.cssText = (
+      'display: flex;' +
       'border: 0;' +
       'height: 100%;' +
       // 'position: absolute;' +
@@ -10578,6 +10579,7 @@ hterm.ScrollPort.prototype.paintIframeContents_ = function() {
   this.pasteTarget_.setAttribute('tabindex', '-1');
   this.pasteTarget_.setAttribute('aria-hidden', 'true');
   this.pasteTarget_.style.cssText = (
+    'display: none;' +
     'position: absolute;' +
     'height: 1px;' +
     'width: 1px;' +

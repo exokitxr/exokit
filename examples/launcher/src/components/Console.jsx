@@ -60,9 +60,13 @@ class Console extends React.Component {
 
       const _send = s => {
         console.log('data out', JSON.stringify({
-          method: 'c',
-          args: s,
+          method: 'input',
+          data: s,
         }));
+        window.postMessage({
+          method: 'input',
+          data: s,
+        });
       };
       term.io.onVTKeystroke = _send;
       term.io.sendString = _send;
@@ -78,10 +82,16 @@ class Console extends React.Component {
       };
       term.io.onTerminalResize = _resize;
 
-      window.addEventListener('keypress', e => {
+      window.addEventListener('message', m => {
+        console.log('got message', m);
+        if (m.method === 'output') {
+          term.io.writeUTF8(m.data);
+        }
+      });
+      /* window.addEventListener('keypress', e => {
         console.log('data in', e.key);
         term.io.writeUTF8(e.key);
-      });
+      }); */
       /* const textDecoder = new TextDecoder();
       socket.addEventListener('message', m => {
         term.io.writeUTF8(textDecoder.decode(m.data));
