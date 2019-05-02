@@ -123,6 +123,12 @@ class Engine extends React.Component {
     }
     
     onEngineRenderClick() {
+      this.setState({
+        item: null,
+        urlFocus: false,
+      }, () => {
+        this.postMenuStatus();
+      });
       window.postMessage({
         method: 'focus',
         target: 'engineRender',
