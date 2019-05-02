@@ -2934,19 +2934,7 @@ function animateComposeScene(time, frame) {
 }
 function animate(time, frame) {
   animateXrScene(time, frame);
-  {
-    const error = composeRenderer.getContext().getError();
-    if (error) {
-      console.log('error 1', error);
-    }
-  }
   animateComposeScene(time, frame);
-  {
-    const error = composeRenderer.getContext().getError();
-    if (error) {
-      console.log('error 2', error);
-    }
-  }
 }
 
 // bootstrap
