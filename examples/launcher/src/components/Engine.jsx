@@ -49,13 +49,12 @@ class Engine extends React.Component {
     }
 
     setFlag(e){
-        let flag = e.target.value;
-        if(!this.state.flags.includes(flag)){
-            this.state.flags.push(flag)
-        }
-        else{
-            this.state.flags.splice(this.state.flags.indexOf(flag), 1);
-        }
+      let flag = e.target.value;
+      if (!this.state.flags.includes(flag)) {
+        this.state.flags.push(flag)
+      } else {
+        this.state.flags.splice(this.state.flags.indexOf(flag), 1);
+      }
     }
     
     menuItemClassNames(item) {
