@@ -96,7 +96,7 @@ global.importScripts = importScripts;
 
 parentPort.on('message', m => {
   switch (m.method) {
-    case 'runRepl': {
+    /* case 'runRepl': {
       let result, err;
       try {
         result = util.inspect(eval(m.jsString));
@@ -110,7 +110,7 @@ parentPort.on('message', m => {
         error: err,
       });
       break;
-    }
+    } */
     case 'runAsync': {
       let result, err;
       try {

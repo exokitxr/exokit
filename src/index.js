@@ -15,11 +15,9 @@ const net = require('net');
 const child_process = require('child_process');
 const os = require('os');
 const util = require('util');
-const repl = require('repl');
 
 const core = require('./core.js');
 const mkdirp = require('mkdirp');
-const replHistory = require('repl.history');
 const minimist = require('minimist');
 
 const {version} = require('../package.json');
@@ -34,7 +32,6 @@ const nativeBindings = require(path.join(__dirname, 'native-bindings.js'));
 const GlobalContext = require('./GlobalContext');
 GlobalContext.args = {};
 GlobalContext.version = '';
-GlobalContext.commands = [];
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
@@ -1029,51 +1026,6 @@ const _startTopRenderLoop = () => {
 };
 _startTopRenderLoop();
 
-const _bindWindow = (window, newWindowCb) => {
-  // window.innerWidth = innerWidth;
-  // window.innerHeight = innerHeight;
-
-  // XXX move these to WindowVm/Window
-  window.on('navigate', newWindowCb);
-  /* window.document.on('paste', e => {
-    e.clipboardData = new window.DataTransfer();
-    const clipboardContents = nativeWindow.getClipboard().slice(0, 256);
-    const dataTransferItem = new window.DataTransferItem('string', 'text/plain', clipboardContents);
-    e.clipboardData.items.push(dataTransferItem);
-  }); */
-  /* if (args.quit) {
-    window.document.resources.addEventListener('drain', () => {
-      console.log('drain');
-      process.exit();
-    });
-  } */
-  
-  window.on('destroy', e => {
-    const {window} = e;
-    for (let i = 0; i < contexts.length; i++) {
-      const context = contexts[i];
-      if (context.canvas.ownerDocument.defaultView === window) {
-        context.destroy();
-      }
-    }
-  });
-  
-  window.on('error', err => {
-    console.warn('got error', err);
-  });
-};
-const _bindDirectWindow = newWindow => {
-  _bindWindow(newWindow, _bindDirectWindow);
-};
-core.load = (load => function() {
-  return load.apply(this, arguments)
-    .then(window => {
-      _bindDirectWindow(window);
-
-      return Promise.resolve(window);
-    });
-})(core.load);
-
 const _prepare = () => Promise.all([
   (() => {
     if (!process.env['DISPLAY']) {
@@ -1188,81 +1140,11 @@ const _start = () => {
       replacements,
     });
   } else {
-    let window = null;
-    const _bindReplWindow = newWindow => {
-      _bindWindow(newWindow, _bindReplWindow);
-      window = newWindow;
-    };
-    _bindReplWindow(core.make('', {
+    const window = core.make('', {
       dataPath,
-    }));
-
-    const prompt = '[x] ';
-
-    const replEval = async (cmd, context, filename, callback) => {
-      cmd = cmd.slice(0, -1); // remove trailing \n
-
-      let result, err;
-      let match;
-
-      if (/^[a-z]+:\/\//.test(cmd)) {
-        cmd = `window.location.href = ${JSON.stringify(cmd)};`;
-      } else if (/^\s*<(?:\!\-*)?[a-z]/i.test(cmd)) {
-        cmd = `(() => {
-          const e = window.document.createElement('div');
-          e.innerHTML = ${JSON.stringify(cmd)};
-          if (e.childNodes.length === 0) {
-            return window._ = undefined;
-          } else if (e.childNodes.length === 1) {
-            return window._ = e.childNodes[0];
-          } else {
-            return window._ = e.childNodes;
-          }
-        })();`;
-      } else if (match = cmd.match(/^\s*(?:const|var|let)?\s*([a-z][a-z0-9]*)\s*=\s*(<(?:\!\-*)?[a-z].*)$/im)) {
-        const name = match[1];
-        const src = match[2];
-        cmd = `(() => {
-          const name = ${JSON.stringify(name)};
-          const e = window.document.createElement('div');
-          e.innerHTML = ${JSON.stringify(src)};
-          if (e.childNodes.length === 0) {
-            return window[name] = window._ = undefined;
-          } else if (e.childNodes.length === 1) {
-            return window[name] = window._ = e.childNodes[0];
-          } else {
-            return window[name] = window._ = e.childNodes;
-          }
-        })();`;
-      }
-      try {
-        result = await window.runRepl(cmd);
-      } catch(e) {
-        err = e;
-      }
-
-      if (!err) {
-        if (result !== undefined) {
-          r.setPrompt(prompt);
-        }
-      } else {
-        if (err.name === 'SyntaxError') {
-          err = new repl.Recoverable(err);
-        }
-      }
-
-      GlobalContext.commands.push(cmd);
-
-      callback(err, {[util.inspect.custom]() { return result; }});
-    };
-    const r = repl.start({
-      prompt,
-      eval: replEval,
     });
-    replHistory(r, path.join(dataPath, '.repl_history'));
-    r.on('exit', () => {
-      process.exit();
-    });
+    
+    window.evalAsync('browser.createRepl()');
   }
 };
 

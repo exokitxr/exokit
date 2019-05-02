@@ -13,6 +13,9 @@ class WorkerVm extends EventEmitter {
         initModule: options.initModule,
         args: options.args,
       },
+      stdin: true,
+      stdout: true,
+      stderr: true,
     });
     worker.on('message', m => {
       switch (m.method) {
@@ -34,6 +37,11 @@ class WorkerVm extends EventEmitter {
           this.emit(m.type, m.event);
           break;
         }
+        case 'navigate': {
+          // XXX hook this
+          // this.emit(m.type, m.event);
+          break;
+        }
         default: {
           throw new Error(`worker got unknown message type '${m.method}'`);
           break;
@@ -46,6 +54,17 @@ class WorkerVm extends EventEmitter {
     worker.on('exit', () => {
       this.emit('exit');
     });
+    /* setTimeout(() => {
+      worker.stdin.write('lol\n');
+    }, 2000); */
+    process.stdin.pipe(worker.stdin);
+    worker.stdout.pipe(process.stdout);
+    worker.stderr.pipe(process.stderr);
+
+    /* worker.stdout.setEncoding('utf8');
+    worker.stdout.on('data', d => {
+      console.log(JSON.stringify(d));
+    }); */
 
     this.worker = worker;
     this.requestKeys = 0;
@@ -58,7 +77,7 @@ class WorkerVm extends EventEmitter {
     return requestKey;
   }
 
-  runRepl(jsString, transferList) {
+  /* runRepl(jsString, transferList) {
     return new Promise((accept, reject) => {
       const requestKey = this.queueRequest((err, result) => {
         if (!err) {
@@ -73,7 +92,7 @@ class WorkerVm extends EventEmitter {
         requestKey,
       }, transferList);
     });
-  }
+  } */
   runAsync(jsString, arg, transferList) {
     return new Promise((accept, reject) => {
       const requestKey = this.queueRequest((err, result) => {
