@@ -36,14 +36,14 @@ class Engine extends React.Component {
     }
     
     componentDidMount() {
-      const app = document.getElementById('app');
+      // const app = document.getElementById('app');
       const engineRender = document.getElementById('engine-render');
 
       const _postViewportMessage = () => {
         const bcr = engineRender.getBoundingClientRect();
-        const bcr2 = app.getBoundingClientRect();
-        const viewport = [bcr.x/bcr2.width, bcr.y/bcr2.height, bcr.width/bcr2.width, bcr.height/bcr2.height];
-        console.log('engine render viewport', viewport);
+        // const bcr2 = app.getBoundingClientRect();
+        const viewport = [bcr.x/window.innerWidth, bcr.y/window.innerHeight, bcr.width/window.innerWidth, bcr.height/window.innerHeight];
+        // console.log('engine render viewport', viewport);
         window.postMessage({
           method: 'viewport',
           viewport,
@@ -51,10 +51,6 @@ class Engine extends React.Component {
       };
       _postViewportMessage();
       window.addEventListener('resize', _postViewportMessage);
-      
-      /* setTimeout(() => {
-        _postViewportMessage();
-      }, 1000); */
     }
 
     postMessage(action){
@@ -112,12 +108,19 @@ class Engine extends React.Component {
       }
     }
     
-    focus() {
+    focusUrlInput() {
       this.setState({urlFocus: true});
     }
     
-    blur() {
+    blurUrlInput() {
       this.setState({urlFocus: false});
+    }
+    
+    onEngineRenderClick() {
+      window.postMessage({
+        method: 'focus',
+        target: 'engineRender',
+      });
     }
 
     render() {
@@ -161,12 +164,12 @@ class Engine extends React.Component {
                 <div className="url-item">3D Reality Tab</div>
                 <div className="url-item">2D Reality Tab</div>
               </div>
-              <input type="text" className="url-input" value="https://aframe.io/a-painter" onFocus={() => this.focus()} onBlur={() => this.blur()}/>
+              <input type="text" className="url-input" value="https://aframe.io/a-painter" onFocus={() => this.focusUrlInput()} onBlur={() => this.blurUrlInput()}/>
             </div>
           </div>
           <div className="engine-split">
             <div className="engine-left">
-              <div className="engine-render" id="engine-render">
+              <div className="engine-render" id="engine-render" onClick={() => this.onEngineRenderClick()}>
               </div>
               <Console/>
             </div>
