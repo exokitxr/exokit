@@ -27,6 +27,7 @@
 // found in the LICENSE file.
 
 const lib = {};
+window.lib = lib;
 
 /**
  * List of functions that need to be invoked during library initialization.
@@ -1536,13 +1537,13 @@ lib.f.parseQuery = function(queryString) {
 
 lib.f.getURL = function(path) {
   if (lib.f.getURL.chromeSupported())
-    return chrome.runtime.getURL(path);
+    return window.chrome.runtime.getURL(path);
 
   return path;
 };
 
 lib.f.getURL.chromeSupported = function() {
-  return window.chrome && chrome.runtime && chrome.runtime.getURL;
+  return window.chrome && window.chrome.runtime && window.chrome.runtime.getURL;
 };
 
 /**
@@ -1678,13 +1679,13 @@ lib.f.randomInt = function(min, max) {
  */
 lib.f.getOs = function() {
   // Try the brower extensions API.
-  if (window.browser && browser.runtime && browser.runtime.getPlatformInfo)
-    return browser.runtime.getPlatformInfo().then((info) => info.os);
+  if (window.browser && window.browser.runtime && window.browser.runtime.getPlatformInfo)
+    return window.browser.runtime.getPlatformInfo().then((info) => info.os);
 
   // Use the native Chrome API if available.
-  if (window.chrome && chrome.runtime && chrome.runtime.getPlatformInfo) {
+  if (window.chrome && window.chrome.runtime && window.chrome.runtime.getPlatformInfo) {
     return new Promise((resolve, reject) =>
-        chrome.runtime.getPlatformInfo((info) => resolve(info.os)));
+        window.chrome.runtime.getPlatformInfo((info) => resolve(info.os)));
   }
 
   // Fallback logic.  Capture the major OS's.  The rest should support the
@@ -1734,10 +1735,10 @@ lib.f.getChromeMilestone = function() {
  */
 lib.f.lastError = function(defaultMsg = null) {
   let lastError;
-  if (window.browser && browser.runtime)
-    lastError = browser.runtime.lastError;
-  else if (window.chrome && chrome.runtime)
-    lastError = chrome.runtime.lastError;
+  if (window.browser && window.browser.runtime)
+    lastError = window.browser.runtime.lastError;
+  else if (window.chrome && window.chrome.runtime)
+    lastError = window.chrome.runtime.lastError;
 
   if (lastError && lastError.message)
     return lastError.message;
@@ -1791,8 +1792,8 @@ lib.i18n = {};
  * Convenience shortcut to the browser i18n object.
  */
 lib.i18n.browser_ =
-    window.browser && browser.i18n ? browser.i18n :
-    window.chrome && chrome.i18n ? chrome.i18n :
+    window.browser && window.browser.i18n ? window.browser.i18n :
+    window.chrome && window.chrome.i18n ? window.chrome.i18n :
     null;
 
 /**
@@ -3027,14 +3028,14 @@ lib.Storage.Chrome = function(storage) {
   this.storage_ = storage;
   this.observers_ = [];
 
-  chrome.storage.onChanged.addListener(this.onChanged_.bind(this));
+  window.chrome.storage.onChanged.addListener(this.onChanged_.bind(this));
 };
 
 /**
  * Called by the storage implementation when the storage is modified.
  */
 lib.Storage.Chrome.prototype.onChanged_ = function(changes, areaname) {
-  if (chrome.storage[areaname] != this.storage_)
+  if (window.chrome.storage[areaname] != this.storage_)
     return;
 
   for (var i = 0; i < this.observers_.length; i++) {
@@ -4289,7 +4290,7 @@ lib.resource.add('libdot/changelog/date', 'text/plain',
 // hterm/audio/bell.ogg
 // hterm/images/icon-96.png
 
-'use strict';
+// 'use strict';
 
 lib.resource.add('hterm/audio/bell', 'audio/ogg;base64',
 'T2dnUwACAAAAAAAAAADhqW5KAAAAAMFvEjYBHgF2b3JiaXMAAAAAAYC7AAAAAAAAAHcBAAAAAAC4' +
@@ -4552,7 +4553,7 @@ lib.resource.add('hterm/git/HEAD', 'text/plain',
 // hterm/audio/bell.ogg
 // hterm/images/icon-96.png
 
-'use strict';
+// 'use strict';
 
 // SOURCE FILE: hterm/js/hterm.js
 // Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
@@ -4564,6 +4565,7 @@ lib.resource.add('hterm/git/HEAD', 'text/plain',
  * that are too small to deserve dedicated files.
  */
 var hterm = {};
+window.hterm = hterm;
 
 /**
  * The type of window hosting hterm.
@@ -4642,7 +4644,7 @@ lib.registerInit('hterm', function(onInit) {
 
   function onTab(tab) {
     if (tab && window.chrome) {
-      chrome.windows.get(tab.windowId, null, onWindow);
+      window.chrome.windows.get(tab.windowId, null, onWindow);
     } else {
       // TODO(rginda): This is where we end up for a v1 app's background page.
       // Maybe windowType = 'none' would be more appropriate, or something.
@@ -4652,8 +4654,8 @@ lib.registerInit('hterm', function(onInit) {
   }
 
   if (!hterm.defaultStorage) {
-    if (window.chrome && chrome.storage && chrome.storage.sync) {
-      hterm.defaultStorage = new lib.Storage.Chrome(chrome.storage.sync);
+    if (window.chrome && window.chrome.storage && window.chrome.storage.sync) {
+      hterm.defaultStorage = new lib.Storage.Chrome(window.chrome.storage.sync);
     } else {
       hterm.defaultStorage = new lib.Storage.Local();
     }
@@ -4662,8 +4664,8 @@ lib.registerInit('hterm', function(onInit) {
   // The chrome.tabs API is not supported in packaged apps, and detecting if
   // you're a packaged app is a little awkward.
   var isPackagedApp = false;
-  if (window.chrome && chrome.runtime && chrome.runtime.getManifest) {
-    var manifest = chrome.runtime.getManifest();
+  if (window.chrome && window.chrome.runtime && window.chrome.runtime.getManifest) {
+    var manifest = window.chrome.runtime.getManifest();
     isPackagedApp = manifest.app && manifest.app.background;
   }
 
@@ -4671,10 +4673,10 @@ lib.registerInit('hterm', function(onInit) {
     // Packaged apps are never displayed in browser tabs.
     setTimeout(onWindow.bind(null, {type: 'popup'}), 0);
   } else {
-    if (window.chrome && chrome.tabs) {
+    if (window.chrome && window.chrome.tabs) {
       // The getCurrent method gets the tab that is "currently running", not the
       // topmost or focused tab.
-      chrome.tabs.getCurrent(onTab);
+      window.chrome.tabs.getCurrent(onTab);
     } else {
       setTimeout(onWindow.bind(null, {type: 'normal'}), 0);
     }
@@ -4883,9 +4885,9 @@ hterm.notify = function(params) {
  * @param {string} url URL to launch in a new tab.
  */
 hterm.openUrl = function(url) {
-  if (window.chrome && chrome.browser && chrome.browser.openTab) {
+  if (window.chrome && window.chrome.browser && window.chrome.browser.openTab) {
     // For Chrome v2 apps, we need to use this API to properly open windows.
-    chrome.browser.openTab({'url': url});
+    window.chrome.browser.openTab({'url': url});
   } else {
     const win = lib.f.openWindow(url, '_blank');
     win.focus();
@@ -10284,7 +10286,7 @@ hterm.ScrollPort.prototype.decorate = function(div, callback) {
   this.iframe_.style.cssText = (
       'border: 0;' +
       'height: 100%;' +
-      'position: absolute;' +
+      // 'position: absolute;' +
       'width: 100%');
 
   div.appendChild(this.iframe_);
@@ -10411,7 +10413,7 @@ hterm.ScrollPort.prototype.paintIframeContents_ = function() {
       'font-size: 15px;' +
       'font-variant-ligatures: none;' +
       'height: 100%;' +
-      'overflow-y: scroll; overflow-x: hidden;' +
+      'overflow-y: hidden; overflow-x: hidden;' +
       'white-space: pre;' +
       'width: 100%;' +
       'outline: none !important');
@@ -10436,7 +10438,8 @@ hterm.ScrollPort.prototype.paintIframeContents_ = function() {
   const scrollButtonHeight = 30;
   const scrollButtonBorder = 1;
   const scrollButtonTotalHeight = scrollButtonHeight + 2 * scrollButtonBorder;
-  const scrollButtonStyle = `right: 0px;
+  const scrollButtonStyle = `display: none;
+                             right: 0px;
                              position:fixed;
                              z-index: 1;
                              text-align: center;
@@ -11599,10 +11602,10 @@ hterm.ScrollPort.prototype.onTouch_ = function(e) {
     case 'touchstart':
       // Workaround focus bug on CrOS if possible.
       // TODO(vapier): Drop this once https://crbug.com/919222 is fixed.
-      if (hterm.os == 'cros' && window.chrome && chrome.windows) {
-        chrome.windows.getCurrent((win) => {
+      if (hterm.os == 'cros' && window.chrome && window.chrome.windows) {
+        window.chrome.windows.getCurrent((win) => {
           if (!win.focused) {
-            chrome.windows.update(win.id, {focused: true});
+            window.chrome.windows.update(win.id, {focused: true});
           }
         });
       }
