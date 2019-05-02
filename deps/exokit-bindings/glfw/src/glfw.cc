@@ -14,7 +14,7 @@ std::map<uv_async_t *, EventHandler *> eventHandlerMap2;
 InjectionHandler mainThreadInjectionHandler;
 std::mutex eventHandlerMapMutex;
 std::mutex injectionHandlerMapMutex;
-int lastX = 0, lastY = 0; // XXX track this per-window
+// int lastX = 0, lastY = 0; // XXX track this per-window
 #ifdef TARGET_OS_MAC
 std::thread::id mainThreadId;
 bool hasMainThreadId = false;
@@ -671,8 +671,8 @@ void APIENTRY cursorPosCB(NATIVEwindow* window, double x, double y) {
     movementY = 0;
   }
 
-  lastX = x;
-  lastY = y;
+  /* lastX = x;
+  lastY = y; */
 
   QueueEvent(window, [=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
     Local<Object> evt = Nan::New<Object>();
@@ -716,17 +716,20 @@ void APIENTRY cursorEnterCB(NATIVEwindow* window, int entered) {
 
 void APIENTRY mouseButtonCB(NATIVEwindow *window, int button, int action, int mods) {
   QueueEvent(window, [=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
+    double xpos, ypos;
+    glfwGetCursorPos(window, &xpos, &ypos);
+    
     {
       Local<Object> evt = Nan::New<Object>();
       evt->Set(JS_STR("type"),JS_STR(action ? "mousedown" : "mouseup"));
       evt->Set(JS_STR("button"),JS_INT(button));
       evt->Set(JS_STR("which"),JS_INT(button));
-      evt->Set(JS_STR("clientX"),JS_INT(lastX));
-      evt->Set(JS_STR("clientY"),JS_INT(lastY));
-      evt->Set(JS_STR("pageX"),JS_INT(lastX));
-      evt->Set(JS_STR("pageY"),JS_INT(lastY));
-      evt->Set(JS_STR("offsetX"),JS_INT(lastX));
-      evt->Set(JS_STR("offsetY"),JS_INT(lastY));
+      evt->Set(JS_STR("clientX"),JS_NUM(xpos));
+      evt->Set(JS_STR("clientY"),JS_NUM(ypos));
+      evt->Set(JS_STR("pageX"),JS_NUM(xpos));
+      evt->Set(JS_STR("pageY"),JS_NUM(ypos));
+      evt->Set(JS_STR("offsetX"),JS_NUM(xpos));
+      evt->Set(JS_STR("offsetY"),JS_NUM(ypos));
       evt->Set(JS_STR("shiftKey"),JS_BOOL(mods & GLFW_MOD_SHIFT));
       evt->Set(JS_STR("ctrlKey"),JS_BOOL(mods & GLFW_MOD_CONTROL));
       evt->Set(JS_STR("altKey"),JS_BOOL(mods & GLFW_MOD_ALT));
@@ -745,12 +748,12 @@ void APIENTRY mouseButtonCB(NATIVEwindow *window, int button, int action, int mo
       evt->Set(JS_STR("type"),JS_STR("click"));
       evt->Set(JS_STR("button"),JS_INT(button));
       evt->Set(JS_STR("which"),JS_INT(button));
-      evt->Set(JS_STR("clientX"),JS_INT(lastX));
-      evt->Set(JS_STR("clientY"),JS_INT(lastY));
-      evt->Set(JS_STR("pageX"),JS_INT(lastX));
-      evt->Set(JS_STR("pageY"),JS_INT(lastY));
-      evt->Set(JS_STR("offsetX"),JS_INT(lastX));
-      evt->Set(JS_STR("offsetY"),JS_INT(lastY));
+      evt->Set(JS_STR("clientX"),JS_NUM(xpos));
+      evt->Set(JS_STR("clientY"),JS_NUM(ypos));
+      evt->Set(JS_STR("pageX"),JS_NUM(xpos));
+      evt->Set(JS_STR("pageY"),JS_NUM(ypos));
+      evt->Set(JS_STR("offsetX"),JS_NUM(xpos));
+      evt->Set(JS_STR("offsetY"),JS_NUM(ypos));
       evt->Set(JS_STR("shiftKey"),JS_BOOL(mods & GLFW_MOD_SHIFT));
       evt->Set(JS_STR("ctrlKey"),JS_BOOL(mods & GLFW_MOD_CONTROL));
       evt->Set(JS_STR("altKey"),JS_BOOL(mods & GLFW_MOD_ALT));
@@ -768,8 +771,13 @@ void APIENTRY mouseButtonCB(NATIVEwindow *window, int button, int action, int mo
 
 void APIENTRY scrollCB(NATIVEwindow *window, double xoffset, double yoffset) {
   QueueEvent(window, [=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
+    double xpos, ypos;
+    glfwGetCursorPos(window, &xpos, &ypos);
+    
     Local<Object> evt = Nan::New<Object>();
     evt->Set(JS_STR("type"),JS_STR("wheel"));
+    evt->Set(JS_STR("clientX"),JS_NUM(xpos));
+    evt->Set(JS_STR("clientY"),JS_NUM(ypos));
     evt->Set(JS_STR("deltaX"),JS_NUM(-xoffset*120));
     evt->Set(JS_STR("deltaY"),JS_NUM(-yoffset*120));
     evt->Set(JS_STR("deltaZ"),JS_INT(0));
@@ -914,6 +922,7 @@ NAN_METHOD(GetWindowPos) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   int xpos, ypos;
   glfwGetWindowPos(window, &xpos, &ypos);
+
   Local<Object> result = Nan::New<Object>();
   result->Set(JS_STR("xpos"),JS_INT(xpos));
   result->Set(JS_STR("ypos"),JS_INT(ypos));
@@ -1210,8 +1219,8 @@ NAN_METHOD(SetCursorMode) {
       int centerY = h/2;
       glfwSetCursorPos(window, centerX, centerY);
 
-      lastX = centerX;
-      lastY = centerY;
+      /* lastX = centerX;
+      lastY = centerY; */
     }
   });
 }
