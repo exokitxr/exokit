@@ -104,9 +104,6 @@ class Console extends React.Component {
   }
 
   render() {
-    console.log('!!!!!!!!!!!!render');
-    Error.stackTraceLimit = 300;
-    
     const {root} = this.props;
 
     return (
