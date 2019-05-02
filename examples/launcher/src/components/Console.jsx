@@ -8,7 +8,7 @@ class Console extends React.Component {
   } */
 
   componentDidMount() {
-    setTimeout(() => {
+    // setTimeout(() => {
       window.hterm.defaultStorage = new window.lib.Storage.Local();
       window.hterm.messageManager = new window.lib.MessageManager([]);
       const term = new window.hterm.Terminal();
@@ -86,7 +86,7 @@ class Console extends React.Component {
       socket.addEventListener('message', m => {
         term.io.writeUTF8(textDecoder.decode(m.data));
       }); */
-    }, 2000);
+    // }, 2000);
   }
   
   shouldComponentUpdate() {
