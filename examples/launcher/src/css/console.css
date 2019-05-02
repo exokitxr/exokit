@@ -6,4 +6,16 @@
   font-family: monospace;
   font-size: 11px;
   white-space: pre-wrap;
+  overflow-y: auto;
+}
+
+.Console .console-output {
+  width: 100%;
+  white-space: pre-wrap;
+}
+
+.Console .console-input {
+  width: 100%;
+  border: 0;
+  outline: none;
 }

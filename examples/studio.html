@@ -954,9 +954,7 @@ const {
     scene.children.sort((a, b) => +(a !== screenQuad) - +(b !== screenQuad));
 
     iframe.contentWindow.onmessage = m => {
-      console.log('POST from frontend: ', m.data);
-
-      switch (m.data.method){
+      switch (m.data.method) {
         case 'viewport': {
           viewport.set(m.data.viewport[0], 1 - m.data.viewport[1] - m.data.viewport[3], m.data.viewport[2], m.data.viewport[3]);
           break;
@@ -973,6 +971,26 @@ const {
             composeScene.remove(composeScreenQuad); // XXX can elide the render entirely
           } else {
             composeScene.add(composeScreenQuad);
+          }
+          break;
+        }
+        case 'eval': {
+          let err, result;
+          try {
+            result = eval(m.data.jsString);
+          } catch(e) {
+            err = e;
+          }
+          if (!err) {
+            iframe.contentWindow.postMessage({
+              method: 'terminal',
+              output: browser.inspect(result),
+            });
+          } else {
+            iframe.contentWindow.postMessage({
+              method: 'terminal',
+              output: err.stack,
+            });
           }
           break;
         }

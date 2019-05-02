@@ -1,5 +1,6 @@
 const events = require('events');
 const {EventEmitter} = events;
+const stream = require('stream');
 const path = require('path');
 const fs = require('fs');
 const url = require('url');
@@ -967,6 +968,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       RequestCamera: nativeMl.RequestCamera,
     } : null,
     monitors: new MonitorManager(),
+    inspect: util.inspect,
   };
   window.DOMParser = class DOMParser {
     parseFromString(htmlString, type) {
