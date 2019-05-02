@@ -914,6 +914,7 @@ const ScreenQuad = (() => {
 const {
   renderer: composeRenderer,
   scene: composeScene,
+  iframe: uiIframe,
 } = (() => {
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -922,77 +923,326 @@ const {
 
   const scene = new THREE.Scene();
 
-  {
-    const iframe = document.createElement('iframe');
-    iframe.width = window.innerWidth;
-    iframe.height = window.innerHeight;
-    iframe.devicePixelRatio = window.devicePixelRatio;
-    iframe.d = 2;
-    iframe.src = 'launcher/build/index.html';
-    iframe.onload = () => {
-      const texture = new THREE.Texture(
-        null,
-        THREE.UVMapping,
-        THREE.ClampToEdgeWrapping,
-        THREE.ClampToEdgeWrapping,
-        THREE.LinearFilter,
-        THREE.LinearFilter,
-        THREE.RGBAFormat,
-        THREE.UnsignedByteType,
-        1
-      );
-      const properties = renderer.properties.get(texture);
-      console.log('iframe texture', iframe.texture);
-      properties.__webglTexture = iframe.texture;
-      properties.__webglInit = true;
+  const iframe = document.createElement('iframe');
+  iframe.width = window.innerWidth;
+  iframe.height = window.innerHeight;
+  iframe.devicePixelRatio = window.devicePixelRatio;
+  iframe.d = 2;
+  iframe.src = 'launcher/build/index.html';
+  iframe.onload = () => {
+    const texture = new THREE.Texture(
+      null,
+      THREE.UVMapping,
+      THREE.ClampToEdgeWrapping,
+      THREE.ClampToEdgeWrapping,
+      THREE.LinearFilter,
+      THREE.LinearFilter,
+      THREE.RGBAFormat,
+      THREE.UnsignedByteType,
+      1
+    );
+    const properties = renderer.properties.get(texture);
+    // console.log('iframe texture', iframe.texture);
+    properties.__webglTexture = iframe.texture;
+    properties.__webglInit = true;
 
-      const screenQuad = new ScreenQuad({
-        texture,
-        reverse: true,
-      });
-      scene.add(screenQuad);
-      scene.children.sort((a, b) => +(a !== screenQuad) - +(b !== screenQuad));
+    const screenQuad = new ScreenQuad({
+      texture,
+      reverse: true,
+    });
+    scene.add(screenQuad);
+    scene.children.sort((a, b) => +(a !== screenQuad) - +(b !== screenQuad));
 
-      iframe.contentWindow.onmessage = m => {
-        console.log('POST from frontend: ', m.data);
-        switch (m.data.method){
-          case 'viewport':
-            viewport.set(m.data.viewport[0], 1 - m.data.viewport[1] - m.data.viewport[3], m.data.viewport[2], m.data.viewport[3]);
-            break;
+    iframe.contentWindow.onmessage = m => {
+      console.log('POST from frontend: ', m.data);
+
+      switch (m.data.method){
+        case 'viewport': {
+          viewport.set(m.data.viewport[0], 1 - m.data.viewport[1] - m.data.viewport[3], m.data.viewport[2], m.data.viewport[3]);
+          break;
         }
-        /* switch (m.data.action){
-          case 'launch':
-            launch(m.data.flags, m.data.url);
-            break;
-          case 'update':
-            update();
-            break;
-        } */
+        case 'focus': {
+          if (m.data.target === 'engineRender') {
+            renderer.domElement.requestPointerLock();
+            _bindEventTarget('xr');
+          }
+          // viewport.set(m.data.viewport[0], 1 - m.data.viewport[1] - m.data.viewport[3], m.data.viewport[2], m.data.viewport[3]);
+          break;
+        }
+      }
+      /* switch (m.data.action){
+        case 'launch':
+          launch(m.data.flags, m.data.url);
+          break;
+        case 'update':
+          update();
+          break;
+      } */
+    };
+
+    /* iframe.runJs(`
+      // document.body.style.background = '#000080';
+      // console.log('run js log ' + typeof window.postMessage + ' ' + window.postMessage.toString());
+
+      window.onmessage = m => {
+        console.log('child got message: ' + JSON.stringify(m.data));
       };
 
-      iframe.runJs(`
-        // document.body.style.background = '#000080';
-        // console.log('run js log ' + typeof window.postMessage + ' ' + window.postMessage.toString());
+      window.postMessage({lol: 'zol'});
+    `); */
 
-        window.onmessage = m => {
-          console.log('child got message: ' + JSON.stringify(m.data));
-        };
-
-        window.postMessage({lol: 'zol'});
-      `);
-
-    };
-    iframe.onconsole = (message, source, line) => {
-      console.log(source + ':' + line + ': ' + message);
-    };
-    document.body.appendChild(iframe);
-  }
+    _bindEventTarget('ui');
+  };
+  iframe.onconsole = (message, source, line) => {
+    console.log(source + ':' + line + ': ' + message);
+  };
+  document.body.appendChild(iframe);
 
   return {
     renderer,
     scene,
+    iframe,
   };
 })();
+
+// events
+
+let unbindEvents = null;
+const _bindEventTarget = target => {
+  if (unbindEvents) {
+    unbindEvents();
+    unbindEvents = null;
+  }
+
+  const _bindEvents = (windowEvents = {}, documentEvents = {}) => {
+    for (const k in windowEvents) {
+      const fn = windowEvents[k];
+      window.addEventListener(k, fn);
+    }
+    for (const k in documentEvents) {
+      const fn = documentEvents[k];
+      document.addEventListener(k, fn);
+    }
+
+    unbindEvents = () => {
+      for (const k in windowEvents) {
+        const fn = windowEvents[k];
+        window.removeEventListener(k, fn);
+      }
+      for (const k in documentEvents) {
+        const fn = documentEvents[k];
+        document.removeEventListener(k, fn);
+      }
+    };
+  };
+  if (target === 'ui') {
+    _bindEvents({
+      mousemove(e) {
+        uiIframe.sendMouseMove(e.clientX, e.clientY);
+      },
+      mousedown(e) {
+        // console.log('mouse down', e.clientX, e.clientY, e.button)
+        uiIframe.sendMouseDown(e.clientX, e.clientY, e.button); 
+      },
+      mouseup(e) {
+        uiIframe.sendMouseUp(e.clientX, e.clientY, e.button);
+      },
+      wheel(e) {
+        uiIframe.sendMouseWheel(e.clientX, e.clientY, e.deltaX, -e.deltaY);
+      },
+      keydown(e) {
+        if (e.keyCode === 37 && e.altKey) { // Alt-Left
+          uiIframe.back();
+        } else if (e.keyCode === 39 && e.altKey) { // Alt-Right
+          uiIframe.forward();
+        } else {
+          uiIframe.sendKeyDown(e.keyCode,{shiftKey:e.shiftKey,ctrlKey:e.ctrlKey,altKey:e.altKey});
+        }
+      },
+      keyup(e) {
+        uiIframe.sendKeyUp(e.keyCode,{shiftKey:e.shiftKey,ctrlKey:e.ctrlKey,altKey:e.altKey});
+      },
+      keypress(e) {
+        if (e.keyCode === 114 && e.ctrlKey) { // Ctrl-R
+          uiIframe.reload();
+        } else {
+          uiIframe.sendKeyPress(e.keyCode,{shiftKey:e.shiftKey,ctrlKey:e.ctrlKey,altKey:e.altKey});
+        }
+      },
+      resize(e) {
+        console.log('got resize', window.innerWidth, window.innerHeight);
+
+        uiIframe.width = window.innerWidth;
+        uiIframe.height = window.innerHeight;
+      },
+     });
+  } else if (target === 'xr') {
+    _bindEvents({
+      /* click(e) {
+        renderer.domElement.requestPointerLock();
+      }, */
+      mousedown(e) {
+        if (window.document.pointerLockElement) {
+          fakeDisplay.gamepads[1].buttons[1].pressed = true;
+        }
+      },
+      mouseup(e) {
+        if (window.document.pointerLockElement) {
+          fakeDisplay.gamepads[1].buttons[1].pressed = false;
+        }
+      },
+      mousemove(e) {
+        if (window.document.pointerLockElement) {
+          const {movementX, movementY} = e;
+
+          /* if (keys.ctrl) {
+            const controllerOffset = controllerOffsets[controllerIndex];
+            controllerOffset.x += movementX * 0.002;
+            controllerOffset.y -= movementY * 0.002;
+          } else if (keys.alt) {
+            const controllerOffset = controllerOffsets[controllerIndex];
+            controllerOffset.x += movementX * 0.002;
+            controllerOffset.z += movementY * 0.002;
+          } else { */
+            localEuler.setFromQuaternion(fakeDisplay.quaternion, localEuler.order);
+            localEuler.y -= movementX * 0.01;
+            localEuler.x -= movementY * 0.01;
+            localEuler.x = Math.min(Math.max(localEuler.x, -Math.PI/2), Math.PI/2);
+            fakeDisplay.quaternion.setFromEuler(localEuler);
+
+            fakeDisplay.pushUpdate();
+          // }
+        }
+      },
+      wheel(e) {
+        if (window.document.pointerLockElement) {
+          rig.menuMesh.listMesh.updateWheel(e.deltaX/100, -e.deltaY/100);
+        }
+      },
+      keydown(e) {
+        if (window.document.pointerLockElement) {
+          switch (e.which) {
+            case 87: { // W
+              keys.up = true;
+              /* if (!window.document.pointerLockElement) {
+                renderer.domElement.requestPointerLock();
+              } */
+              break;
+            }
+            case 83: { // S
+              keys.down = true;
+              /* if (!window.document.pointerLockElement) {
+                renderer.domElement.requestPointerLock();
+              } */
+              break;
+            }
+            case 65: { // A
+              keys.left = true;
+              /* if (!window.document.pointerLockElement) {
+                renderer.domElement.requestPointerLock();
+              } */
+              break;
+            }
+            case 68: { // D
+              keys.right = true;
+              /* if (!window.document.pointerLockElement) {
+                renderer.domElement.requestPointerLock();
+              } */
+              break;
+            }
+            case 69: { // E
+              fakeDisplay.gamepads[1].buttons[2].pressed = true;
+              break;
+            }
+            case 32: { // space
+              keys.space = true;
+              break;
+            }
+            case 17: { // ctrl
+              keys.ctrl = true;
+              break;
+            }
+          }
+        } else {
+          if (focusedTab) {
+            if (focusedTab === rig.menuMesh.urlMesh) {
+              rig.menuMesh.urlMesh.handleKey(e.keyCode, e.shiftKey);
+            } else if (focusedTab.iframe) {
+              focusedTab.iframe.sendKeyDown(e.which, {
+                shiftKey: e.shiftKey,
+                ctrlKey: e.ctrlKey,
+                altKey: e.altKey,
+              });
+            }
+          }
+        }
+      },
+      keyup(e) {
+        if (window.document.pointerLockElement) {
+          switch (e.which) {
+            case 87: { // W
+              keys.up = false;
+              break;
+            }
+            case 83: { // S
+              keys.down = false;
+              break;
+            }
+            case 65: { // A
+              keys.left = false;
+              break;
+            }
+            case 68: { // D
+              keys.right = false;
+              break;
+            }
+            case 69: { // E
+              fakeDisplay.gamepads[1].buttons[2].pressed = false;
+              break;
+            }
+            case 32: { // space
+              keys.space = false;
+              break;
+            }
+            case 17: { // ctrl
+              keys.ctrl = false;
+              break;
+            }
+          }
+        } else {
+          if (focusedTab && focusedTab.iframe) {
+            focusedTab.iframe.sendKeyUp(e.which, {
+              shiftKey: e.shiftKey,
+              ctrlKey: e.ctrlKey,
+              altKey: e.altKey,
+            });
+          }
+        }
+      },
+      keypress(e) {
+        if (!window.document.pointerLockElement) {
+          if (focusedTab) {
+            /* if (focusedTab === rig.menuMesh.urlMesh) {
+              rig.menuMesh.urlMesh.handleKey(e.keyCode, e.shiftKey);
+            } else */if (focusedTab.iframe) {
+              focusedTab.iframe.sendKeyPress(e.which, {
+                shiftKey: e.shiftKey,
+                ctrlKey: e.ctrlKey,
+                altKey: e.altKey,
+              });
+            }
+          }
+        }
+      },
+    }, {
+      pointerlockchange(e) {
+        if (!window.document.pointerLockElement) {
+          _bindEventTarget('ui');
+        }
+      },
+    });
+  }
+};
 
 // controller meshes
 
@@ -1835,49 +2085,6 @@ boxMeshes.forEach(boxMesh => {
 });
 
 const moves = [null, null];
-
-window.addEventListener('click', () => {
-  renderer.domElement.requestPointerLock();
-});
-window.addEventListener('mousedown', e => {
-  if (window.document.pointerLockElement) {
-    fakeDisplay.gamepads[1].buttons[1].pressed = true;
-  }
-});
-window.addEventListener('mouseup', e => {
-  if (window.document.pointerLockElement) {
-    fakeDisplay.gamepads[1].buttons[1].pressed = false;
-  }
-});
-window.addEventListener('mousemove', e => {
-  if (window.document.pointerLockElement) {
-    const {movementX, movementY} = e;
-
-    /* if (keys.ctrl) {
-      const controllerOffset = controllerOffsets[controllerIndex];
-      controllerOffset.x += movementX * 0.002;
-      controllerOffset.y -= movementY * 0.002;
-    } else if (keys.alt) {
-      const controllerOffset = controllerOffsets[controllerIndex];
-      controllerOffset.x += movementX * 0.002;
-      controllerOffset.z += movementY * 0.002;
-    } else { */
-      localEuler.setFromQuaternion(fakeDisplay.quaternion, localEuler.order);
-      localEuler.y -= movementX * 0.01;
-      localEuler.x -= movementY * 0.01;
-      localEuler.x = Math.min(Math.max(localEuler.x, -Math.PI/2), Math.PI/2);
-      fakeDisplay.quaternion.setFromEuler(localEuler);
-
-      fakeDisplay.pushUpdate();
-    // }
-  }
-});
-window.addEventListener('wheel', e => {
-  if (window.document.pointerLockElement) {
-    rig.menuMesh.listMesh.updateWheel(e.deltaX/100, -e.deltaY/100);
-  }
-});
-
 const keys = {
   up: false,
   down: false,
@@ -1896,121 +2103,6 @@ const intersectionSpecs = [
   null,
   null,
 ];
-window.addEventListener('keydown', e => { // XXX port launcher event handling
-  if (window.document.pointerLockElement) {
-    switch (e.which) {
-      case 87: { // W
-        keys.up = true;
-        /* if (!window.document.pointerLockElement) {
-          renderer.domElement.requestPointerLock();
-        } */
-        break;
-      }
-      case 83: { // S
-        keys.down = true;
-        /* if (!window.document.pointerLockElement) {
-          renderer.domElement.requestPointerLock();
-        } */
-        break;
-      }
-      case 65: { // A
-        keys.left = true;
-        /* if (!window.document.pointerLockElement) {
-          renderer.domElement.requestPointerLock();
-        } */
-        break;
-      }
-      case 68: { // D
-        keys.right = true;
-        /* if (!window.document.pointerLockElement) {
-          renderer.domElement.requestPointerLock();
-        } */
-        break;
-      }
-      case 69: { // E
-        fakeDisplay.gamepads[1].buttons[2].pressed = true;
-        break;
-      }
-      case 32: { // space
-        keys.space = true;
-        break;
-      }
-      case 17: { // ctrl
-        keys.ctrl = true;
-        break;
-      }
-    }
-  } else {
-    if (focusedTab) {
-      if (focusedTab === rig.menuMesh.urlMesh) {
-        rig.menuMesh.urlMesh.handleKey(e.keyCode, e.shiftKey);
-      } else if (focusedTab.iframe) {
-        focusedTab.iframe.sendKeyDown(e.which, {
-          shiftKey: e.shiftKey,
-          ctrlKey: e.ctrlKey,
-          altKey: e.altKey,
-        });
-      }
-    }
-  }
-});
-window.addEventListener('keyup', e => {
-  if (window.document.pointerLockElement) {
-    switch (e.which) {
-      case 87: { // W
-        keys.up = false;
-        break;
-      }
-      case 83: { // S
-        keys.down = false;
-        break;
-      }
-      case 65: { // A
-        keys.left = false;
-        break;
-      }
-      case 68: { // D
-        keys.right = false;
-        break;
-      }
-      case 69: { // E
-        fakeDisplay.gamepads[1].buttons[2].pressed = false;
-        break;
-      }
-      case 32: { // space
-        keys.space = false;
-        break;
-      }
-      case 17: { // ctrl
-        keys.ctrl = false;
-        break;
-      }
-    }
-  } else {
-    if (focusedTab && focusedTab.iframe) {
-      focusedTab.iframe.sendKeyUp(e.which, {
-        shiftKey: e.shiftKey,
-        ctrlKey: e.ctrlKey,
-        altKey: e.altKey,
-      });
-    }
-  }
-});
-window.addEventListener('keypress', e => {
-  if (!window.document.pointerLockElement) {
-    if (focusedTab) {
-      /* if (focusedTab === rig.menuMesh.urlMesh) {
-        rig.menuMesh.urlMesh.handleKey(e.keyCode, e.shiftKey);
-      } else */if (focusedTab.iframe) {
-        focusedTab.iframe.sendKeyPress(e.which, {
-          shiftKey: e.shiftKey,
-          ctrlKey: e.ctrlKey,
-          altKey: e.altKey,
-        });
-      }
-    }
-  }
-});
 
 // let renderTarget = null;
 const startTime = Date.now();
