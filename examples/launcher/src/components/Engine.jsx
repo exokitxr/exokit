@@ -17,14 +17,11 @@ class Engine extends React.Component {
     }
     
     componentDidMount() {
-      // const app = document.getElementById('app');
       const engineRender = document.getElementById('engine-render');
 
       const _postViewportMessage = () => {
         const bcr = engineRender.getBoundingClientRect();
-        // const bcr2 = app.getBoundingClientRect();
         const viewport = [bcr.x/window.innerWidth, bcr.y/window.innerHeight, bcr.width/window.innerWidth, bcr.height/window.innerHeight];
-        // console.log('engine render viewport', viewport);
         window.postMessage({
           method: 'viewport',
           viewport,
@@ -43,9 +40,9 @@ class Engine extends React.Component {
     }
 
     handleURLChange(e){
-        this.setState({
-            url: e.target.value
-        })
+      this.setState({
+        url: e.target.value
+      });
     }
 
     setFlag(e){
