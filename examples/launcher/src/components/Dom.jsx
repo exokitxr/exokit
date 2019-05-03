@@ -20,7 +20,10 @@ class Dom extends React.Component {
         nodeType: 1,
         tagName: 'HTML',
         value: '',
-        attrs: [],
+        attrs: [{
+          name: 'href',
+          value: 'https://',
+        }],
         childNodes: [],
       },
       selectEl: null,
@@ -86,7 +89,7 @@ class DomList extends React.Component {
   render() {
     return (
       <ul className="dom-list">
-        <DomItem el={this.props.root} level={0} hoverEl={this.state.hoverEl} onClick={el => this.props.onClick(el)} onMouseEnter={el => this.onMouseEnter(el)} onMouseLeave={el => this.onMouseLeave(el)}/>
+        <DomItem el={this.props.root} level={0} selectEl={this.props.selectEl} hoverEl={this.state.hoverEl} onClick={() => this.props.onClick(this.props.root)} onMouseEnter={el => this.onMouseEnter(el)} onMouseLeave={el => this.onMouseLeave(el)}/>
       </ul>
     );
   }
@@ -106,8 +109,8 @@ class DomItem extends React.Component {
     if (this.state.open) {
       classNames.push('open');
     }
-    if (this.props.hoverEl === this.props.el) {
-      classNames.push('hover');
+    if (this.props.selectEl === this.props.el || this.props.hoverEl === this.props.el) {
+      classNames.push('highlight');
     }
     return classNames.join(' ');
   }
@@ -118,10 +121,12 @@ class DomItem extends React.Component {
     };
   }
   
-  toggleOpen() {
+  toggleOpen(e) {
     this.setState({
       open: !this.state.open,
     });
+
+    e.stopPropagation();
   }
   
   render() {
@@ -131,7 +136,7 @@ class DomItem extends React.Component {
       return (
         <li className={this.getClassnames()}>
           <div className="dom-item-label" style={this.getStyle()} onClick={el => this.props.onClick(el)} onMouseEnter={() => this.props.onMouseEnter(el)} onMouseLeave={() => this.props.onMouseLeave(el)}>
-            <div className="dom-item-arrow" onClick={() => this.toggleOpen()}>⮞</div>
+            <div className="dom-item-arrow" onClick={e => this.toggleOpen(e)}>⮞</div>
             <div className="dom-item-name">{_el2Text(el)}</div>
           </div>
           <div className="dom-item-children">
@@ -165,7 +170,7 @@ class DomDetail extends React.Component {
 
     return (
       <div className="dom-detail">
-        <div className="dom-detail-name">{_el2Text(el)}</div>
+        <div className="dom-detail-name">{el.tagName.toLowerCase()}</div>
         {el.attrs.map(attr => <DomAttribute attr={attr} key={attr.name} />)}
       </div>
     );
