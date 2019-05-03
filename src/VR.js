@@ -398,9 +398,9 @@ class FakeVRDisplay extends VRDisplay {
     const {_context: context} = canvas;
     this.onmakeswapchain(context);
     
-    const [fbo, msFbo, msTex, msDepthTex] = nativeWindow.createVrChildRenderTarget(context, xrState.renderWidth[0]*2, xrState.renderHeight[0]);
-    context.setDefaultFramebuffer(msFbo);
-    nativeWindow.bindVrChildFbo(context, fbo, xrState.tex[0], xrState.depthTex[0]);
+    // const [fbo, msFbo, msTex, msDepthTex] = nativeWindow.createVrChildRenderTarget(context, GlobalContext.xrState.renderWidth[0]*2, GlobalContext.xrState.renderHeight[0]);
+    // context.setDefaultFramebuffer(msFbo);
+    // nativeWindow.bindVrChildFbo(context, fbo, GlobalContext.xrState.tex[0], GlobalContext.xrState.depthTex[0]);
 
     if (this.onvrdisplaypresentchange && !this.isPresenting) {
       this.isPresenting = true;
