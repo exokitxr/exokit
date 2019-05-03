@@ -987,12 +987,12 @@ const {
         }
         case 'open': {
           const {url, d} = m.data;
-          console.log('loading', {url, d});
+          console.log('loading iframe', {url, d});
           const iframe = document.createElement('iframe');
           iframe.d = d;
           iframe.src = url;
           iframe.onload = () => {
-            console.log('loaded');
+            console.log('loaded iframe', url);
           };
           iframe.onerror = err => {
             console.warn(err.stack);
