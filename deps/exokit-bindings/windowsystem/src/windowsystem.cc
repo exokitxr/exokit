@@ -5,7 +5,7 @@
 namespace windowsystembase {
 
 std::vector<float> multiplyMatrices(const std::vector<float> &a, const std::vector<float> &b) {
-  std::vector<float> result;
+  std::vector<float> result(16);
   
   const float *ae = a.data();
   const float *be = b.data();
@@ -961,20 +961,20 @@ NAN_METHOD(ComposeLayers) {
             };
 
             Local<Float32Array> leftViewMatrixFloat32Array = Local<Float32Array>::Cast(xrStateObj->Get(JS_STR("leftViewMatrix")));
-            std::vector<float> leftViewMatrix;
-            memcpy(leftViewMatrix.data(), (float *)((char *)leftViewMatrixFloat32Array->Buffer()->GetContents().Data() + leftViewMatrixFloat32Array->ByteOffset()), sizeof(leftViewMatrix.data()));
+            std::vector<float> leftViewMatrix(16);
+            memcpy(leftViewMatrix.data(), (float *)((char *)leftViewMatrixFloat32Array->Buffer()->GetContents().Data() + leftViewMatrixFloat32Array->ByteOffset()), leftViewMatrix.size() * sizeof(leftViewMatrix[0]));
 
             Local<Float32Array> rightViewMatrixFloat32Array = Local<Float32Array>::Cast(xrStateObj->Get(JS_STR("rightViewMatrix")));
-            std::vector<float> rightViewMatrix;
-            memcpy(rightViewMatrix.data(), (float *)((char *)rightViewMatrixFloat32Array->Buffer()->GetContents().Data() + rightViewMatrixFloat32Array->ByteOffset()), sizeof(rightViewMatrix.data()));
+            std::vector<float> rightViewMatrix(16);
+            memcpy(rightViewMatrix.data(), (float *)((char *)rightViewMatrixFloat32Array->Buffer()->GetContents().Data() + rightViewMatrixFloat32Array->ByteOffset()), rightViewMatrix.size() * sizeof(rightViewMatrix[0]));
 
             Local<Value> xrOffsetValue = elementObj->Get(JS_STR("xrOffset"));
             if (TO_BOOL(xrOffsetValue)) {
               Local<Object> xrOffsetObj = Local<Object>::Cast(xrOffsetValue);
               Local<Float32Array> xrOffsetMatrixFloat32Array = Local<Float32Array>::Cast(xrOffsetObj->Get(JS_STR("matrix")));
 
-              std::vector<float> xrOffsetMatrix;
-              memcpy(xrOffsetMatrix.data(), (float *)((char *)xrOffsetMatrixFloat32Array->Buffer()->GetContents().Data() + xrOffsetMatrixFloat32Array->ByteOffset()), sizeof(xrOffsetMatrix.data()));
+              std::vector<float> xrOffsetMatrix(16);
+              memcpy(xrOffsetMatrix.data(), (float *)((char *)xrOffsetMatrixFloat32Array->Buffer()->GetContents().Data() + xrOffsetMatrixFloat32Array->ByteOffset()), xrOffsetMatrix.size() * sizeof(xrOffsetMatrix[0]));
 
               leftViewMatrix = multiplyMatrices(leftViewMatrix, xrOffsetMatrix);
               rightViewMatrix = multiplyMatrices(rightViewMatrix, xrOffsetMatrix);
