@@ -985,6 +985,22 @@ const {
           }
           break;
         }
+        case 'open': {
+          const {url, d} = m.data;
+          console.log('loading', {url, d});
+          const iframe = document.createElement('iframe');
+          iframe.d = d;
+          iframe.src = url;
+          iframe.onload = () => {
+            console.log('loaded');
+          };
+          iframe.onerror = err => {
+            console.warn(err.stack);
+          };
+          document.body.appendChild(iframe);
+          layers.push(iframe);
+          break;
+        }
         case 'eval': {
           let err, result;
           try {
