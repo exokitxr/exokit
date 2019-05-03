@@ -100,7 +100,6 @@
   min-width: 200px;
   background-color: #222;
   border-left: 2px solid #111;
-  overflow-y: auto;
 }
 #Engine .engine-render {
   flex: 1;

@@ -1,50 +1,78 @@
 .Dom {
   display: flex;
   flex: 1;
+  flex-direction: column;
+}
+
+/* dom list */
+
+.Dom > .dom-list {
+  display: flex;
+  flex: 1;
   list-style: none;
   margin: 0;
   padding: 0;
+  overflow-y: auto;
 }
 
-.Dom .dom-item {
+.Dom > .dom-list .dom-item {
   font-family: monospace;
   font-size: 11px;
   flex: 1;
   cursor: pointer;
   user-select: none;
 }
-.Dom .dom-item.open > .dom-item-label .dom-item-arrow {
+.Dom > .dom-list .dom-item.open > .dom-item-label .dom-item-arrow {
   color: #888;
   transform: rotatez(90deg);
 }
-.Dom .dom-item.open > .dom-item-children {
+.Dom > .dom-list .dom-item.open > .dom-item-children {
   display: flex;
 }
 
-.Dom .dom-item > .dom-item-label {
+.Dom > .dom-list .dom-item > .dom-item-label {
   display: flex;
 }
-.Dom .dom-item.hover > .dom-item-label,
-.Dom .dom-item.hover > .dom-item-text
+.Dom > .dom-list .dom-item.hover > .dom-item-label,
+.Dom > .dom-list .dom-item.hover > .dom-item-text
 {
   background-color: #333;
 }
 
-.Dom .dom-item > .dom-item-label .dom-item-arrow {
+.Dom > .dom-list .dom-item > .dom-item-label .dom-item-arrow {
   color: #444;
   transform: none;
 }
 
-.Dom .dom-item > .dom-item-label .dom-item-name {
+.Dom > .dom-list .dom-item > .dom-item-label .dom-item-name {
   padding-left: 3px;
 }
 
-.Dom .dom-item > .dom-item-children {
+.Dom > .dom-list .dom-item > .dom-item-children {
   display: none;
   flex-direction: column;
 }
 
-.Dom .dom-item > .dom-item-text {
+.Dom > .dom-list .dom-item > .dom-item-text {
   color: #666;
   white-space: pre;
+}
+
+/* dom detail */
+
+.Dom > .dom-detail {
+  display: flex;
+  flex-direction: column;
+  height: 300px;
+  background-color: #444;
+  border-top: 2px solid #111;
+  overflow-y: auto;
+}
+.Dom > .dom-detail > .dom-detail-name {
+}
+.Dom > .dom-detail > .dom-attribute {
+}
+.Dom > .dom-detail > .dom-attribute > .dom-attribute-name {
+}
+.Dom > .dom-detail > .dom-attribute > .dom-attribute-value {
 }

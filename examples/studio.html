@@ -956,8 +956,9 @@ const {
     const _objectHtml = el => ({
       nodeType: el.nodeType || 0,
       tagName: el.tagName || '',
-      nodeValue: el.nodeType === Node.TEXT_NODE ? el.nodeValue : '',
-      childNodes: Array.from(el.childNodes).map(_objectHtml),
+      value: el.value || '',
+      attrs: el.attrs || [],
+      childNodes: el.childNodes.map(_objectHtml),
     });
     iframe.contentWindow.postMessage({
       method: 'dom',
