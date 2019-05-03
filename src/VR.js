@@ -381,7 +381,7 @@ class FakeVRDisplay extends VRDisplay {
   /* setSize(width, height) {
     GlobalContext.xrState.renderWidth[0] = width;
     GlobalContext.xrState.renderHeight[0] = height;
-  } *?
+  } */
 
   /* setProjection(projectionMatrix) {
     GlobalContext.xrState.leftProjectionMatrix.set(projectionMatrix);
