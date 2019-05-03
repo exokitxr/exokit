@@ -40,8 +40,6 @@ class Console extends React.Component {
   }
 
   render() {
-    const {root} = this.props;
-
     return (
       <div className="Console" id="console">
         <div className="console-output" id="console-output" />
