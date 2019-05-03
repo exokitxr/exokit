@@ -6,10 +6,27 @@ class Dom extends React.Component {
     super(props);
     
     this.state = {
+      root: {
+        nodeType: 1,
+        tagName: 'HTML',
+        nodeValue: '',
+        childNodes: [],
+      },
       hoverEl: null,
     };
   }
   
+  componentDidMount() {
+    window.addEventListener('message', e => {
+      const m = e.data;
+      if (m.method === 'dom') {
+        this.setState({
+          root: m.root,
+        });
+      }
+    });
+  }
+
   onMouseEnter(el) {
     this.setState({
       hoverEl: el,
@@ -25,11 +42,9 @@ class Dom extends React.Component {
   }
 
   render() {
-    const {root} = this.props;
-
     return (
       <ul className="Dom">
-        <DomItem el={this.props.root} level={0} hoverEl={this.state.hoverEl} onMouseEnter={el => this.onMouseEnter(el)} onMouseLeave={el => this.onMouseLeave(el)}/>
+        <DomItem el={this.state.root} level={0} hoverEl={this.state.hoverEl} onMouseEnter={el => this.onMouseEnter(el)} onMouseLeave={el => this.onMouseLeave(el)}/>
       </ul>
     );
   }

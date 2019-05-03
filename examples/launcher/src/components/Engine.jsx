@@ -3,15 +3,6 @@ import Dom from './Dom';
 import Console from './Console';
 import '../css/engine.css';
 
-const _objectHtml = el => {
-  return {
-    nodeType: el.nodeType || 0,
-    tagName: el.tagName || '',
-    nodeValue: el.nodeType === Node.TEXT_NODE ? el.nodeValue : '',
-    childNodes: Array.from(el.childNodes).map(_objectHtml),
-  };
-};
-
 class Engine extends React.Component {
 
     constructor(props) {
@@ -20,18 +11,8 @@ class Engine extends React.Component {
       this.setFlag = this.setFlag.bind(this);
       this.handleURLChange = this.handleURLChange.bind(this);
       this.state = {
-          flags: [],
-          url: '',
-          root: (() => {
-            const html = document.createElement('html');
-            html.innerHTML = `
-<ul>
-  <li>lol</li>
-  <li>zol</li>
-</ul>
-`.replace(/\n/g, '');
-            return _objectHtml(html);
-          })(),
+        flags: [],
+        url: '',
       };
     }
     
@@ -193,7 +174,7 @@ class Engine extends React.Component {
               <Console/>
             </div>
             <div className="engine-right">
-              <Dom root={this.state.root}/>
+              <Dom/>
             </div>
           </div>
         </div>

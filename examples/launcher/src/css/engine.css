@@ -89,16 +89,18 @@
 #Engine .engine-split {
   display: flex;
   flex: 1;
+  overflow: hidden;
 }
 #Engine .engine-left {
   display: flex;
   flex-direction: column;
-  flex: 5;
+  flex: 1;
 }
 #Engine .engine-right {
-  flex: 1;
+  min-width: 200px;
   background-color: #222;
   border-left: 2px solid #111;
+  overflow-y: auto;
 }
 #Engine .engine-render {
   flex: 1;
