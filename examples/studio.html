@@ -997,6 +997,10 @@ const {
           iframe.onerror = err => {
             console.warn(err.stack);
           };
+          const {position, quaternion, scale} = _getFrontOfCamera();
+          iframe.position = position.toArray();
+          iframe.orientation = quaternion.toArray();
+          iframe.scale = scale.toArray();
           document.body.appendChild(iframe);
           layers.push(iframe);
           break;
