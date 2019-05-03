@@ -24,7 +24,20 @@ class Dom extends React.Component {
           name: 'href',
           value: 'https://',
         }],
-        childNodes: [],
+        childNodes: [
+          {
+            nodeType: 1,
+            tagName: 'BODY',
+            value: '',
+            attrs: [{
+              name: 'lol',
+              value: 'zol',
+              name: 'woot',
+              value: 'toot',
+            }],
+            childNodes: [],
+          },
+        ],
       },
       selectEl: null,
     };
