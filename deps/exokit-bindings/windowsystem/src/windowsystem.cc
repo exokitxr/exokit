@@ -323,10 +323,10 @@ void InitializeLocalGlState(WebGLRenderingContext *gl) {
     glGenBuffers(1, &planeSpec->uvBuffer);
     glBindBuffer(GL_ARRAY_BUFFER, planeSpec->uvBuffer);
     static const float uvs[] = {
-      0.0f, 0.0f,
-      1.0f, 0.0f,
       0.0f, 1.0f,
       1.0f, 1.0f,
+      0.0f, 0.0f,
+      1.0f, 0.0f,
     };
     glBufferData(GL_ARRAY_BUFFER, sizeof(uvs), uvs, GL_STATIC_DRAW);
     glEnableVertexAttribArray(planeSpec->uvLocation);
