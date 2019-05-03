@@ -4,7 +4,7 @@ NODE_VERSION=`node -v`
 if [ $NODE_VERSION != "v11.6.0" ]
 then
   echo "[ERROR] Node version needs to be v11.6.0."
-  exit
+  exit 1
 fi
 
 # Initialization.
