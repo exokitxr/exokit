@@ -1427,7 +1427,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       vrPresentState.layers = layers;
     };
 
-    const vrDisplay = new VRDisplay('OpenVR');
+    const vrDisplay = new VRDisplay('OpenVR', window);
     vrDisplay.onrequestanimationframe = _makeRequestAnimationFrame(window);
     vrDisplay.oncancelanimationframe = window.cancelAnimationFrame;
     vrDisplay.onvrdisplaypresentchange = () => {

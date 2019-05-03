@@ -21,8 +21,8 @@ const localViewMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0
 
 class VRPose {
   constructor() {
-    this.position = GlobalContext.xrState.position;
-    this.orientation = GlobalContext.xrState.orientation;
+    this.position = new Float32Array(3);
+    this.orientation = new Float32Array(4);
   }
 
   /* set(position, orientation) {
@@ -41,31 +41,13 @@ class VRPose {
 }
 class VRFrameData {
   constructor() {
-    this.leftProjectionMatrix = GlobalContext.xrState.leftProjectionMatrix;
-    /* this.leftProjectionMatrix.set(Float32Array.from([
-      1.0000000000000002, 0, 0, 0,
-      0, 1.0000000000000002, 0, 0,
-      0, 0, -1.00010000500025, -1,
-      0, 0, -0.200010000500025, 0,
-    ])); */
-    // c = new THREE.PerspectiveCamera(); c.fov = 90; c.updateProjectionMatrix(); c.projectionMatrix.elements
-    this.leftViewMatrix = GlobalContext.xrState.leftViewMatrix;
-    // this.leftViewMatrix.set(Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]));
-    // new THREE.Matrix4().toArray()
-
-    this.rightProjectionMatrix = GlobalContext.xrState.rightProjectionMatrix;
-    this.rightViewMatrix = GlobalContext.xrState.rightViewMatrix;
+    this.leftProjectionMatrix = new Float32Array(16);
+    this.leftViewMatrix = new Float32Array(16);
+    this.rightProjectionMatrix = new Float32Array(16);
+    this.rightViewMatrix = new Float32Array(16);
 
     this.pose = new VRPose();
   }
-
-  /* copy(frameData) {
-    this.leftProjectionMatrix.set(frameData.leftProjectionMatrix);
-    this.leftViewMatrix.set(frameData.leftViewMatrix);
-    this.rightProjectionMatrix.set(frameData.rightProjectionMatrix);
-    this.rightViewMatrix.set(frameData.rightViewMatrix);
-    this.pose.copy(frameData.pose);
-  } */
 }
 class GamepadButton {
   constructor(_value, _pressed, _touched) {
@@ -193,10 +175,11 @@ class VRStageParameters {
 }
 
 class VRDisplay extends EventEmitter {
-  constructor(displayName) {
+  constructor(displayName, window) {
     super();
 
     this.displayName = displayName;
+    this.window = window;
 
     this.isPresenting = false;
     this.capabilities = {
@@ -219,12 +202,45 @@ class VRDisplay extends EventEmitter {
   }
 
   getFrameData(frameData) {
+    const {xrOffset} = this.window.document;
+    if (xrOffset) {
+      localMatrix2.compose(
+        localVector.fromArray(xrOffset.position),
+        localQuaternion.fromArray(xrOffset.orientation),
+        localVector2.fromArray(xrOffset.scale)
+      )
+      // left
+      localMatrix
+        .fromArray(GlobalContext.xrState.leftViewMatrix)
+        .multiply(
+          localMatrix2
+        )
+        .toArray(frameData.leftViewMatrix);
+      // right
+      localMatrix
+        .fromArray(GlobalContext.xrState.rightViewMatrix)
+        .multiply(
+          localMatrix2
+        )
+        .toArray(frameData.rightViewMatrix);
+      // pose
+      localMatrix
+        .compose(localVector.fromArray(GlobalContext.xrState.position), localQuaternion.fromArray(GlobalContext.xrState.orientation), localVector2.set(1, 1, 1))
+        .multiply(
+          localMatrix2
+        )
+        .decompose(localVector, localQuaternion, localVector2);
+      localVector.toArray(frameData.pose.position);
+      localQuaternion.toArray(frameData.pose.orientation);
+    } else {
+      frameData.leftViewMatrix.set(GlobalContext.xrState.leftViewMatrix);
+      frameData.rightViewMatrix.set(GlobalContext.xrState.rightViewMatrix);
+      frameData.pose.position.set(GlobalContext.xrState.position);
+      frameData.pose.orientation.set(GlobalContext.xrState.orientation);
+    }
+
     frameData.leftProjectionMatrix.set(GlobalContext.xrState.leftProjectionMatrix);
-    frameData.leftViewMatrix.set(GlobalContext.xrState.leftViewMatrix);
-    frameData.rightViewMatrix.set(GlobalContext.xrState.rightViewMatrix);
     frameData.rightProjectionMatrix.set(GlobalContext.xrState.rightProjectionMatrix);
-    frameData.pose.position.set(GlobalContext.xrState.position);
-    frameData.pose.orientation.set(GlobalContext.xrState.orientation);
   }
 
   getLayers() {
