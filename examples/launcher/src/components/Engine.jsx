@@ -99,17 +99,48 @@ class Engine extends React.Component {
         this.postMenuStatus();
       });
     }
-    
+
+    open3dTab() {
+      const urlInput = document.getElementById('url-input');
+      const url = urlInput.value;
+
+      window.postMessage({
+        method: 'open',
+        url,
+        d: 3,
+      });
+
+      this.blur();
+    }
+
+    open2dTab() {
+      const urlInput = document.getElementById('url-input');
+      const url = urlInput.value;
+
+      window.postMessage({
+        method: 'open',
+        url,
+        d: 2,
+      });
+
+      this.blur();
+    }
+
     onEngineRenderClick() {
+      window.postMessage({
+        method: 'focus',
+        target: 'engineRender',
+      });
+      
+      this.blur();
+    }
+    
+    blur() {
       this.setState({
         item: null,
         urlFocus: false,
       }, () => {
         this.postMenuStatus();
-      });
-      window.postMessage({
-        method: 'focus',
-        target: 'engineRender',
       });
     }
     
@@ -158,10 +189,10 @@ class Engine extends React.Component {
             </div>
             <div class="url">
               <div className={this.urlPopupClassNames()}>
-                <div className="url-item">3D Reality Tab</div>
-                <div className="url-item">2D Reality Tab</div>
+                <div className="url-item" onMouseDown={e => e.preventDefault()} onClick={() => this.open3dTab()}>3D Reality Tab</div>
+                <div className="url-item" onMouseDown={e => e.preventDefault()} onClick={() => this.open2dTab()}>2D Reality Tab</div>
               </div>
-              <input type="text" className="url-input" value="https://aframe.io/a-painter" onFocus={() => this.focusUrlInput()} onBlur={() => this.blurUrlInput()}/>
+              <input type="text" className="url-input" id="url-input" value="https://aframe.io/a-painter/" onFocus={() => this.focusUrlInput()} onBlur={() => this.blurUrlInput()}/>
             </div>
           </div>
           <div className="engine-split">
