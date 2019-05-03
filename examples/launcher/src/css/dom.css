@@ -51,6 +51,7 @@
 
 .Dom > .dom-list .dom-item > .dom-item-label .dom-item-name {
   padding-left: 3px;
+  white-space: nowrap;
 }
 
 .Dom > .dom-list .dom-item > .dom-item-children {
