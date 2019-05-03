@@ -109,8 +109,11 @@ class DomItem extends React.Component {
     if (this.state.open) {
       classNames.push('open');
     }
-    if (this.props.selectEl === this.props.el || this.props.hoverEl === this.props.el) {
-      classNames.push('highlight');
+    if (this.props.selectEl === this.props.el) {
+      classNames.push('select');
+    }
+    if (this.props.hoverEl === this.props.el) {
+      classNames.push('hover');
     }
     return classNames.join(' ');
   }
