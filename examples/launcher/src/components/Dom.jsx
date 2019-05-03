@@ -1,6 +1,16 @@
 import React from 'react';
 import '../css/dom.css';
 
+const _el2Text = el => {
+  let result = '<' + el.tagName.toLowerCase();
+  for (let i = 0; i < el.attrs.length; i++) {
+    const attr = el.attrs[i];
+    result += ' ' + attr.name + '=' + JSON.stringify(attr.value);
+  }
+  result += '>';
+  return result;
+};
+
 class Dom extends React.Component {
   constructor(props) {
     super(props);
@@ -9,13 +19,14 @@ class Dom extends React.Component {
       root: {
         nodeType: 1,
         tagName: 'HTML',
-        nodeValue: '',
+        value: '',
+        attrs: [],
         childNodes: [],
       },
-      hoverEl: null,
+      selectEl: null,
     };
   }
-  
+
   componentDidMount() {
     window.addEventListener('message', e => {
       const m = e.data;
@@ -27,6 +38,37 @@ class Dom extends React.Component {
     });
   }
 
+  onClick(el) {
+    if (this.state.selectEl !== el) {
+      this.setState({
+        selectEl: el,
+      });
+    } else {
+      this.setState({
+        selectEl: null,
+      });
+    }
+  }
+
+  render() {
+    return (
+      <div className="Dom">
+        <DomList root={this.state.root} selectEl={this.state.selectEl} onClick={el => this.onClick(el)} />
+        {this.state.selectEl ? <DomDetail el={this.state.selectEl} /> : null}
+      </div>
+    );
+  }
+}
+
+class DomList extends React.Component {
+  constructor(props) {
+    super(props);
+    
+    this.state = {
+      hoverEl: null,
+    };
+  }
+
   onMouseEnter(el) {
     this.setState({
       hoverEl: el,
@@ -34,7 +76,7 @@ class Dom extends React.Component {
   }
   
   onMouseLeave(el) {
-    if (this.state.hoverEl == el) {
+    if (this.state.hoverEl === el) {
       this.setState({
         hoverEl: null,
       });
@@ -43,8 +85,8 @@ class Dom extends React.Component {
 
   render() {
     return (
-      <ul className="Dom">
-        <DomItem el={this.state.root} level={0} hoverEl={this.state.hoverEl} onMouseEnter={el => this.onMouseEnter(el)} onMouseLeave={el => this.onMouseLeave(el)}/>
+      <ul className="dom-list">
+        <DomItem el={this.props.root} level={0} hoverEl={this.state.hoverEl} onClick={el => this.props.onClick(el)} onMouseEnter={el => this.onMouseEnter(el)} onMouseLeave={el => this.onMouseLeave(el)}/>
       </ul>
     );
   }
@@ -88,9 +130,9 @@ class DomItem extends React.Component {
     if (el.nodeType === Node.ELEMENT_NODE) {
       return (
         <li className={this.getClassnames()}>
-          <div className="dom-item-label" style={this.getStyle()} onMouseEnter={() => this.props.onMouseEnter(el)} onMouseLeave={() => this.props.onMouseLeave(el)}>
+          <div className="dom-item-label" style={this.getStyle()} onClick={el => this.props.onClick(el)} onMouseEnter={() => this.props.onMouseEnter(el)} onMouseLeave={() => this.props.onMouseLeave(el)}>
             <div className="dom-item-arrow" onClick={() => this.toggleOpen()}>⮞</div>
-            <div className="dom-item-name">&lt;{el.tagName.toLowerCase()}&gt;</div>
+            <div className="dom-item-name">{_el2Text(el)}</div>
           </div>
           <div className="dom-item-children">
             {el.childNodes.map((childNode, i) => <DomItem el={childNode} level={level+1} hoverEl={this.props.hoverEl} onMouseEnter={this.props.onMouseEnter} onMouseLeave={this.props.onMouseLeave} key={i}/>)}
@@ -98,14 +140,69 @@ class DomItem extends React.Component {
         </li>
       );
     } else if (el.nodeType === Node.TEXT_NODE) {
-      return (
-        <li className={this.getClassnames()} onMouseEnter={() => this.props.onMouseEnter(el)} onMouseLeave={() => this.props.onMouseLeave(el)}>
-          <div className="dom-item-text" style={this.getStyle()}>"{el.nodeValue}"</div>
-        </li>
-      );
+      if (el.value) {
+        return (
+          <li className={this.getClassnames()} onMouseEnter={() => this.props.onMouseEnter(el)} onMouseLeave={() => this.props.onMouseLeave(el)}>
+            <div className="dom-item-text" style={this.getStyle()}>"{el.value}"</div>
+          </li>
+        );
+      } else {
+        return null;
+      }
     } else {
       return null;
     }
+  }
+}
+
+class DomDetail extends React.Component {
+  /* constructor(props) {
+    super(props);
+  } */
+
+  render() {
+    const {el} = this.props;
+
+    return (
+      <div className="dom-detail">
+        <div className="dom-detail-name">{_el2Text(el)}</div>
+        {el.attrs.map(attr => <DomAttribute attr={attr} key={attr.name} />)}
+      </div>
+    );
+  }
+}
+
+class DomAttribute extends React.Component {
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      name: props.attr.name,
+      value: props.attr.value,
+    };
+  }
+
+  onNameChange(e) {
+    const name = e.target.value;
+    this.setState({
+      name,
+    });
+  }
+
+  onValueChange(e) {
+    const value = e.target.value;
+    this.setState({
+      value,
+    });
+  }
+
+  render() {
+    return (
+      <div className="dom-attribute">
+        <input type="text" className="dom-attribute-name" value={this.state.name} onChange={e => this.onNameChange(e)} />
+        <input type="text" className="dom-attribute-value" value={this.state.value} onChange={e => this.onValueChange(e)} />
+      </div>
+    );
   }
 }
 
