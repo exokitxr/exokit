@@ -12,7 +12,7 @@ class Engine extends React.Component {
       this.handleURLChange = this.handleURLChange.bind(this);
       this.state = {
         flags: [],
-        url: '',
+        url: 'https://aframe.io/a-painter/',
       };
     }
     
@@ -29,6 +29,16 @@ class Engine extends React.Component {
       };
       _postViewportMessage();
       window.addEventListener('resize', _postViewportMessage);
+      
+      window.addEventListener('keydown', e => {
+        console.log('iframe keydown ' + e.keyCode);
+      });
+      window.addEventListener('keyup', e => {
+        console.log('iframe keyup ' + e.keyCode);
+      });
+      window.addEventListener('keypress', e => {
+        console.log('iframe keypress ' + e.keyCode);
+      });
     }
 
     postMessage(action){
@@ -97,6 +107,13 @@ class Engine extends React.Component {
     blurUrlInput() {
       this.setState({urlFocus: false}, () => {
         this.postMenuStatus();
+      });
+    }
+    
+    onUrlChange(e) {
+      console.log('url change', e.target.value);
+      this.setState({
+        url: e.target.value,
       });
     }
 
@@ -192,7 +209,7 @@ class Engine extends React.Component {
                 <div className="url-item" onMouseDown={e => e.preventDefault()} onClick={() => this.open3dTab()}>3D Reality Tab</div>
                 <div className="url-item" onMouseDown={e => e.preventDefault()} onClick={() => this.open2dTab()}>2D Reality Tab</div>
               </div>
-              <input type="text" className="url-input" id="url-input" value="https://aframe.io/a-painter/" onFocus={() => this.focusUrlInput()} onBlur={() => this.blurUrlInput()}/>
+              <input type="text" className="url-input" id="url-input" value={this.state.url} onChange={e => this.onUrlChange(e)} onFocus={() => this.focusUrlInput()} onBlur={() => this.blurUrlInput()}/>
             </div>
           </div>
           <div className="engine-split">
