@@ -9,6 +9,7 @@
 .Dom > .dom-list {
   display: flex;
   flex: 1;
+  flex-direction: column;
   list-style: none;
   margin: 0;
   padding: 0;
@@ -18,7 +19,6 @@
 .Dom > .dom-list .dom-item {
   font-family: monospace;
   font-size: 11px;
-  flex: 1;
   cursor: pointer;
   user-select: none;
 }
@@ -33,8 +33,8 @@
 .Dom > .dom-list .dom-item > .dom-item-label {
   display: flex;
 }
-.Dom > .dom-list .dom-item.hover > .dom-item-label,
-.Dom > .dom-list .dom-item.hover > .dom-item-text
+.Dom > .dom-list .dom-item.highlight > .dom-item-label,
+.Dom > .dom-list .dom-item.highlight > .dom-item-text
 {
   background-color: #333;
 }
@@ -63,16 +63,22 @@
 .Dom > .dom-detail {
   display: flex;
   flex-direction: column;
-  height: 300px;
+  height: 150px;
   background-color: #444;
   border-top: 2px solid #111;
   overflow-y: auto;
 }
 .Dom > .dom-detail > .dom-detail-name {
+  font-family: monospace;
 }
 .Dom > .dom-detail > .dom-attribute {
+  display: flex;
 }
 .Dom > .dom-detail > .dom-attribute > .dom-attribute-name {
+  width: 100px;
+  font-family: monospace;
 }
 .Dom > .dom-detail > .dom-attribute > .dom-attribute-value {
+  flex: 1;
+  font-family: monospace;
 }

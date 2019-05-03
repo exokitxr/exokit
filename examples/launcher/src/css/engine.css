@@ -97,7 +97,8 @@
   flex: 1;
 }
 #Engine .engine-right {
-  min-width: 200px;
+  display: flex;
+  width: 200px;
   background-color: #222;
   border-left: 2px solid #111;
 }
