@@ -946,7 +946,7 @@ NAN_METHOD(ComposeLayers) {
             Local<Float32Array> renderWidthFloat32Array = Local<Float32Array>::Cast(xrStateObj->Get(JS_STR("renderWidth")));
             const float renderWidth = TO_FLOAT(renderWidthFloat32Array->Get(0));
             Local<Float32Array> renderHeightFloat32Array = Local<Float32Array>::Cast(xrStateObj->Get(JS_STR("renderHeight")));
-            const float renderHeight = TO_FLOAT(renderWidthFloat32Array->Get(0));
+            const float renderHeight = TO_FLOAT(renderHeightFloat32Array->Get(0));
             float leftViewport[] = {
               0,
               0,
