@@ -950,13 +950,13 @@ NAN_METHOD(ComposeLayers) {
             float leftViewport[] = {
               0,
               0,
-              renderWidth/2,
+              renderWidth,
               renderHeight,
             };
             float rightViewport[] = {
-              renderWidth/2,
+              renderWidth,
               0,
-              renderWidth/2,
+              renderWidth,
               renderHeight,
             };
 
