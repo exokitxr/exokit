@@ -953,6 +953,17 @@ const {
     scene.add(screenQuad);
     scene.children.sort((a, b) => +(a !== screenQuad) - +(b !== screenQuad));
 
+    const _objectHtml = el => ({
+      nodeType: el.nodeType || 0,
+      tagName: el.tagName || '',
+      nodeValue: el.nodeType === Node.TEXT_NODE ? el.nodeValue : '',
+      childNodes: Array.from(el.childNodes).map(_objectHtml),
+    });
+    iframe.contentWindow.postMessage({
+      method: 'dom',
+      root: _objectHtml(document.body.parentNode),
+    });
+
     iframe.contentWindow.onmessage = m => {
       switch (m.data.method) {
         case 'viewport': {
