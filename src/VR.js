@@ -3,6 +3,7 @@ const {Event} = require('./Event');
 const symbols = require('./symbols');
 const THREE = require('../lib/three-min.js');
 const {
+  nativeWindow,
   nativeOculusVR,
   nativeOpenVR,
   nativeOculusMobileVr,
