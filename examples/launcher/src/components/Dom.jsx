@@ -40,6 +40,7 @@ class Dom extends React.Component {
         ],
       },
       selectEl: null,
+      epoch: 0,
     };
   }
 
@@ -58,10 +59,12 @@ class Dom extends React.Component {
     if (this.state.selectEl !== el) {
       this.setState({
         selectEl: el,
+        epoch: this.state.epoch + 1,
       });
     } else {
       this.setState({
         selectEl: null,
+        epoch: this.state.epoch + 1,
       });
     }
   }
@@ -70,7 +73,7 @@ class Dom extends React.Component {
     return (
       <div className="Dom">
         <DomList root={this.state.root} selectEl={this.state.selectEl} onClick={el => this.onClick(el)} />
-        {this.state.selectEl ? <DomDetail el={this.state.selectEl} /> : null}
+        {this.state.selectEl ? <DomDetail el={this.state.selectEl} epoch={this.state.epoch} /> : null}
       </div>
     );
   }
@@ -79,7 +82,7 @@ class Dom extends React.Component {
 class DomList extends React.Component {
   constructor(props) {
     super(props);
-    
+
     this.state = {
       hoverEl: null,
     };
@@ -102,7 +105,7 @@ class DomList extends React.Component {
   render() {
     return (
       <ul className="dom-list">
-        <DomItem el={this.props.root} level={0} selectEl={this.props.selectEl} hoverEl={this.state.hoverEl} onClick={() => this.props.onClick(this.props.root)} onMouseEnter={el => this.onMouseEnter(el)} onMouseLeave={el => this.onMouseLeave(el)}/>
+        <DomItem el={this.props.root} level={0} selectEl={this.props.selectEl} hoverEl={this.state.hoverEl} onClick={el => this.props.onClick(el)} onMouseEnter={el => this.onMouseEnter(el)} onMouseLeave={el => this.onMouseLeave(el)}/>
       </ul>
     );
   }
@@ -151,19 +154,19 @@ class DomItem extends React.Component {
     if (el.nodeType === Node.ELEMENT_NODE) {
       return (
         <li className={this.getClassnames()}>
-          <div className="dom-item-label" style={this.getStyle()} onClick={el => this.props.onClick(el)} onMouseEnter={() => this.props.onMouseEnter(el)} onMouseLeave={() => this.props.onMouseLeave(el)}>
+          <div className="dom-item-label" style={this.getStyle()} onClick={() => this.props.onClick(el)} onMouseEnter={() => this.props.onMouseEnter(el)} onMouseLeave={() => this.props.onMouseLeave(el)}>
             <div className="dom-item-arrow" onClick={e => this.toggleOpen(e)}>⮞</div>
             <div className="dom-item-name">{_el2Text(el)}</div>
           </div>
           <div className="dom-item-children">
-            {el.childNodes.map((childNode, i) => <DomItem el={childNode} level={level+1} hoverEl={this.props.hoverEl} onMouseEnter={this.props.onMouseEnter} onMouseLeave={this.props.onMouseLeave} key={i}/>)}
+            {el.childNodes.map((childNode, i) => <DomItem el={childNode} level={level+1} selectEl={this.props.selectEl} hoverEl={this.props.hoverEl} onClick={el => this.props.onClick(el)} onMouseEnter={this.props.onMouseEnter} onMouseLeave={this.props.onMouseLeave} key={i}/>)}
           </div>
         </li>
       );
     } else if (el.nodeType === Node.TEXT_NODE) {
-      if (el.value) {
+      if (/\S/.test(el.value)) { // has non-whitespace
         return (
-          <li className={this.getClassnames()} onMouseEnter={() => this.props.onMouseEnter(el)} onMouseLeave={() => this.props.onMouseLeave(el)}>
+          <li className={this.getClassnames()} onClick={() => this.props.onClick(el)} onMouseEnter={() => this.props.onMouseEnter(el)} onMouseLeave={() => this.props.onMouseLeave(el)}>
             <div className="dom-item-text" style={this.getStyle()}>"{el.value}"</div>
           </li>
         );
@@ -187,7 +190,7 @@ class DomDetail extends React.Component {
     return (
       <div className="dom-detail">
         <div className="dom-detail-name">{el.tagName.toLowerCase()}</div>
-        {el.attrs.map(attr => <DomAttribute attr={attr} key={attr.name} />)}
+        {el.attrs.map(attr => <DomAttribute attr={attr} key={attr.name} epoch={this.props.epoch} />)}
       </div>
     );
   }
@@ -201,6 +204,16 @@ class DomAttribute extends React.Component {
       name: props.attr.name,
       value: props.attr.value,
     };
+  }
+  
+  UNSAFE_componentWillUpdate(prevProps, prevState) {
+    if (this.props.epoch !== prevProps.epoch) {
+      const {props: {attr: {name, value}}} = this;
+      this.setState({
+        name,
+        value,
+      });
+    }
   }
 
   onNameChange(e) {
