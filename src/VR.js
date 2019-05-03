@@ -641,6 +641,7 @@ const getHMDType = () => {
 const createVRDisplay = () => new FakeVRDisplay();
 
 const controllerIDs = {
+  fake: 'OpenVR Gamepad',
   openvr: 'OpenVR Gamepad',
   oculusMobile: 'Oculus Go',
   openvrTracker: 'Tracker',
