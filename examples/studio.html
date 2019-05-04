@@ -1054,6 +1054,12 @@ const {
     `); */
 
     _bindEventTarget('ui');
+    window.addEventListener('resize', e => {
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      uiIframe.width = window.innerWidth;
+      uiIframe.height = window.innerHeight;
+    });
   };
   iframe.onconsole = (message, source, line) => {
     console.log(source + ':' + line + ': ' + message);
@@ -1131,13 +1137,7 @@ const _bindEventTarget = target => {
           uiIframe.sendKeyPress(e.keyCode,{shiftKey:e.shiftKey,ctrlKey:e.ctrlKey,altKey:e.altKey});
         }
       },
-      resize(e) {
-        console.log('got resize', window.innerWidth, window.innerHeight);
-
-        uiIframe.width = window.innerWidth;
-        uiIframe.height = window.innerHeight;
-      },
-     });
+    });
   } else if (target === 'xr') {
     _bindEvents({
       /* click(e) {
