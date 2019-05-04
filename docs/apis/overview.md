@@ -3,11 +3,10 @@ title: Overview
 section_title: API
 type: api
 layout: docs
-parent_section: docs
 order: 0
+parent_section: docs
 section_order: 5
-source_code:
-examples: []
+examples:
 ---
 
 Here are the main web specifications and third-party libraries implemented in Exokit.
