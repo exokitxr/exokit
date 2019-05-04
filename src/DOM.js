@@ -266,6 +266,41 @@ class Node extends EventTarget {
     const result = _getExport(this);
     return Promise.all(promises).then(() => result);
   }
+  async applyEdit(keypath, edit) {
+    const _getDomNode = (el, i = 0) => {
+      if (i < keypath.length) {
+        const key = keypath[i];
+        const childNode = el.childNodes[key];
+        if (childNode) {
+          return _getDomNode(childNode, i+1);
+        } else {
+          return [el, keypath.slice(i)];
+        }
+      } else {
+        return [el, []];
+      }
+    };
+    const [el, remainingKeypath] = _getDomNode(this);
+    if (remainingKeypath.length === 0) {
+      const {type} = edit;
+      if (type === 'name') {
+        const {oldName, oldValue, newName} = edit;
+        el.removeAttribute(oldName);
+        el.setAttribute(newName, oldValue);
+      } else if (type === 'value') {
+        const {name, newValue} = edit;
+        el.setAttribute(name, newValue);
+      } else {
+        throw new Error(`unknown dom edit type: ${type}`);
+      }
+    } else {
+      if (el.tagName === 'IFRAME' && el.contentWindow) {
+        await el.contentWindow.evalAsync(`window.document.applyEdit(${JSON.stringify(remainingKeypath)}, ${JSON.stringify(edit)})`);
+      } else {
+        console.warn('unresolved dom edit', el, remainingKeypath);
+      }
+    }
+  }
 
   _dispatchEventOnDocumentReady() {
     if (this.ownerDocument.readyState === 'complete') {
