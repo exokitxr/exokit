@@ -45,6 +45,7 @@
 #Engine .menu .url {
   display: flex;
   position: relative;
+  margin-right: auto;
 }
 #Engine .menu .url-input {
   display: flex;
@@ -85,6 +86,27 @@
 }
 #Engine .menu .url-item:hover {
   background-color: #444;
+}
+#Engine .menu .buttons {
+  display: flex;
+}
+#Engine .menu .button {
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  background-color: #333;
+  font-size: 13px;
+  cursor: pointer;
+  user-select: none;
+}
+#Engine .menu .button:hover {
+  background-color: #444;
+}
+#Engine .menu .button > i {
+  padding-right: 7px;
+}
+#Engine .menu .button > .label {
+  font-family: monospace;
 }
 #Engine .engine-split {
   display: flex;
