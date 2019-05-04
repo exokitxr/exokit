@@ -3,7 +3,7 @@ title: Web APIs
 type: api
 layout: docs
 order: 1
-parent_section: docs
+parent_section: api
 ---
 
 ## WebVR
