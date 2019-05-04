@@ -2346,7 +2346,8 @@ class HTMLTemplateElement extends HTMLElement {
   }
 
   get content() {
-    const content = new GlobalContext.DocumentFragment();
+    const window = this.ownerDocument.defaultView;
+    const content = new window.DocumentFragment();
     content.ownerDocument = this.ownerDocument;
     content.childNodes = new NodeList(this._childNodes);
     return content;
