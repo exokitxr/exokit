@@ -243,14 +243,29 @@ class Node extends EventTarget {
     return _cloneNode(deep, this);
   }
 
-  getExport() {
-    return {
-      nodeType: this.nodeType || 0,
-      tagName: this.tagName || '',
-      value: this.value || '',
-      attrs: this.attrs || [],
-      childNodes: this.childNodes.map(childEl => childEl.getExport()),
+  requestExport() {
+    const promises = [];
+    const _getExport = el => {
+      if (el.nodeType === Node.ELEMENT_NODE && el.tagName === 'IFRAME' && el.contentWindow) {
+        const promise = el.contentWindow.evalAsync(`window.document.body.parentNode.requestExport()`)
+          .then(iframeResult => {
+            console.log('iframe result', iframeResult);
+            result.childNodes = iframeResult ? [iframeResult] : [];
+          });
+        promises.push(promise);
+      }
+
+      const result = {
+        nodeType: el.nodeType || 0,
+        tagName: el.tagName || '',
+        value: el.value || '',
+        attrs: el.attrs || [],
+        childNodes: el.childNodes.map(_getExport),
+      };
+      return result;
     };
+    const result = _getExport(this);
+    return Promise.all(promises).then(() => result);
   }
 
   _dispatchEventOnDocumentReady() {
@@ -2017,6 +2032,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                         }));
                       } : null;
                     },
+                    async evalAsync() {},
                     /* destroy() {
                       self.browser.destroy();
                       self.browser = null;
