@@ -719,11 +719,18 @@ void APIENTRY mouseButtonCB(NATIVEwindow *window, int button, int action, int mo
     double xpos, ypos;
     glfwGetCursorPos(window, &xpos, &ypos);
     
+    int localButton = button;
+    if (localButton == 2) {
+      localButton = 1;
+    } else if (localButton == 1) {
+      localButton = 2;
+    }
+
     {
       Local<Object> evt = Nan::New<Object>();
       evt->Set(JS_STR("type"),JS_STR(action ? "mousedown" : "mouseup"));
-      evt->Set(JS_STR("button"),JS_INT(button));
-      evt->Set(JS_STR("which"),JS_INT(button));
+      evt->Set(JS_STR("button"),JS_INT(localButton));
+      evt->Set(JS_STR("which"),JS_INT(localButton + 1));
       evt->Set(JS_STR("clientX"),JS_NUM(xpos));
       evt->Set(JS_STR("clientY"),JS_NUM(ypos));
       evt->Set(JS_STR("pageX"),JS_NUM(xpos));
@@ -746,8 +753,8 @@ void APIENTRY mouseButtonCB(NATIVEwindow *window, int button, int action, int mo
     if (!action) {
       Local<Object> evt = Nan::New<Object>();
       evt->Set(JS_STR("type"),JS_STR("click"));
-      evt->Set(JS_STR("button"),JS_INT(button));
-      evt->Set(JS_STR("which"),JS_INT(button));
+      evt->Set(JS_STR("button"),JS_INT(localButton));
+      evt->Set(JS_STR("which"),JS_INT(localButton + 1));
       evt->Set(JS_STR("clientX"),JS_NUM(xpos));
       evt->Set(JS_STR("clientY"),JS_NUM(ypos));
       evt->Set(JS_STR("pageX"),JS_NUM(xpos));
