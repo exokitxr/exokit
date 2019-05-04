@@ -572,6 +572,8 @@ const _openUrl = (u, position = new THREE.Vector3(), orientation = new THREE.Qua
 
   const _drawOk = () => {
     console.log('reality tab load ok: ' + u);
+
+    _pushDomUpdate();
   };
   const _drawFail = () => {
     console.log('reality tab load error: ' + u);
@@ -835,6 +837,15 @@ scene.add(directionalLight);
 
 // iframe
 
+const _pushDomUpdate = () => {
+  document.body.parentNode.requestExport()
+    .then(root => {
+      uiIframe.contentWindow.postMessage({
+        method: 'dom',
+        root,
+      });
+    });
+};
 const ScreenQuad = (() => {
 
   const defaultQuad = new THREE.PlaneBufferGeometry(2, 2, window.innerWidth, window.innerHeight);
@@ -954,11 +965,6 @@ const {
     scene.add(screenQuad);
     scene.children.sort((a, b) => +(a !== screenQuad) - +(b !== screenQuad));
 
-    iframe.contentWindow.postMessage({
-      method: 'dom',
-      root: document.body.parentNode.getExport(),
-    });
-
     iframe.contentWindow.onmessage = m => {
       switch (m.data.method) {
         case 'viewport': {
@@ -996,8 +1002,13 @@ const {
           iframe.position = position.toArray();
           iframe.orientation = quaternion.toArray();
           iframe.scale = scale.toArray();
+
           document.body.appendChild(iframe);
+
           layers.push(iframe);
+
+          _pushDomUpdate();
+
           break;
         }
         case 'eval': {
@@ -1053,6 +1064,8 @@ const {
       uiIframe.width = window.innerWidth;
       uiIframe.height = window.innerHeight;
     });
+
+    _pushDomUpdate();
   };
   iframe.onconsole = (message, source, line) => {
     console.log(source + ':' + line + ': ' + message);
