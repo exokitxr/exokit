@@ -2,6 +2,7 @@
 <html>
   <body>
     <script src="three.js"></script>
+    <script src="OrbitControls.js"></script>
     <script src="fakeDisplay.js"></script>
     <script src="keycode.js"></script>
     <script src="svg-boundings.js"></script>
@@ -10,7 +11,7 @@
     <script src="xrmp.js"></script>
     <script src="xrmp-three.js"></script>
     <script>
-let display, fakeDisplay, tabs = [], tabId = 0, xrmp, lastPresseds = [false, false], lastAxes = [[0.5, 0.5], [0.5, 0.5]], lastPadToucheds = [false, false], scrollFactors = [0, 0], scaleFactors = [1, 1], viewport = new THREE.Vector4(), composeScreenQuad;
+let display, fakeDisplay, tabs = [], tabId = 0, xrmp, lastPresseds = [false, false], lastAxes = [[0.5, 0.5], [0.5, 0.5]], lastPadToucheds = [false, false], scrollFactors = [0, 0], scaleFactors = [1, 1], viewport = new THREE.Vector4(), composeScreenQuad, orbitControls;
 
 const links = [
   {
@@ -1126,27 +1127,50 @@ const _bindEventTarget = target => {
   };
   if (target === 'ui') {
     _bindEvents({
-      mousemove(e) {
-        uiIframe.sendMouseMove(e.clientX, e.clientY);
-      },
       mousedown(e) {
+        if (!orbitControls) {
+          uiIframe.sendMouseDown(e.clientX, e.clientY, e.button);
+        }
+      },
+      mousemove(e) {
         const x = e.clientX/window.innerWidth;
         const y = 1-e.clientY/window.innerHeight;
         const minX = viewport.x;
         const minY = viewport.y;
         const maxX = viewport.x + viewport.z;
         const maxY = viewport.y + viewport.w;
-        if (x >= minX && x < maxX && y >= minY && y < maxY) {
-          console.log('hit engine render');
-        } else {
-          uiIframe.sendMouseDown(e.clientX, e.clientY, e.button);
+        const shouldOrbit = x >= minX && x < maxX && y >= minY && y < maxY && !!composeScreenQuad.parent;
+        if (shouldOrbit && !orbitControls) {
+          const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
+
+          orbitControls = new THREE.OrbitControls(camera);
+          camera.position.copy(fakeDisplay.position);
+          camera.quaternion.copy(fakeDisplay.quaternion);
+          scene.add(camera);
+          camera.updateMatrixWorld();
+          orbitControls.target.copy(camera.position).add(new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion));
+          orbitControls.update();
+
+          orbitControls.screenSpacePanning = true;
+        } else if (!shouldOrbit && orbitControls) {
+          scene.remove(orbitControls.object);
+          orbitControls.dispose();
+          orbitControls = null;
+        }
+
+        if (!orbitControls) {
+          uiIframe.sendMouseMove(e.clientX, e.clientY);
         }
       },
       mouseup(e) {
-        uiIframe.sendMouseUp(e.clientX, e.clientY, e.button);
+        if (!orbitControls) {
+          uiIframe.sendMouseUp(e.clientX, e.clientY, e.button);
+        }
       },
       wheel(e) {
-        uiIframe.sendMouseWheel(e.clientX, e.clientY, e.deltaX, -e.deltaY);
+        if (!orbitControls) {
+          uiIframe.sendMouseWheel(e.clientX, e.clientY, e.deltaX, -e.deltaY);
+        }
       },
       keydown(e) {
         if (e.keyCode === 37 && e.altKey) { // Alt-Left
@@ -2915,6 +2939,18 @@ function animateXrScene(time, frame) {
     }
   };
   _updateButtons();
+  
+  const _updateOrbitControls = () => {
+    if (orbitControls) {
+      orbitControls.update();
+
+      fakeDisplay.position.copy(orbitControls.object.position);
+      // console.log('got pos', orbitControls.object.position.toArray().join(','));
+      fakeDisplay.quaternion.copy(orbitControls.object.quaternion);
+      fakeDisplay.pushUpdate();
+    }
+  };
+  _updateOrbitControls();
 
   const _render = () => {
     renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
