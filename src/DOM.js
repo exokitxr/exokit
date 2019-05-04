@@ -1939,8 +1939,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
     this.contentWindow = null;
     this.contentDocument = null;
     this.live = true;
-    
-    this.d = null;
+
     this.browser = null;
     this.onconsole = null;
     this.xrOffset = new XRRigidTransform(); // XXX need to feed through changes to the underlying frame
@@ -2093,14 +2092,6 @@ class HTMLIFrameElement extends HTMLSrcableElement {
           this.xrOffset.scale.set(v);
           this.xrOffset.updateMatrix();
         }
-      } else if (name === 'd') {
-        if (value === '2') {
-          this.d = 2;
-        } else if (value === '3') {
-          this.d = 3;
-        } else {
-          this.d = null;
-        }
       } else if (name === 'width') {
         if (this.browser) {
           this.browser.width = this.width;
@@ -2152,7 +2143,16 @@ class HTMLIFrameElement extends HTMLSrcableElement {
       this.setAttribute('devicePixelRatio', value);
     }
   }
-  
+
+  get d() {
+    return parseInt(this.getAttribute('d') || 1 + '', 10);
+  }
+  set d(value) {
+    if (typeof value === 'number' && isFinite(value)) {
+      this.setAttribute('d', value);
+    }
+  }
+
   get texture() {
     if (this.d === 2) {
       return this.browser && this.browser.texture;
