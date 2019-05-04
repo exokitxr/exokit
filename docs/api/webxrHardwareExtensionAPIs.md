@@ -8,11 +8,11 @@ parent_section: api
 
 This currently consists of seperate device-specific APIs, but will be folded into a more generic API, properly coded in Exokit generically on the session objects rather than under a `magicleap` namespace.
 
-# Magic Leap One API
+## Magic Leap One API
 
 The Magic Leap API is exposed to sites under the `window.browser.magicleap` endpoint. This is inspired by the [WebExtension API style](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API). It is not a web standard (yet).
 
-## Classes
+**Classes:**
 
 ### `MLMesher`
 
@@ -221,7 +221,7 @@ The rotation of the eye origin as a world quaternion.
 
 Whether this eye is currently closed (`true`) or open (`false`).
 
-## Endpoints
+### Endpoints
 
 #### `browser.magicleap.RequestMeshing() : MLMesher`
 
