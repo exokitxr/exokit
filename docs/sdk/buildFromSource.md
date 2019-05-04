@@ -27,7 +27,7 @@ npm install
 
 ### Linux dependencies
 
-Linux additionally requires that you install some local dependencies. For `debian`/`ubuntu` they are:
+Linux additionally requires that you install some local dependencies. For `Debian`/`Ubuntu` they are:
 ```sh
 apt-get install -y \
 build-essential wget python libglfw3-dev libglew-dev libfreetype6-dev libfontconfig1-dev uuid-dev libxcursor-dev libxinerama-dev libxi-dev libasound2-dev libexpat1-dev
