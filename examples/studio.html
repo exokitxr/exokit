@@ -1031,6 +1031,44 @@ const {
           }
           break;
         }
+        case 'edit': {
+          const _getDomNode = (el, keypath, i = 0) => {
+            if (i < keypath.length) {
+              const key = keypath[i];
+              const childNode = el.childNodes[key];
+              if (childNode) {
+                return _getDomNode(childNode, keypath, i+1);
+              } else {
+                return [null, keypath.slice(i)];
+              }
+            } else {
+              return [el, []];
+            }
+          };
+          const {keypath} = m.data;
+          const [el, remainingKeypath] = _getDomNode(window.document.body.parentNode, keypath);
+          if (el) {
+            const {edit} = m.data;
+            const {type} = edit;
+            if (type === 'name') {
+              const {oldName, oldValue, newName} = edit;
+              el.removeAttribute(oldName);
+              el.setAttribute(newName, oldValue);
+
+              _pushDomUpdate();
+            } else if (type === 'value') {
+              const {name, newValue} = edit;
+              el.setAttribute(name, newValue);
+
+              _pushDomUpdate();
+            } else {
+              throw new Error(`unknown dom edit type: ${type}`);
+            }
+          } else {
+            console.log('edit not resolved', el, remainingKeypath);
+          }
+          break;
+        }
         default: {
           console.warn(`got unknown ui iframe message: ${m.data.method}`);
           break;
