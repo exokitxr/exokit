@@ -243,6 +243,16 @@ class Node extends EventTarget {
     return _cloneNode(deep, this);
   }
 
+  getExport() {
+    return {
+      nodeType: this.nodeType || 0,
+      tagName: this.tagName || '',
+      value: this.value || '',
+      attrs: this.attrs || [],
+      childNodes: this.childNodes.map(childEl => childEl.getExport()),
+    };
+  }
+
   _dispatchEventOnDocumentReady() {
     if (this.ownerDocument.readyState === 'complete') {
       this.dispatchEvent.apply(this, arguments);
