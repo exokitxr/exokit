@@ -249,7 +249,6 @@ class Node extends EventTarget {
       if (el.nodeType === Node.ELEMENT_NODE && el.tagName === 'IFRAME' && el.contentWindow) {
         const promise = el.contentWindow.evalAsync(`window.document.body.parentNode.requestExport()`)
           .then(iframeResult => {
-            console.log('iframe result', iframeResult);
             result.childNodes = iframeResult ? [iframeResult] : [];
           });
         promises.push(promise);
