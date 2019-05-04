@@ -268,7 +268,7 @@ class DomAttribute extends React.Component {
     return (
       <div className="dom-attribute">
         <input type="text" className="dom-attribute-name" value={this.state.name} onChange={e => this.onNameChange(e)} onBlur={e => this.onNameBlur()} />
-        <input type="text" className="dom-attribute-value" value={this.state.value} onChange={e => this.onValueChange(e)} onBlur={e => this.onNameBlur()} />
+        <input type="text" className="dom-attribute-value" value={this.state.value} onChange={e => this.onValueChange(e)} onBlur={e => this.onValueBlur()} />
       </div>
     );
   }
