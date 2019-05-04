@@ -1016,7 +1016,7 @@ class Element extends Node {
   }
 
   focus() {
-    const document = this.ownerDocument;
+    const document = this.tagName === 'DOCUMENT' ? this : this.ownerDocument;
     document.activeElement.dispatchEvent(new Event('blur', {
       target: document.activeElement,
     }));
