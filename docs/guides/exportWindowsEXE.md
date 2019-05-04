@@ -14,7 +14,7 @@ In the Exokit [`scripts/exokit.sh`](https://github.com/exokitxr/exokit/blob/mast
 ## Prerequisites
 Latest Exokit
 
-## Build exe
+## Build EXE
 
 Install and extract the necessary Node.js version
 ```sh

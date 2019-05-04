@@ -14,7 +14,7 @@ In the Exokit [`scripts/exokit-macos`](https://github.com/exokitxr/exokit/blob/m
 ## Prerequisites
 Latest Exokit
 
-## Build dmg
+## Build DMG
 
 Navigate to the Exokit directory
 ```sh

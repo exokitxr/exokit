@@ -20,10 +20,6 @@ The future is immerisve, content should be hardware agnostic, it is not possible
 ## What is WebVR/WebXR?
 The [WebXR Device API](https://github.com/immersive-web/webxr/blob/master/explainer.md) provides access to input and output capabilities commonly associated with Virtual Reality (VR) and Augmented Reality (AR) devices. It allows you develop and host VR and AR experiences on the web.
 
-
---------------------------------------------
-
-
 ## What frameworks does Exokit support?
 The Exokit Engine aspires to support any 3d web framework. Currently Exokit supports common frameworks and libraries such as THREE.js, A-Frame, Babylon.js. If your framework isn't currently supported, start a pull request or open an issue.
 
@@ -47,10 +43,6 @@ Reality Layers are [`<iframe>`](../apis/iframeAPI)'s with added ability to do vo
 ## Can reality layers interact with eachother?
 Yes, reality layers can interact with eachother via `postMessage`.
 
-
---------------------------------------------
-
-  
 ## How can I contribute to Exokit?
 The easiest way to get started is to clone the [Exokit repo](https://github.com/exokitxr/exokit) and then find [an issue](https://github.com/exokitxr/exokit/issues) that you want to take on.
 
