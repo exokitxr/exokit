@@ -971,10 +971,15 @@ const {
           viewport.set(m.data.viewport[0], 1 - m.data.viewport[1] - m.data.viewport[3], m.data.viewport[2], m.data.viewport[3]);
           break;
         }
-        case 'focus': {
-          if (m.data.target === 'engineRender') {
+        case 'click': {
+          const {target} = m.data;
+          if (target === 'fakeXr') {
             renderer.domElement.requestPointerLock();
             _bindEventTarget('xr');
+          } else if (target === 'xr') {
+            console.log('xr click');
+          } else if (target === 'transform') {
+            console.log('transform click');
           }
           break;
         }
@@ -1125,8 +1130,17 @@ const _bindEventTarget = target => {
         uiIframe.sendMouseMove(e.clientX, e.clientY);
       },
       mousedown(e) {
-        // console.log('mouse down', e.clientX, e.clientY, e.button)
-        uiIframe.sendMouseDown(e.clientX, e.clientY, e.button); 
+        const x = e.clientX/window.innerWidth;
+        const y = 1-e.clientY/window.innerHeight;
+        const minX = viewport.x;
+        const minY = viewport.y;
+        const maxX = viewport.x + viewport.z;
+        const maxY = viewport.y + viewport.w;
+        if (x >= minX && x < maxX && y >= minY && y < maxY) {
+          console.log('hit engine render');
+        } else {
+          uiIframe.sendMouseDown(e.clientX, e.clientY, e.button);
+        }
       },
       mouseup(e) {
         uiIframe.sendMouseUp(e.clientX, e.clientY, e.button);

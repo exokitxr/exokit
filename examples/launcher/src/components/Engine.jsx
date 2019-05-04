@@ -143,15 +143,29 @@ class Engine extends React.Component {
       this.blur();
     }
 
-    onEngineRenderClick() {
+    onFakeXrClick() {
       window.postMessage({
-        method: 'focus',
-        target: 'engineRender',
+        method: 'click',
+        target: 'fakeXr',
       });
       
       this.blur();
     }
     
+    onXrClick() {
+      window.postMessage({
+        method: 'click',
+        target: 'xr',
+      });
+    }
+
+    onTransformClick() {
+      window.postMessage({
+        method: 'click',
+        target: 'transform',
+      });
+    }
+
     blur() {
       this.setState({
         item: null,
@@ -180,22 +194,24 @@ class Engine extends React.Component {
               </div>
               <div>File</div>
             </div>
-            <div className={this.menuItemClassNames('import')}onClick={() => this.openMenu('import')}>
-              <div className={this.menuItemPopupClassNames('import')}>
+            <div className={this.menuItemClassNames('tabs')}onClick={() => this.openMenu('tabs')}>
+              <div className={this.menuItemPopupClassNames('tabs')}>
                 <div className="menu-item-popup-item">
-                  New A-Frame...
+                  New example...
+                  Import...
+                  Export...
                 </div>
               </div>
-              <div>Import</div>
+              <div>Tabs</div>
             </div>
-            <div className={this.menuItemClassNames('export')} onClick={() => this.openMenu('export')}>
+            {/* <div className={this.menuItemClassNames('export')} onClick={() => this.openMenu('export')}>
               <div className={this.menuItemPopupClassNames('export')}>
                 <div className="menu-item-popup-item">
                   New A-Frame...
                 </div>
               </div>
               <div>Export</div>
-            </div>
+            </div> */}
             <div className={this.menuItemClassNames('about')} onClick={() => this.openMenu('about')}>
               <div className={this.menuItemPopupClassNames('about')}>
                 <div className="menu-item-popup-item">
@@ -204,18 +220,31 @@ class Engine extends React.Component {
               </div>
               <div>About</div>
             </div>
-            <div class="url">
+            <div className="url">
               <div className={this.urlPopupClassNames()}>
                 <div className="url-item" onMouseDown={e => e.preventDefault()} onClick={() => this.open3dTab()}>3D Reality Tab</div>
                 <div className="url-item" onMouseDown={e => e.preventDefault()} onClick={() => this.open2dTab()}>2D Reality Tab</div>
               </div>
               <input type="text" className="url-input" id="url-input" value={this.state.url} onChange={e => this.onUrlChange(e)} onFocus={() => this.focusUrlInput()} onBlur={() => this.blurUrlInput()}/>
             </div>
+            <div className="buttons">
+              <div className="button" onClick={() => this.onXrClick()}>
+                <i class="fas fa-head-vr"></i>
+                <div className="label">Enter XR</div>
+              </div>
+              <div className="button" onClick={() => this.onFakeXrClick()}>
+                <i class="fal fa-vr-cardboard"></i>
+                <div className="label">Fake XR</div>
+              </div>
+              <div className="button" onClick={() => this.onTransformClick()}>
+                <i className="fal fa-arrows"></i>
+                <div className="label">Transform</div>
+              </div>
+            </div>
           </div>
           <div className="engine-split">
             <div className="engine-left">
-              <div className="engine-render" id="engine-render" onClick={() => this.onEngineRenderClick()}>
-              </div>
+              <div className="engine-render" id="engine-render"/>
               <Console/>
             </div>
             <div className="engine-right">
