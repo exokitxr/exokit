@@ -553,6 +553,7 @@ const _getFrontOfCamera = () => {
     localVector2.set(0, 0, -1.5)
       .applyQuaternion(localQuaternion)
   );
+  localVector2.set(1, 1, 1);
 
   return {
     position: localVector.clone(),
@@ -1485,8 +1486,8 @@ const _makeRig = () => {
           _updateText();
         } else if (code === 13) { // enter
           const u = (optionsMesh.d === 3 && urlMesh.urlState.text === DEFAULT_URL) ? 'realitytab.html?color=29b6f6' : urlMesh.urlState.text;
-          const {position, quaternion} = _getFrontOfCamera();
-          _openUrl(u, position, quaternion, undefined, optionsMesh.d);
+          const {position, quaternion, scale} = _getFrontOfCamera();
+          _openUrl(u, position, quaternion, scale, optionsMesh.d);
           _updateRigLists();
         } else if (
           code === 9 || // tab
@@ -2092,10 +2093,11 @@ const _makeRig = () => {
 const rig = _makeRig();
 scene.add(rig);
 
-const _openRig = (position, quaternion) => {
+const _openRig = (position, quaternion, scale) => {
   if (!rig.open) {
     rig.position.copy(position);
     rig.quaternion.copy(quaternion);
+    rig.scale.copy(scale);
 
     rig.open = true;
   } else {
@@ -2575,9 +2577,9 @@ function animateXrScene(time, frame) {
                           if (iframe.d === 3) {
                             window.browser.devTools.requestDevTools(iframe.contentWindow, document)
                               .then(devTools => {
-                                const {position, quaternion} = _getFrontOfCamera();
+                                const {position, quaternion, scale} = _getFrontOfCamera();
                                 // position.add(localVector.set(0, -0.3, 0).applyQuaternion(quaternion));
-                                _addTab(devTools.getIframe(), position, quaternion, undefined, 2);
+                                _addTab(devTools.getIframe(), position, quaternion, scale, 2);
                               })
                               .catch(err => {
                                 console.warn(err.stack);
@@ -2669,8 +2671,8 @@ function animateXrScene(time, frame) {
                         const link = localLinks[j];
                         const {url} = link;
 
-                        const {position, quaternion} = _getFrontOfCamera();
-                        _openUrl(url, position, quaternion, undefined, menuMesh.optionsMesh.d);
+                        const {position, quaternion, scale} = _getFrontOfCamera();
+                        _openUrl(url, position, quaternion, scale, menuMesh.optionsMesh.d);
 
                         menuMesh.optionsMesh.list = 'tabs';
                         menuMesh.optionsMesh.updateOptions();
@@ -2844,8 +2846,8 @@ function animateXrScene(time, frame) {
                   rig.menuMesh.urlMesh.handleKey(code, false);
                 } else {
                   const u = (optionsMesh.d === 3 && urlMesh.urlState.text === DEFAULT_URL) ? 'realitytab.html?color=29b6f6' : urlMesh.urlState.text;
-                  const {position, quaternion} = _getFrontOfCamera();
-                  _openUrl(u, position, quaternion, undefined, optionsMesh.d);
+                  const {position, quaternion, scale} = _getFrontOfCamera();
+                  _openUrl(u, position, quaternion, scale, optionsMesh.d);
                   _updateRigLists();
                 }
               } else if (focusedTab.iframe) {
@@ -2869,12 +2871,12 @@ function animateXrScene(time, frame) {
           const lastBumper = lastButtons[i].bumper;
 
           if (bumper && !lastBumper) {
-            const {position, quaternion} = _getFrontOfCamera();
+            const {position, quaternion, scale} = _getFrontOfCamera();
             localEuler.setFromQuaternion(quaternion, localEuler.order);
             localEuler.x = 0;
             localEuler.z = 0;
             quaternion.setFromEuler(localEuler);
-            _openRig(position, quaternion);
+            _openRig(position, quaternion, scale);
           }
 
           lastButtons[i].bumper = bumper;
