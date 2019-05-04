@@ -452,7 +452,7 @@
                 'libraries': [
                   "-Wl,-rpath,<!(node -e \"console.log(require.resolve('native-audio-deps').slice(0, -9) + '/lib/macos')\")",
                   "-Wl,-rpath,<!(node -e \"console.log(require.resolve('native-video-deps').slice(0, -9) + '/lib/macos')\")",
-                  "-Wl,-rpath,<!(node -e \"console.log(require.resolve('native-browser-deps-macos').slice(0, -9) + '/lib3/macos')\")",
+                  "-Wl,-rpath,./node_modules/native-browser-deps-macos/lib3/macos",
                   "-Wl,-rpath,<!(node -e \"console.log(require.resolve('native-webrtc-deps').slice(0, -9) + '/lib/macos')\")",
                   "-framework 'Chromium Embedded Framework'",
                   "-Wl,-rpath,<!(node -e \"console.log(require.resolve('native-openvr-deps').slice(0, -9) + '/bin/osx64')\")",
