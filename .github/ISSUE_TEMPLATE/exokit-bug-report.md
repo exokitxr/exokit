@@ -1,5 +1,5 @@
 ---
-name: Exokit Desktop Bug report
+name: Exokit Bug report
 about: File an issue to help us improve
 title: ''
 labels: bug
@@ -8,7 +8,7 @@ assignees: ''
 ---
 
 **Describe the bug**
- What happened, and what did you expect to happen?
+What happened, and what did you expect to happen?
  
  
 **To Reproduce**
