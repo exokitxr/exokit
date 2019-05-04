@@ -620,11 +620,17 @@ void APIENTRY cursorEnterCB(NATIVEwindow* window, int entered) {
 void APIENTRY mouseButtonCB(NATIVEwindow *window, int button, int action, int mods) {
   Nan::HandleScope scope;
 
+  if (button == 2) {
+    button = 1;
+  } else if (button == 1) {
+    button = 2;
+  }
+
   {
     Local<Object> evt = Nan::New<Object>();
     evt->Set(JS_STR("type"),JS_STR(action ? "mousedown" : "mouseup"));
     evt->Set(JS_STR("button"),JS_INT(button));
-    evt->Set(JS_STR("which"),JS_INT(button));
+    evt->Set(JS_STR("which"),JS_INT(button + 1));
     evt->Set(JS_STR("clientX"),JS_INT(lastX));
     evt->Set(JS_STR("clientY"),JS_INT(lastY));
     evt->Set(JS_STR("pageX"),JS_INT(lastX));
@@ -648,7 +654,7 @@ void APIENTRY mouseButtonCB(NATIVEwindow *window, int button, int action, int mo
     Local<Object> evt = Nan::New<Object>();
     evt->Set(JS_STR("type"),JS_STR("click"));
     evt->Set(JS_STR("button"),JS_INT(button));
-    evt->Set(JS_STR("which"),JS_INT(button));
+    evt->Set(JS_STR("which"),JS_INT(button + 1));
     evt->Set(JS_STR("clientX"),JS_INT(lastX));
     evt->Set(JS_STR("clientY"),JS_INT(lastY));
     evt->Set(JS_STR("pageX"),JS_INT(lastX));
