@@ -10,10 +10,10 @@ section_order: 2
 
 This guide explains how to package your XR site with the Exokit Engine as an APK for Oculus Mobile (Oculus Go, Oculus Quest) devices.
 
-## Set default site
+### Set default site
 In the Exokit [`main.cpp`](https://github.com/exokitxr/exokit/blob/f10dadf0013de0a35a5e72046140a0345987ab80/main.cpp#L416) is where you will find the default site that the Exokit APK will load into. Change the `jsString` to your site URL or file path.
 
-# OPTION 1- Docker
+## OPTION 1- Docker
 The upside of docker is that it requires minimal environment setup. The downside is that is will do _every_ instruction _everytime_ it is ran.
 
 Building an APK with the Dockerfile is as simple as:
@@ -23,12 +23,12 @@ Building an APK with the Dockerfile is as simple as:
 - `docker run exokit cat exokit.apk >exokit.apk`
 
 
-# OPTION 2- Manual environment setup
+## OPTION 2- Manual environment setup
 
-## Prerequisites
+### Prerequisites
 Node `11.6.0`
 
-## Install Android sdkmanager
+### Install Android sdkmanager
 
 Instructions for getting the android sdk manager, adb, ndk-bundle, etc:
 
@@ -85,7 +85,7 @@ to install NDK directly run
 
 `sdkmanager "ndk-bundle"`
 
-## Build APK
+### Build APK
 
 Confirm that `$ANDROID_HOME` points to Android/Sdk directory
 
