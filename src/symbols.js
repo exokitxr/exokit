@@ -1,3 +1,4 @@
+module.exports.windowSymbol = Symbol();
 module.exports.addRunSymbol = Symbol();
 module.exports.computedStyleSymbol = Symbol();
 module.exports.disabledEventsSymbol = Symbol();
