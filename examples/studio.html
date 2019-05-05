@@ -1155,7 +1155,7 @@ const _bindEventTarget = target => {
           }
 
           {
-            transformControls = new THREE.TransformControls(renderer.vr.enabled ? renderer.vr.getCamera(camera).cameras[0] : camera, undefined, viewport);
+            transformControls = new THREE.TransformControls(renderer.vr.enabled ? renderer.vr.getCamera(camera).cameras[0] : camera, document.body, viewport);
 
             transformControls.addEventListener('dragging-changed', event => {
               orbitControls.enabled = !event.value;
