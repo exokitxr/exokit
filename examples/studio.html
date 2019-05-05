@@ -3,6 +3,7 @@
   <body>
     <script src="three.js"></script>
     <script src="OrbitControls.js"></script>
+    <script src="TransformControls.js"></script>
     <script src="fakeDisplay.js"></script>
     <script src="keycode.js"></script>
     <script src="svg-boundings.js"></script>
@@ -11,7 +12,7 @@
     <script src="xrmp.js"></script>
     <script src="xrmp-three.js"></script>
     <script>
-let display, fakeDisplay, tabs = [], tabId = 0, xrmp, lastPresseds = [false, false], lastAxes = [[0.5, 0.5], [0.5, 0.5]], lastPadToucheds = [false, false], scrollFactors = [0, 0], scaleFactors = [1, 1], viewport = new THREE.Vector4(), composeScreenQuad, orbitControls;
+let display, fakeDisplay, tabs = [], tabId = 0, xrmp, lastPresseds = [false, false], lastAxes = [[0.5, 0.5], [0.5, 0.5]], lastPadToucheds = [false, false], scrollFactors = [0, 0], scaleFactors = [1, 1], viewport = new THREE.Vector4(), composeScreenQuad, orbitControls, transformControls;
 
 const links = [
   {
@@ -1141,21 +1142,40 @@ const _bindEventTarget = target => {
         const maxY = viewport.y + viewport.w;
         const shouldOrbit = x >= minX && x < maxX && y >= minY && y < maxY && !!composeScreenQuad.parent;
         if (shouldOrbit && !orbitControls) {
-          const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
+          {
+            const orbitCamera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
+            orbitControls = new THREE.OrbitControls(orbitCamera);
+            orbitCamera.position.copy(fakeDisplay.position);
+            orbitCamera.quaternion.copy(fakeDisplay.quaternion);
+            scene.add(orbitCamera);
+            orbitCamera.updateMatrixWorld();
+            orbitControls.target.copy(orbitCamera.position).add(new THREE.Vector3(0, 0, -1).applyQuaternion(orbitCamera.quaternion));
+            orbitControls.screenSpacePanning = true;
+            orbitControls.update();
+          }
 
-          orbitControls = new THREE.OrbitControls(camera);
-          camera.position.copy(fakeDisplay.position);
-          camera.quaternion.copy(fakeDisplay.quaternion);
-          scene.add(camera);
-          camera.updateMatrixWorld();
-          orbitControls.target.copy(camera.position).add(new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion));
-          orbitControls.update();
+          {
+            transformControls = new THREE.TransformControls(renderer.vr.enabled ? renderer.vr.getCamera(camera).cameras[0] : camera, undefined, viewport);
 
-          orbitControls.screenSpacePanning = true;
+            transformControls.addEventListener('dragging-changed', event => {
+              orbitControls.enabled = !event.value;
+            });
+
+            const mesh = new THREE.Object3D();
+            scene.add(mesh);
+
+            transformControls.attach(mesh);
+            scene.add(transformControls);
+          }
         } else if (!shouldOrbit && orbitControls) {
           scene.remove(orbitControls.object);
           orbitControls.dispose();
           orbitControls = null;
+
+          scene.remove(transformControls.object);
+          scene.remove(transformControls);
+          transformControls.dispose();
+          transformControls = null;
         }
 
         if (!orbitControls) {
