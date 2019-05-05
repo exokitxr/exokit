@@ -1075,6 +1075,11 @@ const {
             });
           break;
         }
+        case 'setting': {
+          const {key, value} = m.data;
+          window.settings.setSetting(key, value);
+          break;
+        }
         default: {
           console.warn(`got unknown ui iframe message: ${m.data.method}`);
           break;

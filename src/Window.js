@@ -970,6 +970,11 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     monitors: new MonitorManager(),
     inspect: util.inspect,
   };
+  window.settings = {
+    setSetting(key, value) {
+      args[key] = value;
+    },
+  };
   window.DOMParser = class DOMParser {
     parseFromString(htmlString, type) {
       const _recurse = node => {
