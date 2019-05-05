@@ -59,6 +59,13 @@
   background-color: #444;
   border-bottom-color: #9ccc65;
 }
+#Engine .menu .menu-item .menu-item-popup .menu-item-popup-items {
+  display: none;
+  flex-direction: column;
+}
+#Engine .menu .menu-item .menu-item-popup .menu-item-popup-items.open {
+  display: flex;
+}
 #Engine .menu .menu-item > i {
   font-size: 14px;
 }

@@ -16,74 +16,91 @@ let display, fakeDisplay, tabs = [], tabId = 0, xrmp, lastPresseds = [false, fal
 
 const links = [
   {
+    id: 'kitchenSink',
     name: 'Kitchen sink',
     url: 'hello_ml.html',
   },
   {
+    id: 'tutorial',
     name: 'Tutorial',
     url: 'tutorial.html',
   },
   {
+    id: 'exobot',
     name: 'Exobot',
     url: 'exobot.html',
   },
   {
+    id: 'meshing',
     name: 'Meshing',
     url: 'meshing_ml.html',
   },
   {
+    id: 'planes',
     name: 'Planes',
     url: 'planes_ml.html',
   },
   {
+    id: 'paint',
     name: 'Paint',
     url: 'paint_ml.html',
   },
   {
+    id: 'graffiti',
     name: 'Graffiti',
     url: 'graffiti_ml.html',
   },
   {
+    id: 'hands',
     name: 'Hands',
     url: 'hands_ml.html',
   },
   {
+    id: 'minimap',
     name: 'Minimap',
     url: 'minimap_ml.html',
   },
   {
+    id: 'avatar',
     name: 'Avatar',
     url: 'avatar_ml.html',
   },
   {
+    id: 'shooter',
     name: 'Shooter',
     url: 'shooter_ml.html',
   },
   {
+    id: 'sword',
     name: 'Sword',
     url: 'sword_ml.html',
   },
   {
+    id: 'bow',
     name: 'Bow',
     url: 'bow_ml.html',
   },
   {
+    id: 'pathfinding',
     name: 'Pathfinding',
     url: 'pathfinding_ml.html',
   },
   {
+    id: 'radar',
     name: 'Radar',
     url: 'radar_ml.html',
   },
   {
+    id: 'imageTracking',
     name: 'Image tracking',
     url: 'imagetracking_ml.html',
   },
   {
+    id: 'microphone',
     name: 'Microphone',
     url: 'microphone.html',
   },
-].map(({name, url}) => ({name, url, iconMesh: null}));
+].map(({id, name, url}) => ({id, name, url, iconMesh: null}));
 let servers = [];
 let serversLoading = false;
 let serverConnectedUrl = null;
@@ -1000,26 +1017,16 @@ const {
         }
         case 'open': {
           const {url, d} = m.data;
-          console.log('loading iframe', {url, d});
-          const iframe = document.createElement('iframe');
-          iframe.d = d;
-          iframe.src = url;
-          iframe.onload = () => {
-            console.log('loaded iframe', url);
-          };
-          iframe.onerror = err => {
-            console.warn(err.stack);
-          };
           const {position, quaternion, scale} = _getFrontOfCamera();
-          iframe.position = position.toArray();
-          iframe.orientation = quaternion.toArray();
-          iframe.scale = scale.toArray();
+          _openUrl(url, position, quaternion, scale, d);
 
-          document.body.appendChild(iframe);
-
-          layers.push(iframe);
-
-          _pushDomUpdate();
+          break;
+        }
+        case 'add': {
+          const {template} = m.data;
+          const url = links.find(link => link.id === template).url;
+          const {position, quaternion, scale} = _getFrontOfCamera();
+          _openUrl(url, position, quaternion, scale, 3);
 
           break;
         }
