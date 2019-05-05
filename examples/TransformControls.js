@@ -2,7 +2,7 @@
  * @author arodic / https://github.com/arodic
  */
 
-THREE.TransformControls = function ( camera, domElement ) {
+THREE.TransformControls = function ( camera, domElement, viewport ) {
 
 	THREE.Object3D.call( this );
 
@@ -204,7 +204,7 @@ THREE.TransformControls = function ( camera, domElement ) {
 
 		}
 
-		this.camera.updateMatrixWorld();
+		// this.camera.updateMatrixWorld();
 		this.camera.matrixWorld.decompose( cameraPosition, cameraQuaternion, cameraScale );
 
 		if ( this.camera instanceof THREE.PerspectiveCamera ) {
@@ -225,6 +225,7 @@ THREE.TransformControls = function ( camera, domElement ) {
 
 		if ( this.object === undefined || this.dragging === true || ( pointer.button !== undefined && pointer.button !== 0 ) ) return;
 
+		this.camera.matrixWorld.decompose(this.camera.position, this.camera.quaternion, this.camera.scale);
 		ray.setFromCamera( pointer, this.camera );
 
 		var intersect = ray.intersectObjects( _gizmo.picker[ this.mode ].children, true )[ 0 ] || false;
@@ -517,10 +518,16 @@ THREE.TransformControls = function ( camera, domElement ) {
 		var pointer = event.changedTouches ? event.changedTouches[ 0 ] : event;
 
 		var rect = domElement.getBoundingClientRect();
+		rect.left += viewport.x*rect.width;
+		rect.top += (1-(viewport.y+viewport.w))*rect.height;
+		rect.width *= viewport.z;
+		rect.height *= viewport.w;
 
 		return {
-			x: ( pointer.clientX - rect.left ) / rect.width * 2 - 1,
-			y: - ( pointer.clientY - rect.top ) / rect.height * 2 + 1,
+			x: ((( pointer.clientX - rect.left ) / rect.width) % 0.5 * 2)
+				* 2 - 1,
+			y: (- ( pointer.clientY - rect.top ) / rect.height)
+				* 2 + 1,
 			button: event.button
 		};
 
@@ -631,16 +638,16 @@ THREE.TransformControlsGizmo = function () {
 	// shared materials
 
 	var gizmoMaterial = new THREE.MeshBasicMaterial({
-		depthTest: false,
-		depthWrite: false,
+		// depthTest: false,
+		// depthWrite: false,
 		transparent: true,
 		side: THREE.DoubleSide,
 		fog: false
 	});
 
 	var gizmoLineMaterial = new THREE.LineBasicMaterial({
-		depthTest: false,
-		depthWrite: false,
+		// depthTest: false,
+		// depthWrite: false,
 		transparent: true,
 		linewidth: 1,
 		fog: false
@@ -745,17 +752,17 @@ THREE.TransformControlsGizmo = function () {
 	var gizmoTranslate = {
 		X: [
 			[ new THREE.Mesh( arrowGeometry, matRed ), [ 1, 0, 0 ], [ 0, 0, -Math.PI / 2 ], null, 'fwd' ],
-			[ new THREE.Mesh( arrowGeometry, matRed ), [ 1, 0, 0 ], [ 0, 0, Math.PI / 2 ], null, 'bwd' ],
+			// [ new THREE.Mesh( arrowGeometry, matRed ), [ 1, 0, 0 ], [ 0, 0, Math.PI / 2 ], null, 'bwd' ],
 			[ new THREE.Line( lineGeometry, matLineRed ) ]
 		],
 		Y: [
 			[ new THREE.Mesh( arrowGeometry, matGreen ), [ 0, 1, 0 ], null, null, 'fwd' ],
-			[ new THREE.Mesh( arrowGeometry, matGreen ), [ 0, 1, 0 ], [ Math.PI, 0, 0 ], null, 'bwd' ],
+			// [ new THREE.Mesh( arrowGeometry, matGreen ), [ 0, 1, 0 ], [ Math.PI, 0, 0 ], null, 'bwd' ]
 			[ new THREE.Line( lineGeometry, matLineGreen ), null, [ 0, 0, Math.PI / 2 ] ]
 		],
 		Z: [
 			[ new THREE.Mesh( arrowGeometry, matBlue ), [ 0, 0, 1 ], [ Math.PI / 2, 0, 0 ], null, 'fwd' ],
-			[ new THREE.Mesh( arrowGeometry, matBlue ), [ 0, 0, 1 ], [ -Math.PI / 2, 0, 0 ], null, 'bwd' ],
+			// [ new THREE.Mesh( arrowGeometry, matBlue ), [ 0, 0, 1 ], [ -Math.PI / 2, 0, 0 ], null, 'bwd' ],
 			[ new THREE.Line( lineGeometry, matLineBlue ), null, [ 0, -Math.PI / 2, 0 ] ]
 		],
 		XYZ: [
@@ -1074,17 +1081,18 @@ THREE.TransformControlsGizmo = function () {
 			// hide aligned to camera
 
 			handle.visible = true;
+			handle.frustumCulled = false;
 			handle.rotation.set( 0, 0, 0 );
 			handle.position.copy( this.worldPosition );
 
-			var eyeDistance = this.worldPosition.distanceTo( this.cameraPosition);
-			handle.scale.set( 1, 1, 1 ).multiplyScalar( eyeDistance * this.size / 7 );
+			// var eyeDistance = this.worldPosition.distanceTo( this.cameraPosition);
+			// handle.scale.set( 1, 1, 1 ).multiplyScalar( eyeDistance * this.size / 7 );
 
 			// TODO: simplify helpers and consider decoupling from gizmo
 
 			if ( handle.tag === 'helper' ) {
 
-				handle.visible = false;
+				// handle.visible = false;
 
 				if ( handle.name === 'AXIS' ) {
 
@@ -1096,9 +1104,9 @@ THREE.TransformControlsGizmo = function () {
 						tempQuaternion.setFromEuler( tempEuler.set( 0, 0, 0 ) );
 						handle.quaternion.copy( quaternion ).multiply( tempQuaternion );
 
-						if ( Math.abs( alignVector.copy( unitX ).applyQuaternion( quaternion ).dot( this.eye ) ) > 0.9 ) {
+						/* if ( Math.abs( alignVector.copy( unitX ).applyQuaternion( quaternion ).dot( this.eye ) ) > 0.9 ) {
 							handle.visible = false;
-						}
+						} */
 
 					}
 
@@ -1107,9 +1115,9 @@ THREE.TransformControlsGizmo = function () {
 						tempQuaternion.setFromEuler( tempEuler.set( 0, 0, Math.PI / 2 ) );
 						handle.quaternion.copy( quaternion ).multiply( tempQuaternion );
 
-						if ( Math.abs( alignVector.copy( unitY ).applyQuaternion( quaternion ).dot( this.eye ) ) > 0.9 ) {
+						/* if ( Math.abs( alignVector.copy( unitY ).applyQuaternion( quaternion ).dot( this.eye ) ) > 0.9 ) {
 							handle.visible = false;
-						}
+						} */
 
 					}
 
@@ -1118,9 +1126,9 @@ THREE.TransformControlsGizmo = function () {
 						tempQuaternion.setFromEuler( tempEuler.set( 0, Math.PI / 2, 0 ) );
 						handle.quaternion.copy( quaternion ).multiply( tempQuaternion );
 
-						if ( Math.abs( alignVector.copy( unitZ ).applyQuaternion( quaternion ).dot( this.eye ) ) > 0.9 ) {
+						/* if ( Math.abs( alignVector.copy( unitZ ).applyQuaternion( quaternion ).dot( this.eye ) ) > 0.9 ) {
 							handle.visible = false;
-						}
+						} */
 
 					}
 
@@ -1130,26 +1138,27 @@ THREE.TransformControlsGizmo = function () {
 						alignVector.copy( this.rotationAxis );
 						handle.quaternion.setFromRotationMatrix( lookAtMatrix.lookAt( zeroVector, alignVector, unitY ) );
 						handle.quaternion.multiply( tempQuaternion );
-						handle.visible = this.dragging;
+						// handle.visible = this.dragging;
 
 					}
 
-					if ( this.axis === 'E' ) {
+					/* if ( this.axis === 'E' ) {
 
 						handle.visible = false;
 
-					}
+					} */
 
 
 				} else if ( handle.name === 'START' ) {
 
 					handle.position.copy( this.worldPositionStart );
-					handle.visible = this.dragging;
+
+					// handle.visible = this.dragging;
 
 				} else if ( handle.name === 'END' ) {
 
 					handle.position.copy( this.worldPosition );
-					handle.visible = this.dragging;
+					// handle.visible = this.dragging;
 
 				} else if ( handle.name === 'DELTA' ) {
 
@@ -1158,7 +1167,7 @@ THREE.TransformControlsGizmo = function () {
 					tempVector.set( 1e-10, 1e-10, 1e-10 ).add( this.worldPositionStart ).sub( this.worldPosition ).multiplyScalar( -1 );
 					tempVector.applyQuaternion( this.worldQuaternionStart.clone().inverse() );
 					handle.scale.copy( tempVector );
-					handle.visible = this.dragging;
+					// handle.visible = this.dragging;
 
 				} else {
 
@@ -1193,7 +1202,7 @@ THREE.TransformControlsGizmo = function () {
 
 			if ( this.mode === 'translate' || this.mode === 'scale' ) {
 
-				// Hide translate and scale axis facing the camera
+				/* // Hide translate and scale axis facing the camera
 
 				var AXIS_HIDE_TRESHOLD = 0.99;
 				var PLANE_HIDE_TRESHOLD = 0.2;
@@ -1273,7 +1282,7 @@ THREE.TransformControlsGizmo = function () {
 					} else if ( handle.tag === 'bwd' ) {
 						handle.visible = false;
 					}
-				}
+				} */
 
 			} else if ( this.mode === 'rotate' ) {
 
