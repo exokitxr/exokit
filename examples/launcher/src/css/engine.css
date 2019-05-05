@@ -4,6 +4,7 @@
   flex: 1;
   color: white;
 }
+
 #Engine .menu {
   background-color: #333;
 }
@@ -23,6 +24,7 @@
 #Engine .menu .menu-item.open {
   background-color: #666;
 }
+
 #Engine .menu .menu-item .menu-item-popup {
   display: none;
   position: absolute;
@@ -66,6 +68,7 @@
 #Engine .menu .menu-item .menu-item-popup .menu-item-popup-items.open {
   display: flex;
 }
+
 #Engine .menu .menu-item > i {
   font-size: 14px;
 }
@@ -135,6 +138,50 @@
 #Engine .menu .button > .label {
   font-family: monospace;
 }
+
+#Engine .settings {
+  display: none;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  justify-content: center;
+  align-items: center;
+}
+#Engine .settings.open {
+  display: flex;
+}
+#Engine .settings > .settings-background {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+#Engine .settings > .settings-foreground {
+  position: relative;
+  width: 500px;
+  padding: 30px;
+  background-color: #FFF;
+  border-radius: 5px;
+  color: #333;
+  z-index: 1;
+}
+#Engine .settings > .settings-foreground > .title {
+  margin-bottom: 20px;
+  font-size: 30px;
+}
+#Engine .settings > .settings-foreground > label {
+  display: flex;
+  align-items: center;
+  user-select: none;
+}
+#Engine .settings > .settings-foreground > label > input[type="radio"] {
+  margin-right: 5px;
+}
+
 #Engine .engine-split {
   display: flex;
   flex: 1;

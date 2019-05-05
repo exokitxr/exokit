@@ -4,7 +4,6 @@ import Console from './Console';
 import '../css/engine.css';
 
 class Engine extends React.Component {
-
     constructor(props) {
       super(props);
       this.postMessage = this.postMessage.bind(this);
@@ -13,6 +12,8 @@ class Engine extends React.Component {
       this.state = {
         flags: [],
         item: null,
+        settings: null,
+        urlFocus: false,
         addTab: 'template',
         url: 'https://aframe.io/a-painter/',
       };
@@ -113,6 +114,15 @@ class Engine extends React.Component {
       });
     }
     
+    openSettings(settings) {
+      this.setState({
+        item: null,
+        settings,
+      }, () => {
+        this.postMenuStatus();
+      });
+    }
+    
     openAddTab(e, addTab) {
       this.setState({
         addTab,
@@ -207,16 +217,10 @@ class Engine extends React.Component {
       });
     }
 
-    /* onSettingsClick() {
-      window.postMessage({
-        method: 'click',
-        target: 'settings',
-      });
-    } */
-
     blur() {
       this.setState({
         item: null,
+        settings: null,
         urlFocus: false,
       }, () => {
         this.postMenuStatus();
@@ -226,7 +230,7 @@ class Engine extends React.Component {
     postMenuStatus() {
       window.postMessage({
         method: 'menu',
-        open: this.state.urlFocus || this.state.item !== null,
+        open: this.state.item !== null || this.state.settings !== null || this.state.urlFocus,
       });
     }
 
@@ -244,8 +248,8 @@ class Engine extends React.Component {
             </div>
             <div className={this.menuItemClassNames('settings')}onClick={() => this.openMenu('settings')}>
               <div className={this.menuItemPopupClassNames('settings')}>
-                <div className="menu-item-popup-item">Preferences...</div>
-                <div className="menu-item-popup-item">SDK Paths...</div>
+                <div className="menu-item-popup-item" onClick={() => this.openSettings('settings')}>Settings...</div>
+                <div className="menu-item-popup-item" onClick={() => this.openSettings('sdkPaths')}>SDK Paths...</div>
               </div>
               <i class="fal fa-cogs"/>
               {/* <div>Settings</div> */}
@@ -314,6 +318,7 @@ class Engine extends React.Component {
               </div>
             </div>
           </div>
+          <Settings settings={this.state.settings === 'settings'} open={!!this.state.settings} close={() => this.openSettings(null)}/>
           <div className="engine-split">
             <div className="engine-left">
               <div className="engine-render" id="engine-render"/>
@@ -328,4 +333,48 @@ class Engine extends React.Component {
     }
   }
 
-  export default Engine;
+class Settings extends React.Component {
+  constructor(props) {
+    super(props);
+    
+    this.state = {
+      xr: 'all',
+    };
+  }
+  
+  classNames() {
+    const classNames = ['settings'];
+    if (this.props.open) {
+      classNames.push('open');
+    }
+    return classNames.join(' ');
+  }
+  
+  onChange(value) {
+    this.setState({
+      xr: value,
+    });
+
+    window.postMessage({
+      method: 'setting',
+      key: 'xr',
+      value,
+    });
+  }
+  
+  render() {
+    return (
+      <div className={this.classNames()}>
+        <div className="settings-background" onClick={() => this.props.close()}></div>
+        <div className="settings-foreground">
+          <div className="title">Settings</div>
+          <label><input type="radio" name="xr" value="all" checked={this.state.xr === 'all'} onChange={e => e.target.value ? this.onChange('all') : null} /><span>All</span></label>
+          <label><input type="radio" name="xr" value="webxr" checked={this.state.xr === 'webxr'} onChange={e => e.target.value ? this.onChange('webxr') : null} /><span>WebXR</span></label>
+          <label><input type="radio" name="xr" value="webvr" checked={this.state.xr === 'webvr'} onChange={e => e.target.value ? this.onChange('webvr') : null} /><span>WebVR</span></label>
+        </div>
+      </div>
+    );
+  }
+}
+
+export default Engine;
