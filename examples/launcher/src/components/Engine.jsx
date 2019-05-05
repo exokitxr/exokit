@@ -89,6 +89,14 @@ class Engine extends React.Component {
       }
       return classNames.join(' ');
     }
+    
+    menuItemPopupItemsClassNames(addTab) {
+      const classNames = ['menu-item-popup-items'];
+      if (addTab === this.state.addTab) {
+        classNames.push('open');
+      }
+      return classNames.join(' ');
+    }
 
     urlPopupClassNames() {
       const classNames = ['url-popup'];
@@ -173,6 +181,15 @@ class Engine extends React.Component {
 
       this.blur();
     }
+    
+    addTemplate(template) {
+      window.postMessage({
+        method: 'add',
+        template,
+      });
+
+      this.blur();
+    }
 
     onFakeXrClick() {
       window.postMessage({
@@ -247,17 +264,41 @@ class Engine extends React.Component {
                   <div className={this.addTabClassNames('template')} onClick={e => this.openAddTab(e, 'template')}>Template</div>
                   <div className={this.addTabClassNames('examples')} onClick={e => this.openAddTab(e, 'examples')}>Examples</div>
                 </div>
-                <div className="menu-item-popup-item">
-                  <i className="fal fa-file"></i>
-                  <div className="label">Blank layer</div>
+                <div className={this.menuItemPopupItemsClassNames('template')}>
+                  <div className="menu-item-popup-item" onClick={() => this.addTemplate('blank')}>
+                    <i className="fal fa-file"></i>
+                    <div className="label">Blank layer</div>
+                  </div>
+                  <div className="menu-item-popup-item" onClick={() => this.addTemplate('aframe')}>
+                    <i className="fab fa-autoprefixer"/>
+                    <div className="label">A-Frame layer</div>
+                  </div>
+                  <div className="menu-item-popup-item" onClick={() => this.addTemplate('babylon')}>
+                    <i className="fab fa-btc"/>
+                    <div className="label">Babylon.js layer</div>
+                  </div>
                 </div>
-                <div className="menu-item-popup-item">
-                  <i className="fab fa-autoprefixer"/>
-                  <div className="label">A-Frame layer</div>
-                </div>
-                <div className="menu-item-popup-item">
-                  <i className="fab fa-btc"/>
-                  <div className="label">Babylon.js layer</div>
+                <div className={this.menuItemPopupItemsClassNames('examples')}>
+                  <div className="menu-item-popup-item" onClick={() => this.addTemplate('kitchenSink')}>
+                    <i class="far fa-meteor"/>
+                    <div className="label">Kitchen sink</div>
+                  </div>
+                  <div className="menu-item-popup-item" onClick={() => this.addTemplate('exobot')}>
+                    <i class="fal fa-robot"/>
+                    <div className="label">Exobot</div>
+                  </div>
+                  <div className="menu-item-popup-item" onClick={() => this.addTemplate('meshing')}>
+                    <i class="fal fa-th"/>
+                    <div className="label">Meshing</div>
+                  </div>
+                  <div className="menu-item-popup-item" onClick={() => this.addTemplate('planes')}>
+                    <i class="fal fa-solar-panel"/>
+                    <div className="label">Planes</div>
+                  </div>
+                  <div className="menu-item-popup-item" onClick={() => this.addTemplate('paint')}>
+                    <i class="fal fa-paint-brush"/>
+                    <div className="label">Paint</div>
+                  </div>
                 </div>
               </div>
               <i class="fal fa-plus-hexagon"/>
