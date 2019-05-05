@@ -114,11 +114,14 @@ const armQuaternionOffset = new THREE.Quaternion().setFromUnitVectors(new THREE.
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
 const localVector3 = new THREE.Vector3();
+const localVector2D = new THREE.Vector2();
 const localQuaternion = new THREE.Quaternion();
 const localQuaternion2 = new THREE.Quaternion();
 const localEuler = new THREE.Euler(0, 0, 0, 'YXZ');
 const localEuler2 = new THREE.Euler(0, 0, 0, 'YXZ');
 const localMatrix = new THREE.Matrix4();
+const localLine = new THREE.Line3();
+const localRaycaster = new THREE.Raycaster();
 
 function parseQuery(s) {
   var query = {};
@@ -1134,6 +1137,43 @@ const _bindEventTarget = target => {
         }
       },
       mousemove(e) {
+        const _addOrbitControls = () => {
+          const orbitCamera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
+          orbitControls = new THREE.OrbitControls(orbitCamera);
+          orbitCamera.position.copy(fakeDisplay.position);
+          orbitCamera.quaternion.copy(fakeDisplay.quaternion);
+          scene.add(orbitCamera);
+          orbitCamera.updateMatrixWorld();
+          orbitControls.target.copy(orbitCamera.position).add(new THREE.Vector3(0, 0, -1).applyQuaternion(orbitCamera.quaternion));
+          orbitControls.screenSpacePanning = true;
+          orbitControls.update();
+        };
+        const _removeOrbitControls = () => {
+          scene.remove(orbitControls.object);
+          orbitControls.dispose();
+          orbitControls = null;
+        };
+        const _addTransformControls = (localCamera, node) => {
+          transformControls = new THREE.TransformControls(localCamera, document.body, viewport);
+
+          transformControls.addEventListener('dragging-changed', event => {
+            orbitControls.enabled = !event.value;
+          });
+
+          const mesh = new THREE.Object3D();
+          mesh.position.copy(node);
+          scene.add(mesh);
+
+          transformControls.attach(mesh);
+          scene.add(transformControls);
+        };
+        const _removeTransformControls = () => {
+          scene.remove(transformControls.object);
+          scene.remove(transformControls);
+          transformControls.dispose();
+          transformControls = null;
+        };
+
         const x = e.clientX/window.innerWidth;
         const y = 1-e.clientY/window.innerHeight;
         const minX = viewport.x;
@@ -1142,40 +1182,44 @@ const _bindEventTarget = target => {
         const maxY = viewport.y + viewport.w;
         const shouldOrbit = x >= minX && x < maxX && y >= minY && y < maxY && !!composeScreenQuad.parent;
         if (shouldOrbit && !orbitControls) {
-          {
-            const orbitCamera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
-            orbitControls = new THREE.OrbitControls(orbitCamera);
-            orbitCamera.position.copy(fakeDisplay.position);
-            orbitCamera.quaternion.copy(fakeDisplay.quaternion);
-            scene.add(orbitCamera);
-            orbitCamera.updateMatrixWorld();
-            orbitControls.target.copy(orbitCamera.position).add(new THREE.Vector3(0, 0, -1).applyQuaternion(orbitCamera.quaternion));
-            orbitControls.screenSpacePanning = true;
-            orbitControls.update();
-          }
-
-          {
-            transformControls = new THREE.TransformControls(renderer.vr.enabled ? renderer.vr.getCamera(camera).cameras[0] : camera, document.body, viewport);
-
-            transformControls.addEventListener('dragging-changed', event => {
-              orbitControls.enabled = !event.value;
-            });
-
-            const mesh = new THREE.Object3D();
-            scene.add(mesh);
-
-            transformControls.attach(mesh);
-            scene.add(transformControls);
-          }
+          _addOrbitControls();
         } else if (!shouldOrbit && orbitControls) {
-          scene.remove(orbitControls.object);
-          orbitControls.dispose();
-          orbitControls = null;
+          _removeOrbitControls();
+        }
 
-          scene.remove(transformControls.object);
-          scene.remove(transformControls);
-          transformControls.dispose();
-          transformControls = null;
+        if (orbitControls) {
+          const localCamera = renderer.vr.enabled ? renderer.vr.getCamera(camera).cameras[0] : camera;
+
+          const rect = document.body.getBoundingClientRect();
+          rect.left += viewport.x*rect.width;
+          rect.top += (1-(viewport.y+viewport.w))*rect.height;
+          rect.width *= viewport.z;
+          rect.height *= viewport.w;
+
+          localCamera.matrixWorld.decompose(localCamera.position, localCamera.quaternion, localCamera.scale);
+          localRaycaster.setFromCamera(
+            localVector2D.set(
+              (((e.clientX - rect.left) / rect.width) % 0.5 * 2) * 2 - 1,
+              (-(e.clientY - rect.top) / rect.height) * 2 + 1
+            ),
+            localCamera
+          );
+          const line = localLine.set(
+            localRaycaster.ray.origin,
+            localVector.copy(localRaycaster.ray.origin)
+              .add(localVector2.copy(localRaycaster.ray.direction).multiplyScalar(10))
+          );
+          const node = transformControls ? localVector.copy(transformControls.object.position) : localVector.set(-1, 0, 0);
+          const shouldTransform = (!!transformControls && transformControls.dragging) || line.closestPointToPoint(node, true, localVector2).distanceTo(node) < 1;
+          if (shouldTransform && !transformControls) {
+            _addTransformControls(localCamera, node);
+          } else if (!shouldTransform && transformControls) {
+            _removeTransformControls();
+          }
+        } else {
+          if (transformControls) {
+            _removeTransformControls();
+          }
         }
 
         if (!orbitControls) {
