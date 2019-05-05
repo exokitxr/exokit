@@ -391,6 +391,8 @@ const _makeBoxMesh = () => {
   return mesh;
 };
 
+const _parseVector = s => s.split(' ').map(s => parseFloat(s));
+
 const _mod = (v, d) => {
   const n = v % d;
   return n < 0 ? (d + n) : n;
@@ -1153,16 +1155,24 @@ const _bindEventTarget = target => {
           orbitControls.dispose();
           orbitControls = null;
         };
-        const _addTransformControls = (localCamera, node) => {
-          transformControls = new THREE.TransformControls(localCamera, document.body, viewport);
+        const _addTransformControls = (camera, iframe) => {
+          transformControls = new THREE.TransformControls(camera, document.body, viewport);
 
-          transformControls.addEventListener('dragging-changed', event => {
-            orbitControls.enabled = !event.value;
+          transformControls.addEventListener('dragging-changed', e => {
+            orbitControls.enabled = !e.value;
+          });
+          transformControls.addEventListener('change', e => {
+            iframe.position = mesh.position.toArray();
+            iframe.orientation = mesh.quaternion.toArray();
+            iframe.scale = mesh.scale.toArray();
           });
 
           const mesh = new THREE.Object3D();
-          mesh.position.copy(node);
+          mesh.position.fromArray(_parseVector(iframe.position));
+          mesh.quaternion.fromArray(_parseVector(iframe.orientation));
+          mesh.scale.fromArray(_parseVector(iframe.scale));
           scene.add(mesh);
+          mesh.updateMatrixWorld();
 
           transformControls.attach(mesh);
           scene.add(transformControls);
@@ -1209,10 +1219,26 @@ const _bindEventTarget = target => {
             localVector.copy(localRaycaster.ray.origin)
               .add(localVector2.copy(localRaycaster.ray.direction).multiplyScalar(10))
           );
-          const node = transformControls ? localVector.copy(transformControls.object.position) : localVector.set(-1, 0, 0);
-          const shouldTransform = (!!transformControls && transformControls.dragging) || line.closestPointToPoint(node, true, localVector2).distanceTo(node) < 1;
+          const distanceSpecs = layers.map(layer => {
+            if (layer.tagName === 'IFRAME') {
+              line.closestPointToPoint(localVector.fromArray(_parseVector(layer.position)), true, localVector2);
+              const distance = localVector.distanceTo(localVector2);
+              if (distance < 1) {
+                return {
+                  iframe: layer,
+                  distance,
+                };
+              } else {
+                return null;
+              }
+            } else {
+              return null;
+            }
+          }).filter(spec => !!spec).sort((a, b) => a.distance - b.distance);
+          const closestIframe = distanceSpecs.length > 0 ? distanceSpecs[0].iframe : null;
+          const shouldTransform = (!!transformControls && transformControls.dragging) || !!closestIframe;
           if (shouldTransform && !transformControls) {
-            _addTransformControls(localCamera, node);
+            _addTransformControls(localCamera, closestIframe);
           } else if (!shouldTransform && transformControls) {
             _removeTransformControls();
           }
