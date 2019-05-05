@@ -28,24 +28,43 @@
   position: absolute;
   top: 22px;
   left: 0;
+  background-color: #333;
   flex-direction: column;
 }
 #Engine .menu .menu-item .menu-item-popup.open {
   display: flex;
 }
 #Engine .menu .menu-item .menu-item-popup .menu-item-popup-item {
+  /* display: flex;
+  align-items: center; */
   min-width: 200px;
   padding: 10px 20px;
-  background-color: #333;
   cursor: pointer;
 }
 #Engine .menu .menu-item .menu-item-popup .menu-item-popup-item:hover {
   background-color: #444;
 }
+#Engine .menu .menu-item .menu-item-popup .menu-item-popup-item > i {
+  font-size: 20px;
+}
+#Engine .menu .menu-item .menu-item-popup .menu-item-popup-tabs {
+  display: flex;
+}
+#Engine .menu .menu-item .menu-item-popup .menu-item-popup-tabs .menu-item-popup-tab {
+  flex: 1;
+  padding: 10px;
+  border-bottom: 2px solid #222;
+}
+#Engine .menu .menu-item .menu-item-popup .menu-item-popup-tabs .menu-item-popup-tab.selected {
+  background-color: #444;
+  border-bottom-color: #9ccc65;
+}
+#Engine .menu .menu-item > i {
+  font-size: 14px;
+}
 #Engine .menu .url {
   display: flex;
   position: relative;
-  margin-right: auto;
 }
 #Engine .menu .url-input {
   display: flex;
@@ -89,6 +108,7 @@
 }
 #Engine .menu .buttons {
   display: flex;
+  margin-left: auto;
 }
 #Engine .menu .button {
   display: flex;

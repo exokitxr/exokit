@@ -12,6 +12,8 @@ class Engine extends React.Component {
       this.handleURLChange = this.handleURLChange.bind(this);
       this.state = {
         flags: [],
+        item: null,
+        addTab: 'template',
         url: 'https://aframe.io/a-painter/',
       };
     }
@@ -80,6 +82,14 @@ class Engine extends React.Component {
       return classNames.join(' ');
     }
     
+    addTabClassNames(addTab) {
+      const classNames = ['menu-item-popup-tab'];
+      if (addTab === this.state.addTab) {
+        classNames.push('selected');
+      }
+      return classNames.join(' ');
+    }
+
     urlPopupClassNames() {
       const classNames = ['url-popup'];
       if (this.state.urlFocus) {
@@ -93,6 +103,14 @@ class Engine extends React.Component {
       this.setState({item: open ? item : null}, () => {
         this.postMenuStatus();
       });
+    }
+    
+    openAddTab(e, addTab) {
+      this.setState({
+        addTab,
+      });
+      
+      e.stopPropagation();
     }
     
     focusUrlInput() {
@@ -142,6 +160,19 @@ class Engine extends React.Component {
 
       this.blur();
     }
+    
+    loadWorld() {
+      const urlInput = document.getElementById('url-input');
+      const url = urlInput.value;
+
+      window.postMessage({
+        method: 'open',
+        url,
+        d: null,
+      });
+
+      this.blur();
+    }
 
     onFakeXrClick() {
       window.postMessage({
@@ -159,12 +190,12 @@ class Engine extends React.Component {
       });
     }
 
-    onTransformClick() {
+    /* onSettingsClick() {
       window.postMessage({
         method: 'click',
-        target: 'transform',
+        target: 'settings',
       });
-    }
+    } */
 
     blur() {
       this.setState({
@@ -186,59 +217,59 @@ class Engine extends React.Component {
       return (
         <div id="Engine">
           <div className="row menu">
-            <div className={this.menuItemClassNames('file')} onClick={() => this.openMenu('file')}>
-              <div className={this.menuItemPopupClassNames('file')}>
-                <div className="menu-item-popup-item">
-                  New A-Frame...
-                </div>
+            <div className={this.menuItemClassNames('world')}onClick={() => this.openMenu('world')}>
+              <div className={this.menuItemPopupClassNames('world')}>
+                <div className="menu-item-popup-item">New</div>
+                <div className="menu-item-popup-item">Exit</div>
               </div>
-              <div>File</div>
+              <i class="fal fa-cube"/>
+              {/* <div>World</div> */}
             </div>
-            <div className={this.menuItemClassNames('tabs')}onClick={() => this.openMenu('tabs')}>
-              <div className={this.menuItemPopupClassNames('tabs')}>
-                <div className="menu-item-popup-item">
-                  New example...
-                  Import...
-                  Export...
-                </div>
+            <div className={this.menuItemClassNames('settings')}onClick={() => this.openMenu('settings')}>
+              <div className={this.menuItemPopupClassNames('settings')}>
+                <div className="menu-item-popup-item">Preferences...</div>
+                <div className="menu-item-popup-item">SDK Paths...</div>
               </div>
-              <div>Tabs</div>
-            </div>
-            {/* <div className={this.menuItemClassNames('export')} onClick={() => this.openMenu('export')}>
-              <div className={this.menuItemPopupClassNames('export')}>
-                <div className="menu-item-popup-item">
-                  New A-Frame...
-                </div>
-              </div>
-              <div>Export</div>
-            </div> */}
-            <div className={this.menuItemClassNames('about')} onClick={() => this.openMenu('about')}>
-              <div className={this.menuItemPopupClassNames('about')}>
-                <div className="menu-item-popup-item">
-                  New A-Frame...
-                </div>
-              </div>
-              <div>About</div>
+              <i class="fal fa-cogs"/>
+              {/* <div>Settings</div> */}
             </div>
             <div className="url">
               <div className={this.urlPopupClassNames()}>
                 <div className="url-item" onMouseDown={e => e.preventDefault()} onClick={() => this.open3dTab()}>3D Reality Tab</div>
                 <div className="url-item" onMouseDown={e => e.preventDefault()} onClick={() => this.open2dTab()}>2D Reality Tab</div>
+                <div className="url-item" onMouseDown={e => e.preventDefault()} onClick={() => this.loadWorld()}>Reload</div>
               </div>
               <input type="text" className="url-input" id="url-input" value={this.state.url} onChange={e => this.onUrlChange(e)} onFocus={() => this.focusUrlInput()} onBlur={() => this.blurUrlInput()}/>
             </div>
+            <div className={this.menuItemClassNames('add')}onClick={() => this.openMenu('add')}>
+              <div className={this.menuItemPopupClassNames('add')}>
+                <div className="menu-item-popup-tabs">
+                  <div className={this.addTabClassNames('template')} onClick={e => this.openAddTab(e, 'template')}>Template</div>
+                  <div className={this.addTabClassNames('examples')} onClick={e => this.openAddTab(e, 'examples')}>Examples</div>
+                </div>
+                <div className="menu-item-popup-item">
+                  <i className="fal fa-file"></i>
+                  <div className="label">Blank layer</div>
+                </div>
+                <div className="menu-item-popup-item">
+                  <i className="fab fa-autoprefixer"/>
+                  <div className="label">A-Frame layer</div>
+                </div>
+                <div className="menu-item-popup-item">
+                  <i className="fab fa-btc"/>
+                  <div className="label">Babylon.js layer</div>
+                </div>
+              </div>
+              <i class="fal fa-plus-hexagon"/>
+            </div>
             <div className="buttons">
               <div className="button" onClick={() => this.onXrClick()}>
-                <i class="fas fa-head-vr"></i>
+                <i class="fas fa-head-vr"/>
                 <div className="label">Enter XR</div>
               </div>
               <div className="button" onClick={() => this.onFakeXrClick()}>
-                <i class="fal fa-vr-cardboard"></i>
+                <i class="fal fa-vr-cardboard"/>
                 <div className="label">Fake XR</div>
-              </div>
-              <div className="button" onClick={() => this.onTransformClick()}>
-                <i className="fal fa-arrows"></i>
-                <div className="label">Transform</div>
               </div>
             </div>
           </div>
