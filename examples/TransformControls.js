@@ -524,10 +524,8 @@ THREE.TransformControls = function ( camera, domElement, viewport ) {
 		rect.height *= viewport.w;
 
 		return {
-			x: ((( pointer.clientX - rect.left ) / rect.width) % 0.5 * 2)
-				* 2 - 1,
-			y: (- ( pointer.clientY - rect.top ) / rect.height)
-				* 2 + 1,
+			x: ((( pointer.clientX - rect.left ) / rect.width) % 0.5 * 2) * 2 - 1,
+			y: (- ( pointer.clientY - rect.top ) / rect.height) * 2 + 1,
 			button: event.button
 		};
 
