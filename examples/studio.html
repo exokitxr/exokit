@@ -2147,11 +2147,10 @@ const _makeRig = () => {
 const rig = _makeRig();
 scene.add(rig);
 
-const _openRig = (position, quaternion, scale) => {
+const _openRig = (position, quaternion) => {
   if (!rig.open) {
     rig.position.copy(position);
     rig.quaternion.copy(quaternion);
-    rig.scale.copy(scale);
 
     rig.open = true;
   } else {
@@ -2925,12 +2924,12 @@ function animateXrScene(time, frame) {
           const lastBumper = lastButtons[i].bumper;
 
           if (bumper && !lastBumper) {
-            const {position, quaternion, scale} = _getFrontOfCamera();
+            const {position, quaternion} = _getFrontOfCamera();
             localEuler.setFromQuaternion(quaternion, localEuler.order);
             localEuler.x = 0;
             localEuler.z = 0;
             quaternion.setFromEuler(localEuler);
-            _openRig(position, quaternion, scale);
+            _openRig(position, quaternion);
           }
 
           lastButtons[i].bumper = bumper;
