@@ -9,3 +9,10 @@ CMakeCache.txt
 .localStorage
 .node-gyp
 /app
+android/.gradle
+android/app/.externalNativeBuild
+android/app/assets/
+android/app/build/
+android/app/src/main/arm64-v8a/
+android/build/
+*.sw[pomnlk]
