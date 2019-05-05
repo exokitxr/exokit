@@ -980,40 +980,37 @@ class Element extends Node {
   }
 
   get clientWidth() {
-    const style = this.ownerDocument.defaultView.getComputedStyle(this);
-    const fontFamily = style.fontFamily;
-    if (fontFamily) {
-       if (fontFamily === 'sans-serif') {
-         return 0;
-       } else {
-         return _hash(fontFamily) * _hash(this.innerHTML);
-       }
-    } else {
-      let result = 1;
-      this.traverse(el => {
-        if (el.tagName === 'CANVAS' || el.tagName === 'IMAGE' || el.tagName === 'VIDEO') {
-          result = Math.max(el.width, result);
-          return true;
-        }
-			});
-      return result / this.ownerDocument.defaultView.devicePixelRatio;
+    switch (this.tagName) {
+      case 'DOCUMENT':
+      case 'HTML':
+      case 'BODY': {
+        const ownerDocument = this.ownerDocument || this;
+        return ownerDocument.defaultView.innerWidth;
+      }
+      case 'CANVAS':
+      case 'IMAGE':
+      case 'VIDEO':
+        return this.width;
+      default:
+        return 0;
     }
   }
   set clientWidth(clientWidth) {}
   get clientHeight() {
-    let result = 0;
-    const _recurse = el => {
-      if (el.nodeType === Node.ELEMENT_NODE) {
-        if (el.tagName === 'CANVAS' || el.tagName === 'IMAGE' || el.tagName === 'VIDEO') {
-          result = Math.max(el.height, result);
-        }
-        for (let i = 0; i < el.childNodes.length; i++) {
-          _recurse(el.childNodes[i]);
-        }
+    switch (this.tagName) {
+      case 'DOCUMENT':
+      case 'HTML':
+      case 'BODY': {
+        const ownerDocument = this.ownerDocument || this;
+        return ownerDocument.defaultView.innerHeight;
       }
-    };
-    _recurse(this);
-    return result / this.ownerDocument.defaultView.devicePixelRatio;
+      case 'CANVAS':
+      case 'IMAGE':
+      case 'VIDEO':
+        return this.height;
+      default:
+        return 0;
+    }
   }
   set clientHeight(clientHeight) {}
 
