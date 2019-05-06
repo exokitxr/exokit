@@ -55,12 +55,13 @@ const _decorateGlIntercepts = gl => {
   })(gl.getUniformLocation);
   gl.setCompatibleXRDevice = () => Promise.resolve();
 };
-const _onGl3DConstruct = (gl, canvas) => {
+const _onGl3DConstruct = (gl, canvas, attrs) => {
   const canvasWidth = canvas.width || innerWidth;
   const canvasHeight = canvas.height || innerHeight;
 
   gl.d = 3;
   gl.canvas = canvas;
+  gl.desynchronized = !!attrs.desynchronized;
 
   const document = canvas.ownerDocument;
   const window = document.defaultView;
@@ -232,8 +233,12 @@ const _onGl3DConstruct = (gl, canvas) => {
       }
     });
     
-    const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeWindow.createRenderTarget(gl, canvasWidth, canvasHeight);
-    gl.setDefaultFramebuffer(msFbo);
+    const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = gl.desynchronized ? [
+      0, 0, 0, 0, 0, 0,
+    ] : nativeWindow.createRenderTarget(gl, canvasWidth, canvasHeight);
+    if (msFbo) {
+      gl.setDefaultFramebuffer(msFbo);
+    }
     gl.framebuffer = {
       msFbo,
       msTex,
@@ -243,8 +248,10 @@ const _onGl3DConstruct = (gl, canvas) => {
       depthTex,
     };
     gl.resize = (width, height) => {
-      nativeWindow.setCurrentWindowContext(windowHandle);
-      nativeWindow.resizeRenderTarget(gl, width, height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
+      if (!gl.desynchronized) {
+        nativeWindow.setCurrentWindowContext(windowHandle);
+        nativeWindow.resizeRenderTarget(gl, width, height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
+      }
     };
 
     /* const nativeWindowSize = nativeWindow.getFramebufferSize(windowHandle);
@@ -348,10 +355,10 @@ const _onGl3DConstruct = (gl, canvas) => {
   }
 };
 bindings.nativeGl = (nativeGl => {
-  function WebGLRenderingContext(canvas) {
+  function WebGLRenderingContext(canvas, attrs) {
     const gl = new nativeGl();
     _decorateGlIntercepts(gl);
-    _onGl3DConstruct(gl, canvas);
+    _onGl3DConstruct(gl, canvas, attrs);
     return gl;
   }
   for (const k in nativeGl) {
@@ -360,10 +367,10 @@ bindings.nativeGl = (nativeGl => {
   return WebGLRenderingContext;
 })(bindings.nativeGl);
 bindings.nativeGl2 = (nativeGl2 => {
-  function WebGL2RenderingContext(canvas) {
+  function WebGL2RenderingContext(canvas, attrs) {
     const gl = new nativeGl2();
     _decorateGlIntercepts(gl);
-    _onGl3DConstruct(gl, canvas);
+    _onGl3DConstruct(gl, canvas, attrs);
     return gl;
   }
   for (const k in nativeGl2) {
@@ -372,7 +379,7 @@ bindings.nativeGl2 = (nativeGl2 => {
   return WebGL2RenderingContext;
 })(bindings.nativeGl2);
 
-const _onGl2DConstruct = (ctx, canvas) => {
+const _onGl2DConstruct = (ctx, canvas, attrs) => {
   const canvasWidth = canvas.width || innerWidth;
   const canvasHeight = canvas.height || innerHeight;
 
@@ -417,9 +424,9 @@ const _onGl2DConstruct = (ctx, canvas) => {
   }
 };
 bindings.nativeCanvasRenderingContext2D = (nativeCanvasRenderingContext2D => {
-  function CanvasRenderingContext2D(canvas) {
+  function CanvasRenderingContext2D(canvas, attrs) {
     const ctx = new nativeCanvasRenderingContext2D();
-    _onGl2DConstruct(ctx, canvas);
+    _onGl2DConstruct(ctx, canvas, attrs);
     return ctx;
   }
   for (const k in nativeCanvasRenderingContext2D) {

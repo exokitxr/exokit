@@ -2294,7 +2294,7 @@ class HTMLCanvasElement extends HTMLElement {
   }
   set texture(texture) {}
 
-  getContext(contextType) {
+  getContext(contextType, attrs = {}) {
     if (contextType === '2d') {
       if (this._context && this._context.constructor && this._context.constructor.name !== 'CanvasRenderingContext2D') {
         this._context.destroy();
@@ -2313,13 +2313,13 @@ class HTMLCanvasElement extends HTMLElement {
 
         if (!window[symbols.optionsSymbol].args || window[symbols.optionsSymbol].args.webgl === '1') {
           if (contextType === 'webgl' || contextType === 'experimental-webgl' || contextType === 'xrpresent') {
-            this._context = new GlobalContext.WebGLRenderingContext(this);
+            this._context = new GlobalContext.WebGLRenderingContext(this, attrs);
           }
         } else {
           if (contextType === 'webgl' || contextType === 'experimental-webgl') {
-            this._context = new GlobalContext.WebGLRenderingContext(this);
+            this._context = new GlobalContext.WebGLRenderingContext(this, attrs);
           } else {
-            this._context = new GlobalContext.WebGL2RenderingContext(this);
+            this._context = new GlobalContext.WebGL2RenderingContext(this, attrs);
           }
         }
       }
