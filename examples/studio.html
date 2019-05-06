@@ -976,12 +976,6 @@ const {
   });
   ctx.readFbo = ctx.createFramebuffer();
   document.body.appendChild(canvas);
-  /* const renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.sortObjects = false;
-  document.body.appendChild(renderer.domElement);
-
-  const scene = new THREE.Scene(); */
 
   const iframe = document.createElement('iframe');
   iframe.width = window.innerWidth;
@@ -990,29 +984,6 @@ const {
   iframe.d = 2;
   iframe.src = 'launcher/build/index.html';
   iframe.onload = () => {
-    /* const texture = new THREE.Texture(
-      null,
-      THREE.UVMapping,
-      THREE.ClampToEdgeWrapping,
-      THREE.ClampToEdgeWrapping,
-      THREE.LinearFilter,
-      THREE.LinearFilter,
-      THREE.RGBAFormat,
-      THREE.UnsignedByteType,
-      1
-    );
-    const properties = renderer.properties.get(texture);
-    // console.log('iframe texture', iframe.texture);
-    properties.__webglTexture = iframe.texture;
-    properties.__webglInit = true;
-
-    const screenQuad = new ScreenQuad({
-      texture,
-      reverse: true,
-    });
-    scene.add(screenQuad);
-    scene.children.sort((a, b) => +(a !== screenQuad) - +(b !== screenQuad)); */
-
     iframe.contentWindow.onmessage = m => {
       switch (m.data.method) {
         case 'viewport': {
@@ -3234,31 +3205,6 @@ const _bootFakeDisplay = async () => {
   });
   
   display = fakeDisplay;
-
-  /* composeScreenQuad = (() => {
-    const texture = new THREE.Texture(
-      null,
-      THREE.UVMapping,
-      THREE.ClampToEdgeWrapping,
-      THREE.ClampToEdgeWrapping,
-      THREE.LinearFilter,
-      THREE.LinearFilter,
-      THREE.RGBAFormat,
-      THREE.UnsignedByteType,
-      1
-    );
-    // console.log('fake display texture', fakeDisplay.texture);
-    const properties = composeRenderer.properties.get(texture);
-    properties.__webglTexture = fakeDisplay.texture;
-    properties.__webglInit = true;
-
-    const screenQuad = new ScreenQuad({
-      texture,
-      viewport,
-    });
-    return screenQuad;
-  })();
-  composeScene.add(composeScreenQuad); */
 
   const tabUrl = (() => {
     const {t = 'examples/tutorial.html'} = query;
