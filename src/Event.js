@@ -259,19 +259,6 @@ class PromiseRejectionEvent extends Event {
 }
 module.exports.PromiseRejectionEvent = PromiseRejectionEvent;
 
-class SpatialEvent extends Event {
-  constructor(type, init = {}) {
-    super(type);
-
-    if (init.detail) {
-      for (const k in init.detail) {
-        this[k] = init.detail[k];
-      }
-    }
-  }
-}
-module.exports.SpatialEvent = SpatialEvent;
-
 class CustomEvent extends Event {
   constructor(type, init = {}) {
     super(type, init);
