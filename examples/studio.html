@@ -702,19 +702,7 @@ const _addTab = (iframe, position = new THREE.Vector3(), orientation = new THREE
   return tab;
 };
 const _closeTab = tab => {
-  const {id, iframe} = tab;
-  if (iframe.destroy) {
-    iframe.destroy();
-  }
-  document.body.removeChild(iframe);
-
-  tabs.splice(tabs.indexOf(tab), 1);
-  layers.splice(layers.indexOf(iframe), 1);
-
-  if (serverConnectedUrl) {
-    const objectMesh = xrmp.getObjectMeshes().find(objectMesh => objectMesh.object.id === id);
-    xrmp.removeObjectMesh(objectMesh);
-  }
+  document.body.removeChild(tab.iframe);
 };
 const _closeAllTabs = () => { // XXX trigger this when switching servers
   for (let i = 0; i < tabs.length; i++) {
@@ -1387,6 +1375,45 @@ const _bindEventTarget = target => {
     });
   }
 };
+
+// mutation observer
+
+const observer = new MutationObserver(records => {
+  for (let i = 0; i < records.length; i++) {
+    const record = records[i];
+    const {removedNodes} = record;
+
+    for (let j = 0; j < removedNodes.length; j++) {
+      const node = removedNodes[j];
+
+      if (node.tagName === 'IFRAME') {
+        const iframe = node;
+
+        if (iframe.destroy) {
+          iframe.destroy();
+        }
+
+        const tabIndex = tabs.findIndex(tab => tab.iframe === iframe);
+        if (tabIndex !== -1) {
+          const tab = tabs.splice(tabIndex, 1)[0];
+          const {id} = tab;
+
+          if (serverConnectedUrl) {
+            const objectMesh = xrmp.getObjectMeshes().find(objectMesh => objectMesh.object.id === id);
+            xrmp.removeObjectMesh(objectMesh);
+          }
+        }
+        const layerIndex = layers.indexOf(iframe);
+        if (layerIndex !== -1) {
+          layers.splice(layerIndex, 1);
+        }
+      }
+    }
+  }
+});
+observer.observe(document.body, {
+  childList: true,
+});
 
 // controller meshes
 
