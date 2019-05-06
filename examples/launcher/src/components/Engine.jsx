@@ -306,6 +306,10 @@ class Engine extends React.Component {
                     <i class="fal fa-paint-brush"/>
                     <div className="label">Paint</div>
                   </div>
+                  <div className="menu-item-popup-item" onClick={() => this.addTemplate('hitTest')}>
+                    <i class="fal fa-crosshairs"/>
+                    <div className="label">Hit test</div>
+                  </div>
                 </div>
               </div>
               <i class="fal fa-plus-hexagon"/>
