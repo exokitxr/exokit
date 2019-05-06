@@ -1120,6 +1120,8 @@ const {
     window.addEventListener('resize', e => {
       renderer.setSize(window.innerWidth, window.innerHeight);
 
+      composeCanvas.width = window.innerWidth;
+      composeCanvas.height = window.innerHeight;
       uiIframe.width = window.innerWidth;
       uiIframe.height = window.innerHeight;
     });
