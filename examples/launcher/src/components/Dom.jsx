@@ -62,6 +62,14 @@ class Dom extends React.Component {
         });
       }
     });
+    window.addEventListener('keydown', e => {
+      if (e.keyCode === 46) { // delete
+        if (document.activeElement && document.activeElement.getDomEl) {
+          const el = document.activeElement.getDomEl();
+          console.log('delete el ' + JSON.stringify(el));
+        }
+      }
+    });
   }
 
   onClick(el) {
@@ -124,9 +132,22 @@ class DomItem extends React.Component {
   constructor(props) {
     super(props);
     
+    this.domElRef = React.createRef();
+    
     this.state = {
       open: true,
     };
+  }
+  
+  componentDidMount() {
+    this.bindDomEl();
+  }
+  componentDidUpdate() {
+    this.bindDomEl();
+  }
+  
+  bindDomEl() {
+    this.domElRef.current.getDomEl = () => this.props.el;
   }
 
   getClassnames() {
@@ -163,7 +184,7 @@ class DomItem extends React.Component {
     if (el.nodeType === Node.ELEMENT_NODE) {
       return (
         <li className={this.getClassnames()}>
-          <div className="dom-item-label" style={this.getStyle()} onClick={() => this.props.onClick(el)} onMouseEnter={() => this.props.onMouseEnter(el)} onMouseLeave={() => this.props.onMouseLeave(el)}>
+          <div className="dom-item-label" style={this.getStyle()} onClick={() => this.props.onClick(el)} onMouseEnter={() => this.props.onMouseEnter(el)} onMouseLeave={() => this.props.onMouseLeave(el)} ref={this.domElRef} tabIndex={-1}>
             <div className="dom-item-arrow" onClick={e => this.toggleOpen(e)}>⮞</div>
             <div className="dom-item-name">{_el2Text(el)}</div>
           </div>
@@ -175,7 +196,7 @@ class DomItem extends React.Component {
     } else if (el.nodeType === Node.TEXT_NODE) {
       if (/\S/.test(el.value)) { // has non-whitespace
         return (
-          <li className={this.getClassnames()} onClick={() => this.props.onClick(el)} onMouseEnter={() => this.props.onMouseEnter(el)} onMouseLeave={() => this.props.onMouseLeave(el)}>
+          <li className={this.getClassnames()} onClick={() => this.props.onClick(el)} onMouseEnter={() => this.props.onMouseEnter(el)} onMouseLeave={() => this.props.onMouseLeave(el)} ref={this.domElRef} tabIndex={-1}>
             <div className="dom-item-text" style={this.getStyle()}>"{el.value}"</div>
           </li>
         );
