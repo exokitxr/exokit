@@ -64,9 +64,15 @@ class Dom extends React.Component {
     });
     window.addEventListener('keydown', e => {
       if (e.keyCode === 46) { // delete
-        if (document.activeElement && document.activeElement.getDomEl) {
-          const el = document.activeElement.getDomEl();
-          console.log('delete el ' + JSON.stringify(el));
+        if (document.activeElement && document.activeElement.getEl) {
+          const el = document.activeElement.getEl();
+          window.postMessage({
+            method: 'edit',
+            keypath: el.keypath,
+            edit: {
+              type: 'remove',
+            },
+          });
         }
       }
     });
@@ -147,7 +153,9 @@ class DomItem extends React.Component {
   }
   
   bindDomEl() {
-    this.domElRef.current.getDomEl = () => this.props.el;
+    if (this.domElRef.current) {
+      this.domElRef.current.getEl = () => this.props.el;
+    }
   }
 
   getClassnames() {
