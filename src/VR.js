@@ -367,12 +367,14 @@ class SpatialEvent extends Event {
 }
 
 class FakeMesher extends EventTarget {
-  constructor() {
+  constructor(session) {
     super();
 
-    this.position = new Float32Array(3);
-    this.orientation = Float32Array.from([0, 0, 0, 1]);
-    this.scale = Float32Array.from([1, 1, 1]);
+    this.session = session;
+
+    /* this.position = new THREE.Vector3();
+    this.orientation = new THREE.Quaternion();
+    this.scale = new THREE.Vector3(1, 1, 1); */
 
     const boxBufferGeometry = {
       position: Float32Array.from([0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, -0.5]),
@@ -380,48 +382,92 @@ class FakeMesher extends EventTarget {
       index: Uint16Array.from([0, 2, 1, 2, 3, 1, 4, 6, 5, 6, 7, 5, 8, 10, 9, 10, 11, 9, 12, 14, 13, 14, 15, 13, 16, 18, 17, 18, 19, 17, 20, 22, 21, 22, 23, 21]),
     };
 
+    const lastMeshPosition = new THREE.Vector3();
+    let meshes = [];
+
     this.interval = setInterval(() => {
-      const meshes = (() => {
-        const result = Array(3);
-        for (let i = 0; i < result.length; i++) {
-          localQuaternion.setFromUnitVectors(
-            localVector.set(0, 1, 0),
-            localVector2.set(-0.5+Math.random(), 1, -0.5+Math.random()).normalize()
-          );
-          localMatrix.compose(
-            localVector.set(0, 0.5+i, 0),
-            localQuaternion,
-            localVector2.set(0.5+Math.random()*0.5, 1+Math.random(), 0.5+Math.random()*0.5)
-          );
+      localMatrix
+        .fromArray(this.session._frame.getDevicePose().getViewMatrix('left'))
+        .getInverse(localMatrix)
+        .decompose(localVector, localQuaternion, localVector2);
+      const currentMeshPosition = new THREE.Vector3(Math.floor(localVector.x/10+0.5)*10, 0, Math.floor(localVector.z/10+0.5)*10);
 
-          const positionArray = Float32Array.from(boxBufferGeometry.position);
-          const normalArray = Float32Array.from(boxBufferGeometry.normal);
-          for (let j = 0; j < positionArray.length; j += 3) {
-            localVector.fromArray(positionArray, j);
-            localVector.applyMatrix4(localMatrix);
-            localVector.toArray(positionArray, j);
+      const updates = [];
+      if (meshes.length > 0 && !currentMeshPosition.equals(lastMeshPosition)) {
+        for (let i = 0; i < meshes.length; i++) {
+          const mesh = meshes[i];
+          updates.push({
+            id: mesh.id,
+            type: 'remove',
+          });
+        }
+      }
 
-            localVector.fromArray(normalArray, j);
-            localVector.applyMatrix4(localMatrix);
-            localVector.toArray(normalArray, j);
+      meshes = (meshes.length > 0 && currentMeshPosition.equals(lastMeshPosition)) ?
+        meshes.map(({id}) => ({type: 'update', id, positionArray: null, normalArray: null, indexArray: null, transformMatrix: null}))
+      :
+        (() => {
+          const result = Array(3);
+          for (let i = 0; i < result.length; i++) {
+            result[i] = {
+              type: 'new',
+              id: Math.random() + '',
+              positionArray: null,
+              normalArray: null,
+              indexArray: null,
+              transformMatrix: null,
+            };
           }
+          return result;
+        })();
+      for (let i = 0; i < meshes.length; i++) {
+        const mesh = meshes[i];
+        
+        localQuaternion.setFromUnitVectors(
+          localVector.set(0, 1, 0),
+          localVector2.set(-0.5+Math.random(), 1, -0.5+Math.random()).normalize()
+        );
+        localMatrix.compose(
+          localVector.set(0, 0.5+i, 0),
+          localQuaternion,
+          localVector2.set(0.5+Math.random()*0.5, 1+Math.random(), 0.5+Math.random()*0.5)
+        );
 
-          const indexArray = boxBufferGeometry.index;
+        const positionArray = Float32Array.from(boxBufferGeometry.position);
+        const normalArray = Float32Array.from(boxBufferGeometry.normal);
+        for (let j = 0; j < positionArray.length; j += 3) {
+          localVector.fromArray(positionArray, j);
+          localVector.applyMatrix4(localMatrix);
+          localVector.toArray(positionArray, j);
 
-          result[i] = {
-            positionArray,
-            normalArray,
-            indexArray,
-          };
-        };
-        return result;
-      })();
+          localVector.fromArray(normalArray, j);
+          localVector.applyMatrix4(localMatrix);
+          localVector.toArray(normalArray, j);
+        }
+
+        const indexArray = boxBufferGeometry.index;
+
+        mesh.positionArray = positionArray;
+        mesh.normalArray = normalArray;
+        mesh.indexArray = indexArray;
+        mesh.transformMatrix = localMatrix
+          .compose(
+            localVector.set(currentMeshPosition.x, 0, currentMeshPosition.z),
+            localQuaternion.set(0, 0, 0, 1),
+            localVector2.set(1, 1, 1)
+          )
+          .toArray(new Float32Array(16));
+      };
+      updates.push.apply(updates, meshes);
+
       const e = new SpatialEvent('mesh', {
         detail: {
-          meshes,
+          updates,
         }
       });
       this.dispatchEvent(e);
+      
+      lastMeshPosition.copy(currentMeshPosition);
     }, 1000);
   }
 
@@ -429,6 +475,7 @@ class FakeMesher extends EventTarget {
     return this.listeners('mesh')[0];
   }
   set onmesh(onmesh) {
+    console.log('set on mesh');
     this.on('mesh', onmesh);
   }
 
@@ -444,28 +491,32 @@ class FakeMesher extends EventTarget {
 }
 
 class FakePlanesTracker extends EventTarget {
-  constructor() {
+  constructor(session) {
     super();
 
-    this.position = new Float32Array(3);
+    this.session = session;
+
+    /* this.position = new Float32Array(3);
     this.orientation = Float32Array.from([0, 0, 0, 1]);
-    this.scale = Float32Array.from([1, 1, 1]);
+    this.scale = Float32Array.from([1, 1, 1]); */
 
     this.interval = setInterval(() => {
       const e = new SpatialEvent('plane', {
-        positionArray,
-        normalArray,
-        indexArray,
+        detail: {
+          positionArray,
+          normalArray,
+          indexArray,
+        },
       });
       this.dispatchEvent(e);
     }, 1000);
   }
 
-  update(position, orientation, scale) {
+  /* update(position, orientation, scale) {
     this.position.set(position);
     this.orientation.set(orientation);
     this.scale.set(scale);
-  }
+  } */
 
   destroy() {
     this.clearInterval(this.interval);
@@ -578,21 +629,21 @@ class FakeVRDisplay extends VRDisplay {
           onends[i]();
         }
       },
-      async requestMeshing() {
+      requestMeshing() {
         if (!mesher) {
-          mesher = new FakeMesher();
+          mesher = new FakeMesher(session);
         }
         return mesher;
       },
-      async requestPlanes() {
+      requestPlanes() {
         if (!planesTracker) {
-          planesTracker = new FakePlanesTracker();
+          planesTracker = new FakePlanesTracker(session);
         }
         return planesTracker;
       },
       async requestHitTest(origin, direction, coordinateSystem) {
         if (!mesher) {
-          mesher = new FakeMesher();
+          mesher = new FakeMesher(session);
         }
         return mesher.requestHitTest(origin, direction, coordinateSystem);
       },

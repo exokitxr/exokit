@@ -27,7 +27,7 @@
     let container, scene, camera, display, model;
     let mesher = null;
 
-    const localVector = new THREE.Vector3();
+    /* const localVector = new THREE.Vector3();
     const localVector2 = new THREE.Vector3();
     const localEuler = new THREE.Euler();
     const localMatrix = new THREE.Matrix4();
@@ -36,7 +36,139 @@
     const numCubes = 100;
     const cubeSize = 0.2;
     const cubeRange = 1;
-    const cubeGeometry = new THREE.BoxBufferGeometry(1, 1, 1);
+    const cubeGeometry = new THREE.BoxBufferGeometry(1, 1, 1); */
+    
+    const terrainMeshes = [];
+    const terrainMaterial = new THREE.ShaderMaterial({
+      uniforms: {},
+      vertexShader: `\
+        attribute vec3 barycentric;
+        varying vec3 vPosition;
+        varying vec3 vBC;
+        void main() {
+          vBC = barycentric;
+          vec4 modelViewPosition = modelViewMatrix * vec4(position, 1.0);
+          vPosition = modelViewPosition.xyz;
+          gl_Position = projectionMatrix * modelViewPosition;
+        }
+      `,
+      fragmentShader: `\
+        varying vec3 vPosition;
+        varying vec3 vBC;
+
+        vec3 color = vec3(0.984313725490196, 0.5490196078431373, 0.0);
+        vec3 lightDirection = vec3(0.0, 0.0, 1.0);
+
+        float edgeFactor() {
+          vec3 d = fwidth(vBC);
+          vec3 a3 = smoothstep(vec3(0.0), d*1.5, vBC);
+          return min(min(a3.x, a3.y), a3.z);
+        }
+
+        void main() {
+          float barycentricFactor = (0.2 + (1.0 - edgeFactor()) * 0.8);
+          vec3 xTangent = dFdx( vPosition );
+          vec3 yTangent = dFdy( vPosition );
+          vec3 faceNormal = normalize( cross( xTangent, yTangent ) );
+          float lightFactor = pow(dot(faceNormal, lightDirection), 2.0);
+          gl_FragColor = vec4(color * barycentricFactor * lightFactor, 1.0);
+        }
+      `,
+      polygonOffset: true,
+      polygonOffsetFactor: -1,
+      polygonOffsetUnits: -4,
+    });
+    const _getTerrainMesh = meshId => {
+      let terrainMesh = terrainMeshes.find(terrainMesh => terrainMesh.meshId === meshId);
+      if (!terrainMesh) {
+        terrainMesh = _makeTerrainMesh(meshId);
+        terrainMeshes.push(terrainMesh);
+        scene.add(terrainMesh);
+      }
+      return terrainMesh;
+    };
+    const _makeTerrainMesh = meshId => {
+      const geometry = new THREE.BufferGeometry();
+      const material = terrainMaterial;
+
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.matrixAutoUpdate = false;
+      mesh.frustumCulled = false;
+      mesh.meshId = meshId;
+      return mesh;
+    };
+    const _loadTerrainMesh = (terrainMesh, {transformMatrix, positionArray, normalArray, indexArray}) => {
+      terrainMesh.matrix.fromArray(transformMatrix);
+      terrainMesh.matrixWorldNeedsUpdate = true;
+
+      const {geometry} = terrainMesh;
+      const attributes = renderer.getAttributes();
+
+      const positions = new Float32Array(indexArray.length*3);
+      const barycentrics = new Float32Array(indexArray.length*3);
+      for (let i = 0; i < indexArray.length; i += 3) {
+        const ai = indexArray[i];
+        const bi = indexArray[i+1];
+        const ci = indexArray[i+2];
+
+        const baseA = ai*3;
+        const baseB = bi*3;
+        const baseC = ci*3;
+
+        const baseIndex = i*3;
+        positions[baseIndex] = positionArray[baseA];
+        positions[baseIndex+1] = positionArray[baseA+1];
+        positions[baseIndex+2] = positionArray[baseA+2];
+        positions[baseIndex+3] = positionArray[baseB];
+        positions[baseIndex+4] = positionArray[baseB+1];
+        positions[baseIndex+5] = positionArray[baseB+2];
+        positions[baseIndex+6] = positionArray[baseC];
+        positions[baseIndex+7] = positionArray[baseC+1];
+        positions[baseIndex+8] = positionArray[baseC+2];
+
+        barycentrics[baseIndex] = 1;
+        barycentrics[baseIndex+1] = 0;
+        barycentrics[baseIndex+2] = 0;
+        barycentrics[baseIndex+3] = 0;
+        barycentrics[baseIndex+4] = 1;
+        barycentrics[baseIndex+5] = 0;
+        barycentrics[baseIndex+6] = 0;
+        barycentrics[baseIndex+7] = 0;
+        barycentrics[baseIndex+8] = 1;
+      }
+      geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.addAttribute('barycentric', new THREE.BufferAttribute(barycentrics, 3));
+    };
+    const _removeTerrainMesh = terrainMesh => {
+      scene.remove(terrainMesh);
+      terrainMesh.geometry.dispose();
+    };
+    /* const _clearTerrainMeshes = () => {
+      for (let i = 0; i < terrainMeshes.length; i++) {
+        _removeTerrainMesh(terrainMeshes[i]);
+      }
+      terrainMeshes.length = 0;
+    }; */
+    const _onMesh = e => {
+      const {updates} = e;
+      for (let i = 0; i < updates.length; i++) {
+        const update = updates[i];
+        const {id, type} = update;
+
+        if (type === 'new' || type === 'update') {
+          _loadTerrainMesh(_getTerrainMesh(id), update);
+        } else if (type === 'unchanged') {
+          // nothing
+        } else {
+          const index = terrainMeshes.findIndex(terrainMesh => terrainMesh.meshId === id);
+          if (index !== -1) {
+            const terrainMesh = terrainMeshes[index];
+            _removeTerrainMesh(terrainMesh);
+            terrainMeshes.splice(index, 1);
+          }
+        }
+      }
+    };
 
     function init() {
       container = document.createElement('div');
@@ -70,141 +202,7 @@
 
       container.appendChild(renderer.domElement);
 
-      const terrainMeshes = [];
-      const terrainMaterial = new THREE.ShaderMaterial({
-        uniforms: {},
-        vertexShader: `\
-          attribute vec3 barycentric;
-          varying vec3 vPosition;
-          varying vec3 vBC;
-          void main() {
-            vBC = barycentric;
-            vec4 modelViewPosition = modelViewMatrix * vec4(position, 1.0);
-            vPosition = modelViewPosition.xyz;
-            gl_Position = projectionMatrix * modelViewPosition;
-          }
-        `,
-        fragmentShader: `\
-          varying vec3 vPosition;
-          varying vec3 vBC;
-
-          vec3 color = vec3(0.984313725490196, 0.5490196078431373, 0.0);
-          vec3 lightDirection = vec3(0.0, 0.0, 1.0);
-
-          float edgeFactor() {
-            vec3 d = fwidth(vBC);
-            vec3 a3 = smoothstep(vec3(0.0), d*1.5, vBC);
-            return min(min(a3.x, a3.y), a3.z);
-          }
-
-          void main() {
-            float barycentricFactor = (0.2 + (1.0 - edgeFactor()) * 0.8);
-            vec3 xTangent = dFdx( vPosition );
-            vec3 yTangent = dFdy( vPosition );
-            vec3 faceNormal = normalize( cross( xTangent, yTangent ) );
-            float lightFactor = pow(dot(faceNormal, lightDirection), 2.0);
-            gl_FragColor = vec4(color * barycentricFactor * lightFactor, 1.0);
-          }
-        `,
-        polygonOffset: true,
-        polygonOffsetFactor: -1,
-        polygonOffsetUnits: -4,
-      });
-      const _getTerrainMesh = meshId => {
-        let terrainMesh = terrainMeshes.find(terrainMesh => terrainMesh.meshId === meshId);
-        if (!terrainMesh) {
-          terrainMesh = _makeTerrainMesh(meshId);
-          terrainMeshes.push(terrainMesh);
-          scene.add(terrainMesh);
-        }
-        return terrainMesh;
-      };
-      const fakeArrayBuffer = new ArrayBuffer(3 * 4);
-      const fakeFloat32Array = new Float32Array(fakeArrayBuffer, 0, 3);
-      const fakeUint16Array = new Uint16Array(fakeArrayBuffer, 0, 3);
-      const _makeTerrainMesh = meshId => {
-        const geometry = new THREE.BufferGeometry();
-        const material = terrainMaterial;
-
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.matrixAutoUpdate = false;
-        mesh.frustumCulled = false;
-        mesh.meshId = meshId;
-        return mesh;
-      };
-      const _loadTerrainMesh = (terrainMesh, {transformMatrix, positionArray, positionCount, normalArray, normalCount, indexArray, count}) => {
-        terrainMesh.matrix.fromArray(transformMatrix);
-        terrainMesh.matrixWorldNeedsUpdate = true;
-
-        const {geometry} = terrainMesh;
-        const attributes = renderer.getAttributes();
-
-        const positions = new Float32Array(count*3);
-        const barycentrics = new Float32Array(count*3);
-        for (let i = 0; i < count; i += 3) {
-          const ai = indexArray[i];
-          const bi = indexArray[i+1];
-          const ci = indexArray[i+2];
-
-          const baseA = ai*3;
-          const baseB = bi*3;
-          const baseC = ci*3;
-
-          const baseIndex = i*3;
-          positions[baseIndex] = positionArray[baseA];
-          positions[baseIndex+1] = positionArray[baseA+1];
-          positions[baseIndex+2] = positionArray[baseA+2];
-          positions[baseIndex+3] = positionArray[baseB];
-          positions[baseIndex+4] = positionArray[baseB+1];
-          positions[baseIndex+5] = positionArray[baseB+2];
-          positions[baseIndex+6] = positionArray[baseC];
-          positions[baseIndex+7] = positionArray[baseC+1];
-          positions[baseIndex+8] = positionArray[baseC+2];
-
-          barycentrics[baseIndex] = 1;
-          barycentrics[baseIndex+1] = 0;
-          barycentrics[baseIndex+2] = 0;
-          barycentrics[baseIndex+3] = 0;
-          barycentrics[baseIndex+4] = 1;
-          barycentrics[baseIndex+5] = 0;
-          barycentrics[baseIndex+6] = 0;
-          barycentrics[baseIndex+7] = 0;
-          barycentrics[baseIndex+8] = 1;
-        }
-        geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-        geometry.addAttribute('barycentric', new THREE.BufferAttribute(barycentrics, 3));
-      };
-      const _removeTerrainMesh = terrainMesh => {
-        scene.remove(terrainMesh);
-        terrainMesh.geometry.dispose();
-      };
-      /* const _clearTerrainMeshes = () => {
-        for (let i = 0; i < terrainMeshes.length; i++) {
-          _removeTerrainMesh(terrainMeshes[i]);
-        }
-        terrainMeshes.length = 0;
-      }; */
-      const _onMesh = updates => {
-        for (let i = 0; i < updates.length; i++) {
-          const update = updates[i];
-          const {id, type} = update;
-
-          if (type === 'new' || type === 'update') {
-            _loadTerrainMesh(_getTerrainMesh(id), update);
-          } else if (type === 'unchanged') {
-            // nothing
-          } else {
-            const index = terrainMeshes.findIndex(terrainMesh => terrainMesh.meshId === id);
-            if (index !== -1) {
-              const terrainMesh = terrainMeshes[index];
-              _removeTerrainMesh(terrainMesh);
-              terrainMeshes.splice(index, 1);
-            }
-          }
-        }
-      };
-
-      if (window.browser && window.browser.magicleap) {
+      /* if (window.browser && window.browser.magicleap) {
         mesher = window.browser.magicleap.RequestMeshing();
         mesher.onmesh = _onMesh;
       } else {
@@ -213,13 +211,6 @@
         const geometryPositions = cubeGeometry.attributes.position.array;
         const geometryNormals = cubeGeometry.attributes.normal.array;
         const geometryIndices = cubeGeometry.index.array;
-
-        /* for (let j = 0; j < geometryPositions.length; j += 3) {
-          localVector
-            .fromArray(geometryPositions, j)
-            .multiplyScalar(cubeSize)
-            .toArray(geometryPositions, j);
-        } */
 
         const positionArray = new Float32Array(new ArrayBuffer(numCubes * geometryPositions.length * Float32Array.BYTES_PER_ELEMENT));
         const normalArray = new Float32Array(new ArrayBuffer(numCubes * geometryNormals.length * Float32Array.BYTES_PER_ELEMENT));
@@ -290,7 +281,7 @@
         setInterval(() => {
           _onMesh(updates);
         }, 100);
-      }
+      } */
 
       renderer.setAnimationLoop(animate);
     }
@@ -337,6 +328,9 @@
         renderer.vr.enabled = true;
         renderer.vr.setDevice(display);
         renderer.vr.setAnimationLoop(animate);
+        
+        mesher = session.requestMeshing();
+        mesher.onmesh = _onMesh;
 
         console.log('running!');
       });
