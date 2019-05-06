@@ -290,6 +290,8 @@ class Node extends EventTarget {
       } else if (type === 'value') {
         const {name, newValue} = edit;
         el.setAttribute(name, newValue);
+      } else if (type === 'remove') {
+        el.parentNode.removeChild(el);
       } else {
         throw new Error(`unknown dom edit type: ${type}`);
       }
