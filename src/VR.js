@@ -1,5 +1,5 @@
 const {EventEmitter} = require('events');
-const {Event} = require('./Event');
+const {Event, EventTarget} = require('./Event');
 const symbols = require('./symbols');
 const THREE = require('../lib/three-min.js');
 const {
@@ -354,6 +354,124 @@ class VRDisplay extends EventEmitter {
   }
 }
 
+class SpatialEvent extends Event {
+  constructor(type, init = {}) {
+    super(type);
+
+    if (init.detail) {
+      for (const k in init.detail) {
+        this[k] = init.detail[k];
+      }
+    }
+  }
+}
+
+class FakeMesher extends EventTarget {
+  constructor() {
+    super();
+
+    this.position = new Float32Array(3);
+    this.orientation = Float32Array.from([0, 0, 0, 1]);
+    this.scale = Float32Array.from([1, 1, 1]);
+
+    const boxBufferGeometry = {
+      position: Float32Array.from([0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, -0.5]),
+      normal: Float32Array.from([1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1]),
+      index: Uint16Array.from([0, 2, 1, 2, 3, 1, 4, 6, 5, 6, 7, 5, 8, 10, 9, 10, 11, 9, 12, 14, 13, 14, 15, 13, 16, 18, 17, 18, 19, 17, 20, 22, 21, 22, 23, 21]),
+    };
+
+    this.interval = setInterval(() => {
+      const meshes = (() => {
+        const result = Array(3);
+        for (let i = 0; i < result.length; i++) {
+          localQuaternion.setFromUnitVectors(
+            localVector.set(0, 1, 0),
+            localVector2.set(-0.5+Math.random(), 1, -0.5+Math.random()).normalize()
+          );
+          localMatrix.compose(
+            localVector.set(0, 0.5+i, 0),
+            localQuaternion,
+            localVector2.set(0.5+Math.random()*0.5, 1+Math.random(), 0.5+Math.random()*0.5)
+          );
+
+          const positionArray = Float32Array.from(boxBufferGeometry.position);
+          const normalArray = Float32Array.from(boxBufferGeometry.normal);
+          for (let j = 0; j < positionArray.length; j += 3) {
+            localVector.fromArray(positionArray, j);
+            localVector.applyMatrix4(localMatrix);
+            localVector.toArray(positionArray, j);
+
+            localVector.fromArray(normalArray, j);
+            localVector.applyMatrix4(localMatrix);
+            localVector.toArray(normalArray, j);
+          }
+
+          const indexArray = boxBufferGeometry.index;
+
+          result[i] = {
+            positionArray,
+            normalArray,
+            indexArray,
+          };
+        };
+        return result;
+      })();
+      const e = new SpatialEvent('mesh', {
+        detail: {
+          meshes,
+        }
+      });
+      this.dispatchEvent(e);
+    }, 1000);
+  }
+
+  get onmesh() {
+    return this.listeners('mesh')[0];
+  }
+  set onmesh(onmesh) {
+    this.on('mesh', onmesh);
+  }
+
+  update(position, orientation, scale) {
+    this.position.set(position);
+    this.orientation.set(orientation);
+    this.scale.set(scale);
+  }
+
+  destroy() {
+    this.clearInterval(this.interval);
+  }
+}
+
+class FakePlanesTracker extends EventTarget {
+  constructor() {
+    super();
+
+    this.position = new Float32Array(3);
+    this.orientation = Float32Array.from([0, 0, 0, 1]);
+    this.scale = Float32Array.from([1, 1, 1]);
+
+    this.interval = setInterval(() => {
+      const e = new SpatialEvent('plane', {
+        positionArray,
+        normalArray,
+        indexArray,
+      });
+      this.dispatchEvent(e);
+    }, 1000);
+  }
+
+  update(position, orientation, scale) {
+    this.position.set(position);
+    this.orientation.set(orientation);
+    this.scale.set(scale);
+  }
+
+  destroy() {
+    this.clearInterval(this.interval);
+  }
+}
+
 class FakeVRDisplay extends VRDisplay {
   constructor(window) {
     super('FAKE');
@@ -416,9 +534,11 @@ class FakeVRDisplay extends VRDisplay {
     const self = this;
 
     await this.onrequestpresent();
-    
+
     const {xrState} = GlobalContext;
 
+    let mesher;
+    let planesTracker;
     const session = {
       addEventListener(e, fn) {
         if (e === 'end') {
@@ -435,7 +555,6 @@ class FakeVRDisplay extends VRDisplay {
       },
       device: self,
       baseLayer: null,
-      // layers,
       _frame: null, // defer
       getInputSources() {
         return this.device.gamepads;
@@ -458,6 +577,24 @@ class FakeVRDisplay extends VRDisplay {
         for (let i = 0; i < onends.length; i++) {
           onends[i]();
         }
+      },
+      async requestMeshing() {
+        if (!mesher) {
+          mesher = new FakeMesher();
+        }
+        return mesher;
+      },
+      async requestPlanes() {
+        if (!planesTracker) {
+          planesTracker = new FakePlanesTracker();
+        }
+        return planesTracker;
+      },
+      async requestHitTest(origin, direction, coordinateSystem) {
+        if (!mesher) {
+          mesher = new FakeMesher();
+        }
+        return mesher.requestHitTest(origin, direction, coordinateSystem);
       },
     };
     const _frame = {
