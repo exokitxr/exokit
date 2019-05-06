@@ -151,7 +151,6 @@ class Engine extends React.Component {
     }
     
     onUrlChange(e) {
-      console.log('url change', e.target.value);
       this.setState({
         url: e.target.value,
       });
