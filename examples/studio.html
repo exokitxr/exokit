@@ -1196,6 +1196,7 @@ const _bindEventTarget = target => {
         };
         const _addTransformControls = (camera, iframe) => {
           transformControls = new THREE.TransformControls(camera, document.body, viewport);
+          transformControls.iframe = iframe;
 
           transformControls.addEventListener('dragging-changed', e => {
             orbitControls.enabled = !e.value;
@@ -1276,7 +1277,11 @@ const _bindEventTarget = target => {
           }).filter(spec => !!spec).sort((a, b) => a.distance - b.distance);
           const closestIframe = distanceSpecs.length > 0 ? distanceSpecs[0].iframe : null;
           const shouldTransform = (!!transformControls && transformControls.dragging) || !!closestIframe;
-          if (shouldTransform && !transformControls) {
+          if (shouldTransform && (!transformControls || (transformControls.iframe !== closestIframe && !transformControls.dragging))) {
+            if (transformControls) {
+              _removeTransformControls();
+            }
+          
             _addTransformControls(localCamera, closestIframe);
           } else if (!shouldTransform && transformControls) {
             _removeTransformControls();
