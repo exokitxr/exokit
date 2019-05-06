@@ -25,12 +25,95 @@
   <script src="three.js"></script>
   <script src="GLTFLoader.js"></script>
   <script>
-    let container, scene, camera, display, controllerMeshes, planeMeshes;
+    let container, scene, camera, display, plantMeshes, planeMeshes;
     let planeTracker = null;
 
-    // const localVector = new THREE.Vector3();
-    // const localVector2 = new THREE.Vector3();
+    const localVector = new THREE.Vector3();
+    const localVector2 = new THREE.Vector3();
     // const localQuaternion = new THREE.Quaternion();
+    // const downToUpQuaterion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, -1, 0), new THREE.Vector3(0, 1, 0));
+    
+    const _loadPlantMeshes = () => new Promise((accept, reject) => {
+      const loader = new THREE.GLTFLoader();
+      loader.load('plants.glb', o => {
+        o = o.scene;
+
+        const result = [];
+        o.traverse(e => {
+          if (e.isMesh) {
+            e.frustumCulled = false;
+            result.push(e);
+          }
+        });
+
+        accept(result);
+      });
+    });
+
+    planeMeshes = [];
+    /* const planeGeometry1 = new THREE.PlaneBufferGeometry(1, 1)
+    const planeMaterial1 = new THREE.MeshPhongMaterial({
+      color: 0xe91e63,
+    });
+    const planeGeometry2 = planeGeometry1.clone()
+      .applyMatrix(
+        new THREE.Matrix4().makeRotationFromQuaternion(
+          new THREE.Quaternion().setFromUnitVectors(
+            new THREE.Vector3(0, 0, 1),
+            new THREE.Vector3(0, 0, -1),
+          )
+        )
+      );
+    const planeMaterial2 = new THREE.MeshPhongMaterial({
+      color: 0x673ab7,
+    }); */
+    const _loadPlanes = updates => {
+      // _clearPlanes();
+
+      for (let i = 0; i < updates.length; i++) {
+        const update = updates[i];
+        const {type, id, position, normal, scale} = update;
+
+        if (type === 'new') {
+          const planeMesh = new THREE.Object3D();
+          planeMesh.position.fromArray(position);
+          planeMesh.quaternion.setFromUnitVectors(
+            localVector.set(0, 0, 1),
+            localVector2.fromArray(normal)
+          );
+          planeMesh.scale.fromArray(scale);
+          planeMesh.planeId = id;
+
+          const plantMesh = (() => {
+            const index = Math.floor(Math.random() * plantMeshes.length);
+            const plantMesh = plantMeshes[index];
+            return plantMesh.clone();
+          })();
+          planeMesh.add(plantMesh);
+
+          scene.add(planeMesh);
+          planeMeshes.push(planeMesh);
+        } else {
+          const index = planeMeshes.findIndex(planeMesh => planeMesh.planeId === id);
+          if (index !== -1) {
+            const planeMesh = planeMeshes[index];
+            scene.remove(planeMesh);
+            planeMeshes.splice(index, 1);
+          }
+        }
+      }
+    };
+    /* const _clearPlanes = () => {
+      for (let i = 0; i < planeMeshes.length; i++) {
+        const planeMesh = planeMeshes[i];
+        scene.remove(planeMesh);
+      }
+      planeMeshes.length = 0;
+    }; */
+    const _onPlanes = e => {
+      const {updates} = e;
+      _loadPlanes(updates);
+    };
 
     async function init() {
       container = document.createElement('div');
@@ -51,193 +134,6 @@
       const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
       directionalLight.position.set(1, 1, 1);
       scene.add(directionalLight);
-
-      const plantMeshes = await new Promise((accept, reject) => {
-        const loader = new THREE.GLTFLoader();
-        loader.load('plants.glb', o => {
-          o = o.scene;
-
-          const result = [];
-          o.traverse(e => {
-            if (e.isMesh) {
-              e.frustumCulled = false;
-              result.push(e);
-            }
-          });
-
-          accept(result);
-        });
-      });
-
-      planeMeshes = [];
-      const planeMeshesCache = {};
-      const planeGeometry1 = new THREE.PlaneBufferGeometry(1, 1)
-      const planeMaterial1 = new THREE.MeshPhongMaterial({
-        color: 0xe91e63,
-      });
-      const planeGeometry2 = planeGeometry1.clone()
-        .applyMatrix(
-          new THREE.Matrix4().makeRotationFromQuaternion(
-            new THREE.Quaternion().setFromUnitVectors(
-              new THREE.Vector3(0, 0, 1),
-              new THREE.Vector3(0, 0, -1),
-            )
-          )
-        );
-      const planeMaterial2 = new THREE.MeshPhongMaterial({
-        color: 0x673ab7,
-      });
-      const _loadPlanes = planes => {
-        _clearPlanes();
-
-        for (let i = 0; i < planes.length; i++) {
-          const plane = planes[i];
-
-          const object = (() => {
-            const cachedObject = planeMeshesCache[plane.id];
-
-            if (cachedObject) {
-              return cachedObject;
-            } else {
-              const object = new THREE.Object3D();
-              object.position.fromArray(plane.position);
-              object.quaternion.fromArray(plane.rotation);
-
-              /* const frontMesh = (() => {
-                const mesh = new THREE.Mesh(planeGeometry1, planeMaterial1);
-                mesh.scale.set(plane.size[0], 1, plane.size[1]);
-                mesh.frustumCulled = false;
-                // mesh.updateMatrix();
-                // mesh.updateMatrixWorld();
-                return mesh;
-              })();
-              object.add(frontMesh);
-              const backMesh = (() => {
-                const mesh = new THREE.Mesh(planeGeometry2, planeMaterial2);
-                mesh.scale.set(plane.size[0], 1, plane.size[1]);
-                mesh.frustumCulled = false;
-                // mesh.updateMatrix();
-                // mesh.updateMatrixWorld();
-                return mesh;
-              })();
-              object.add(backMesh); */
-
-              const plantMesh = (() => {
-                const index = Math.floor(Math.random() * plantMeshes.length);
-                const plantMesh = plantMeshes[index];
-                return plantMesh.clone();
-              })();
-              object.add(plantMesh);
-
-              planeMeshesCache[plane.id] = object;
-
-              return object;
-            }
-          })();
-
-          scene.add(object);
-          planeMeshes.push(object);
-        }
-      };
-      const _clearPlanes = () => {
-        for (let i = 0; i < planeMeshes.length; i++) {
-          const planeMesh = planeMeshes[i];
-          scene.remove(planeMesh);
-        }
-        planeMeshes.length = 0;
-      };
-      const _onPlanes = planes => {
-        _loadPlanes(planes);
-      };
-
-      if (window.browser && window.browser.magicleap) {
-        planeTracker = window.browser.magicleap.RequestPlaneTracking();
-        planeTracker.onplanes = _onPlanes;
-      } else {
-        const updates = Array(10);
-        const _makeSize = () => new THREE.Vector2(1 + Math.random()*2, 1 + Math.random()*2);
-        const _makeOffset = (oldPosition, oldNormal, oldSize) => {
-          const corner = (() => {
-            const index = Math.floor(Math.random() * 4);
-            switch (index) {
-              case 0: return new THREE.Vector3(1, 0, 0);
-              case 1: return new THREE.Vector3(-1, 0, 0);
-              case 2: return new THREE.Vector3(0, 0, 1);
-              case 3: return new THREE.Vector3(0, 0, -1);
-              default: return null;
-            }
-          })();
-          const direction = Math.random() < 0.5 ? 1 : -1;
-
-          const newNormal = corner.clone()
-            .applyQuaternion(
-              new THREE.Quaternion().setFromUnitVectors(
-                new THREE.Vector3(0, 0, 1),
-                oldNormal
-              )
-            )
-            .multiplyScalar(direction);
-          const newSize = _makeSize();
-          const newPosition = oldPosition.clone()
-            .add(
-              corner.clone()
-                .multiply(new THREE.Vector3(oldSize.x/2, 1, oldSize.y/2))
-                .applyQuaternion(
-                  new THREE.Quaternion().setFromUnitVectors(
-                    new THREE.Vector3(0, 0, 1),
-                    oldNormal
-                  )
-                )
-            )
-            .sub(
-              oldNormal.clone()
-                .multiplyScalar(direction)
-                .multiply(
-                  new THREE.Vector3(newSize.x/2, 1, newSize.y/2)
-                    .applyQuaternion(
-                      new THREE.Quaternion().setFromUnitVectors(
-                        new THREE.Vector3(0, 0, 1),
-                        newNormal
-                      )
-                    )
-                )
-            );
-
-          return {
-            position: newPosition,
-            normal: newNormal,
-            size: newSize,
-          };
-        };
-        let position = null;
-        let normal = null;
-        let size = null;
-        for (let i = 0; i < updates.length; i++) {
-          if (!position) {
-            position = new THREE.Vector3(0, 0, 0);
-            normal = new THREE.Vector3(0, 1, 0);
-            size = _makeSize();
-          } else {
-            const offset = _makeOffset(position, normal, size);
-
-            position = offset.position;
-            normal = offset.normal;
-            size = offset.size;
-          }
-          updates[i] = {
-            id: i + '',
-            position: position.toArray(new Float32Array(3)),
-            rotation: new THREE.Quaternion().setFromUnitVectors(
-              new THREE.Vector3(0, 0, 1),
-              normal
-            ).toArray(new Float32Array(4)),
-            size: size.toArray(new Float32Array(2)),
-          };
-        }
-        setInterval(() => {
-          _onPlanes(updates);
-        }, 100);
-      }
 
       renderer = new THREE.WebGLRenderer({
         antialias: true,
@@ -312,7 +208,18 @@
         renderer.vr.enabled = true;
         renderer.vr.setDevice(display);
         renderer.vr.setAnimationLoop(animate);
-
+        
+        _loadPlantMeshes()
+          .then(newPlantMeshes => {
+            plantMeshes = newPlantMeshes;
+            
+            planeTracker = session.requestPlaneTracking();
+            planeTracker.onplanes = _onPlanes;
+          })
+          .catch(err => {
+            console.warn(err.stack);
+          });
+          
         console.log('running!');
       });
     })();
