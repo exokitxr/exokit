@@ -131,6 +131,10 @@ class Engine extends React.Component {
       e.stopPropagation();
     }
     
+    onEngineRenderClick() {
+      this.blur();
+    }
+    
     focusUrlInput() {
       this.setState({
         item: null,
@@ -321,7 +325,7 @@ class Engine extends React.Component {
           <Settings settings={this.state.settings === 'settings'} open={!!this.state.settings} close={() => this.openSettings(null)}/>
           <div className="engine-split">
             <div className="engine-left">
-              <div className="engine-render" id="engine-render"/>
+              <div className="engine-render" id="engine-render" onClick={() => this.onEngineRenderClick()} />
               <Console/>
             </div>
             <div className="engine-right">
