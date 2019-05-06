@@ -225,13 +225,19 @@ class DomAttribute extends React.Component {
     }
   }
 
+  onKeyDown(e) {
+    if (e.code === 13) { // enter
+      document.activeElement.blur();
+    }
+  }
+
   onNameChange(e) {
     const name = e.target.value;
     this.setState({
       name,
     });
   }
-  
+
   onNameBlur() {
     window.postMessage({
       method: 'edit',
@@ -267,8 +273,8 @@ class DomAttribute extends React.Component {
   render() {
     return (
       <div className="dom-attribute">
-        <input type="text" className="dom-attribute-name" value={this.state.name} onChange={e => this.onNameChange(e)} onBlur={e => this.onNameBlur()} />
-        <input type="text" className="dom-attribute-value" value={this.state.value} onChange={e => this.onValueChange(e)} onBlur={e => this.onValueBlur()} />
+        <input type="text" className="dom-attribute-name" value={this.state.name} onKeyDown={e => this.onKeyDown(e)} onChange={e => this.onNameChange(e)} onBlur={e => this.onNameBlur()} />
+        <input type="text" className="dom-attribute-value" value={this.state.value} onKeyDown={e => this.onKeyDown(e)} onChange={e => this.onValueChange(e)} onBlur={e => this.onValueBlur()} />
       </div>
     );
   }
