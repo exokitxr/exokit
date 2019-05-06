@@ -382,8 +382,8 @@ class FakeMesher extends EventTarget {
       index: Uint16Array.from([0, 2, 1, 2, 3, 1, 4, 6, 5, 6, 7, 5, 8, 10, 9, 10, 11, 9, 12, 14, 13, 14, 15, 13, 16, 18, 17, 18, 19, 17, 20, 22, 21, 22, 23, 21]),
     };
 
-    const lastMeshPosition = new THREE.Vector3();
     let meshes = [];
+    const lastMeshPosition = new THREE.Vector3();
 
     this.interval = setInterval(() => {
       localMatrix
@@ -460,13 +460,15 @@ class FakeMesher extends EventTarget {
       };
       updates.push.apply(updates, meshes);
 
-      const e = new SpatialEvent('mesh', {
-        detail: {
-          updates,
-        }
-      });
-      this.dispatchEvent(e);
-      
+      if (updates.length > 0) {
+        const e = new SpatialEvent('mesh', {
+          detail: {
+            updates,
+          }
+        });
+        this.dispatchEvent(e);
+      }
+
       lastMeshPosition.copy(currentMeshPosition);
     }, 1000);
   }
@@ -475,7 +477,6 @@ class FakeMesher extends EventTarget {
     return this.listeners('mesh')[0];
   }
   set onmesh(onmesh) {
-    console.log('set on mesh');
     this.on('mesh', onmesh);
   }
 
@@ -496,27 +497,63 @@ class FakePlanesTracker extends EventTarget {
 
     this.session = session;
 
-    /* this.position = new Float32Array(3);
-    this.orientation = Float32Array.from([0, 0, 0, 1]);
-    this.scale = Float32Array.from([1, 1, 1]); */
+    let planes = [];
+    const lastMeshPosition = new THREE.Vector3();
 
     this.interval = setInterval(() => {
-      const e = new SpatialEvent('plane', {
-        detail: {
-          positionArray,
-          normalArray,
-          indexArray,
-        },
-      });
-      this.dispatchEvent(e);
+      localMatrix
+        .fromArray(this.session._frame.getDevicePose().getViewMatrix('left'))
+        .getInverse(localMatrix)
+        .decompose(localVector, localQuaternion, localVector2);
+      const currentMeshPosition = new THREE.Vector3(Math.floor(localVector.x/10+0.5)*10, 0, Math.floor(localVector.z/10+0.5)*10);
+
+      const updates = [];
+      if (planes.length > 0 && !currentMeshPosition.equals(lastMeshPosition)) {
+        for (let i = 0; i < planes.length; i++) {
+          const plane = planes[i];
+          updates.push({
+            id: plane.id,
+            type: 'remove',
+          });
+        }
+      }
+
+      if (planes.length === 0 || !currentMeshPosition.equals(lastMeshPosition)) {
+        planes = Array(Math.floor(2 + Math.random()*5));
+
+        for (let i = 0; i < planes.length; i++) {
+          planes[i] = {
+            id: Math.random() + '',
+            type: 'new',
+            position: localVector.copy(currentMeshPosition)
+              .add(localVector2.set(-5 + Math.random()*10, Math.random()*0.5, -5 + Math.random()*10))
+              .toArray(new Float32Array(3)),
+            normal: Float32Array.from([0, 1, 0]),
+            scale: Float32Array.from([1, 1, 1]),
+          };
+        }
+        updates.push.apply(updates, planes);
+      }
+
+      if (updates.length > 0) {
+        const e = new SpatialEvent('planes', {
+          detail: {
+            updates,
+          }
+        });
+        this.dispatchEvent(e);
+      }
+
+      lastMeshPosition.copy(currentMeshPosition);
     }, 1000);
   }
 
-  /* update(position, orientation, scale) {
-    this.position.set(position);
-    this.orientation.set(orientation);
-    this.scale.set(scale);
-  } */
+  get onplanes() {
+    return this.listeners('planes')[0];
+  }
+  set onplanes(onplanes) {
+    this.on('planes', onplanes);
+  }
 
   destroy() {
     this.clearInterval(this.interval);
@@ -635,7 +672,7 @@ class FakeVRDisplay extends VRDisplay {
         }
         return mesher;
       },
-      requestPlanes() {
+      requestPlaneTracking() {
         if (!planesTracker) {
           planesTracker = new FakePlanesTracker(session);
         }
