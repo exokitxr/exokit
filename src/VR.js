@@ -14,9 +14,11 @@ const GlobalContext = require('./GlobalContext');
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
+const localVector3 = new THREE.Vector3();
 const localQuaternion = new THREE.Quaternion();
 const localMatrix = new THREE.Matrix4();
 const localMatrix2 = new THREE.Matrix4();
+const localRay = new THREE.Ray();
 const localViewMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
 
 class VRPose {
@@ -371,10 +373,7 @@ class FakeMesher extends EventTarget {
     super();
 
     this.session = session;
-
-    /* this.position = new THREE.Vector3();
-    this.orientation = new THREE.Quaternion();
-    this.scale = new THREE.Vector3(1, 1, 1); */
+    this.meshes = [];
 
     const boxBufferGeometry = {
       position: Float32Array.from([0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, -0.5]),
@@ -382,7 +381,6 @@ class FakeMesher extends EventTarget {
       index: Uint16Array.from([0, 2, 1, 2, 3, 1, 4, 6, 5, 6, 7, 5, 8, 10, 9, 10, 11, 9, 12, 14, 13, 14, 15, 13, 16, 18, 17, 18, 19, 17, 20, 22, 21, 22, 23, 21]),
     };
 
-    let meshes = [];
     const lastMeshPosition = new THREE.Vector3();
 
     this.interval = setInterval(() => {
@@ -393,9 +391,9 @@ class FakeMesher extends EventTarget {
       const currentMeshPosition = new THREE.Vector3(Math.floor(localVector.x/10+0.5)*10, 0, Math.floor(localVector.z/10+0.5)*10);
 
       const updates = [];
-      if (meshes.length > 0 && !currentMeshPosition.equals(lastMeshPosition)) {
-        for (let i = 0; i < meshes.length; i++) {
-          const mesh = meshes[i];
+      if (this.meshes.length > 0 && !currentMeshPosition.equals(lastMeshPosition)) {
+        for (let i = 0; i < this.meshes.length; i++) {
+          const mesh = this.meshes[i];
           updates.push({
             id: mesh.id,
             type: 'remove',
@@ -403,8 +401,8 @@ class FakeMesher extends EventTarget {
         }
       }
 
-      meshes = (meshes.length > 0 && currentMeshPosition.equals(lastMeshPosition)) ?
-        meshes.map(({id}) => ({type: 'update', id, positionArray: null, normalArray: null, indexArray: null, transformMatrix: null}))
+      this.meshes = (this.meshes.length > 0 && currentMeshPosition.equals(lastMeshPosition)) ?
+        this.meshes.map(({id}) => ({type: 'update', id, positionArray: null, normalArray: null, indexArray: null, transformMatrix: null}))
       :
         (() => {
           const result = Array(3);
@@ -420,17 +418,34 @@ class FakeMesher extends EventTarget {
           }
           return result;
         })();
-      for (let i = 0; i < meshes.length; i++) {
-        const mesh = meshes[i];
-        
+      for (let i = 0; i < this.meshes.length; i++) {
+        const mesh = this.meshes[i];
+
         localQuaternion.setFromUnitVectors(
           localVector.set(0, 1, 0),
           localVector2.set(-0.5+Math.random(), 1, -0.5+Math.random()).normalize()
         );
+        localVector.set(0, 0.5+i, 0)
+        localVector2.set(0.5+Math.random()*0.5, 1+Math.random(), 0.5+Math.random()*0.5);
+
+        const box = new THREE.Box3().setFromCenterAndSize(localVector3.set(0, 0, 0), localVector2);
+        box.quaternion = localQuaternion.clone();
+        box.matrix = localMatrix
+          .compose(
+            localVector,
+            localQuaternion,
+            localVector3.set(1, 1, 1)
+          )
+          .clone();
+        box.matrixInverse = localMatrix
+          .getInverse(localMatrix)
+          .clone();
+        mesh.box = box;
+
         localMatrix.compose(
-          localVector.set(0, 0.5+i, 0),
+          localVector,
           localQuaternion,
-          localVector2.set(0.5+Math.random()*0.5, 1+Math.random(), 0.5+Math.random()*0.5)
+          localVector2
         );
 
         const positionArray = Float32Array.from(boxBufferGeometry.position);
@@ -458,7 +473,7 @@ class FakeMesher extends EventTarget {
           )
           .toArray(new Float32Array(16));
       };
-      updates.push.apply(updates, meshes);
+      updates.push.apply(updates, this.meshes);
 
       if (updates.length > 0) {
         const e = new SpatialEvent('mesh', {
@@ -480,10 +495,38 @@ class FakeMesher extends EventTarget {
     this.on('mesh', onmesh);
   }
 
-  update(position, orientation, scale) {
-    this.position.set(position);
-    this.orientation.set(orientation);
-    this.scale.set(scale);
+  async requestHitTest(origin, direction, coordinateSystem) {
+    for (let i = 0; i < this.meshes.length; i++) {
+      const mesh = this.meshes[i];
+
+      localVector.fromArray(origin).applyMatrix4(mesh.box.matrixInverse);
+      localVector2.fromArray(origin).add(localVector3.fromArray(direction)).applyMatrix4(mesh.box.matrixInverse).sub(localVector);
+      localRay.set(localVector, localVector2);
+      const intersection = localRay.intersectBox(mesh.box, localVector3);
+      if (intersection) {
+        const normal = localVector;
+        if (intersection.x >= mesh.box.max.x - 0.001) normal.set(1, 0, 0);
+        else if (intersection.x <= mesh.box.min.x + 0.001) normal.set(-1, 0, 0);
+        else if (intersection.y >= mesh.box.max.y - 0.001) normal.set(0, 1, 0);
+        else if (intersection.y <= mesh.box.min.y + 0.001) normal.set(0, -1, 0);
+        else if (intersection.z >= mesh.box.max.z - 0.001) normal.set(0, 0, 1);
+        else if (intersection.z <= mesh.box.min.z + 0.001) normal.set(0, 0, -1);
+        normal.applyQuaternion(mesh.box.quaternion);
+
+        intersection.applyMatrix4(mesh.box.matrix);
+
+        return [{
+          hitMatrix: localMatrix
+            .compose(
+              intersection,
+              localQuaternion.setFromUnitVectors(localVector2.set(0, 0, -1), normal),
+              localVector2.set(1, 1, 1)
+            )
+            .toArray(new Float32Array(16))
+        }];
+      }
+    }
+    return [];
   }
 
   destroy() {
@@ -573,11 +616,17 @@ class FakeVRDisplay extends VRDisplay {
     ];
     for (let i = 0; i < this.gamepads.length; i++) {
       const gamepad = this.gamepads[i];
+      const xrStateGamepad = GlobalContext.xrState.gamepads[i];
+
       gamepad.handedness = gamepad.hand;
       gamepad.pose.targetRay = {
-        transformMatrix: new Float32Array(16),
+        origin: new GlobalContext.DOMPoint(),
+        direction: new GlobalContext.DOMPoint(0, 0, -1),
+        transformMatrix: Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]),
       };
-      gamepad.pose._localPointerMatrix = new Float32Array(16);
+      gamepad.pose.targetRay.origin.values = xrStateGamepad.position;
+      gamepad.pose.targetRay.direction.values = xrStateGamepad.direction;
+      gamepad.pose._localPointerMatrix = xrStateGamepad.transformMatrix;
     }
 
     this.onrequestanimationframe = fn => window.requestAnimationFrame(fn);
