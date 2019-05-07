@@ -1428,8 +1428,16 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       }
     };
     const _onexitpresent = async () => {
-      // XXX call upwards
-      fakePresentState.fakeVrDisplay = null;
+      if (xrState.isPresenting[0]) {
+        await new Promise((accept, reject) => {
+          vrPresentState.responseAccept = accept;
+
+          xrState.vrRequest[1] = GlobalContext.id;
+          xrState.vrRequest[0] = 2; // exitPresent
+        });
+
+        vrPresentState.hmdType = null;
+      }
     };
 
     const fakeVrDisplay = new FakeVRDisplay(window);

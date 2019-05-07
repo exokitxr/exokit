@@ -440,10 +440,14 @@ class FakeVRDisplay extends VRDisplay {
       },
       cancelAnimationFrame: fn => self.cancelAnimationFrame(fn),
       end() {
-        for (let i = 0; i < self._onends.length; i++) {
-          self._onends[i]();
+        await self.exitPresent();
+
+        xrState.fakeVrDisplayEnabled[0] = 1;
+
+        const onends = self._onends.slice();
+        for (let i = 0; i < onends.length; i++) {
+          onends[i]();
         }
-        return self.exitPresent();
       },
     };
     const _frame = {

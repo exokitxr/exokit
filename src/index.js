@@ -410,14 +410,29 @@ const _startTopRenderLoop = () => {
       if (window) {
         window.runAsync(JSON.stringify({
           method: 'response',
+          hmdType,
         }));
       } else {
         console.warn(`no top level window to respond to for request present: ${hmdType} ${windowId}`);
       }
     } else if (vrRequestMethod === 2) { // exitPresent
-      console.log('exit present'); // XXX
+      if (topVrPresentState.hmdType === 'fake') {
+        // XXX destroy fbo
+      } else {
+        throw new Error(`fail to exit present for hmd type ${topVrPresentState.hmdType}`);
+      }
+
+      topVrPresentState.hmdType = null;
+
+      const windowId = xrState.vrRequest[1];
+      const window = windows.find(window => window.id === windowId);
       
-      xrState.vrRequest[0] = 0;
+      xrState.isPresenting[0] = 0;
+      xrState.vrRequest.fill(0);
+
+      window.runAsync(JSON.stringify({
+        method: 'response',
+      }));
     }
   };
   const _waitGetPoses = async () => {
