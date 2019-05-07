@@ -435,7 +435,7 @@ class FakeVRDisplay extends VRDisplay {
         return Promise.resolve({});
       },
       requestAnimationFrame(fn) {
-        return this.device.onrequestanimationframe(timestamp => {
+        return self.requestAnimationFrame(timestamp => {
           fn(timestamp, this._frame);
         });
       },
