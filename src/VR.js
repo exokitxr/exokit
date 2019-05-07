@@ -285,14 +285,12 @@ class VRDisplay extends EventEmitter {
   }
 
   async exitPresent() {
-    if (this.onexitpresent) {
-      await this.onexitpresent();
-    }
-
     for (let i = 0; i < this._rafs.length; i++) {
       this.cancelAnimationFrame(this._rafs[i]);
     }
     this._rafs.length = 0;
+    
+    await this.onexitpresent();
 
     if (this.onvrdisplaypresentchange && this.isPresenting) {
       this.isPresenting = false;
