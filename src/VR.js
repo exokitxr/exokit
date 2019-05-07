@@ -416,6 +416,14 @@ class FakeVRDisplay extends VRDisplay {
           self._onends.push(fn);
         }
       },
+      removeEventListener(e, fn) {
+        if (e === 'end') {
+          const index = self._onends.indexOf(fn);
+          if (index !== -1) {
+            self._onends.splice(index, 1);
+          }
+        }
+      },
       device: self,
       baseLayer: null,
       // layers,
