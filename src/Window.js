@@ -521,6 +521,8 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
 const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
 
 (window => {
+  const rafCbs = [];
+  window[symbols.rafCbsSymbol] = rafCbs;
   for (const k in EventEmitter.prototype) {
     window[k] = EventEmitter.prototype[k];
   }
@@ -1093,9 +1095,8 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     }
   };
   window.requestAnimationFrame = _makeRequestAnimationFrame(window);
-  const rafCbs = [];
-  window[symbols.rafCbsSymbol] = rafCbs;
   window.cancelAnimationFrame = id => {
+    const rafCbs = window[symbols.rafCbsSymbol];
     process.stdout.write(`rafCbs TKTK ${id}\n`);
     process.stdout.write(require('util').inspect(rafCbs) + '\n', () => {
       process.stdout.write('rafCbs TKTK done\n', () => {
@@ -1103,7 +1104,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
           return (r[symbols.idSymbol] === id);
         });
         if (index !== -1) {
-          delete rafCbs[index];
+          rafCbs.splice(index, 1);
         }
       });
     });
@@ -1321,7 +1322,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
 
             const index = rafCbs.indexOf(rafCb); // could have changed due to sorting
             if (index !== -1) {
-              delete rafCbs[index];
+              rafCbs.splice(index, 1);
             }
           }
         }

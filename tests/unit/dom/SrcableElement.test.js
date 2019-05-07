@@ -28,7 +28,7 @@ describe('HTMLSrcableElement', () => {
 
   afterEach(async () => {
     console.log('sleep');
-    await sleep(400);
+    await sleep(10);
     console.log('window.destroy');
     try {
       await window.destroy();
@@ -110,7 +110,7 @@ describe('HTMLSrcableElement', () => {
     });
   });
 
-  describe.skip('<audio>', () => { // XXX
+  describe.skip('<audio>', () => {
     it('can setAttribute', async () => {
       return await window.evalAsync(`new Promise((accept, reject) => {
         el = document.createElement('audio');

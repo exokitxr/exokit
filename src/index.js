@@ -290,11 +290,6 @@ const topVrPresentState = {
 let loop;
 
 core.exit = () => {
-  if (loop != null) {
-    console.log('asdfsadf');
-    clearInterval(loop);
-  }
-  loop = null;
   if (_renderLoop != null) {
     console.log('asdfsadf');
     _renderLoop.stop();
@@ -317,6 +312,7 @@ const _startTopRenderLoop = () => {
   };
   const TIMESTAMP_FRAMES = 100;
 
+  let loop;
   if (nativeBindings.nativeWindow && nativeBindings.nativeWindow.pollEvents) {
     loop = setInterval(() => {
       nativeBindings.nativeWindow.pollEvents();
@@ -1043,6 +1039,8 @@ const _startTopRenderLoop = () => {
 
   return {
     stop() {
+      clearInterval(loop);
+      loop = null;
       clearImmediate(immediate);
       immediate = null;
     },
@@ -1052,6 +1050,9 @@ let _renderLoop = _startTopRenderLoop();
 
 const _bindWindow = (window, newWindowCb) => {
   console.log('_bindWindow');
+  if (_renderLoop == null) {
+    _renderLoop = _startTopRenderLoop();
+  }
   // window.innerWidth = innerWidth;
   // window.innerHeight = innerHeight;
 
@@ -1177,6 +1178,9 @@ const _prepare = () => Promise.all([
 
 const realityTabsUrl = 'file://' + path.join(__dirname, '..', 'examples', 'realitytabs.html');
 const _start = () => {
+  if (_renderLoop == null) {
+    _renderLoop = _startTopRenderLoop();
+  }
   let {url: u} = args;
   if (!u && args.home) {
     u = realityTabsUrl;

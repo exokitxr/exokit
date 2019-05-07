@@ -2694,8 +2694,10 @@ class HTMLAudioElement extends HTMLMediaElement {
           const src = value;
 
           this.ownerDocument.resources.addResource((onprogress, cb) => {
+            console.log('TKTK 1');
             this.ownerDocument.defaultView.fetch(src)
               .then(res => {
+                console.log('TKTK 2');
                 if (res.status >= 200 && res.status < 300) {
                   return res.arrayBuffer();
                 } else {
@@ -2703,6 +2705,7 @@ class HTMLAudioElement extends HTMLMediaElement {
                 }
               })
               .then(arrayBuffer => {
+                console.log('TKTK 3');
                 try {
                   this.audio.load(arrayBuffer);
                 } catch(err) {
@@ -2710,6 +2713,7 @@ class HTMLAudioElement extends HTMLMediaElement {
                 }
               })
               .then(() => {
+                console.log('TKTK 4');
                 this.readyState = HTMLMediaElement.HAVE_ENOUGH_DATA;
 
                 const progressEvent = new Event('progress', {target: this});
@@ -2724,6 +2728,7 @@ class HTMLAudioElement extends HTMLMediaElement {
                 cb();
               })
               .catch(err => {
+                console.log('TKTK 5');
                 console.warn('failed to load audio:', src);
 
                 const e = new ErrorEvent('error', {target: this});
