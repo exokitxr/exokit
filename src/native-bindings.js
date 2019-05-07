@@ -344,7 +344,8 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
       GlobalContext.contexts.splice(GlobalContext.contexts.indexOf(gl), 1);
 
       if (gl.id === 1) {
-        process.kill(process.pid); // XXX make this a softer process.exit()
+        //process.kill(process.pid); // XXX make this a softer process.exit()
+        console.log('process.kill TKTK');
       }
     })(gl.destroy);
     
@@ -624,7 +625,8 @@ if (bindings.nativeMl) {
           mlPresentState.mlContext.Exit();
         }
         bindings.nativeMl.DeinitLifecycle();
-        process.exit();
+        console.log('process.exit 1 TKTK');
+        //process.exit();
         break;
       }
       case 'resume': {

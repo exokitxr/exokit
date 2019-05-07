@@ -149,7 +149,7 @@ parentPort.on('message', m => {
 });
 parentPort.on('close', () => {
   window.onexit && window.onexit();
-  process.exit(); // thread exit
+  //process.exit(); // thread exit
 });
 
 // run init module

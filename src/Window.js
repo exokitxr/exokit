@@ -507,12 +507,13 @@ const _findFreeSlot = a => {
 };
 const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
   fn = fn.bind(window);
+  if (!fn) { console.log('TKTK'); throw new Error("fn is null"); }
   fn[symbols.prioritySymbol] = priority;
   const id = ++rafIndex;
   fn[symbols.idSymbol] = id;
   const rafCbs = window[symbols.rafCbsSymbol];
   rafCbs[_findFreeSlot(rafCbs)] = fn;
-  rafCbs.sort((a, b) => (b ? b[symbols.prioritySymbol] : 0) - (a ? a[symbols.prioritySymbol] : 0));
+  //rafCbs.sort((a, b) => (b ? b[symbols.prioritySymbol] : 0) - (a ? a[symbols.prioritySymbol] : 0));
   return id;
 };
 const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.RequestHitTest(origin, direction, cb, window);
@@ -1092,11 +1093,19 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     }
   };
   window.requestAnimationFrame = _makeRequestAnimationFrame(window);
+  const rafCbs = [];
   window.cancelAnimationFrame = id => {
-    const index = rafCbs.findIndex(r => r[symbols.idSymbol] === id);
-    if (index !== -1) {
-      rafCbs[index] = null;
-    }
+    process.stdout.write(`rafCbs TKTK ${id}\n`);
+    process.stdout.write(require('util').inspect(rafCbs) + '\n', () => {
+      process.stdout.write('rafCbs TKTK done\n', () => {
+        const index = rafCbs.findIndex(r => {
+          return r && (r[symbols.idSymbol] === id);
+        });
+        if (index !== -1) {
+          delete rafCbs[index];
+        }
+      });
+    });
   };
   window.postMessage = (postMessage => function(data) {
     if (window.top === window) {
@@ -1180,7 +1189,6 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     }
   });
 
-  const rafCbs = [];
   window[symbols.rafCbsSymbol] = rafCbs;
   const timeouts = [];
   const intervals = [];
@@ -1312,7 +1320,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
 
             const index = rafCbs.indexOf(rafCb); // could have changed due to sorting
             if (index !== -1) {
-              rafCbs[index] = null;
+              delete rafCbs[index];
             }
           }
         }
@@ -1478,27 +1486,51 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
 })(global);
 
 if (!options.require) {
-  global.require = undefined;
+  //global.require = undefined;
 }
-global.process = undefined;
+//global.process = undefined;
 global.onrunasync = method => {
-  if (method === 'tickAnimationFrame') {
-    return global.tickAnimationFrame();
-  } else if (/^\{"method":"response"/.test(method)) {
-    if (vrPresentState.responseAccept) {
-      const res = JSON.parse(method);
-      
-      const {responseAccept} = vrPresentState;
-      vrPresentState.responseAccept = null;
-      responseAccept(res);
-      return Promise.resolve();
+  try {
+    console.log('TKTK worker onrunasync', method);
+    if (method === 'tickAnimationFrame') {
+      console.log('worker tickAnimationFrame');
+      return global.tickAnimationFrame();
+    } else if (/^\{"method":"response"/.test(method)) {
+      console.log('worker response');
+      if (vrPresentState.responseAccept) {
+        const res = JSON.parse(method);
+        
+        const {responseAccept} = vrPresentState;
+        vrPresentState.responseAccept = null;
+        responseAccept(res);
+        return Promise.resolve();
+      } else {
+        return Promise.reject(new Error(`unexpected window response`));
+      }
+    } else if (/^\{"method":"eval"/.test(method)) {
+      console.log('worker eval');
+      try {
+        console.log('global.onrunasync', JSON.parse(method).scriptString);
+        //console.log('global.onrunasync', eval(JSON.parse(method).scriptString));
+        console.log('global.onrunasync eval', method);
+        const result = eval(JSON.parse(method).scriptString);
+        console.log('global.onrunasync result', result);
+        return Promise.resolve(result);
+      } catch (err) {
+        console.log('global.onrunasync err');
+        console.log('global.onrunasync err', err.message);
+        console.log('global.onrunasync err', err.stack);
+        return Promise.reject(new Error(`eval err: ${method}`));
+      }
     } else {
-      return Promise.reject(new Error(`unexpected window response`));
+      console.log('worker unknown');
+      return Promise.reject(new Error(`invalid window async method: ${method}`));
     }
-  } else if (/^\{"method":"eval"/.test(method)) {
-    return Promise.resolve(eval(JSON.parse(method).scriptString));
-  } else {
-    return Promise.reject(new Error(`invalid window async method: ${method}`));
+  } catch (err) {
+    console.log('TKTK worker wtf');
+    console.log('TKTK worker wtf', err.message);
+    console.log('TKTK worker wtf', err.stack);
+    return Promise.reject(new Error(`internal error: ${err.message}`));
   }
 };
 global.onexit = () => {

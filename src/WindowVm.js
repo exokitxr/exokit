@@ -41,10 +41,14 @@ class WorkerVm extends EventEmitter {
       }
     });
     worker.on('error', err => {
+      console.log('worker.on("error") TKTK', err);
       this.emit('error', err);
+      console.log('worker.on("error") TKTK done', err);
     });
     worker.on('exit', () => {
+      console.log('worker.on("exit") TKTK');
       this.emit('exit');
+      console.log('worker.on("exit") TKTK done');
     });
 
     this.worker = worker;
@@ -75,20 +79,31 @@ class WorkerVm extends EventEmitter {
     });
   }
   runAsync(jsString, arg, transferList) {
+    this.unresolveds = this.unresolveds || {};
+    this.unresolvedsId = this.unresolvedsId || 0;
+    const id = this.unresolvedsId++;
+    console.log('TKTK runAsync', jsString, arg);
     return new Promise((accept, reject) => {
+      this.unresolveds[id] = {accept, reject};
+      console.log('TKTK runAsync 1', this.worker ? 'this.worker' : 'this.worker is NULL!!');
       const requestKey = this.queueRequest((err, result) => {
+        console.log('TKTK response', err, result);
         if (!err) {
+          delete this.unresolveds[id];
           accept(result);
         } else {
+          delete this.unresolveds[id];
           reject(err);
         }
       });
+      console.log('TKTK runAsync 2');
       this.worker.postMessage({
         method: 'runAsync',
         jsString,
         arg,
         requestKey,
       }, transferList);
+      console.log('TKTK runAsync 3');
     });
   }
   postMessage(message, transferList) {
@@ -99,11 +114,32 @@ class WorkerVm extends EventEmitter {
   }
   
   destroy() {
-    const symbols = Object.getOwnPropertySymbols(this.worker);
-    const publicPortSymbol = symbols.find(s => s.toString() === 'Symbol(kPublicPort)');
-    const publicPort = this.worker[publicPortSymbol];
-    publicPort.close();
+    return new Promise((accept, reject) => {
+      console.log('worker terminating', this.unresolveds);
+      this.worker.terminate((err, exitCode) => {
+        console.log('worker terminated', err, exitCode);
+        let unresolveds = this.unresolveds;
+        this.unresolveds = {};
+        for (let {accept, reject} of Object.values(unresolveds)) {
+          accept('terminated');
+        }
+        console.log('worker terminated and rejected unresolveds');
+        accept();
+      });
+    });
   }
+    /*
+    console.log('publcPort destroy 1');
+    const symbols = Object.getOwnPropertySymbols(this.worker);
+    console.log('publcPort destroy 2');
+    const publicPortSymbol = symbols.find(s => s.toString() === 'Symbol(kPublicPort)');
+    console.log('publcPort destroy 3',publicPortSymbol);
+    const publicPort = this.gorker[publicPortSymbol];
+    console.log('publcPort destroy 4');
+    publicPort.close();
+    console.log('publcPort destroy 5');
+  }
+    */
 
   get onmessage() {
     return this.listeners('message')[0];
@@ -163,14 +199,23 @@ const _makeWindow = (options = {}) => {
   window.destroy = (destroy => function() {
     GlobalContext.windows.splice(GlobalContext.windows.indexOf(window), 1);
 
-    return Promise.resolve(); // XXX
-    /* return new Promise((accept, reject) => {
-      destroy.apply(this, arguments);
-
+    return new Promise((accept, reject) => {
+      console.log('destroy 1');
       window.on('exit', () => {
+        console.log('destroy 5');
         accept();
+        console.log('destroy 6');
       });
-    }); */
+      console.log('destroy 2');
+      destroy.apply(this, arguments).then(() => {
+        console.log('destroy 3');
+        accept();
+        console.log('destroy 4');
+      }).catch(() => {
+        console.log('destroy reject');
+        reject();
+      });
+    });
   })(window.destroy);
   
   GlobalContext.windows.push(window);

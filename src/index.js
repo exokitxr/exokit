@@ -1261,7 +1261,8 @@ const _start = () => {
     });
     replHistory(r, path.join(dataPath, '.repl_history'));
     r.on('exit', () => {
-      process.exit();
+      console.log('process.exit() 2 TKTK');
+      //process.exit();
     });
   }
 };
@@ -1277,6 +1278,7 @@ if (require.main === module) {
       ], {
         input: message,
       });
+      console.log('process.exit() 3 TKTK');
       process.exit(1);
     });
   }
@@ -1335,7 +1337,7 @@ if (require.main === module) {
   }
 
   _prepare()
-    .then(() => _start())
+    //.then(() => _start())
     .catch(err => {
       console.warn(err.stack);
       process.exit(1);

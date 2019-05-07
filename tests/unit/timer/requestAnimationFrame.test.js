@@ -23,13 +23,20 @@ describe('requestAnimationFrame', () => {
   it('raf', async () => {
     return await window.evalAsync(`new Promise((accept, reject) => {
       let rafed = false;
-      window.requestAnimationFrame(() => {
+      let raf = window.requestAnimationFrame(() => {
         rafed = true;
         
         accept();
       });
 
       assert.equal(rafed, false);
+
+      setTimeout(() => {
+        window.cancelAnimationFrame(raf);
+        assert.equal(rafed, false);
+
+        accept();
+      }, 100);
     })`);
   });
 
