@@ -100,6 +100,7 @@ cd exokit
 
 Build the APK
 ```sh
+# Run this inside Ubuntu WSL
 ./scripts/build-android.sh
 ```
 
