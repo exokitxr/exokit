@@ -274,7 +274,7 @@ class VRDisplay extends EventEmitter {
     
     const [{source: canvas}] = layers;
     const {_context: context} = canvas;
-    this.session.device.onmakeswapchain(context);
+    this.onmakeswapchain(context);
 
     if (this.onvrdisplaypresentchange && !this.isPresenting) {
       this.isPresenting = true;
