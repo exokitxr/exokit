@@ -309,7 +309,6 @@
       const session = await display.requestSession({
         exclusive: true,
       });
-      display.session = session;
 
       // console.log('request first frame');
       session.requestAnimationFrame((timestamp, frame) => {
