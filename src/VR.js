@@ -402,39 +402,6 @@ class FakeVRDisplay extends VRDisplay {
     GlobalContext.xrState.rightProjectionMatrix.set(projectionMatrix);
   } */
 
-  async requestPresent(layers) {
-    GlobalContext.xrState.renderWidth[0] = this.window.innerWidth / 2;
-    GlobalContext.xrState.renderHeight[0] = this.window.innerHeight;
-
-    await this.onrequestpresent();
-    
-    const [{source: canvas}] = layers;
-    const {_context: context} = canvas;
-    this.onmakeswapchain(context);
-    
-    // const [fbo, msFbo, msTex, msDepthTex] = nativeWindow.createVrChildRenderTarget(context, GlobalContext.xrState.renderWidth[0]*2, GlobalContext.xrState.renderHeight[0]);
-    // context.setDefaultFramebuffer(msFbo);
-    // nativeWindow.bindVrChildFbo(context, fbo, GlobalContext.xrState.tex[0], GlobalContext.xrState.depthTex[0]);
-
-    if (this.onvrdisplaypresentchange && !this.isPresenting) {
-      this.isPresenting = true;
-      this.onvrdisplaypresentchange();
-    } else {
-      this.isPresenting = true;
-    }
-  }
-
-  exitPresent() {
-    return Promise.resolve().then(() => {
-      if (this.onvrdisplaypresentchange && this.isPresenting) {
-        this.isPresenting = false;
-        this.onvrdisplaypresentchange();
-      } else {
-        this.isPresenting = false;
-      }
-    });
-  }
-
   async requestSession({exclusive = true} = {}) {
     const self = this;
 
