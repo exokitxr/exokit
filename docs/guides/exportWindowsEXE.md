@@ -13,6 +13,10 @@ In the Exokit [`scripts/exokit.sh`](https://github.com/exokitxr/exokit/blob/mast
 
 ## Prerequisites
 Latest Exokit
+Python 2
+Visual Studio 2015 or 2017
+
+Alternative requirements: Node.js 11.6.0, as administrator: `npm install -g windows-build-tools`
 
 ## Build EXE
 
