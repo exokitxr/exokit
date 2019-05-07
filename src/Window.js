@@ -1206,8 +1206,12 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
   };
   window.tickAnimationFrame = async () => {
     const _emitXrEvents = () => {
-      fakePresentState.fakeVrDisplay && fakePresentState.fakeVrDisplay.update();
-      window[symbols.mrDisplaysSymbol].vrDevice.session && window[symbols.mrDisplaysSymbol].vrDevice.session.update();
+      if (vrPresentState.hmdType === 'fake') {
+        window[symbols.mrDisplaysSymbol].fakeVrDisplay.update();
+      }
+      if (window[symbols.mrDisplaysSymbol].vrDevice.session) {
+        window[symbols.mrDisplaysSymbol].vrDevice.session.update();
+      }
     };
     const _composeLayers = () => {
       for (let i = 0; i < contexts.length; i++) {
@@ -1363,16 +1367,14 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
   const _makeMrDisplays = () => {
     const _onrequestpresent = async () => {
       if (!xrState.isPresenting[0]) {
-        await new Promise((accept, reject) => {
+        const {hmdType} = await new Promise((accept, reject) => {
           vrPresentState.responseAccept = accept;
 
           xrState.vrRequest[1] = GlobalContext.id;
           xrState.vrRequest[0] = 1; // requestPresent
         });
 
-        fakePresentState.fakeVrDisplay = fakeVrDisplay; // XX make this returned from the api
-        
-        vrPresentState.hmdType = 'fake';
+        vrPresentState.hmdType = hmdType;
       }
     };
     const _onmakeswapchain = context => {
