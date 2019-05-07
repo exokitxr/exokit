@@ -407,6 +407,8 @@ class FakeVRDisplay extends VRDisplay {
 
     await this.onrequestpresent();
     
+    const {xrState} = GlobalContext;
+
     const session = {
       addEventListener(e, fn) {
         if (e === 'end') {
@@ -444,8 +446,6 @@ class FakeVRDisplay extends VRDisplay {
         return self.exitPresent();
       },
     };
-
-    const {xrState} = GlobalContext;
     const _frame = {
       session,
       views: [{
