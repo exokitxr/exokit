@@ -291,7 +291,6 @@ let loop;
 
 core.exit = () => {
   if (_renderLoop != null) {
-    console.log('asdfsadf');
     _renderLoop.stop();
     _renderLoop = null;
   }
@@ -316,12 +315,10 @@ const _startTopRenderLoop = () => {
   if (nativeBindings.nativeWindow && nativeBindings.nativeWindow.pollEvents) {
     loop = setInterval(() => {
       nativeBindings.nativeWindow.pollEvents();
-      console.log('poll');
     }, 1000/60); // XXX make this run at the native frame rate
   }
   
   const _handleRequestPresent = async () => {
-    console.log('_handleRequestPresent');
     const vrRequestMethod = xrState.vrRequest[0];
 
     if (vrRequestMethod === 1) { // requestPresent
@@ -434,7 +431,6 @@ const _startTopRenderLoop = () => {
     }
   };
   const _waitGetPoses = async () => {
-    console.log('_waitGetPoses');
     if (topVrPresentState.hmdType === 'oculus') {
       // wait for frame
       await new Promise((accept, reject) => {
@@ -913,7 +909,6 @@ const _startTopRenderLoop = () => {
     }
   };
   const _submitFrame = async () => {
-    console.log('_submitFrame');
     if (topVrPresentState.hasPose) {
       if (topVrPresentState.hmdType === 'oculus') {
         const [fbo, tex, depthTex] = topVrPresentState.vrContext.Submit();
@@ -931,7 +926,6 @@ const _startTopRenderLoop = () => {
     }
   };
   const _topRenderLoop = async () => {
-    console.log('_topRenderLoop');
     if (args.performance) {
       if (timestamps.frames >= TIMESTAMP_FRAMES) {
         console.log(`${(TIMESTAMP_FRAMES/(timestamps.total/1000)).toFixed(0)} FPS | ${timestamps.idle/TIMESTAMP_FRAMES}ms idle | ${timestamps.wait/TIMESTAMP_FRAMES}ms wait | ${timestamps.prepare/TIMESTAMP_FRAMES}ms prepare | ${timestamps.events/TIMESTAMP_FRAMES}ms events | ${timestamps.media/TIMESTAMP_FRAMES}ms media | ${timestamps.user/TIMESTAMP_FRAMES}ms user | ${timestamps.submit/TIMESTAMP_FRAMES}ms submit`);
@@ -1049,7 +1043,6 @@ const _startTopRenderLoop = () => {
 let _renderLoop = _startTopRenderLoop();
 
 const _bindWindow = (window, newWindowCb) => {
-  console.log('_bindWindow');
   if (_renderLoop == null) {
     _renderLoop = _startTopRenderLoop();
   }
@@ -1072,7 +1065,6 @@ const _bindWindow = (window, newWindowCb) => {
   } */
   
   window.on('destroy', e => {
-    console.log('window.on("destroy")');
     const {window} = e;
     for (let i = 0; i < contexts.length; i++) {
       const context = contexts[i];
@@ -1288,8 +1280,7 @@ const _start = () => {
     });
     replHistory(r, path.join(dataPath, '.repl_history'));
     r.on('exit', () => {
-      console.log('process.exit() 2 TKTK');
-      //process.exit();
+      process.exit();
     });
   }
 };
@@ -1305,7 +1296,6 @@ if (require.main === module) {
       ], {
         input: message,
       });
-      console.log('process.exit() 3 TKTK');
       process.exit(1);
     });
   }

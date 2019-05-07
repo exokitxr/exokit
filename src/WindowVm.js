@@ -23,7 +23,6 @@ class WorkerVm extends EventEmitter {
           const fn = this.queue[m.requestKey];
 
           if (fn) {
-            console.log('got response', m);
             fn(m.error, m.result);
           } else {
             console.warn(`unknown response request key: ${m.requestKey}`);
@@ -45,14 +44,10 @@ class WorkerVm extends EventEmitter {
       }
     });
     worker.on('error', err => {
-      console.log('worker.on("error") TKTK', err);
       this.emit('error', err);
-      console.log('worker.on("error") TKTK done', err);
     });
     worker.on('exit', () => {
-      console.log('worker.on("exit") TKTK');
       this.emit('exit');
-      console.log('worker.on("exit") TKTK done');
     });
 
     this.worker = worker;
@@ -84,12 +79,9 @@ class WorkerVm extends EventEmitter {
   }
   runAsync(jsString, arg, transferList) {
     const id = this.unresolvedsId++;
-    console.log('TKTK runAsync', jsString, arg);
     return new Promise((accept, reject) => {
       this.unresolveds[id] = {accept, reject};
-      console.log('TKTK runAsync 1', this.worker ? 'this.worker' : 'this.worker is NULL!!');
       const requestKey = this.queueRequest((err, result) => {
-        console.log('TKTK response', err, result);
         if (!err) {
           delete this.unresolveds[id];
           accept(result);
@@ -98,14 +90,12 @@ class WorkerVm extends EventEmitter {
           reject(err);
         }
       });
-      console.log('TKTK runAsync 2');
       this.worker.postMessage({
         method: 'runAsync',
         jsString,
         arg,
         requestKey,
       }, transferList);
-      console.log('TKTK runAsync 3');
     });
   }
   postMessage(message, transferList) {
@@ -118,72 +108,47 @@ class WorkerVm extends EventEmitter {
   destroy(transferList) {
     return new Promise((accept, reject) => {
       let done = false;
-      console.log('worker terminating', this.unresolveds);
       if (this.worker != null) {
-        console.log('worker requesting key', this.unresolveds);
         const requestKey = this.queueRequest((err, result) => {
-          console.log('worker terminating response', err, result);
           if (!done) {
-            console.log('worker terminating response !done', err, result);
             if (!err) {
-              console.log('worker terminating response !done !err', err, result);
               accept(result);
-              console.log('worker terminating response !done !err accepted', err, result);
               done = true;
             } else {
-              console.log('worker terminating response !done err==true', err, result);
               reject(err);
               done = true;
             }
           } else {
-            console.log('worker terminating response done==true', err, result);
           }
         });
-        console.log('worker runExit', this.unresolveds);
         this.worker.postMessage({
           method: 'runExit',
           requestKey,
         }, transferList);
-        console.log('worker runExit done', this.unresolveds);
       } else {
-        console.log('worker unresolveds', this.unresolveds);
         let unresolveds = this.unresolveds;
         this.unresolveds = {};
         for (let {accept, reject} of Object.values(unresolveds)) {
           accept('terminated');
         }
-        console.log('worker unresolveds canceled', this.unresolveds);
+        done = true;
       }
       setTimeout(() => {
         if (!done) {
           console.log("WARNING: Exokit worker took too long to exit; forcefully quitting.");
           done = true;
           this.worker.terminate((err, exitCode) => {
-            console.log('worker terminated', err, exitCode);
             let unresolveds = this.unresolveds;
             this.unresolveds = {};
             for (let {accept, reject} of Object.values(unresolveds)) {
               accept('terminated');
             }
-            console.log('worker terminated and rejected unresolveds');
             accept();
           });
         }
       }, 3000);
     });
   }
-    /*
-    console.log('publcPort destroy 1');
-    const symbols = Object.getOwnPropertySymbols(this.worker);
-    console.log('publcPort destroy 2');
-    const publicPortSymbol = symbols.find(s => s.toString() === 'Symbol(kPublicPort)');
-    console.log('publcPort destroy 3',publicPortSymbol);
-    const publicPort = this.gorker[publicPortSymbol];
-    console.log('publcPort destroy 4');
-    publicPort.close();
-    console.log('publcPort destroy 5');
-  }
-    */
 
   get onmessage() {
     return this.listeners('message')[0];
@@ -244,21 +209,13 @@ const _makeWindow = (options = {}) => {
     GlobalContext.windows.splice(GlobalContext.windows.indexOf(window), 1);
 
     return new Promise((accept, reject) => {
-      console.log('destroy 1');
       window.on('exit', () => {
-        console.log('destroy 5');
         accept();
-        console.log('destroy 6');
       });
-      console.log('destroy 2');
       destroy.apply(this, arguments).then(() => {
-        console.log('destroy 3');
         accept();
-        console.log('destroy 4');
       }).catch((err) => {
-        console.log('destroy reject', err ? err.message : null);
-        console.log('destroy reject', err ? err.stack : null);
-        reject(err ? `${err.message}\n${err.stack}\n` : null);
+        reject(err ? err.stack : null);
       });
     });
   })(window.destroy);

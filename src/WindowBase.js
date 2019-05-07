@@ -137,16 +137,12 @@ parentPort.on('message', m => {
       break;
     }
     case 'runExit': {
-      console.log('runExit TKTK');
       let result, err;
       try {
-        console.log('runExit onexit');
         result = window.onexit ? window.onexit() : null;
-        console.log('runExit onexit result', result);
       } catch(e) {
-        console.log('runExit onexit err', e);
         err = e.stack;
-        console.log(e.stack);
+        console.warn(e.stack);
       }
       if (!err) {
         Promise.resolve(result)
@@ -185,7 +181,6 @@ parentPort.on('message', m => {
 });
 parentPort.on('close', () => {
   window.onexit && window.onexit();
-  //process.exit(); // thread exit
 });
 
 // run init module

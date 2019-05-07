@@ -9,14 +9,6 @@ const imageData = fs.readFileSync(path.resolve(__dirname, '../data/test.png'), '
 const audioData = fs.readFileSync(path.resolve(__dirname, '../data/test.ogg'), 'base64');
 const videoData = fs.readFileSync(path.resolve(__dirname, '../data/test.mp4'), 'base64');
 
-async function sleep(ms) {
-  return new Promise((accept, reject) => {
-    setTimeout(() => {
-      accept();
-    }, ms);
-  });
-}
-
 describe('HTMLSrcableElement', () => {
   var window;
 
@@ -27,17 +19,8 @@ describe('HTMLSrcableElement', () => {
   });
 
   afterEach(async () => {
-    console.log('sleep');
-    await sleep(10);
-    console.log('window.destroy');
-    try {
-      await window.destroy();
-    } catch (err) {
-      console.log(err.stack);
-    }
-    console.log('exokit.exit');
+    await window.destroy();
     await exokit.exit();
-    console.log('HTMLSrcableElement test DONE');
   });
 
   describe('<img>', () => {
@@ -110,7 +93,7 @@ describe('HTMLSrcableElement', () => {
     });
   });
 
-  describe.skip('<audio>', () => {
+  describe.skip('<audio>', () => { // XXX
     it('can setAttribute', async () => {
       return await window.evalAsync(`new Promise((accept, reject) => {
         el = document.createElement('audio');
@@ -133,7 +116,6 @@ describe('HTMLSrcableElement', () => {
       })`);
     });
 
-    /*
     it('can set empty src', async () => {
       return await window.evalAsync(`new Promise((accept, reject) => {
         el = document.createElement('audio');
@@ -183,10 +165,8 @@ describe('HTMLSrcableElement', () => {
         el.src = \`${TEST_URL}/test.ogg\`;
       })`);
     });
-    */
   });
 
-  /*
   describe.skip('<video>', () => { // XXX
     it('can setAttribute', async () => {
       return await window.evalAsync(`new Promise((accept, reject) => {
@@ -258,5 +238,4 @@ describe('HTMLSrcableElement', () => {
       })`);
     });
   });
-  */
 });

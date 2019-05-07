@@ -341,17 +341,10 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
       }
       canvas.ownerDocument.removeListener('domchange', ondomchange);
 
-    console.log('GlobalContext.contexts.splice TKTK 1');
       GlobalContext.contexts.splice(GlobalContext.contexts.indexOf(gl), 1);
-
-      if (gl.id === 1) {
-        //process.kill(process.pid); // XXX make this a softer process.exit()
-        console.log('process.kill TKTK');
-      }
     })(gl.destroy);
     
     gl.id = Atomics.add(GlobalContext.xrState.id, 0) + 1;
-    console.log('GlobalContext.contexts.push TKTK 1');
     GlobalContext.contexts.push(gl);
   } else {
     gl.destroy();
@@ -425,7 +418,6 @@ const _onGl2DConstruct = (ctx, canvas, attrs) => {
     })(ctx.destroy);
     
     ctx.id = Atomics.add(GlobalContext.xrState.id, 0) + 1;
-    console.log('GlobalContext.contexts.push(ctx) TKTK 1');
     GlobalContext.contexts.push(ctx);
   } else {
     ctx.destroy();
@@ -636,8 +628,6 @@ if (bindings.nativeMl) {
           mlPresentState.mlContext.Exit();
         }
         bindings.nativeMl.DeinitLifecycle();
-        console.log('process.exit 1 TKTK');
-        //process.exit();
         break;
       }
       case 'resume': {
