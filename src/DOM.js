@@ -2329,6 +2329,12 @@ class HTMLCanvasElement extends HTMLElement {
         this._context = null;
       }
     }
+
+    // hack: assume that getting a context means we might want to enter XR
+    setTimeout(() => {
+      window.vrdisplayactivate();
+    });
+
     return this._context;
   }
 

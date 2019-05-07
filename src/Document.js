@@ -207,7 +207,7 @@ function initDocument (document, window) {
     document.dispatchEvent(new Event('load', {target: document}));
     window.dispatchEvent(new Event('load', {target: window}));
 
-    const displays = window.navigator.getVRDisplaysSync();
+    /* const displays = window.navigator.getVRDisplaysSync();
     if (displays.length > 0 && (!window[symbols.optionsSymbol].args || ['all', 'webvr'].includes(window[symbols.optionsSymbol].args.xr))) {
       const _initDisplays = () => {
         const presentingDisplay = displays.find(display => display.isPresenting);
@@ -244,7 +244,7 @@ function initDocument (document, window) {
         };
         document.resources.addEventListener('update', _update);
       }
-    }
+    } */
   });
 
   return document;

@@ -1471,6 +1471,14 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     };
   };
   window[symbols.mrDisplaysSymbol] = _makeMrDisplays();
+  window.vrdisplayactivate = () => {
+    const displays = window.navigator.getVRDisplaysSync();
+    if (displays.length > 0 && (!window[symbols.optionsSymbol].args || ['all', 'webvr'].includes(window[symbols.optionsSymbol].args.xr)) && !displays[0].isPresenting) {
+      const e = new window.Event('vrdisplayactivate');
+      e.display = displays[0];
+      window.dispatchEvent(e);
+    }
+  };
 
   window.document = _parseDocument(options.htmlString, window);
   window.document.hidden = options.hidden || false;
