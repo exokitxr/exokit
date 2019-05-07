@@ -13,8 +13,9 @@ helpers.describeSkipCI('webgl', () => {
     return await window.evalAsync(`
       const assert = require('assert');
       window.assert = assert;
-    
-      const gl = window.WebGLRenderingContext(window.document.createElement('canvas'));
+
+      const canvas = document.createElement('canvas');
+      const gl = canvas.getContext('webgl');
       window.gl = gl;
       1;
     `);
