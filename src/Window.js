@@ -246,11 +246,6 @@ const mlPresentState = {
 };
 GlobalContext.mlPresentState = mlPresentState;
 
-const fakePresentState = {
-  fakeVrDisplay: null,
-};
-GlobalContext.fakePresentState = fakePresentState;
-
 /* const _getVrGlContext = () => contexts.find(context => context.contextId === vrPresentState.glContextId);
 const _getOculusVrGlContext = () => vrPresentState.oculusSystem ? contexts.find(context => context.contextId === vrPresentState.glContextId) : undefined;
 const _getOpenVrGlContext = () => vrPresentState.system ? contexts.find(context => context.contextId === vrPresentState.glContextId) : undefined;
