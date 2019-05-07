@@ -1509,6 +1509,15 @@ global.onrunasync = method => {
     } else {
       return Promise.reject(new Error(`unexpected window response`));
     }
+  } else if (method === 'vrdisplayactivate') {
+    global.vrdisplayactivate();
+  } else if (method === 'exitPresent') {
+    const fakeVrDisplay = global[symbols.mrDisplaysSymbol].fakeVrDisplay;
+    if (fakeVrDisplay.session) {
+      fakeVrDisplay.session.end();
+    } else if (fakeVrDisplay.isPresenting) {
+      fakeVrDisplay.exitPresent();
+    }
   } else if (/^\{"method":"eval"/.test(method)) {
     return Promise.resolve(eval(JSON.parse(method).scriptString));
   } else {
