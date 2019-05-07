@@ -476,6 +476,10 @@ class Worker {
     this.worker.postMessage(message, transferList);
   }
 
+  terminate() {
+    this.worker.destroy();
+  }
+
   get onmessage() {
     return this.worker.onmessage;
   }
