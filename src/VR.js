@@ -439,7 +439,7 @@ class FakeVRDisplay extends VRDisplay {
         });
       },
       cancelAnimationFrame: fn => self.cancelAnimationFrame(fn),
-      end() {
+      async end() {
         await self.exitPresent();
 
         xrState.fakeVrDisplayEnabled[0] = 1;
