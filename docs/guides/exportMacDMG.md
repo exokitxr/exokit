@@ -12,6 +12,8 @@ This guide explains how to package your XR site with the Exokit Engine as an DMG
 In the Exokit [`scripts/exokit-macos`](https://github.com/exokitxr/exokit/blob/master/scripts/exokit-macos#L17) is where you will find the default site that the Exokit DMG application will load into. Change the argument passed in to your site URL or file path.
 
 ## Prerequisites
+Node `11.6.0`
+XCode
 Latest Exokit
 
 ## Build DMG

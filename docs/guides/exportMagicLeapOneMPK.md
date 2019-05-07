@@ -13,7 +13,6 @@ In the Exokit [`main.cpp`](https://github.com/exokitxr/exokit/blob/f10dadf0013de
 
 ## Prerequisites
 Node `11.6.0`
-XCode
 Latest Exokit
 
 ## Install the Magic Leap SDK

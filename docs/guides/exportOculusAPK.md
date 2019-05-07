@@ -27,6 +27,7 @@ Building an APK with the Dockerfile is as simple as:
 
 ### Prerequisites
 Node `11.6.0`
+Latest Exokit
 
 ### Install Android sdkmanager
 
