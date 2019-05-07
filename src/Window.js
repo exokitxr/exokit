@@ -1425,6 +1425,8 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     fakeVrDisplay.onrequestpresent = _onrequestpresent;
     fakeVrDisplay.onmakeswapchain = _onmakeswapchain;
     fakeVrDisplay.onexitpresent = _onexitpresent;
+    fakeVrDisplay.onrequestanimationframe = _makeRequestAnimationFrame(window);
+    fakeVrDisplay.oncancelanimationframe = window.cancelAnimationFrame;
     fakeVrDisplay.onlayers = layers => {
       vrPresentState.layers = layers;
     };
