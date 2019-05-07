@@ -1213,6 +1213,33 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
         window[symbols.mrDisplaysSymbol].vrDevice.session.update();
       }
     };
+    const _decorateSelfLayers = layers => {
+      for (let i = 0; i < layers.length; i++) {
+        const layer = layers[i];
+
+        if (layer._context === vrPresentState.glContext && (!layer.framebuffer || layer.framebuffer.msFbo !== vrPresentState.msFbo)) {
+          const width = xrState.renderWidth[0]*2;
+          const height = xrState.renderHeight[0];
+          let [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeWindow.createRenderTarget(layer._context, width, height);
+
+          msFbo = vrPresentState.msFbo;
+          msTex = vrPresentState.msTex;
+          msDepthTex = vrPresentState.msDepthTex;
+
+          layer.framebuffer = {
+            width,
+            height,
+            msFbo,
+            msTex,
+            msDepthTex,
+            fbo,
+            tex,
+            depthTex,
+          };
+          console.log('make new framebuffer', width, height);
+        }
+      }
+    };
     const _composeLayers = () => {
       for (let i = 0; i < contexts.length; i++) {
         const context = contexts[i];
@@ -1229,29 +1256,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
             nativeWindow.bindVrChildFbo(context, vrPresentState.fbo, xrState.tex[0], xrState.depthTex[0]);
 
             if (vrPresentState.layers.length > 0) {
-              for (let i = 0; i < vrPresentState.layers.length; i++) {
-                const layer = vrPresentState.layers[i];
-
-                if (layer instanceof window.HTMLCanvasElement && !layer.framebuffer) {
-                  let [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeWindow.createRenderTarget(context, layer.width, layer.height);
-
-                  // XXX do not construct pointless msFbo
-                  if (layer._context === context) {
-                    msFbo = vrPresentState.msFbo;
-                    msTex = vrPresentState.msTex;
-                    msDepthTex = vrPresentState.msDepthTex;
-                  }
-
-                  layer.framebuffer = {
-                    msFbo,
-                    msTex,
-                    msDepthTex,
-                    fbo,
-                    tex,
-                    depthTex,
-                  };
-                }
-              }
+              _decorateSelfLayers(vrPresentState.layers);
 
               nativeWindow.composeLayers(context, vrPresentState.fbo, vrPresentState.layers, xrState);
             } else {
