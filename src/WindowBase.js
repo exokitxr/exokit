@@ -136,6 +136,42 @@ parentPort.on('message', m => {
       }
       break;
     }
+    case 'runExit': {
+      console.log('runExit TKTK');
+      let result, err;
+      try {
+        console.log('runExit onexit');
+        result = window.onexit ? window.onexit() : null;
+        console.log('runExit onexit result', result);
+      } catch(e) {
+        console.log('runExit onexit err', e);
+        err = e.stack;
+        console.log(e.stack);
+      }
+      if (!err) {
+        Promise.resolve(result)
+          .then(result => {
+            parentPort.postMessage({
+              method: 'response',
+              requestKey: m.requestKey,
+              result,
+            });
+          }).catch(err => {
+            parentPort.postMessage({
+              method: 'response',
+              requestKey: m.requestKey,
+              error: err,
+            });
+          });
+      } else {
+        parentPort.postMessage({
+          method: 'response',
+          requestKey: m.requestKey,
+          error: err,
+        });
+      }
+      break;
+    }
     case 'postMessage': {
       try {
         global.emit('message', m.message);

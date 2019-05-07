@@ -1,6 +1,14 @@
 /* global afterEach, assert, beforeEach, describe, doesnotexist, it */
 const exokit = require('../../../src/index');
 
+async function sleep(ms) {
+  return new Promise((accept, reject) => {
+    setTimeout(() => {
+      accept();
+    }, ms);
+  });
+}
+
 describe('requestAnimationFrame', () => {
   var window;
 
@@ -12,31 +20,33 @@ describe('requestAnimationFrame', () => {
       window.assert = assert;
       const sinon = require('sinon');
       window.sinon = sinon;
+      window.callCount = 0;
       1;
     `);
   });
 
   afterEach(async () => {
-    return await window.destroy();
+    console.log('sleep');
+    await sleep(400);
+    console.log('window.destroy');
+    try {
+      await window.destroy();
+    } catch (err) {
+      console.log(err.stack);
+    }
+    console.log('exokit.exit');
+    await exokit.exit();
+    console.log('requestAnimationFrame test DONE');
   });
 
   it('raf', async () => {
     return await window.evalAsync(`new Promise((accept, reject) => {
       let rafed = false;
-      let raf = window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
         rafed = true;
         
         accept();
       });
-
-      assert.equal(rafed, false);
-
-      setTimeout(() => {
-        window.cancelAnimationFrame(raf);
-        assert.equal(rafed, false);
-
-        accept();
-      }, 100);
     })`);
   });
 
@@ -61,20 +71,35 @@ describe('requestAnimationFrame', () => {
 
   it('catches errors', async () => {
     return await window.evalAsync(`new Promise((accept, reject) => {
-      const spy = sinon.spy();
+      //const spy = sinon.spy();
       function step () {
-        spy();
-        console.log(doesnotexist);
+        console.log('step TKTK');
+        window.callCount = window.callCount + 1;
+        //spy();
+        //let doesnotexist = null;
+        //console.log(doesnotexist());
       }
 
-      window.requestAnimationFrame(step);
-      window.requestAnimationFrame(step);
-
       setTimeout(() => {
-        assert.equal(spy.callCount, 2);
+        assert.equal(window.callCount, 2);
 
         accept();
       }, 100);
+
+      setTimeout(() => {
+        window.requestAnimationFrame(() => {
+          console.log('step 1a');
+          step();
+          console.log('step 1b');
+          setTimeout(() => {
+            window.requestAnimationFrame(() => {
+              console.log('step 2a');
+              step();
+              console.log('step 2b');
+            });
+          }, 10);
+        });
+      }, 10);
     })`);
   });
 });

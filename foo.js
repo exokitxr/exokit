@@ -25,4 +25,12 @@ setTimeout(async () => {
   console.log('TKTK test 7');
   await window.destroy();
   console.log('TKTK test 8');
+  await window.onexit();
+  console.log('TKTK test 9');
+  await window.onexit();
+  console.log('TKTK test 10');
+
+  exokit.exit();
+  console.log('TKTK test 11');
+
 }, 10);

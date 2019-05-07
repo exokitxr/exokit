@@ -22,7 +22,8 @@ helpers.describeSkipCI('audio', () => {
   });
 
   afterEach(async () => {
-    return await window.destroy();
+    await window.destroy();
+    await exokit.exit();
   });
 
   it('creates audio context', async () => {

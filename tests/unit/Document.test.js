@@ -17,6 +17,7 @@ describe('_parseDocument', () => {
       assert.ok(document.body);
       assert.equal(document.querySelector('a').getAttribute('href'), 'test.html');
     `);
-    return await window.destroy();
+    await window.destroy();
+    exokit.exit();
   });
 });

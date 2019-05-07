@@ -341,6 +341,7 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
       }
       canvas.ownerDocument.removeListener('domchange', ondomchange);
 
+    console.log('GlobalContext.contexts.splice TKTK 1');
       GlobalContext.contexts.splice(GlobalContext.contexts.indexOf(gl), 1);
 
       if (gl.id === 1) {
@@ -350,35 +351,40 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
     })(gl.destroy);
     
     gl.id = Atomics.add(GlobalContext.xrState.id, 0) + 1;
+    console.log('GlobalContext.contexts.push TKTK 1');
     GlobalContext.contexts.push(gl);
   } else {
     gl.destroy();
   }
 };
-bindings.nativeGl = (nativeGl => {
-  function WebGLRenderingContext(canvas, attrs) {
-    const gl = new nativeGl();
-    _decorateGlIntercepts(gl);
-    _onGl3DConstruct(gl, canvas, attrs);
-    return gl;
-  }
-  for (const k in nativeGl) {
-    WebGLRenderingContext[k] = nativeGl[k];
-  }
-  return WebGLRenderingContext;
-})(bindings.nativeGl);
-bindings.nativeGl2 = (nativeGl2 => {
-  function WebGL2RenderingContext(canvas, attrs) {
-    const gl = new nativeGl2();
-    _decorateGlIntercepts(gl);
-    _onGl3DConstruct(gl, canvas, attrs);
-    return gl;
-  }
-  for (const k in nativeGl2) {
-    WebGL2RenderingContext[k] = nativeGl2[k];
-  }
-  return WebGL2RenderingContext;
-})(bindings.nativeGl2);
+if (bindings.nativeGl) {
+  bindings.nativeGl = (nativeGl => {
+    function WebGLRenderingContext(canvas, attrs) {
+      const gl = new nativeGl();
+      _decorateGlIntercepts(gl);
+      _onGl3DConstruct(gl, canvas, attrs);
+      return gl;
+    }
+    for (const k in nativeGl) {
+      WebGLRenderingContext[k] = nativeGl[k];
+    }
+    return WebGLRenderingContext;
+  })(bindings.nativeGl);
+}
+if (bindings.nativeGl2) {
+  bindings.nativeGl2 = (nativeGl2 => {
+    function WebGL2RenderingContext(canvas, attrs) {
+      const gl = new nativeGl2();
+      _decorateGlIntercepts(gl);
+      _onGl3DConstruct(gl, canvas, attrs);
+      return gl;
+    }
+    for (const k in nativeGl2) {
+      WebGL2RenderingContext[k] = nativeGl2[k];
+    }
+    return WebGL2RenderingContext;
+  })(bindings.nativeGl2);
+}
 
 const _onGl2DConstruct = (ctx, canvas, attrs) => {
   const canvasWidth = canvas.width || innerWidth;
@@ -419,27 +425,30 @@ const _onGl2DConstruct = (ctx, canvas, attrs) => {
     })(ctx.destroy);
     
     ctx.id = Atomics.add(GlobalContext.xrState.id, 0) + 1;
+    console.log('GlobalContext.contexts.push(ctx) TKTK 1');
     GlobalContext.contexts.push(ctx);
   } else {
     ctx.destroy();
   }
 };
-bindings.nativeCanvasRenderingContext2D = (nativeCanvasRenderingContext2D => {
-  function CanvasRenderingContext2D(canvas, attrs) {
-    const ctx = new nativeCanvasRenderingContext2D();
-    _onGl2DConstruct(ctx, canvas, attrs);
-    return ctx;
-  }
-  for (const k in nativeCanvasRenderingContext2D) {
-    CanvasRenderingContext2D[k] = nativeCanvasRenderingContext2D[k];
-  }
-  return CanvasRenderingContext2D;
-})(bindings.nativeCanvasRenderingContext2D);
+if (bindings.nativeCanvasRenderingContext2D) {
+  bindings.nativeCanvasRenderingContext2D = (nativeCanvasRenderingContext2D => {
+    function CanvasRenderingContext2D(canvas, attrs) {
+      const ctx = new nativeCanvasRenderingContext2D();
+      _onGl2DConstruct(ctx, canvas, attrs);
+      return ctx;
+    }
+    for (const k in nativeCanvasRenderingContext2D) {
+      CanvasRenderingContext2D[k] = nativeCanvasRenderingContext2D[k];
+    }
+    return CanvasRenderingContext2D;
+  })(bindings.nativeCanvasRenderingContext2D);
+}
 GlobalContext.CanvasRenderingContext2D = bindings.nativeCanvasRenderingContext2D;
 GlobalContext.WebGLRenderingContext = bindings.nativeGl;
 GlobalContext.WebGL2RenderingContext = bindings.nativeGl2;
 
-if (bindings.nativeAudio) {
+if (bindings.nativeAudio && bindings.nativeAudio.AudioContext) {
   bindings.nativeAudio.AudioContext = (OldAudioContext => class AudioContext extends OldAudioContext {
     decodeAudioData(arrayBuffer, successCallback, errorCallback) {
       return new Promise((resolve, reject) => {
@@ -470,7 +479,7 @@ if (bindings.nativeAudio) {
         }
       });
     }
-  })(bindings.nativeAudio.AudioContext);
+  })(bindings.nativeAudio && bindings.nativeAudio.AudioContext);
   bindings.nativeAudio.PannerNode.setPath(path.join(require.resolve('native-audio-deps').slice(0, -'index.js'.length), 'assets', 'hrtf'));
 }
 
@@ -563,44 +572,46 @@ if (bindings.nativeOpenVR) {
 	  Steam_SteamInstallationNotFound: 2000,
 	};
 
-	bindings.nativeOpenVR.EVRApplicationType = {
-	  Other: 0,
-	  Scene: 1,
-	  Overlay: 2,
-	  Background: 3,
-	  Utility: 4,
-	  VRMonitor: 5,
-	  SteamWatchdog: 6,
-	  Bootstrapper: 7,
-	};
+  if (bindings.nativeOpenVR) {
+    bindings.nativeOpenVR.EVRApplicationType = {
+      Other: 0,
+      Scene: 1,
+      Overlay: 2,
+      Background: 3,
+      Utility: 4,
+      VRMonitor: 5,
+      SteamWatchdog: 6,
+      Bootstrapper: 7,
+    };
 
-	bindings.nativeOpenVR.EVREye = {
-	  Left: 0,
-	  Right: 1,
-	};
+    bindings.nativeOpenVR.EVREye = {
+      Left: 0,
+      Right: 1,
+    };
 
-	bindings.nativeOpenVR.ETrackingUniverseOrigin = {
-	  Seated: 0,
-	  Standing: 1,
-	  RawAndUncalibrated: 2,
-	};
+    bindings.nativeOpenVR.ETrackingUniverseOrigin = {
+      Seated: 0,
+      Standing: 1,
+      RawAndUncalibrated: 2,
+    };
 
-	bindings.nativeOpenVR.ETrackingResult = {
-	  Uninitialized: 1,
-	  Calibrating_InProgress: 100,
-	  Calibrating_OutOfRange: 101,
-	  Running_OK: 200,
-	  Running_OutOfRange: 201,
-	};
+    bindings.nativeOpenVR.ETrackingResult = {
+      Uninitialized: 1,
+      Calibrating_InProgress: 100,
+      Calibrating_OutOfRange: 101,
+      Running_OK: 200,
+      Running_OutOfRange: 201,
+    };
 
-	bindings.nativeOpenVR.ETrackedDeviceClass = {
-	  Invalid: 0,
-	  HMD: 1,
-	  Controller: 2,
-	  GenericTracker: 3,
-	  TrackingReference: 4,
-	  DisplayRedirect: 5,
-	};
+    bindings.nativeOpenVR.ETrackedDeviceClass = {
+      Invalid: 0,
+      HMD: 1,
+      Controller: 2,
+      GenericTracker: 3,
+      TrackingReference: 4,
+      DisplayRedirect: 5,
+    };
+  }
 }
 
 GlobalContext.nativeOculusVR = bindings.nativeOculusVR;

@@ -22,7 +22,8 @@ describe('HTMLAnchorElement', () => {
   });
 
   afterEach(async () => {
-    return await window.destroy();
+    await window.destroy();
+    await exokit.exit();
   });
 
   describe('a', () => {

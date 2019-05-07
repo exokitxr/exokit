@@ -513,7 +513,7 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
   fn[symbols.idSymbol] = id;
   const rafCbs = window[symbols.rafCbsSymbol];
   rafCbs[_findFreeSlot(rafCbs)] = fn;
-  //rafCbs.sort((a, b) => (b ? b[symbols.prioritySymbol] : 0) - (a ? a[symbols.prioritySymbol] : 0));
+  rafCbs.sort((a, b) => (b ? b[symbols.prioritySymbol] : 0) - (a ? a[symbols.prioritySymbol] : 0));
   return id;
 };
 const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.RequestHitTest(origin, direction, cb, window);
@@ -1094,12 +1094,13 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
   };
   window.requestAnimationFrame = _makeRequestAnimationFrame(window);
   const rafCbs = [];
+  window[symbols.rafCbsSymbol] = rafCbs;
   window.cancelAnimationFrame = id => {
     process.stdout.write(`rafCbs TKTK ${id}\n`);
     process.stdout.write(require('util').inspect(rafCbs) + '\n', () => {
       process.stdout.write('rafCbs TKTK done\n', () => {
         const index = rafCbs.findIndex(r => {
-          return r && (r[symbols.idSymbol] === id);
+          return (r[symbols.idSymbol] === id);
         });
         if (index !== -1) {
           delete rafCbs[index];
@@ -1189,7 +1190,6 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     }
   });
 
-  window[symbols.rafCbsSymbol] = rafCbs;
   const timeouts = [];
   const intervals = [];
   const localCbs = [];
@@ -1304,6 +1304,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       }
     };
     const _renderLocal = async () => {
+      console.log('_renderLocal');
       if (rafCbs.length > 0) {
         _cacheLocalCbs(rafCbs);
         
@@ -1515,7 +1516,9 @@ global.onrunasync = method => {
         console.log('global.onrunasync eval', method);
         const result = eval(JSON.parse(method).scriptString);
         console.log('global.onrunasync result', result);
-        return Promise.resolve(result);
+        const finalResult = Promise.resolve(result);
+        console.log('global.onrunasync finalResult', finalResult);
+        return finalResult;
       } catch (err) {
         console.log('global.onrunasync err');
         console.log('global.onrunasync err', err.message);
@@ -1534,9 +1537,15 @@ global.onrunasync = method => {
   }
 };
 global.onexit = () => {
-  const localContexts = contexts.slice();
-  for (let i = 0; i < localContexts.length; i++) {
-    localContexts[i].destroy();
+  console.log('onexit');
+  let context = contexts.pop();
+  while (context) {
+    context.destroy();
+    context = contexts.pop();
   }
+  console.log('onexit done');
+  const rafCbs = window[symbols.rafCbsSymbol];
+  console.log('onexit cbs', rafCbs, rafCbs ? rafCbs.length : 0);
+  //process.exit();
 };
 // global.setImmediate = undefined; // need this for the TLS implementation

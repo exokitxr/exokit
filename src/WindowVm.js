@@ -8,6 +8,9 @@ class WorkerVm extends EventEmitter {
   constructor(options = {}) {
     super();
 
+    this.unresolveds = {};
+    this.unresolvedsId = 0;
+
     const worker = new Worker(windowBasePath, {
       workerData: {
         initModule: options.initModule,
@@ -20,6 +23,7 @@ class WorkerVm extends EventEmitter {
           const fn = this.queue[m.requestKey];
 
           if (fn) {
+            console.log('got response', m);
             fn(m.error, m.result);
           } else {
             console.warn(`unknown response request key: ${m.requestKey}`);
@@ -79,8 +83,6 @@ class WorkerVm extends EventEmitter {
     });
   }
   runAsync(jsString, arg, transferList) {
-    this.unresolveds = this.unresolveds || {};
-    this.unresolvedsId = this.unresolvedsId || 0;
     const id = this.unresolvedsId++;
     console.log('TKTK runAsync', jsString, arg);
     return new Promise((accept, reject) => {
@@ -113,19 +115,61 @@ class WorkerVm extends EventEmitter {
     }, transferList);
   }
   
-  destroy() {
+  destroy(transferList) {
     return new Promise((accept, reject) => {
+      let done = false;
       console.log('worker terminating', this.unresolveds);
-      this.worker.terminate((err, exitCode) => {
-        console.log('worker terminated', err, exitCode);
+      if (this.worker != null) {
+        console.log('worker requesting key', this.unresolveds);
+        const requestKey = this.queueRequest((err, result) => {
+          console.log('worker terminating response', err, result);
+          if (!done) {
+            console.log('worker terminating response !done', err, result);
+            if (!err) {
+              console.log('worker terminating response !done !err', err, result);
+              accept(result);
+              console.log('worker terminating response !done !err accepted', err, result);
+              done = true;
+            } else {
+              console.log('worker terminating response !done err==true', err, result);
+              reject(err);
+              done = true;
+            }
+          } else {
+            console.log('worker terminating response done==true', err, result);
+          }
+        });
+        console.log('worker runExit', this.unresolveds);
+        this.worker.postMessage({
+          method: 'runExit',
+          requestKey,
+        }, transferList);
+        console.log('worker runExit done', this.unresolveds);
+      } else {
+        console.log('worker unresolveds', this.unresolveds);
         let unresolveds = this.unresolveds;
         this.unresolveds = {};
         for (let {accept, reject} of Object.values(unresolveds)) {
           accept('terminated');
         }
-        console.log('worker terminated and rejected unresolveds');
-        accept();
-      });
+        console.log('worker unresolveds canceled', this.unresolveds);
+      }
+      setTimeout(() => {
+        if (!done) {
+          console.log("WARNING: Exokit worker took too long to exit; forcefully quitting.");
+          done = true;
+          this.worker.terminate((err, exitCode) => {
+            console.log('worker terminated', err, exitCode);
+            let unresolveds = this.unresolveds;
+            this.unresolveds = {};
+            for (let {accept, reject} of Object.values(unresolveds)) {
+              accept('terminated');
+            }
+            console.log('worker terminated and rejected unresolveds');
+            accept();
+          });
+        }
+      }, 3000);
     });
   }
     /*
@@ -211,9 +255,10 @@ const _makeWindow = (options = {}) => {
         console.log('destroy 3');
         accept();
         console.log('destroy 4');
-      }).catch(() => {
-        console.log('destroy reject');
-        reject();
+      }).catch((err) => {
+        console.log('destroy reject', err ? err.message : null);
+        console.log('destroy reject', err ? err.stack : null);
+        reject(err ? `${err.message}\n${err.stack}\n` : null);
       });
     });
   })(window.destroy);

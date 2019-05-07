@@ -20,7 +20,8 @@ describe('Element', () => {
   });
 
   afterEach(async () => {
-    return await window.destroy();
+    await window.destroy();
+    await exokit.exit();
   });
 
   describe('cloneNode', () => {

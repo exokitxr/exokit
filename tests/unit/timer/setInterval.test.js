@@ -15,7 +15,8 @@ describe('setInterval', () => {
   });
 
   afterEach(async () => {
-    return await window.destroy();
+    await window.destroy();
+    await exokit.exit();
   });
 
   it('interval 0', async () => {
