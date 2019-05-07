@@ -2,7 +2,29 @@
 
 namespace webaudio {
 
+void initializeAsync() {
+  if (!asyncInitialized) {
+#if defined(ANDROID) || defined(LUMIN)
+    lab::SetGenericFunctions(
+      adgCreate,
+      adgDestroy,
+      adgStart,
+      adgStop,
+      adgStartRecording,
+      adgStopRecording
+    );
+#endif
+
+    uv_async_init(windowsystembase::GetEventLoop(), &threadAsync, RunInMainThread);
+    uv_sem_init(&threadSemaphore, 0);
+
+    asyncInitialized = true;
+  }
+}
+
 lab::AudioContext *getDefaultAudioContext(float sampleRate) {
+  initializeAsync();
+
   if (!_defaultAudioContext) {
     _defaultAudioContext = lab::MakeRealtimeAudioContext(sampleRate);
 
@@ -14,26 +36,14 @@ lab::AudioContext *getDefaultAudioContext(float sampleRate) {
 }
 
 AudioContext::AudioContext(float sampleRate) {
+  initializeAsync();
+
   audioContext = lab::MakeRealtimeAudioContext(sampleRate);
 }
 
 AudioContext::~AudioContext() {}
 
 Local<Object> AudioContext::Initialize(Isolate *isolate, Local<Value> audioListenerCons, Local<Value> audioSourceNodeCons, Local<Value> audioDestinationNodeCons, Local<Value> gainNodeCons, Local<Value> analyserNodeCons, Local<Value> pannerNodeCons, Local<Value> audioBufferCons, Local<Value> audioBufferSourceNodeCons, Local<Value> audioProcessingEventCons, Local<Value> stereoPannerNodeCons, Local<Value> oscillatorNodeCons, Local<Value> scriptProcessorNodeCons, Local<Value> mediaStreamTrackCons, Local<Value> microphoneMediaStreamCons) {
-#if defined(ANDROID) || defined(LUMIN)
-  lab::SetGenericFunctions(
-    adgCreate,
-    adgDestroy,
-    adgStart,
-    adgStop,
-    adgStartRecording,
-    adgStopRecording
-  );
-#endif
-
-  uv_async_init(windowsystembase::GetEventLoop(), &threadAsync, RunInMainThread);
-  uv_sem_init(&threadSemaphore, 0);
-
   /* atexit([]{
     uv_close((uv_handle_t *)&threadAsync, nullptr);
     uv_sem_destroy(&threadSemaphore);
@@ -502,6 +512,7 @@ void RunInMainThread(uv_async_t *handle) {
 
 thread_local unique_ptr<lab::AudioContext> _defaultAudioContext;
 thread_local function<void()> threadFn;
+thread_local bool asyncInitialized = false;
 thread_local uv_async_t threadAsync;
 thread_local uv_sem_t threadSemaphore;
 

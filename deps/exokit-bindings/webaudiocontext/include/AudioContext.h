@@ -94,6 +94,7 @@ void RunInMainThread(uv_async_t *handle);
 
 extern thread_local unique_ptr<lab::AudioContext> _defaultAudioContext;
 extern thread_local function<void()> threadFn;
+extern thread_local bool asyncInitialized;
 extern thread_local uv_async_t threadAsync;
 extern thread_local uv_sem_t threadSemaphore;
 
