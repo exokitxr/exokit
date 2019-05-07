@@ -18,6 +18,6 @@ describe('_parseDocument', () => {
       assert.equal(document.querySelector('a').getAttribute('href'), 'test.html');
     `);
     await window.destroy();
-    exokit.exit();
+    await exokit.exit();
   });
 });

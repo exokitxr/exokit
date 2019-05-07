@@ -290,10 +290,12 @@ const topVrPresentState = {
 let loop;
 
 core.exit = () => {
+  /*
   if (_renderLoop != null) {
     _renderLoop.stop();
     _renderLoop = null;
   }
+  */
   //process.exit();
 }
 

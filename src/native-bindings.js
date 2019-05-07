@@ -342,6 +342,12 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
       canvas.ownerDocument.removeListener('domchange', ondomchange);
 
       GlobalContext.contexts.splice(GlobalContext.contexts.indexOf(gl), 1);
+
+      /*
+      if (gl.id === 1) {
+        process.kill(process.pid); // XXX make this a softer process.exit()
+      }
+      */
     })(gl.destroy);
     
     gl.id = Atomics.add(GlobalContext.xrState.id, 0) + 1;

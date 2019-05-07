@@ -166,6 +166,11 @@ parentPort.on('message', m => {
           error: err,
         });
       }
+      /*
+      setTimeout(() => {
+        process.exit();
+      }, 100);
+      */
       break;
     }
     case 'postMessage': {

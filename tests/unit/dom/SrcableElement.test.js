@@ -105,14 +105,10 @@ describe('HTMLSrcableElement', () => {
 
     it('can set src', async () => {
       return await window.evalAsync(`new Promise((accept, reject) => {
-        try {
         el = document.createElement('audio');
         el.oncanplay = () => { accept(); };
         el.onerror = err => { reject(err); };
         el.src = \`${TEST_URL}/test.ogg\`;
-        } catch (err) {
-          console.log(err.stack);
-        }
       })`);
     });
 
@@ -201,7 +197,6 @@ describe('HTMLSrcableElement', () => {
         el.oncanplay = () => { accept(); };
         el.onerror = err => { reject(err); };
         const videoDataUri = \`data:video/mp4;base64,${videoData}\`;
-        window.videoDataUri = videoDataUri;
         el.src = videoDataUri;
       })`);
     });
