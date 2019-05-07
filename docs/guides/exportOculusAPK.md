@@ -26,8 +26,10 @@ Building an APK with the Dockerfile is as simple as:
 ## OPTION 2- Manual environment setup
 
 ### Prerequisites
-Node `11.6.0`
-Latest Exokit
+Node `11.6.0`  
+Latest Exokit  
+Ubuntu Windows Subsystem for Linux (WSL)
+
 
 ### Install Android sdkmanager
 
