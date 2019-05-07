@@ -33,7 +33,7 @@ class Engine extends React.Component {
       _postViewportMessage();
       window.addEventListener('resize', _postViewportMessage);
       
-      window.addEventListener('keydown', e => {
+      /* window.addEventListener('keydown', e => {
         console.log('iframe keydown ' + e.keyCode);
       });
       window.addEventListener('keyup', e => {
@@ -41,7 +41,7 @@ class Engine extends React.Component {
       });
       window.addEventListener('keypress', e => {
         console.log('iframe keypress ' + e.keyCode);
-      });
+      }); */
     }
 
     postMessage(action){
@@ -343,12 +343,14 @@ class Engine extends React.Component {
 class Settings extends React.Component {
   constructor(props) {
     super(props);
-    
+
     this.state = {
+      width: 1920/2 + '',
+      height: 1080 + '',
       xr: 'all',
     };
   }
-  
+
   classNames() {
     const classNames = ['settings'];
     if (this.props.open) {
@@ -356,8 +358,45 @@ class Settings extends React.Component {
     }
     return classNames.join(' ');
   }
-  
-  onChange(value) {
+
+  onWidthChange(e) {
+    this.setState({
+      width: e.target.value,
+    });
+  }
+  onHeightChange(e) {
+    this.setState({
+      height: e.target.value,
+    });
+  }
+
+  onMetricsBlur() {
+    let width = parseInt(this.state.width, 10);
+    let height = parseInt(this.state.height, 10);
+
+    if (this.state.width !== (width + '')) {
+      width = 1920/2;
+
+      this.setState({
+        width: width + '',
+      });
+    }
+    if (this.state.height !== (height + '')) {
+      height = 1080;
+
+      this.setState({
+        height: height + '',
+      });
+    }
+
+    window.postMessage({
+      method: 'fakeVrMetrics',
+      width,
+      height,
+    });
+  }
+
+  onXrChange(value) {
     this.setState({
       xr: value,
     });
@@ -375,9 +414,15 @@ class Settings extends React.Component {
         <div className="settings-background" onClick={() => this.props.close()}></div>
         <div className="settings-foreground">
           <div className="title">Settings</div>
-          <label><input type="radio" name="xr" value="all" checked={this.state.xr === 'all'} onChange={e => e.target.value ? this.onChange('all') : null} /><span>All</span></label>
-          <label><input type="radio" name="xr" value="webxr" checked={this.state.xr === 'webxr'} onChange={e => e.target.value ? this.onChange('webxr') : null} /><span>WebXR</span></label>
-          <label><input type="radio" name="xr" value="webvr" checked={this.state.xr === 'webvr'} onChange={e => e.target.value ? this.onChange('webvr') : null} /><span>WebVR</span></label>
+          <div>
+            <label>Width <input type="text" value={this.state.width} onChange={e => this.onWidthChange(e)} onBlur={() => this.onMetricsBlur()} /></label>
+            <label>Height <input type="text" value={this.state.height} onChange={e => this.onHeightChange(e)} onBlur={() => this.onMetricsBlur()} /></label>
+          </div>
+          <div>
+            <label><input type="radio" name="xr" value="all" checked={this.state.xr === 'all'} onChange={e => e.target.value ? this.onXrChange('all') : null} /><span>All</span></label>
+            <label><input type="radio" name="xr" value="webxr" checked={this.state.xr === 'webxr'} onChange={e => e.target.value ? this.onXrChange('webxr') : null} /><span>WebXR</span></label>
+            <label><input type="radio" name="xr" value="webvr" checked={this.state.xr === 'webvr'} onChange={e => e.target.value ? this.onXrChange('webvr') : null} /><span>WebVR</span></label>
+          </div>
         </div>
       </div>
     );
