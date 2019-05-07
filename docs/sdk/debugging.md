@@ -14,7 +14,7 @@ Exokit has a logging mode enabled by the `-l` flag:
 exokit -l https://aframe.io/a-painter/
 ```
 
-The logs go in `$HOME/.exokit/log.txt`. For window that generally means `C:\username\.exokit\log.txt`.
+The logs go in `$HOME/.exokit/log.txt`. For Windows that generally means `C:\username\.exokit\log.txt`.
 
 ## Web Debugging
 
