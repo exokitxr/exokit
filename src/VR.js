@@ -708,6 +708,15 @@ class FakeVRDisplay extends VRDisplay {
       async end() {
         await self.exitPresent();
 
+        if (mesher) {
+          mesher.destroy();
+          mesher = null;
+        }
+        if (planesTracker) {
+          planesTracker.destroy();
+          planesTracker = null;
+        }
+
         xrState.fakeVrDisplayEnabled[0] = 1;
 
         const onends = self._onends.slice();
