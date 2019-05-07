@@ -971,6 +971,15 @@ const {
           window.settings.setSetting(key, value);
           break;
         }
+        case 'fakeVrMetrics': {
+          const {width, height} = m.data;
+          _endFakeVrDisplay()
+            .then(() => _startFakeVrDisplay(width, height))
+            .catch(err => {
+              console.warn(err.stack);
+            });
+          break;
+        }
         default: {
           console.warn(`got unknown ui iframe message: ${m.data.method}`);
           break;
