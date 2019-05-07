@@ -93,7 +93,7 @@ describe('HTMLSrcableElement', () => {
     });
   });
 
-  describe.skip('<audio>', () => { // XXX
+  helpers.describeSkipCI('<audio>', () => { // XXX
     it('can setAttribute', async () => {
       return await window.evalAsync(`new Promise((accept, reject) => {
         el = document.createElement('audio');
