@@ -626,8 +626,14 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
         return [];
       }
     },
-    createVRDisplay() {
+    createVRDisplay(width, height) {
       xrState.fakeVrDisplayEnabled[0] = 1;
+      if (width !== undefined) {
+        xrState.renderWidth[0] = width;
+      }
+      if (height !== undefined) {
+        xrState.renderHeight[0] = height;
+      }
       return window[symbols.mrDisplaysSymbol].fakeVrDisplay;
     },
     getGamepads: getGamepads.bind(null, window),
@@ -1361,8 +1367,6 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
           vrPresentState.responseAccept = accept;
 
           xrState.vrRequest[1] = GlobalContext.id;
-          xrState.vrRequest[2] = window.innerWidth;
-          xrState.vrRequest[3] = window.innerHeight;
           xrState.vrRequest[0] = 1; // requestPresent
         });
 

@@ -268,7 +268,7 @@ const xrState = (() => {
     return result;
   })();
   result.id = _makeTypedArray(Uint32Array, 1);
-  result.vrRequest = _makeTypedArray(Uint32Array, 4); // method, id, width, height
+  result.vrRequest = _makeTypedArray(Uint32Array, 2);
   result.tex = _makeTypedArray(Uint32Array, 1);
   result.depthTex = _makeTypedArray(Uint32Array, 1);
   result.fakeVrDisplayEnabled = _makeTypedArray(Uint32Array, 1);
@@ -322,16 +322,15 @@ const _startTopRenderLoop = () => {
       nativeBindings.nativeWindow.setCurrentWindowContext(topVrPresentState.windowHandle);
       
       if (hmdType === 'fake') {
-        const width = xrState.vrRequest[2];
-        const height = xrState.vrRequest[3];
-        const halfWidth = width/2;
+        const width = xrState.renderWidth[0]*2;
+        const height = xrState.renderHeight[0];
 
         const [fbo, tex, depthTex] = nativeBindings.nativeWindow.createVrTopRenderTarget(width, height);
 
         xrState.tex[0] = tex;
         xrState.depthTex[0] = depthTex;
-        xrState.renderWidth[0] = halfWidth;
-        xrState.renderHeight[0] = height;
+        // xrState.renderWidth[0] = halfWidth;
+        // xrState.renderHeight[0] = height;
       } else if (hmdType === 'oculus') {
         const system = topVrPresentState.oculusSystem || nativeBindings.nativeOculusVR.Oculus_Init();
         // const lmContext = topVrPresentState.lmContext || (nativeBindings.nativeLm && new nativeBindings.nativeLm());

@@ -405,9 +405,6 @@ class FakeVRDisplay extends VRDisplay {
   async requestSession({exclusive = true} = {}) {
     const self = this;
 
-    GlobalContext.xrState.renderWidth[0] = this.window.innerWidth / 2;
-    GlobalContext.xrState.renderHeight[0] = this.window.innerHeight;
-
     await this.onrequestpresent();
     
     const session = {
