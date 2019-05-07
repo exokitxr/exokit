@@ -4,7 +4,6 @@
     <script src="three.js"></script>
     <script src="OrbitControls.js"></script>
     <script src="TransformControls.js"></script>
-    <script src="fakeDisplay.js"></script>
     <script src="keycode.js"></script>
     <script src="svg-boundings.js"></script>
     <script src="sprite3d.js"></script>
@@ -3142,37 +3141,119 @@ function animate(time, frame) {
 
 // bootstrap
 
-const _bootFakeDisplay = async () => {
-  fakeDisplay = _makeFakeDisplay();
+const _emitLayersVrDisplayActivate = () => {
+  for (let i = 0; i < layers.length; i++) {
+    const layer = layers[i];
+
+    if (layer.tagName === 'IFRAME' && layer.d === 3) {
+      layer.contentWindow.runAsync('vrdisplayactivate');
+    }
+  }
+};
+const _emitLayersExitPresent = () => {
+  for (let i = 0; i < layers.length; i++) {
+    const layer = layers[i];
+
+    if (layer.tagName === 'IFRAME' && layer.d === 3) {
+      layer.contentWindow.runAsync('exitPresent');
+    }
+  }
+};
+const _startFakeVrDisplay = async (width, height) => {
+  fakeDisplay = window.navigator.createVRDisplay(width, height);
   fakeDisplay.position.set(0, 1.6, 0);
   fakeDisplay.pushUpdate();
   fakeDisplay.hidden = true; // XXX can be an actual hidden check
 
-  await fakeDisplay.enter({
-    renderer,
-    animate,
-    layers,
-  });
-  
+  if (navigator.xr) {
+    const session = await fakeDisplay.requestSession({
+      exclusive: true,
+    });
+
+    const _end = () => {
+      renderer.vr.enabled = false;
+      renderer.vr.setSession(null);
+      renderer.vr.setAnimationLoop(null);
+
+      _emitLayersExitPresent();
+
+      session.removeEventListener('end', _end);
+    };
+    session.addEventListener('end', _end);
+
+    await new Promise((accept, reject) => {
+      session.requestAnimationFrame((timestamp, frame) => {
+
+        fakeDisplay.layers = layers;
+
+        renderer.vr.enabled = true;
+        // renderer.vr.setDevice(fakeDisplay);
+        renderer.vr.setSession(session, {
+          frameOfReferenceType: 'stage',
+        });
+        renderer.vr.setAnimationLoop(animate);
+
+        _emitLayersVrDisplayActivate();
+
+        accept();
+      });
+    });
+  } else {
+    await fakeDisplay.requestPresent([{
+      source: renderer.domElement,
+    }]);
+
+    const _vrdisplaypresentchange = () => {
+      _emitLayersExitPresent();
+
+      fakeDisplay.removeEventListener('vrdisplaypresentchange', _vrdisplaypresentchange);
+    };
+    fakeDisplay.addEventListener('vrdisplaypresentchange', _vrdisplaypresentchange);
+
+    fakeDisplay.layers = layers;
+
+    renderer.vr.enabled = true;
+    renderer.vr.setDevice(fakeDisplay);
+    renderer.vr.setAnimationLoop(animate);
+  }
+
   display = fakeDisplay;
-
-  const tabUrl = (() => {
-    const {t = 'examples/tutorial.html'} = query;
-    if (!/^[a-z]+:\/\//.test(t)) {
-      return `../${t}`;
-    } else {
-      return t;
-    }
-  })();
-  _openUrl(tabUrl);
-
-  focusedTab = rig.menuMesh.urlMesh;
-  rig.menuMesh.urlMesh.updateText();
-  rig.menuMesh.listMesh.updateList();
-
-  console.log('loaded fake display');
 };
-_bootFakeDisplay();
+const _endFakeVrDisplay = async () => {
+  if (fakeDisplay.session) {
+    console.log('end fake vr display 1');
+    await fakeDisplay.session.end();
+    console.log('end fake vr display 4');
+  } else {
+    await fakeDisplay.exitPresent();
+  }
+
+  fakeDisplay = null;
+  display = null;
+
+  // renderer.domElement.framebuffer = null; // XXX destroy this framebuffer
+};
+_startFakeVrDisplay()
+  .then(() => {
+    const tabUrl = (() => {
+      const {t = 'examples/tutorial.html'} = query;
+      if (!/^[a-z]+:\/\//.test(t)) {
+        return `../${t}`;
+      } else {
+        return t;
+      }
+    })();
+    _openUrl(tabUrl);
+
+    focusedTab = rig.menuMesh.urlMesh;
+    rig.menuMesh.urlMesh.updateText();
+    rig.menuMesh.listMesh.updateList();
+
+    console.log('loaded fake display');
+  })
+  .catch(err => {
+    console.warn(err.stack);
+  });
 /* (async () => {
   if (!query.fake) {
     if (navigator.xr) { // WebXR

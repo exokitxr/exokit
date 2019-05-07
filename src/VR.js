@@ -608,6 +608,8 @@ class FakeVRDisplay extends VRDisplay {
     super('FAKE');
 
     this.window = window;
+
+    this.session = null;
     this.position = new THREE.Vector3();
     this.quaternion = new THREE.Quaternion();
     this.gamepads = [
@@ -718,6 +720,7 @@ class FakeVRDisplay extends VRDisplay {
         }
 
         xrState.fakeVrDisplayEnabled[0] = 1;
+        self.session = null;
 
         const onends = self._onends.slice();
         for (let i = 0; i < onends.length; i++) {
@@ -814,6 +817,8 @@ class FakeVRDisplay extends VRDisplay {
       },
     };
     _frame._pose = _pose;
+
+    this.session = session;
 
     return session;
   }
