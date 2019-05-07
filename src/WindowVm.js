@@ -149,12 +149,12 @@ const _makeWindow = (options = {}) => {
   window.evalAsync = scriptString => window.runAsync(JSON.stringify({method: 'eval', scriptString}));
 
   window.on('resize', ({width, height}) => {
-    console.log('got resize', width, height);
+    // console.log('got resize', width, height);
     window.width = width;
     window.height = height;
   });
   window.on('framebuffer', framebuffer => {
-    console.log('got framebuffer', framebuffer);
+    // console.log('got framebuffer', framebuffer);
     window.document.framebuffer = framebuffer;
   });
   window.on('error', err => {
