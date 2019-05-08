@@ -1254,24 +1254,28 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
           if (context === vrPresentState.glContext) {
             nativeWindow.bindVrChildFbo(context, vrPresentState.fbo, xrState.tex[0], xrState.depthTex[0]);
 
+            const width = xrState.renderWidth[0]*2;
+            const height = xrState.renderHeight[0];
             if (vrPresentState.layers.length > 0) {
               _decorateSelfLayers(vrPresentState.layers);
 
               nativeWindow.composeLayers(context, vrPresentState.fbo, vrPresentState.layers, xrState);
             } else {
-              nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, context.canvas.width, context.canvas.height, context.canvas.width, context.canvas.height, true, false, false);
+              nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, width, height, width, height, true, false, false);
             }
 
             if (vrPresentState.hmdType === 'fake' || vrPresentState.hmdType === 'oculus' || vrPresentState.hmdType === 'openvr') {
-              const width = context.canvas.width * (args.blit ? 0.5 : 1);
-              const height = context.canvas.height;
+              /* const width = context.canvas.width * (args.blit ? 0.5 : 1);
+              const height = context.canvas.height; */
               const {width: dWidth, height: dHeight} = nativeWindow.getFramebufferSize(windowHandle);
               nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, width, height, dWidth, dHeight, true, false, false);
             }
           } else {
             if (!context.desynchronized) {
-              const width = context.canvas.width * (args.blit ? 0.5 : 1);
-              const height = context.canvas.height;
+              /* const width = context.canvas.width * (args.blit ? 0.5 : 1);
+              const height = context.canvas.height; */
+              const width = xrState.renderWidth[0]*2;
+              const height = xrState.renderHeight[0];
               const {width: dWidth, height: dHeight} = nativeWindow.getFramebufferSize(windowHandle);
               nativeWindow.blitFrameBuffer(context, context.framebuffer.msFbo, context.framebuffer.fbo, width, height, width, height, true, false, false);
               nativeWindow.blitFrameBuffer(context, context.framebuffer.fbo, 0, width, height, dWidth, dHeight, true, false, false);
