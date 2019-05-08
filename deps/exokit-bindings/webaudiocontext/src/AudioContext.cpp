@@ -22,9 +22,7 @@ void initializeAsync() {
   }
 }
 void deinitializeAsync() {
-  std::cout << "deinitialize async 1 " << asyncInitialized << std::endl;
   if (asyncInitialized) {
-    std::cout << "deinitialize async 2 " << std::endl;
     uv_close((uv_handle_t *)&threadAsync, nullptr);
     uv_sem_destroy(&threadSemaphore);
     
