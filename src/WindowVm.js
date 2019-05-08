@@ -21,6 +21,7 @@ class WorkerVm extends EventEmitter {
 
           if (fn) {
             fn(m.error, m.result);
+            delete this.queue[m.requestKey];
           } else {
             console.warn(`unknown response request key: ${m.requestKey}`);
           }
