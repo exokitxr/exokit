@@ -1534,5 +1534,7 @@ global.onexit = () => {
   for (let i = 0; i < localContexts.length; i++) {
     localContexts[i].destroy();
   }
+  
+  AudioContext.Destroy();
 };
 // global.setImmediate = undefined; // need this for the TLS implementation

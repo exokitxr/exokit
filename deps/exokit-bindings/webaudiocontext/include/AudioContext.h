@@ -53,6 +53,7 @@ public:
 
   static NAN_METHOD(New);
   static NAN_METHOD(Close);
+  static NAN_METHOD(Destroy);
   static NAN_METHOD(_DecodeAudioDataSync);
   static NAN_METHOD(CreateMediaElementSource);
   static NAN_METHOD(CreateMediaStreamSource);

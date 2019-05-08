@@ -21,6 +21,16 @@ void initializeAsync() {
     asyncInitialized = true;
   }
 }
+void deinitializeAsync() {
+  std::cout << "deinitialize async 1 " << asyncInitialized << std::endl;
+  if (asyncInitialized) {
+    std::cout << "deinitialize async 2 " << std::endl;
+    uv_close((uv_handle_t *)&threadAsync, nullptr);
+    uv_sem_destroy(&threadSemaphore);
+    
+    asyncInitialized = false;
+  }
+}
 
 lab::AudioContext *getDefaultAudioContext(float sampleRate) {
   initializeAsync();
@@ -93,6 +103,7 @@ Local<Object> AudioContext::Initialize(Isolate *isolate, Local<Value> audioListe
   ctorFn->Set(JS_STR("ScriptProcessorNode"), scriptProcessorNodeCons);
   ctorFn->Set(JS_STR("MediaStreamTrack"), mediaStreamTrackCons);
   ctorFn->Set(JS_STR("MicrophoneMediaStream"), microphoneMediaStreamCons);
+  ctorFn->Set(JS_STR("Destroy"), Nan::GetFunction(Nan::New<v8::FunctionTemplate>(Destroy)).ToLocalChecked());
 
   return scope.Escape(ctorFn);
 }
@@ -478,6 +489,12 @@ NAN_METHOD(AudioContext::Close) {
 
   AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(info.This());
   audioContext->Close();
+}
+
+NAN_METHOD(AudioContext::Destroy) {
+  // Nan::HandleScope scope;
+
+  deinitializeAsync();
 }
 
 NAN_GETTER(AudioContext::CurrentTimeGetter) {
