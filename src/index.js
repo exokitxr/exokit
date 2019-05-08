@@ -272,7 +272,7 @@ const xrState = (() => {
   result.tex = _makeTypedArray(Uint32Array, 1);
   result.depthTex = _makeTypedArray(Uint32Array, 1);
   result.fakeVrDisplayEnabled = _makeTypedArray(Uint32Array, 1);
-  
+
   return result;
 })();
 GlobalContext.xrState = xrState;
@@ -308,7 +308,7 @@ const _startTopRenderLoop = () => {
       nativeBindings.nativeWindow.pollEvents();
     }, 1000/60); // XXX make this run at the native frame rate
   }
-  
+
   const _handleRequestPresent = async () => {
     const vrRequestMethod = xrState.vrRequest[0];
 
@@ -320,7 +320,7 @@ const _startTopRenderLoop = () => {
         topVrPresentState.windowHandle = nativeBindings.nativeWindow.createWindowHandle(1, 1, false);
       }
       nativeBindings.nativeWindow.setCurrentWindowContext(topVrPresentState.windowHandle);
-      
+
       if (hmdType === 'fake') {
         const width = xrState.renderWidth[0]*2;
         const height = xrState.renderHeight[0];
@@ -334,12 +334,12 @@ const _startTopRenderLoop = () => {
       } else if (hmdType === 'oculus') {
         const system = topVrPresentState.oculusSystem || nativeBindings.nativeOculusVR.Oculus_Init();
         // const lmContext = topVrPresentState.lmContext || (nativeBindings.nativeLm && new nativeBindings.nativeLm());
-        
+
         topVrPresentState.vrContext = system;
 
         const {width: halfWidth, height} = system.GetRecommendedRenderTargetSize();
         const width = halfWidth * 2;
-        
+
         const [fbo, tex, depthTex] = system.CreateSwapChain(width, height);
 
         xrState.tex[0] = tex;
@@ -387,7 +387,7 @@ const _startTopRenderLoop = () => {
 
         const {width: halfWidth, height} = topVrPresentState.vrContext.GetSize();
         const width = halfWidth * 2;
-        
+
         const [fbo, tex, depthTex] = nativeBindings.nativeWindow.createVrTopRenderTarget(width, height);
 
         topVrPresentState.fbo = fbo;
@@ -398,9 +398,9 @@ const _startTopRenderLoop = () => {
       } else {
         throw new Error('unknown hmd type');
       }
-      
+
       topVrPresentState.hmdType = hmdType;
-        
+
       const windowId = xrState.vrRequest[1];
       const window = windows.find(window => window.id === windowId);
 
@@ -426,7 +426,7 @@ const _startTopRenderLoop = () => {
 
       const windowId = xrState.vrRequest[1];
       const window = windows.find(window => window.id === windowId);
-      
+
       xrState.isPresenting[0] = 0;
       xrState.vrRequest.fill(0);
 
@@ -926,7 +926,7 @@ const _startTopRenderLoop = () => {
       } else if (topVrPresentState.hmdType === 'magicleap') {
         topVrPresentState.vrContext.SubmitFrame(topVrPresentState.fbo, xrState.renderWidth[0]*2, xrState.renderHeight[0]);
       }
-      
+
       topVrPresentState.hasPose = false;
     }
   };
@@ -1006,7 +1006,7 @@ const _startTopRenderLoop = () => {
 
     // tick animation frames
     await Promise.all(windows.map(window => window.runAsync('tickAnimationFrame')));
-    
+
     if (args.performance) {
       const now = Date.now();
       const diff = now - timestamps.last;
@@ -1063,7 +1063,7 @@ const _bindWindow = (window, newWindowCb) => {
       process.exit();
     });
   } */
-  
+
   window.on('destroy', e => {
     const {window} = e;
     for (let i = 0; i < contexts.length; i++) {
@@ -1073,7 +1073,7 @@ const _bindWindow = (window, newWindowCb) => {
       }
     }
   });
-  
+
   window.on('error', err => {
     console.warn('got error', err);
   });
@@ -1180,6 +1180,7 @@ const _start = () => {
     }
     u = u.replace(/^exokit:/, '');
     if (args.tab) {
+      u = u.replace(/\/?$/, '/');
       u = `${realityTabsUrl}?t=${encodeURIComponent(u)}`
     }
     if (u && !url.parse(u).protocol) {
