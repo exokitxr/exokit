@@ -21,6 +21,7 @@ class WorkerVm extends EventEmitter {
 
           if (fn) {
             fn(m.error, m.result);
+            delete this.queue[m.requestKey];
           } else {
             console.warn(`unknown response request key: ${m.requestKey}`);
           }
@@ -162,15 +163,17 @@ const _makeWindow = (options = {}) => {
   });
   window.destroy = (destroy => function() {
     GlobalContext.windows.splice(GlobalContext.windows.indexOf(window), 1);
+    for (const k in window.queue) {
+      window.queue[k]();
+    }
 
-    return Promise.resolve(); // XXX
-    /* return new Promise((accept, reject) => {
-      destroy.apply(this, arguments);
-
+    return new Promise((accept, reject) => {
       window.on('exit', () => {
         accept();
       });
-    }); */
+
+      destroy.apply(this, arguments);
+    });
   })(window.destroy);
   
   GlobalContext.windows.push(window);

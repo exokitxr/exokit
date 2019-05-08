@@ -48,7 +48,7 @@ private:
   Nan::Persistent<ArrayBuffer> arrayBuffer;
   Nan::Persistent<Function> cbFn;
   std::string error;
-  uv_async_t *threadAsyncHandle;
+  uv_async_t threadAsyncHandle;
 
   friend class CanvasRenderingContext2D;
   friend class ImageData;

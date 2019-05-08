@@ -17,7 +17,7 @@ describe('requestAnimationFrame', () => {
   });
 
   afterEach(async () => {
-    return await window.destroy();
+    await window.destroy();
   });
 
   it('raf', async () => {
