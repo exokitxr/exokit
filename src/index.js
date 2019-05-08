@@ -50,6 +50,7 @@ const args = (() => {
         'quit',
         'blit',
         'require',
+        'nogl',
         'headless',
       ],
       string: [
@@ -75,7 +76,8 @@ const args = (() => {
         b: 'blit',
         r: 'replace',
         u: 'require',
-        n: 'headless',
+        n: 'nogl',
+        e: 'headless',
         d: 'download',
       },
     });
@@ -95,6 +97,7 @@ const args = (() => {
       blit: minimistArgs.blit,
       replace: Array.isArray(minimistArgs.replace) ? minimistArgs.replace : ((minimistArgs.replace !== undefined) ? [minimistArgs.replace] : []),
       require: minimistArgs.require,
+      nogl: minimistArgs.nogl,
       headless: minimistArgs.headless,
       download: minimistArgs.download !== undefined ? (minimistArgs.download || path.join(process.cwd(), 'downloads')) : undefined,
     };
@@ -154,12 +157,13 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
 
   const {nativeWindow} = nativeBindings;
   const windowSpec = (() => {
-    if (!window[symbols.optionsSymbol].args.headless) {
+    if (!window[symbols.optionsSymbol].args.nogl) {
       try {
         const visible = document.documentElement.contains(canvas);
         const {hidden} = document;
+        const {headless} = window[symbols.optionsSymbol].args;
         const firstWindowHandle = contexts.length > 0 ? contexts[0].getWindowHandle() : null;
-        return nativeWindow.create3d(canvasWidth, canvasHeight, visible && !hidden, firstWindowHandle, gl);
+        return nativeWindow.create3d(canvasWidth, canvasHeight, visible && !hidden && !headless, firstWindowHandle, gl);
       } catch (err) {
         console.warn(err.message);
         return null;
@@ -217,7 +221,7 @@ nativeBindings.nativeGl.onconstruct = (gl, canvas) => {
 
     const ondomchange = () => {
       process.nextTick(() => { // show/hide synchronously emits events
-        if (!hidden) {
+        if (!hidden && !window[symbols.optionsSymbol].args.headless) {
           const domVisible = canvas.ownerDocument.documentElement.contains(canvas);
           const windowVisible = nativeWindow.isVisible(windowHandle);
           if (domVisible) {
@@ -291,7 +295,7 @@ nativeBindings.nativeCanvasRenderingContext2D.onconstruct = (ctx, canvas) => {
 
   const {nativeWindow} = nativeBindings;
   const windowSpec = (() => {
-    if (!window[symbols.optionsSymbol].args.headless) {
+    if (!window[symbols.optionsSymbol].args.nogl) {
       try {
         const firstWindowHandle = contexts.length > 0 ? contexts[0].getWindowHandle() : null;
         return nativeWindow.create2d(canvasWidth, canvasHeight, firstWindowHandle);
