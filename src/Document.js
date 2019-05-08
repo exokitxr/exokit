@@ -132,13 +132,13 @@ function initDocument (document, window) {
         nativeBindings.nativeWindow.setCursorMode(context.getWindowHandle(), !pointerLockElement);
       }
 
-      const iframes = document.getElementsByTagName('iframe');
+      /* const iframes = document.getElementsByTagName('iframe');
       for (let i = 0; i < iframes.length; i++) {
         const iframe = iframes[i];
         if (iframe.contentDocument) {
           // iframe.contentDocument._emit('pointerlockchange'); // XXX send this down
         }
-      }
+      } */
     });
     document.addEventListener('fullscreenchange', () => {
       const fullscreenElement = document[symbols.fullscreenElementSymbol];
@@ -148,14 +148,14 @@ function initDocument (document, window) {
         nativeBindings.nativeWindow.setFullscreen(context.getWindowHandle(), !!fullscreenElement);
       }
       
-      const iframes = document.getElementsByTagName('iframe');
+      /* const iframes = document.getElementsByTagName('iframe');
       for (let i = 0; i < iframes.length; i++) {
         const iframe = iframes[i];
         if (iframe.contentDocument) {
           // iframe.contentDocument._emit('pointerlockchange'); // XXX send this down
           iframe.contentDocument._emit('fullscreenchange');
         }
-      }
+      } */
     });
   }
 
