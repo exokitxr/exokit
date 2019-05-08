@@ -163,6 +163,9 @@ const _makeWindow = (options = {}) => {
   });
   window.destroy = (destroy => function() {
     GlobalContext.windows.splice(GlobalContext.windows.indexOf(window), 1);
+    for (const k in window.queue) {
+      window.queue[k]();
+    }
 
     return new Promise((accept, reject) => {
       window.on('exit', () => {
