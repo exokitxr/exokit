@@ -1406,8 +1406,6 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       } else {
         const {canvas} = context;
         const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeWindow.createRenderTarget(context, xrState.renderWidth[0]*2, xrState.renderHeight[0]);
-        
-        console.log('make low level', canvas.width, canvas.height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
 
         context.setDefaultFramebuffer(msFbo);
 
