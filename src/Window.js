@@ -1235,7 +1235,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
             tex,
             depthTex,
           };
-          console.log('make new framebuffer', width, height);
+          // console.log('make new framebuffer', width, height);
         }
       }
     };
