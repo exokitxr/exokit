@@ -284,7 +284,7 @@ NAN_METHOD(AudioContext::New) {
 }
 
 NAN_METHOD(AudioContext::_DecodeAudioDataSync) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   if (info[0]->IsArrayBuffer()) {
     Local<Object> audioContextObj = info.This();
@@ -302,7 +302,7 @@ NAN_METHOD(AudioContext::_DecodeAudioDataSync) {
 }
 
 NAN_METHOD(AudioContext::CreateMediaElementSource) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   if (info[0]->IsObject() && JS_OBJ(JS_OBJ(info[0])->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLAudioElement"))) {
     Local<Object> htmlAudioElement = Local<Object>::Cast(info[0]);
@@ -320,7 +320,7 @@ NAN_METHOD(AudioContext::CreateMediaElementSource) {
 }
 
 NAN_METHOD(AudioContext::CreateMediaStreamSource) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   if (info[0]->IsObject() && JS_OBJ(JS_OBJ(info[0])->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("MicrophoneMediaStream"))) {
     Local<Object> microphoneMediaStream = Local<Object>::Cast(info[0]);
@@ -338,21 +338,21 @@ NAN_METHOD(AudioContext::CreateMediaStreamSource) {
 }
 
 NAN_METHOD(AudioContext::CreateMediaStreamDestination) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(info.This());
   audioContext->CreateMediaStreamDestination();
 }
 
 NAN_METHOD(AudioContext::CreateMediaStreamTrackSource) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(info.This());
   audioContext->CreateMediaStreamTrackSource();
 }
 
 NAN_METHOD(AudioContext::CreateGain) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   Local<Object> audioContextObj = info.This();
   AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(audioContextObj);
@@ -364,7 +364,7 @@ NAN_METHOD(AudioContext::CreateGain) {
 }
 
 NAN_METHOD(AudioContext::CreateAnalyser) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   Local<Object> audioContextObj = info.This();
   AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(audioContextObj);
@@ -376,7 +376,7 @@ NAN_METHOD(AudioContext::CreateAnalyser) {
 }
 
 NAN_METHOD(AudioContext::CreatePanner) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   Local<Object> audioContextObj = info.This();
   AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(audioContextObj);
@@ -388,7 +388,7 @@ NAN_METHOD(AudioContext::CreatePanner) {
 }
 
 NAN_METHOD(AudioContext::CreateStereoPanner) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   Local<Object> audioContextObj = info.This();
   AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(audioContextObj);
@@ -400,7 +400,7 @@ NAN_METHOD(AudioContext::CreateStereoPanner) {
 }
 
 NAN_METHOD(AudioContext::CreateOscillator) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   Local<Object> audioContextObj = info.This();
   AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(audioContextObj);
@@ -412,7 +412,7 @@ NAN_METHOD(AudioContext::CreateOscillator) {
 }
 
 NAN_METHOD(AudioContext::CreateBuffer) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber()) {
     uint32_t numOfChannels = TO_UINT32(info[0]);
@@ -432,7 +432,7 @@ NAN_METHOD(AudioContext::CreateBuffer) {
 }
 
 NAN_METHOD(AudioContext::CreateBufferSource) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   Local<Object> audioContextObj = info.This();
   AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(audioContextObj);
@@ -444,7 +444,7 @@ NAN_METHOD(AudioContext::CreateBufferSource) {
 }
 
 NAN_METHOD(AudioContext::CreateScriptProcessor) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   uint32_t bufferSize = info[0]->IsNumber() ? TO_UINT32(info[0]) : 256;
   uint32_t numberOfInputChannels = info[1]->IsNumber() ? TO_UINT32(info[1]) : 2;
@@ -460,35 +460,35 @@ NAN_METHOD(AudioContext::CreateScriptProcessor) {
 }
 
 NAN_METHOD(AudioContext::Suspend) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(info.This());
   audioContext->Suspend();
 }
 
 NAN_METHOD(AudioContext::Resume) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(info.This());
   audioContext->Resume();
 }
 
 NAN_METHOD(AudioContext::Close) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(info.This());
   audioContext->Close();
 }
 
 NAN_GETTER(AudioContext::CurrentTimeGetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(info.This());
   info.GetReturnValue().Set(JS_NUM(audioContext->audioContext->currentTime()));
 }
 
 NAN_GETTER(AudioContext::SampleRateGetter) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(info.This());
   info.GetReturnValue().Set(JS_NUM(audioContext->audioContext->sampleRate()));
