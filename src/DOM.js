@@ -1165,25 +1165,21 @@ class Element extends Node {
   }
 
   requestPointerLock() {
-    const topDocument = this.ownerDocument.defaultView.top.document;
-
-    if (topDocument[symbols.pointerLockElementSymbol] === null) {
-      topDocument[symbols.pointerLockElementSymbol] = this;
+    if (this.ownerDocument[symbols.pointerLockElementSymbol] === null) {
+      this.ownerDocument[symbols.pointerLockElementSymbol] = this;
 
       process.nextTick(() => {
-        topDocument._emit('pointerlockchange');
+        this.ownerDocument._emit('pointerlockchange');
       });
     }
   }
 
   requestFullscreen() {
-    const topDocument = this.ownerDocument.defaultView.top.document;
-
-    if (topDocument[symbols.fullscreenElementSymbol] === null) {
-      topDocument[symbols.fullscreenElementSymbol] = this;
+    if (this.ownerDocument[symbols.fullscreenElementSymbol] === null) {
+      this.ownerDocument[symbols.fullscreenElementSymbol] = this;
 
       process.nextTick(() => {
-        topDocument._emit('fullscreenchange');
+        this.ownerDocument._emit('fullscreenchange');
       });
     }
   }

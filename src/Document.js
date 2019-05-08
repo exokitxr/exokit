@@ -520,46 +520,34 @@ class Document extends DOM.HTMLLoadableElement {
   }
 
   get pointerLockElement() {
-    if (this.defaultView.top === this.defaultView) {
-      return this[symbols.pointerLockElementSymbol];
-    } else {
-      return this.defaultView.top.document.pointerLockElement;
-    }
+    return this[symbols.pointerLockElementSymbol];
   }
   set pointerLockElement(pointerLockElement) {}
   get fullscreenElement() {
-    if (this.defaultView.top === this.defaultView) {
-      return this[symbols.fullscreenElementSymbol];
-    } else {
-      return this.defaultView.top.document.fullscreenElement;
-    }
+    return this[symbols.fullscreenElementSymbol];
   }
   set fullscreenElement(fullscreenElement) {}
 
   exitPointerLock() {
-    const topDocument = this.defaultView.top.document;
-
-    if (topDocument[symbols.pointerLockElementSymbol] !== null) {
-      topDocument[symbols.pointerLockElementSymbol] = null;
+    if (this[symbols.pointerLockElementSymbol] !== null) {
+      this[symbols.pointerLockElementSymbol] = null;
 
       process.nextTick(() => {
-        topDocument._emit('pointerlockchange');
+        this._emit('pointerlockchange');
       });
     }
   }
   exitFullscreen() {
-    const topDocument = this.defaultView.top.document;
-
-    if (topDocument[symbols.fullscreenElementSymbol] !== null) {
-      topDocument[symbols.fullscreenElementSymbol] = null;
+    if (this[symbols.fullscreenElementSymbol] !== null) {
+      this[symbols.fullscreenElementSymbol] = null;
 
       process.nextTick(() => {
-        topDocument._emit('fullscreenchange');
+        this._emit('fullscreenchange');
       });
     }
   }
   hasFocus() {
-    return (this.defaultView.top === this.defaultView);
+    return this.defaultView.top === this.defaultView;
   }
 }
 module.exports.Document = Document;

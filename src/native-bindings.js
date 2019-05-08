@@ -94,8 +94,8 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
       switch (type) {
         case 'focus': {
           const {focused} = data;
-          if (!focused && window.top.document.pointerLockElement) {
-            window.top.document.exitPointerLock();
+          if (!focused && window.document.pointerLockElement) {
+            window.document.exitPointerLock();
           }
           break;
         }
@@ -120,21 +120,21 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
         case 'keydown': {
           let handled = false;
           if (data.keyCode === 27) { // ESC
-            if (window.top.document.pointerLockElement) {
-              window.top.document.exitPointerLock();
+            if (window.document.pointerLockElement) {
+              window.document.exitPointerLock();
               handled = true;
             }
-            if (window.top.document.fullscreenElement) {
-              window.top.document.exitFullscreen();
+            if (window.document.fullscreenElement) {
+              window.document.exitFullscreen();
               handled = true;
             }
           }
           if (data.keyCode === 122) { // F11
-            if (window.top.document.fullscreenElement) {
-              window.top.document.exitFullscreen();
+            if (window.document.fullscreenElement) {
+              window.document.exitFullscreen();
               handled = true;
             } else {
-              window.top.document.requestFullscreen();
+              window.document.requestFullscreen();
               handled = true;
             }
           }
@@ -636,21 +636,21 @@ if (bindings.nativeMl) {
       case 'keydown': {
         let handled = false;
         if (e.keyCode === 27) { // ESC
-          if (window.top.document.pointerLockElement) {
-            window.top.document.exitPointerLock();
+          if (window.document.pointerLockElement) {
+            window.document.exitPointerLock();
             handled = true;
           }
-          if (window.top.document.fullscreenElement) {
-            window.top.document.exitFullscreen();
+          if (window.document.fullscreenElement) {
+            window.document.exitFullscreen();
             handled = true;
           }
         }
         if (e.keyCode === 122) { // F11
-          if (window.top.document.fullscreenElement) {
-            window.top.document.exitFullscreen();
+          if (window.document.fullscreenElement) {
+            window.document.exitFullscreen();
             handled = true;
           } else {
-            window.top.document.requestFullscreen();
+            window.document.requestFullscreen();
             handled = true;
           }
         }
