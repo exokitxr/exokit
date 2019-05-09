@@ -2,37 +2,7 @@
 
 namespace webaudio {
 
-void initializeAsync() {
-  if (!asyncInitialized) {
-#if defined(ANDROID) || defined(LUMIN)
-    lab::SetGenericFunctions(
-      adgCreate,
-      adgDestroy,
-      adgStart,
-      adgStop,
-      adgStartRecording,
-      adgStopRecording
-    );
-#endif
-
-    uv_async_init(windowsystembase::GetEventLoop(), &threadAsync, RunInMainThread);
-    uv_sem_init(&threadSemaphore, 0);
-
-    asyncInitialized = true;
-  }
-}
-void deinitializeAsync() {
-  if (asyncInitialized) {
-    uv_close((uv_handle_t *)&threadAsync, nullptr);
-    uv_sem_destroy(&threadSemaphore);
-    
-    asyncInitialized = false;
-  }
-}
-
 lab::AudioContext *getDefaultAudioContext(float sampleRate) {
-  initializeAsync();
-
   if (!_defaultAudioContext) {
     _defaultAudioContext = lab::MakeRealtimeAudioContext(sampleRate);
 
@@ -44,14 +14,25 @@ lab::AudioContext *getDefaultAudioContext(float sampleRate) {
 }
 
 AudioContext::AudioContext(float sampleRate) {
-  initializeAsync();
-
   audioContext = lab::MakeRealtimeAudioContext(sampleRate);
 }
 
 AudioContext::~AudioContext() {}
 
 Local<Object> AudioContext::Initialize(Isolate *isolate, Local<Value> audioListenerCons, Local<Value> audioSourceNodeCons, Local<Value> audioDestinationNodeCons, Local<Value> gainNodeCons, Local<Value> analyserNodeCons, Local<Value> pannerNodeCons, Local<Value> audioBufferCons, Local<Value> audioBufferSourceNodeCons, Local<Value> audioProcessingEventCons, Local<Value> stereoPannerNodeCons, Local<Value> oscillatorNodeCons, Local<Value> scriptProcessorNodeCons, Local<Value> mediaStreamTrackCons, Local<Value> microphoneMediaStreamCons) {
+#if defined(ANDROID) || defined(LUMIN)
+  lab::SetGenericFunctions(
+    adgCreate,
+    adgDestroy,
+    adgStart,
+    adgStop,
+    adgStartRecording,
+    adgStopRecording
+  );
+#endif
+
+  _webAudioAsync.reset(new WebAudioAsync());
+
   /* atexit([]{
     uv_close((uv_handle_t *)&threadAsync, nullptr);
     uv_sem_destroy(&threadSemaphore);
@@ -492,7 +473,7 @@ NAN_METHOD(AudioContext::Close) {
 NAN_METHOD(AudioContext::Destroy) {
   // Nan::HandleScope scope;
 
-  deinitializeAsync();
+  _webAudioAsync.reset();
 }
 
 NAN_GETTER(AudioContext::CurrentTimeGetter) {
@@ -509,7 +490,17 @@ NAN_GETTER(AudioContext::SampleRateGetter) {
   info.GetReturnValue().Set(JS_NUM(audioContext->audioContext->sampleRate()));
 }
 
-void QueueOnMainThread(lab::ContextRenderLock &r, function<void()> &&newThreadFn) {
+WebAudioAsync::WebAudioAsync() {
+  uv_async_init(windowsystembase::GetEventLoop(), &threadAsync, RunInMainThread);
+  uv_sem_init(&threadSemaphore, 0);
+}
+
+WebAudioAsync::~WebAudioAsync() {
+  uv_close((uv_handle_t *)&threadAsync, nullptr);
+  uv_sem_destroy(&threadSemaphore);
+}
+
+void WebAudioAsync::QueueOnMainThread(lab::ContextRenderLock &r, function<void()> &&newThreadFn) {
   threadFn = std::move(newThreadFn);
 
   {
@@ -520,16 +511,13 @@ void QueueOnMainThread(lab::ContextRenderLock &r, function<void()> &&newThreadFn
 
   threadFn = function<void()>();
 }
-void RunInMainThread(uv_async_t *handle) {
-  threadFn();
-  uv_sem_post(&threadSemaphore);
+void WebAudioAsync::RunInMainThread(uv_async_t *handle) {
+  _webAudioAsync->threadFn();
+  uv_sem_post(&_webAudioAsync->threadSemaphore);
 }
 
 thread_local unique_ptr<lab::AudioContext> _defaultAudioContext;
-thread_local function<void()> threadFn;
-thread_local bool asyncInitialized = false;
-thread_local uv_async_t threadAsync;
-thread_local uv_sem_t threadSemaphore;
+thread_local unique_ptr<WebAudioAsync> _webAudioAsync;
 
 }
 
