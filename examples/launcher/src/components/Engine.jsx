@@ -310,6 +310,10 @@ class Engine extends React.Component {
                     <i class="fal fa-crosshairs"/>
                     <div className="label">Hit test</div>
                   </div>
+                  <div className="menu-item-popup-item" onClick={() => this.addTemplate('eyeTracking')}>
+                    <i class="fal fa-eye"/>
+                    <div className="label">Eye tracking</div>
+                  </div>
                 </div>
               </div>
               <i class="fal fa-plus-hexagon"/>
