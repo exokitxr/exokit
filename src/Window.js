@@ -1268,10 +1268,8 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
             }
           } else {
             if (!context.desynchronized) {
-              /* const width = context.canvas.width * (args.blit ? 0.5 : 1);
-              const height = context.canvas.height; */
-              const width = xrState.renderWidth[0]*2;
-              const height = xrState.renderHeight[0];
+              const width = context.canvas.width * (args.blit ? 0.5 : 1);
+              const height = context.canvas.height;
               const {width: dWidth, height: dHeight} = nativeWindow.getFramebufferSize(windowHandle);
               nativeWindow.blitFrameBuffer(context, context.framebuffer.msFbo, context.framebuffer.fbo, width, height, width, height, true, false, false);
               nativeWindow.blitFrameBuffer(context, context.framebuffer.fbo, 0, width, height, dWidth, dHeight, true, false, false);
