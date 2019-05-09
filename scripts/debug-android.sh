@@ -7,11 +7,13 @@
 #
 # Otherwise, you will get `ERROR: Failed to retrieve application ABI from Android.mk.`
 
-# Initialization.
+# NOTE: to add arguments, put this in $ANDROID_HOME/ndk-bundle/prebuilt/linux-x86_64/bin/ndk-gdb.py
+#
+# am_cmd.append("-e")
+# am_cmd.append("ARGS")
+# am_cmd.append("'node --experimental-worker /package /package/examples/tutorial.html'")
 
 set -e
-
-# Preface.
 
 cd "$(dirname "$0")/.."
 
