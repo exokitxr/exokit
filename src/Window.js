@@ -1281,12 +1281,12 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
           }
           nativeWindow.swapBuffers(windowHandle);
           if (isMac) {
-            const drawFramebuffer = context.getFramebuffer(context.DRAW_FRAMEBUFFER);
+            const drawFramebuffer = context.getBoundFramebuffer(context.DRAW_FRAMEBUFFER);
             if (drawFramebuffer) {
               context.bindFramebuffer(context.DRAW_FRAMEBUFFER, drawFramebuffer);
             }
 
-            const readFramebuffer = context.getFramebuffer(context.READ_FRAMEBUFFER);
+            const readFramebuffer = context.getBoundFramebuffer(context.READ_FRAMEBUFFER);
             if (readFramebuffer) {
               context.bindFramebuffer(context.READ_FRAMEBUFFER, readFramebuffer);
             }

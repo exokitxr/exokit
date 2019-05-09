@@ -1150,7 +1150,8 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
 
   /* Nan::SetMethod(proto, "getFramebuffer", glSwitchCallWrap<GetFramebuffer>);
   Nan::SetMethod(proto, "setDefaultFramebuffer", glSwitchCallWrap<SetDefaultFramebuffer>); */
-  Nan::SetMethod(proto, "getFramebuffer", glCallWrap<GetFramebuffer>);
+  Nan::SetMethod(proto, "getBoundFramebuffer", glCallWrap<GetBoundFramebuffer>);
+  Nan::SetMethod(proto, "getDefaultFramebuffer", glCallWrap<GetDefaultFramebuffer>);
   Nan::SetMethod(proto, "setDefaultFramebuffer", glCallWrap<SetDefaultFramebuffer>);
 
   setGlConstants(proto);
@@ -2397,7 +2398,7 @@ NAN_GETTER(WebGLRenderingContext::DrawingBufferHeightGetter) {
   info.GetReturnValue().Set(JS_INT(height));
 }
 
-NAN_METHOD(WebGLRenderingContext::GetFramebuffer) {
+NAN_METHOD(WebGLRenderingContext::GetBoundFramebuffer) {
   Local<Object> glObj = info.This();
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
 
@@ -2409,6 +2410,12 @@ NAN_METHOD(WebGLRenderingContext::GetFramebuffer) {
   } else {
     info.GetReturnValue().Set(Nan::Null());
   }
+}
+
+NAN_METHOD(WebGLRenderingContext::GetDefaultFramebuffer) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
+  info.GetReturnValue().Set(JS_INT(gl->defaultFramebuffer));
 }
 
 NAN_METHOD(WebGLRenderingContext::SetDefaultFramebuffer) {

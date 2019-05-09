@@ -250,7 +250,22 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
     gl.resize = (width, height) => {
       if (!gl.desynchronized) {
         nativeWindow.setCurrentWindowContext(windowHandle);
-        nativeWindow.resizeRenderTarget(gl, width, height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
+        const [newFbo, newTex, newDepthTex, newMsFbo, newMsTex, newMsDepthTex] = nativeWindow.resizeRenderTarget(gl, width, height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
+        if (gl.getDefaultFramebuffer() === gl.framebuffer.msFbo) {
+          gl.setDefaultFramebuffer(newMsFbo);
+        }
+        gl.framebuffer = {
+          msFbo: newMsFbo,
+          msTex: newMsTex,
+          msDepthTex: newMsDepthTex,
+          fbo: newFbo,
+          tex: newTex,
+          depthTex: newDepthTex,
+        };
+        
+        if (canvas.framebuffer) {
+          canvas.framebuffer = null;
+        }
       }
     };
 
