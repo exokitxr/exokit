@@ -1,6 +1,6 @@
 {
   "name": "exokit",
-  "version": "0.0.524",
+  "version": "0.0.525",
   "description": "Native VR and AR engine for JavaScript",
   "engines": {
     "node": ">=10.0.0"
