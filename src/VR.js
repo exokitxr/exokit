@@ -603,6 +603,98 @@ class FakePlanesTracker extends EventTarget {
   }
 }
 
+class FakeEye {
+  constructor(side, eyeTracker) {
+    this.side = side;
+    this.eyeTracker = eyeTracker;
+
+    this._position = new Float32Array(3);
+    this._orientation = new Float32Array(4);
+  }
+
+  getFixation() {
+    localMatrix
+      .fromArray(GlobalContext.xrState.leftViewMatrix)
+      .getInverse(localMatrix);
+
+    const {xrOffset} = this.eyeTracker.session.device.window.document;
+    if (xrOffset) {
+      localMatrix
+        .premultiply(
+          localMatrix2.compose(
+            localVector.fromArray(xrOffset.position),
+            localQuaternion.fromArray(xrOffset.orientation),
+            localVector2.fromArray(xrOffset.scale)
+          )
+          .getInverse(localMatrix2)
+        );
+    }
+    localMatrix.decompose(localVector, localQuaternion, localVector2);
+
+    return {
+      position: localVector
+        .add(
+          localVector2.set((this.side === 'left' ? -1 : 1) * 0.1, 0, -1)
+            .applyQuaternion(localQuaternion)
+        )
+        .toArray(this._position),
+      orientation: localQuaternion.toArray(this._orientation),
+    };
+  }
+
+  getBlink() {
+    const mod = Date.now() % 2000;
+    return mod < 200;
+  }
+}
+
+class FakeEyeTracker {
+  constructor(session) {
+    this.session = session;
+
+    this._position = new Float32Array(3);
+    this._orientation = new Float32Array(4);
+    this._eyes = [
+      new FakeEye('left', this),
+      new FakeEye('right', this),
+    ];
+  }
+
+  getFixation() {
+    localMatrix
+      .fromArray(GlobalContext.xrState.leftViewMatrix)
+      .getInverse(localMatrix);
+
+    const {xrOffset} = this.session.device.window.document;
+    if (xrOffset) {
+      localMatrix
+        .premultiply(
+          localMatrix2.compose(
+            localVector.fromArray(xrOffset.position),
+            localQuaternion.fromArray(xrOffset.orientation),
+            localVector2.fromArray(xrOffset.scale)
+          )
+          .getInverse(localMatrix2)
+        );
+    }
+    localMatrix.decompose(localVector, localQuaternion, localVector2);
+
+    return {
+      position: localVector
+        .add(
+          localVector2.set(0, 0, -1)
+            .applyQuaternion(localQuaternion)
+        )
+        .toArray(this._position),
+      orientation: localQuaternion.toArray(this._orientation),
+    };
+  }
+
+  getEyes() {
+    return this._eyes;
+  }
+}
+
 class FakeVRDisplay extends VRDisplay {
   constructor(window) {
     super('FAKE');
@@ -678,6 +770,7 @@ class FakeVRDisplay extends VRDisplay {
 
     let mesher;
     let planesTracker;
+    let eyeTracker;
     const session = {
       addEventListener(e, fn) {
         if (e === 'end') {
@@ -738,6 +831,12 @@ class FakeVRDisplay extends VRDisplay {
           planesTracker = new FakePlanesTracker(session);
         }
         return planesTracker;
+      },
+      requestEyeTracking() {
+        if (!eyeTracker) {
+          eyeTracker = new FakeEyeTracker(session);
+        }
+        return eyeTracker;
       },
       async requestHitTest(origin, direction, coordinateSystem) {
         if (!mesher) {
