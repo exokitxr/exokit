@@ -335,10 +335,10 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
       nativeWindow.destroyWindowHandle(windowHandle);
       canvas._context = null;
 
-      if (hidden) {
+      /* if (hidden) {
         window.document.framebuffer = null;
         window.windowEmit('framebuffer', null);
-      }
+      } */
       canvas.ownerDocument.removeListener('domchange', ondomchange);
 
       GlobalContext.contexts.splice(GlobalContext.contexts.indexOf(gl), 1);
