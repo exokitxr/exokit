@@ -956,10 +956,6 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     http,
     // https,
     ws,
-    createRenderTarget(context) { // XXX needed for reality tabs fakeDisplay
-      nativeWindow.setCurrentWindowContext(context.getWindowHandle());
-      return nativeWindow.createRenderTarget.apply(nativeWindow, arguments);
-    },
     magicleap: nativeMl ? {
       RequestMeshing: () => nativeMl.RequestMeshing(window),
       RequestPlaneTracking: () => nativeMl.RequestPlaneTracking(window),
