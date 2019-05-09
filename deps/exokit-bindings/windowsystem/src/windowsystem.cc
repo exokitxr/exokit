@@ -329,7 +329,7 @@ void InitializeLocalGlState(WebGLRenderingContext *gl) {
 }
 
 constexpr GLint MAX_TEXTURE_SIZE = 4096;
-constexpr GLint NUM_SAMPLES = 4096;
+constexpr GLint NUM_SAMPLES = 4;
 bool CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint sharedColorTex, GLuint sharedDepthStencilTex, GLuint sharedMsColorTex, GLuint sharedMsDepthStencilTex, GLuint *pfbo, GLuint *pcolorTex, GLuint *pdepthStencilTex, GLuint *pmsFbo, GLuint *pmsColorTex, GLuint *pmsDepthStencilTex) {
   GLuint &fbo = *pfbo;
   GLuint &colorTex = *pcolorTex;
