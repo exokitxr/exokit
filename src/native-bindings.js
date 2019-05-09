@@ -250,7 +250,22 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
     gl.resize = (width, height) => {
       if (!gl.desynchronized) {
         nativeWindow.setCurrentWindowContext(windowHandle);
-        nativeWindow.resizeRenderTarget(gl, width, height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
+        const [newFbo, newTex, newDepthTex, newMsFbo, newMsTex, newMsDepthTex] = nativeWindow.resizeRenderTarget(gl, width, height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
+        if (gl.getDefaultFramebuffer() === gl.framebuffer.msFbo) {
+          gl.setDefaultFramebuffer(newMsFbo);
+        }
+        gl.framebuffer = {
+          msFbo: newMsFbo,
+          msTex: newMsTex,
+          msDepthTex: newMsDepthTex,
+          fbo: newFbo,
+          tex: newTex,
+          depthTex: newDepthTex,
+        };
+        
+        if (canvas.framebuffer) {
+          canvas.framebuffer = null;
+        }
       }
     };
 
@@ -335,10 +350,10 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
       nativeWindow.destroyWindowHandle(windowHandle);
       canvas._context = null;
 
-      if (hidden) {
+      /* if (hidden) {
         window.document.framebuffer = null;
         window.windowEmit('framebuffer', null);
-      }
+      } */
       canvas.ownerDocument.removeListener('domchange', ondomchange);
 
       GlobalContext.contexts.splice(GlobalContext.contexts.indexOf(gl), 1);

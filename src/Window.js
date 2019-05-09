@@ -956,10 +956,6 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     http,
     // https,
     ws,
-    createRenderTarget(context) { // XXX needed for reality tabs fakeDisplay
-      nativeWindow.setCurrentWindowContext(context.getWindowHandle());
-      return nativeWindow.createRenderTarget.apply(nativeWindow, arguments);
-    },
     magicleap: nativeMl ? {
       RequestMeshing: () => nativeMl.RequestMeshing(window),
       RequestPlaneTracking: () => nativeMl.RequestPlaneTracking(window),
@@ -1235,7 +1231,6 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
             tex,
             depthTex,
           };
-          // console.log('make new framebuffer', width, height);
         }
       }
     };
@@ -1254,17 +1249,19 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
           if (context === vrPresentState.glContext) {
             nativeWindow.bindVrChildFbo(context, vrPresentState.fbo, xrState.tex[0], xrState.depthTex[0]);
 
+            const width = xrState.renderWidth[0]*2;
+            const height = xrState.renderHeight[0];
             if (vrPresentState.layers.length > 0) {
               _decorateSelfLayers(vrPresentState.layers);
 
               nativeWindow.composeLayers(context, vrPresentState.fbo, vrPresentState.layers, xrState);
             } else {
-              nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, context.canvas.width, context.canvas.height, context.canvas.width, context.canvas.height, true, false, false);
+              nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, width, height, width, height, true, false, false);
             }
 
             if (vrPresentState.hmdType === 'fake' || vrPresentState.hmdType === 'oculus' || vrPresentState.hmdType === 'openvr') {
-              const width = context.canvas.width * (args.blit ? 0.5 : 1);
-              const height = context.canvas.height;
+              /* const width = context.canvas.width * (args.blit ? 0.5 : 1);
+              const height = context.canvas.height; */
               const {width: dWidth, height: dHeight} = nativeWindow.getFramebufferSize(windowHandle);
               nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, width, height, dWidth, dHeight, true, false, false);
             }
@@ -1283,12 +1280,12 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
           }
           nativeWindow.swapBuffers(windowHandle);
           if (isMac) {
-            const drawFramebuffer = context.getFramebuffer(context.DRAW_FRAMEBUFFER);
+            const drawFramebuffer = context.getBoundFramebuffer(context.DRAW_FRAMEBUFFER);
             if (drawFramebuffer) {
               context.bindFramebuffer(context.DRAW_FRAMEBUFFER, drawFramebuffer);
             }
 
-            const readFramebuffer = context.getFramebuffer(context.READ_FRAMEBUFFER);
+            const readFramebuffer = context.getBoundFramebuffer(context.READ_FRAMEBUFFER);
             if (readFramebuffer) {
               context.bindFramebuffer(context.READ_FRAMEBUFFER, readFramebuffer);
             }
@@ -1401,9 +1398,9 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
         };
       } else {
         const {canvas} = context;
-        const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeWindow.createRenderTarget(context, xrState.renderWidth[0]*2, xrState.renderHeight[0]);
-        
-        console.log('make low level', canvas.width, canvas.height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
+        const width = xrState.renderWidth[0]*2;
+        const height = xrState.renderHeight[0];
+        const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeWindow.createRenderTarget(context, width, height);
 
         context.setDefaultFramebuffer(msFbo);
 
@@ -1417,8 +1414,8 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
         };
         window.windowEmit('framebuffer', window.document.framebuffer);
         window.windowEmit('resize', {
-          width: xrState.renderWidth[0]*2,
-          height: xrState.renderHeight[0],
+          width,
+          height,
         });
         
         return {

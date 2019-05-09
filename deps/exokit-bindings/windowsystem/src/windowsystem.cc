@@ -353,12 +353,8 @@ void InitializeLocalGlState(WebGLRenderingContext *gl) {
 }
 
 constexpr GLint MAX_TEXTURE_SIZE = 4096;
+constexpr GLint NUM_SAMPLES = 4;
 void CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint *pfbo, GLuint *pcolorTex, GLuint *pdepthStencilTex, GLuint *pmsFbo, GLuint *pmsColorTex, GLuint *pmsDepthStencilTex) {
-  const int samples = 4;
-
-  int msWidth, msHeight;
-  windowsystem::GetScreenSize(gl->windowHandle, &msWidth, &msHeight);
-
   GLuint &fbo = *pfbo;
   GLuint &colorTex = *pcolorTex;
   GLuint &depthStencilTex = *pdepthStencilTex;
@@ -375,9 +371,9 @@ void CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex);
     glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
 #if !defined(ANDROID) && !defined(LUMIN)
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_DEPTH24_STENCIL8, msWidth, msHeight, true);
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, NUM_SAMPLES, GL_DEPTH24_STENCIL8, width, height, true);
 #else
-    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_DEPTH24_STENCIL8, msWidth, msHeight, true);
+    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, NUM_SAMPLES, GL_DEPTH24_STENCIL8, width, height, true);
 #endif
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex, 0);
 
@@ -385,9 +381,9 @@ void CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msColorTex);
     glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
 #if !defined(ANDROID) && !defined(LUMIN)
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA8, msWidth, msHeight, true);
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, NUM_SAMPLES, GL_RGBA8, width, height, true);
 #else
-    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA8, msWidth, msHeight, true);
+    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, NUM_SAMPLES, GL_RGBA8, width, height, true);
 #endif
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, msColorTex, 0);
 
@@ -472,6 +468,34 @@ NAN_METHOD(ResizeRenderTarget) {
   GLuint msDepthStencilTex = TO_UINT32(info[8]);
 
   {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, msFbo);
+
+    glDeleteTextures(1, &msDepthStencilTex);
+    glGenTextures(1, &msDepthStencilTex);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
+#if !defined(ANDROID) && !defined(LUMIN)
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, NUM_SAMPLES, GL_DEPTH24_STENCIL8, width, height, true);
+#else
+    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, NUM_SAMPLES, GL_DEPTH24_STENCIL8, width, height, true);
+#endif
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex, 0);
+
+    glDeleteTextures(1, &msColorTex);
+    glGenTextures(1, &msColorTex);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msColorTex);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
+#if !defined(ANDROID) && !defined(LUMIN)
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, NUM_SAMPLES, GL_RGBA8, width, height, true);
+#else
+    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, NUM_SAMPLES, GL_RGBA8, width, height, true);
+#endif
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, msColorTex, 0);
+
+    // glClear(GL_DEPTH_BUFFER_BIT); // initialize to far depth
+  }
+
+  {
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
 
     glBindTexture(GL_TEXTURE_2D, depthStencilTex);
@@ -505,6 +529,15 @@ NAN_METHOD(ResizeRenderTarget) {
   } else {
     glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
   }
+  
+  Local<Array> result = Array::New(Isolate::GetCurrent(), 6);
+  result->Set(0, JS_INT(fbo));
+  result->Set(1, JS_INT(colorTex));
+  result->Set(2, JS_INT(depthStencilTex));
+  result->Set(3, JS_INT(msFbo));
+  result->Set(4, JS_INT(msColorTex));
+  result->Set(5, JS_INT(msDepthStencilTex));
+  info.GetReturnValue().Set(result);
 }
 
 NAN_METHOD(DestroyRenderTarget) {
