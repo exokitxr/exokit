@@ -490,14 +490,16 @@ NAN_GETTER(AudioContext::SampleRateGetter) {
   info.GetReturnValue().Set(JS_NUM(audioContext->audioContext->sampleRate()));
 }
 
-WebAudioAsync::WebAudioAsync() {
-  uv_async_init(windowsystembase::GetEventLoop(), &threadAsync, RunInMainThread);
-  threadAsync.data = this;
+WebAudioAsync::WebAudioAsync() : threadAsync(new uv_async_t()) {
+  uv_async_init(windowsystembase::GetEventLoop(), threadAsync, RunInMainThread);
+  threadAsync->data = this;
   uv_sem_init(&threadSemaphore, 0);
 }
 
 WebAudioAsync::~WebAudioAsync() {
-  uv_close((uv_handle_t *)&threadAsync, nullptr);
+  uv_close((uv_handle_t *)threadAsync, [](uv_handle_t *handle) {
+    delete handle;
+  });
   uv_sem_destroy(&threadSemaphore);
 }
 
@@ -506,7 +508,7 @@ void WebAudioAsync::QueueOnMainThread(lab::ContextRenderLock &r, function<void()
 
   {
     lab::ContextRenderUnlock contextUnlock(r.context());
-    uv_async_send(&threadAsync);
+    uv_async_send(threadAsync);
     uv_sem_wait(&threadSemaphore);
   }
 

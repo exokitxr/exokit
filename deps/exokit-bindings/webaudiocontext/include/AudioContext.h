@@ -100,7 +100,7 @@ public:
 
 // protected:
   function<void()> threadFn;
-  uv_async_t threadAsync;
+  uv_async_t *threadAsync;
   uv_sem_t threadSemaphore;
 };
 
