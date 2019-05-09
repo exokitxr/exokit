@@ -13,7 +13,25 @@ The main project repository is at [`exokitxr/exokit`](https://github.com/exokitx
 ```sh
 git clone https://github.com/exokitxr/exokit.git
 ```
+### Windows requirements
 
+Requirements: Node.js 11.6.0, Python 2, Visual Studio 2015 or 2017
+
+Alternative requirements: Node.js 11.6.0, as administrator: npm install -g windows-build-tools
+
+### macOS requirements
+
+Requirements: Node.js 11.6.0, XCode
+
+### Linux requirements
+
+Requirements: Node.js 11.6.0
+
+Linux additionally requires that you install some local dependencies. For `Debian`/`Ubuntu` they are:
+```sh
+apt-get install -y \
+build-essential wget python libglfw3-dev libglew-dev libfreetype6-dev libfontconfig1-dev uuid-dev libxcursor-dev libxinerama-dev libxi-dev libasound2-dev libexpat1-dev
+```
 
 ## Install and build
 
@@ -25,13 +43,6 @@ cd exokit
 npm install
 ```
 
-### Linux dependencies
-
-Linux additionally requires that you install some local dependencies. For `Debian`/`Ubuntu` they are:
-```sh
-apt-get install -y \
-build-essential wget python libglfw3-dev libglew-dev libfreetype6-dev libfontconfig1-dev uuid-dev libxcursor-dev libxinerama-dev libxi-dev libasound2-dev libexpat1-dev
-```
 
 ## Common build errors
 This section covers common errors when building the Exokit engine and their solutions.

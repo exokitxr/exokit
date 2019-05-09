@@ -12,7 +12,12 @@ This guide explains how to package your XR site with the Exokit Engine as an EXE
 In the Exokit [`scripts/exokit.sh`](https://github.com/exokitxr/exokit/blob/master/scripts/exokit.sh#L17) is where you will find the default site that the Exokit EXE application will load into. Change the argument passed in to your site URL or file path.
 
 ## Prerequisites
+Node `11.6.0`
 Latest Exokit
+Python 2
+Visual Studio 2015 or 2017
+
+Alternative requirements: Node.js 11.6.0, as administrator: `npm install -g windows-build-tools`
 
 ## Build EXE
 

@@ -6,7 +6,7 @@ order: 2
 parent_section: api
 ---
 
-This currently consists of seperate device-specific APIs, but will be folded into a more generic API, properly coded in Exokit generically on the session objects rather than under a `magicleap` namespace.
+This currently consists of seperate device-specific APIs, but will be folded into a more generic API, properly coded in Exokit generically on the `session` objects rather than under a `magicleap` namespace.
 
 ## Magic Leap One API
 
