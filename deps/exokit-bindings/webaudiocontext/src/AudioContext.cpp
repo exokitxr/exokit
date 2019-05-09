@@ -492,6 +492,7 @@ NAN_GETTER(AudioContext::SampleRateGetter) {
 
 WebAudioAsync::WebAudioAsync() {
   uv_async_init(windowsystembase::GetEventLoop(), &threadAsync, RunInMainThread);
+  threadAsync.data = this;
   uv_sem_init(&threadSemaphore, 0);
 }
 
@@ -512,8 +513,9 @@ void WebAudioAsync::QueueOnMainThread(lab::ContextRenderLock &r, function<void()
   threadFn = function<void()>();
 }
 void WebAudioAsync::RunInMainThread(uv_async_t *handle) {
-  _webAudioAsync->threadFn();
-  uv_sem_post(&_webAudioAsync->threadSemaphore);
+  WebAudioAsync *webAudioAsync = (WebAudioAsync *)handle->data;
+  webAudioAsync->threadFn();
+  uv_sem_post(&webAudioAsync->threadSemaphore);
 }
 
 thread_local unique_ptr<lab::AudioContext> _defaultAudioContext;
