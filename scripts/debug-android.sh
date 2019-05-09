@@ -17,4 +17,5 @@ cd "$(dirname "$0")/.."
 
 pushd ./android/app/src/main
 "$ANDROID_HOME/ndk-bundle/ndk-gdb" --adb="$ANDROID_HOME/platform-tools/adb" --launch=android.app.NativeActivity
+# "$ANDROID_HOME/ndk-bundle/ndk-gdb" --adb="$ANDROID_HOME/platform-tools/adb" --launch=android.app.NativeActivity -x <(echo set environment ARGS "'node --experimental-worker /package /package/examples/tutorial.html'")
 popd
