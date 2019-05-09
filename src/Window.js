@@ -1401,7 +1401,9 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
         };
       } else {
         const {canvas} = context;
-        const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeWindow.createRenderTarget(context, xrState.renderWidth[0]*2, xrState.renderHeight[0]);
+        const width = xrState.renderWidth[0]*2;
+        const height = xrState.renderHeight[0];
+        const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeWindow.createRenderTarget(context, width, height);
 
         context.setDefaultFramebuffer(msFbo);
 
@@ -1415,8 +1417,8 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
         };
         window.windowEmit('framebuffer', window.document.framebuffer);
         window.windowEmit('resize', {
-          width: xrState.renderWidth[0]*2,
-          height: xrState.renderHeight[0],
+          width,
+          height,
         });
         
         return {
