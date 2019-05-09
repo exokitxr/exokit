@@ -64,6 +64,8 @@
 #Engine .menu .menu-item .menu-item-popup .menu-item-popup-items {
   display: none;
   flex-direction: column;
+  max-height: 200px;
+  overflow-y: auto;
 }
 #Engine .menu .menu-item .menu-item-popup .menu-item-popup-items.open {
   display: flex;
