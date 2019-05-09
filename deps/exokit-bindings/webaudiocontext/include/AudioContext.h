@@ -90,14 +90,22 @@ public:
   friend class ScriptProcessorNode;
 };
 
-void QueueOnMainThread(lab::ContextRenderLock &r, function<void()> &&newThreadFn);
-void RunInMainThread(uv_async_t *handle);
+class WebAudioAsync {
+public:
+  WebAudioAsync();
+  ~WebAudioAsync();
+
+  void QueueOnMainThread(lab::ContextRenderLock &r, function<void()> &&newThreadFn);
+  static void RunInMainThread(uv_async_t *handle);
+
+// protected:
+  function<void()> threadFn;
+  uv_async_t *threadAsync;
+  uv_sem_t threadSemaphore;
+};
 
 extern thread_local unique_ptr<lab::AudioContext> _defaultAudioContext;
-extern thread_local function<void()> threadFn;
-extern thread_local bool asyncInitialized;
-extern thread_local uv_async_t threadAsync;
-extern thread_local uv_sem_t threadSemaphore;
+extern thread_local unique_ptr<WebAudioAsync> _webAudioAsync;
 
 }
 
