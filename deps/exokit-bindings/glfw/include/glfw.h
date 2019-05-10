@@ -32,7 +32,9 @@ namespace glfw {
   public:
     EventHandler(uv_loop_t *loop, Local<Function> handlerFn);
     ~EventHandler();
-    
+
+  // protected:
+    std::mutex mutex;
     std::unique_ptr<uv_async_t> async;
     Nan::Persistent<Function> handlerFn;
     std::deque<std::function<void(std::function<void(int argc, Local<Value> *argv)>)>> fns;
@@ -42,7 +44,17 @@ namespace glfw {
   public:
     InjectionHandler();
 
+  // protected:
     std::deque<std::function<void(InjectionHandler *injectionHandler)>> fns;
+  };
+
+  class WindowState {
+  public:
+    WindowState();
+    ~WindowState();
+
+  // protected:
+    std::unique_ptr<EventHandler> handler;
   };
 
   NATIVEwindow *CreateWindowHandle(unsigned int width, unsigned int height, bool visible);

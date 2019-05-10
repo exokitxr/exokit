@@ -9,10 +9,7 @@ namespace glfw {
 thread_local NATIVEwindow *currentWindow = nullptr;
 std::mutex windowHandleMutex;
 NATIVEwindow *sharedWindow = nullptr;
-std::map<NATIVEwindow *, EventHandler *> eventHandlerMap;
-std::map<uv_async_t *, EventHandler *> eventHandlerMap2;
 InjectionHandler mainThreadInjectionHandler;
-std::mutex eventHandlerMapMutex;
 std::mutex injectionHandlerMapMutex;
 // int lastX = 0, lastY = 0; // XXX track this per-window
 #ifdef TARGET_OS_MAC
@@ -20,19 +17,23 @@ std::thread::id mainThreadId;
 bool hasMainThreadId = false;
 #endif
 
+WindowState::WindowState() {}
+WindowState::~WindowState() {}
+
 void RunEventInWindowThread(uv_async_t *async) {
   Nan::HandleScope scope;
+
+  EventHandler *eventHandler = (EventHandler *)async->data;
 
   std::deque<std::function<void(std::function<void(int argc, Local<Value> *argv)>)>> localFns;
   Local<Function> handlerFn;
   {
-    std::lock_guard<std::mutex> lock(eventHandlerMapMutex);
+    std::lock_guard<std::mutex> lock(eventHandler->mutex);
 
-    EventHandler *handler = eventHandlerMap2[async];
-    localFns = std::move(handler->fns);
-    handler->fns.clear();
+    localFns = std::move(eventHandler->fns);
+    eventHandler->fns.clear();
 
-    handlerFn = Nan::New(handler->handlerFn);
+    handlerFn = Nan::New(eventHandler->handlerFn);
   }
   for (auto iter = localFns.begin(); iter != localFns.end(); iter++) {
     Nan::HandleScope scope;
@@ -48,6 +49,7 @@ void RunEventInWindowThread(uv_async_t *async) {
 
 EventHandler::EventHandler(uv_loop_t *loop, Local<Function> handlerFn) : async(new uv_async_t()), handlerFn(handlerFn) {
   uv_async_init(loop, async.get(), RunEventInWindowThread);
+  async->data = this;
 }
 
 EventHandler::~EventHandler() {
@@ -59,20 +61,17 @@ EventHandler::~EventHandler() {
 InjectionHandler::InjectionHandler() {}
 
 void QueueEvent(NATIVEwindow *window, std::function<void(std::function<void(int, Local<Value> *)>)> fn) {
-  EventHandler *eventHandler;
-  {
-    std::lock_guard<std::mutex> lock(eventHandlerMapMutex);
+  WindowState *windowState = (WindowState *)glfwGetWindowUserPointer(window);
 
-    auto iter = eventHandlerMap.find(window);
-    if (iter != eventHandlerMap.end()) {
-      eventHandler = iter->second;
+  if (windowState->handler) {
+    EventHandler *eventHandler = windowState->handler.get();
+
+    {
+      std::lock_guard<std::mutex> lock(eventHandler->mutex);
+
       eventHandler->fns.push_back(fn);
-    } else {
-      eventHandler = nullptr;
     }
-  }
 
-  if (eventHandler) {
     uv_async_send(eventHandler->async.get());
   }
 }
@@ -658,9 +657,9 @@ void APIENTRY cursorPosCB(NATIVEwindow* window, double x, double y) {
   if(x<0 || x>=w) return;
   if(y<0 || y>=h) return;
 
-  int mode = glfwGetInputMode(window, GLFW_CURSOR);
-
   int movementX, movementY;
+
+  int mode = glfwGetInputMode(window, GLFW_CURSOR);
   if (mode == GLFW_CURSOR_DISABLED) {
     movementX = x - (w / 2);
     movementY = y - (h / 2);
@@ -670,9 +669,6 @@ void APIENTRY cursorPosCB(NATIVEwindow* window, double x, double y) {
     movementX = 0;
     movementY = 0;
   }
-
-  /* lastX = x;
-  lastY = y; */
 
   QueueEvent(window, [=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
     Local<Object> evt = Nan::New<Object>();
@@ -879,16 +875,29 @@ NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool v
 
     if (!sharedWindow) {
       sharedWindow = glfwCreateWindow(1, 1, "Exokit", nullptr, nullptr);
+      if (sharedWindow) {
+        glfwSetWindowUserPointer(sharedWindow, new WindowState());
+      } else {
+        exerr << "Can't create GLFW window" << std::endl;
+        abort();
+        return nullptr;
+      }
     }
   }
   NATIVEwindow *window = glfwCreateWindow(width, height, "Exokit", nullptr, sharedWindow);
-  if (!window) {
+  if (window) {
+    glfwSetWindowUserPointer(window, new WindowState());
+    return window;
+  } else {
     exerr << "Can't create GLFW window" << std::endl;
     abort();
+    return nullptr;
   }
-  return window;
 }
 void DestroyNativeWindow(NATIVEwindow *window) {
+  WindowState *windowState = (WindowState *)glfwGetWindowUserPointer(window);
+  delete windowState;
+
   glfwDestroyWindow(window);
 }
 
@@ -956,7 +965,7 @@ double GetDevicePixelRatio(NATIVEwindow *window) {
   QueueInjection(window, [&](InjectionHandler *injectionHandler) -> void {
     NATIVEwindow *window = CreateNativeWindow(100, 100, false);
     glfwGetFramebufferSize(window, &width, &height);
-    glfwDestroyWindow(window);
+    DestroyNativeWindow(window);
 
     uv_sem_post(&sem);
   });
@@ -1155,11 +1164,6 @@ NAN_METHOD(DestroyWindowHandle) {
   uv_sem_init(&sem, 0);
   QueueInjection(window, [&](InjectionHandler *injectionHandler) -> void {
     DestroyNativeWindow(window);
-
-    EventHandler *handler = eventHandlerMap[window];
-    eventHandlerMap.erase(window);
-    eventHandlerMap2.erase(handler->async.get());
-    delete handler;
     
     uv_sem_post(&sem);
   });
@@ -1173,15 +1177,11 @@ NAN_METHOD(SetEventHandler) {
     Local<Function> handlerFn = Local<Function>::Cast(info[1]);
 
     NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(windowHandle);
-    {
-      std::lock_guard<std::mutex> lock(eventHandlerMapMutex);
+    WindowState *windowState = (WindowState *)glfwGetWindowUserPointer(window);
 
-      uv_loop_t *loop = windowsystembase::GetEventLoop();
-      EventHandler *handler = new EventHandler(loop, handlerFn);
-
-      eventHandlerMap[window] = handler;
-      eventHandlerMap2[handler->async.get()] = handler;
-    }
+    uv_loop_t *loop = windowsystembase::GetEventLoop();
+    EventHandler *handler = new EventHandler(loop, handlerFn);
+    windowState->handler.reset(handler);
   } else {
     Nan::ThrowError("SetEventHandler: invalid arguments");
   }
