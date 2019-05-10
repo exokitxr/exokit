@@ -419,7 +419,7 @@ const _startTopRenderLoop = () => {
           hmdType,
         }));
       } else {
-        console.warn(`no top level window to respond to for request present: ${hmdType} ${windowId}`);
+        console.warn(`no top level window to respond to for request present: ${hmdType} ${windowId} ${JSON.stringify(windows.map(window => window.id))}`);
       }
     } else if (vrRequestMethod === 2) { // exitPresent
       if (topVrPresentState.hmdType === 'fake') {
