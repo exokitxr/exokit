@@ -587,6 +587,8 @@ void APIENTRY cursorPosCB(NATIVEwindow* window, double x, double y) {
   evt->Set(JS_STR("pageY"),JS_NUM(y));
   evt->Set(JS_STR("offsetX"),JS_NUM(x));
   evt->Set(JS_STR("offsetY"),JS_NUM(y));
+  evt->Set(JS_STR("screenX"),JS_NUM(x));
+  evt->Set(JS_STR("screenY"),JS_NUM(y));
   evt->Set(JS_STR("movementX"),JS_NUM(movementX));
   evt->Set(JS_STR("movementY"),JS_NUM(movementY));
   evt->Set(JS_STR("ctrlKey"),JS_BOOL(glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS));
@@ -637,6 +639,8 @@ void APIENTRY mouseButtonCB(NATIVEwindow *window, int button, int action, int mo
     evt->Set(JS_STR("pageY"),JS_INT(lastY));
     evt->Set(JS_STR("offsetX"),JS_INT(lastX));
     evt->Set(JS_STR("offsetY"),JS_INT(lastY));
+    evt->Set(JS_STR("screenX"),JS_NUM(lastX));
+    evt->Set(JS_STR("screenY"),JS_NUM(lastY));
     evt->Set(JS_STR("shiftKey"),JS_BOOL(mods & GLFW_MOD_SHIFT));
     evt->Set(JS_STR("ctrlKey"),JS_BOOL(mods & GLFW_MOD_CONTROL));
     evt->Set(JS_STR("altKey"),JS_BOOL(mods & GLFW_MOD_ALT));
@@ -661,6 +665,8 @@ void APIENTRY mouseButtonCB(NATIVEwindow *window, int button, int action, int mo
     evt->Set(JS_STR("pageY"),JS_INT(lastY));
     evt->Set(JS_STR("offsetX"),JS_INT(lastX));
     evt->Set(JS_STR("offsetY"),JS_INT(lastY));
+    evt->Set(JS_STR("screenX"),JS_INT(lastX));
+    evt->Set(JS_STR("screenY"),JS_INT(lastY));
     evt->Set(JS_STR("shiftKey"),JS_BOOL(mods & GLFW_MOD_SHIFT));
     evt->Set(JS_STR("ctrlKey"),JS_BOOL(mods & GLFW_MOD_CONTROL));
     evt->Set(JS_STR("altKey"),JS_BOOL(mods & GLFW_MOD_ALT));
