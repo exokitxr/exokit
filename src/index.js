@@ -98,6 +98,8 @@ const args = (() => {
         'tab',
         'quit',
         'blit',
+        'require',
+        'nogl',
         'headless',
       ],
       string: [
@@ -122,7 +124,9 @@ const args = (() => {
         q: 'quit',
         b: 'blit',
         r: 'replace',
-        n: 'headless',
+        u: 'require',
+        n: 'nogl',
+        e: 'headless',
         d: 'download',
       },
     });
@@ -141,6 +145,8 @@ const args = (() => {
       quit: minimistArgs.quit,
       blit: minimistArgs.blit,
       replace: Array.isArray(minimistArgs.replace) ? minimistArgs.replace : ((minimistArgs.replace !== undefined) ? [minimistArgs.replace] : []),
+      require: minimistArgs.require,
+      nogl: minimistArgs.nogl,
       headless: minimistArgs.headless,
       download: minimistArgs.download !== undefined ? (minimistArgs.download || path.join(process.cwd(), 'downloads')) : undefined,
     };

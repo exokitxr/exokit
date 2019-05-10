@@ -67,14 +67,15 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
   const window = document.defaultView;
 
   const windowSpec = (() => {
-    if (!window[symbols.optionsSymbol].args.headless) {
+    if (!window[symbols.optionsSymbol].args.nogl) {
       try {
         const contained = document.documentElement.contains(canvas);
         const {hidden} = document;
+        const {headless} = window[symbols.optionsSymbol].args;
         // XXX also set title
         // const title = `Exokit ${GlobalContext.version}`;
 
-        const windowHandle = nativeWindow.createWindowHandle(canvasWidth, canvasHeight, contained && !hidden);
+        const windowHandle = nativeWindow.createWindowHandle(canvasWidth, canvasHeight, contained && !hidden && !headless);
         return nativeWindow.initWindow3D(windowHandle, gl);
       } catch (err) {
         console.warn(err.stack);
@@ -271,7 +272,7 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
 
     const ondomchange = () => {
       process.nextTick(() => { // show/hide synchronously emits events
-        if (!document.hidden) {
+        if (!document.hidden && !window[symbols.optionsSymbol].args.headless) {
           const domVisible = canvas.ownerDocument.documentElement.contains(canvas);
           const windowVisible = nativeWindow.isVisible(windowHandle);
           if (domVisible && !windowVisible) {
@@ -349,7 +350,7 @@ const _onGl2DConstruct = (ctx, canvas, attrs) => {
   const window = canvas.ownerDocument.defaultView;
 
   const windowSpec = (() => {
-    if (!window[symbols.optionsSymbol].args.headless) {
+    if (!window[symbols.optionsSymbol].args.nogl) {
       try {
         const windowHandle = nativeWindow.createWindowHandle(canvasWidth, canvasHeight, false);
         return nativeWindow.initWindow2D(windowHandle);

@@ -1,6 +1,6 @@
 {
   "name": "exokit",
-  "version": "0.0.524",
+  "version": "0.0.525",
   "description": "Native VR and AR engine for JavaScript",
   "engines": {
     "node": ">=10.0.0"
@@ -76,7 +76,6 @@
     "native-video-deps": "0.0.35",
     "native-webrtc-deps": "0.0.45",
     "node-ipc": "^9.1.1",
-    "node-localstorage": "^1.3.1",
     "parse-int": "^1.0.2",
     "parse5": "^5.0.0",
     "redirect-output": "^1.0.0",
@@ -86,6 +85,7 @@
     "webgl-to-opengl": "0.0.16",
     "window-classlist": "0.0.4",
     "window-fetch": "0.0.10",
+    "window-ls": "0.0.1",
     "window-selector": "0.0.6",
     "window-xhr": "0.0.29",
     "ws": "^6.2.0"
