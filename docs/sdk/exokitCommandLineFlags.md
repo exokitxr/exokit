@@ -15,18 +15,19 @@ An example of how to use these flags:
 
 |Short-Form Flag|Long-Form Flag|Description|
 |-|-|-|
-|`-v`|`--version`|Version of Exokit Engine|
+|`-v`|`--version`|Print version and exit|
 |`-h`|`--home`|Loads realitytabs.html home (default)|
-|`-t <site url>`|`--tab`|Load a URL as a reality Tab|
-|`-w`|`--webgl`|Exposes WebGL, by default Exokit exposes WebGL2|
-|`-x <all, webvr>`|`--xr`|By default uses `-x all`, which loads both WebXR and WebVR, `-x webvr` loads WebVR specifically|
-|`-p`|`--perf`|Performance logging to console|
-|`-s <size>`|`--size`|Set window size|
-|`-f`|`--frame`|Get GL call list with arguments to console log|
-|`-m`|`--minimalFrame`|Get GL call list to console log|
-|`-q`|`--quit`|Quits on load, runs the load phase and quits before render|
+|`-t <site url>`|`--tab`|Load a URL as a reality tab|
+|`-w`|`--webgl <1|2>`|Choose which version of WebGL to expose; defaults to 2|
+|`-x <all|webxr|webvr>`|`--xr`|Choose which version of WebVR/XR to expose; defaults to all|
+|`-p`|`--perf`|Log frame timing to console|
+|`-s <WxH>`|`--size`|Set window size to W by H|
+|`-f`|`--frame`|Log GL method calls and arguments to console|
+|`-m`|`--minimalFrame`|Log GL method calls to console|
+|`-q`|`--quit`|Quit on load; run the load phase and exit|
 |`-l`|`--log`|Output log to log.txt|
 |`-r <remote site file> <local file path>`|`--replace`|Replace file from site with a local file|
-|`-u`|`--require`|Require native modules|
-|`-n`|`--headless`|Run Exokit in headless mode|
-|`-d <site url>`|`--download`|Download site to `downloads` directory|
+|`-u`|`--require`|Expose node require() on `window`|
+|`-n`|`--nogl`|Do not create GL contexts|
+|`-e`|`--headless`|Run in headless mode; do not create OS windows|
+|`-d <downloadDirectory>`|`--download`|Download site to `downloadDirectory`|
