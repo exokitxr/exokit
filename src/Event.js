@@ -164,8 +164,6 @@ class MouseEvent extends Event {
   }
 
   init(init = {}) {
-    this.screenX = init.screenX !== undefined ? init.screenX : 0;
-    this.screenY = init.screenY !== undefined ? init.screenY : 0;
     this.clientX = init.clientX !== undefined ? init.clientX : 0;
     this.clientY = init.clientY !== undefined ? init.clientY : 0;
     this.pageX = init.pageX !== undefined ? init.pageX : 0;
