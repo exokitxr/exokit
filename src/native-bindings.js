@@ -263,10 +263,6 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
           tex: newTex,
           depthTex: newDepthTex,
         };
-        
-        if (canvas.framebuffer) {
-          canvas.framebuffer = null;
-        }
       }
     };
 
