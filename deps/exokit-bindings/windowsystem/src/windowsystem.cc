@@ -598,7 +598,7 @@ NAN_METHOD(CreateVrTopRenderTarget) {
   info.GetReturnValue().Set(result);
 }
 
-void CreateVrChildRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint *pFbo, GLuint *pmsFbo, GLuint *pmsColorTex, GLuint *pmsDepthStencilTex) {
+void CreateVrCompositorRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint *pFbo, GLuint *pmsFbo, GLuint *pmsColorTex, GLuint *pmsDepthStencilTex) {
   const int samples = 4;
 
   GLuint &fbo = *pFbo;
@@ -659,7 +659,7 @@ void CreateVrChildRenderTarget(WebGLRenderingContext *gl, int width, int height,
   }
 }
 
-NAN_METHOD(CreateVrChildRenderTarget) {
+NAN_METHOD(CreateVrCompositorRenderTarget) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
   int width = TO_INT32(info[1]);
   int height = TO_INT32(info[2]);
@@ -669,7 +669,7 @@ NAN_METHOD(CreateVrChildRenderTarget) {
   GLuint msColorTex;
   GLuint msDepthStencilTex;
 
-  CreateVrChildRenderTarget(gl, width, height, &fbo, &msFbo, &msColorTex, &msDepthStencilTex);
+  CreateVrCompositorRenderTarget(gl, width, height, &fbo, &msFbo, &msColorTex, &msDepthStencilTex);
 
   Local<Array> result = Array::New(Isolate::GetCurrent(), 4);
   result->Set(0, JS_INT(fbo));
@@ -1094,7 +1094,7 @@ void Decorate(Local<Object> target) {
   Nan::SetMethod(target, "resizeRenderTarget", ResizeRenderTarget);
   Nan::SetMethod(target, "destroyRenderTarget", DestroyRenderTarget);
   Nan::SetMethod(target, "createVrTopRenderTarget", CreateVrTopRenderTarget);
-  Nan::SetMethod(target, "createVrChildRenderTarget", CreateVrChildRenderTarget);
+  Nan::SetMethod(target, "createVrCompositorRenderTarget", CreateVrCompositorRenderTarget);
   Nan::SetMethod(target, "bindVrChildFbo", BindVrChildFbo);
   Nan::SetMethod(target, "getSync", GetSync);
   Nan::SetMethod(target, "waitSync", WaitSync);

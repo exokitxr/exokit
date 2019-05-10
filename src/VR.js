@@ -273,7 +273,7 @@ class VRDisplay extends EventEmitter {
     await this.onrequestpresent();
     
     const [{source: canvas}] = layers;
-    const {_context: context} = canvas;
+    const context = canvas._context || canvas.getContext('webgl');
     this.onmakeswapchain(context);
 
     if (this.onvrdisplaypresentchange && !this.isPresenting) {
@@ -361,8 +361,6 @@ class FakeVRDisplay extends VRDisplay {
       };
       gamepad.pose._localPointerMatrix = new Float32Array(16);
     }
-    this.isPresenting = false;
-    this.stageParameters = new VRStageParameters();
 
     this.onrequestanimationframe = fn => window.requestAnimationFrame(fn);
     this.onvrdisplaypresentchange = () => {

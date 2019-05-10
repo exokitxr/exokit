@@ -241,6 +241,7 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
       gl.setDefaultFramebuffer(msFbo);
     }
     gl.framebuffer = {
+      type: 'canvas',
       msFbo,
       msTex,
       msDepthTex,
@@ -249,13 +250,12 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
       depthTex,
     };
     gl.resize = (width, height) => {
-      if (!gl.desynchronized) {
+      if (!gl.desynchronized && gl.framebuffer.type === 'canvas') {
         nativeWindow.setCurrentWindowContext(windowHandle);
         const [newFbo, newTex, newDepthTex, newMsFbo, newMsTex, newMsDepthTex] = nativeWindow.resizeRenderTarget(gl, width, height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
-        if (gl.getDefaultFramebuffer() === gl.framebuffer.msFbo) {
-          gl.setDefaultFramebuffer(newMsFbo);
-        }
+
         gl.framebuffer = {
+          type: 'canvas',
           msFbo: newMsFbo,
           msTex: newMsTex,
           msDepthTex: newMsDepthTex,
@@ -263,10 +263,6 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
           tex: newTex,
           depthTex: newDepthTex,
         };
-        
-        if (canvas.framebuffer) {
-          canvas.framebuffer = null;
-        }
       }
     };
 

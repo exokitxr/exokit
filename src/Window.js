@@ -1208,32 +1208,6 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
         window[symbols.mrDisplaysSymbol].vrDevice.session.update();
       }
     };
-    const _decorateSelfLayers = layers => {
-      for (let i = 0; i < layers.length; i++) {
-        const layer = layers[i];
-
-        if (layer._context === vrPresentState.glContext && (!layer.framebuffer || layer.framebuffer.msFbo !== vrPresentState.msFbo)) {
-          const width = xrState.renderWidth[0]*2;
-          const height = xrState.renderHeight[0];
-          let [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeWindow.createRenderTarget(layer._context, width, height);
-
-          msFbo = vrPresentState.msFbo;
-          msTex = vrPresentState.msTex;
-          msDepthTex = vrPresentState.msDepthTex;
-
-          layer.framebuffer = {
-            width,
-            height,
-            msFbo,
-            msTex,
-            msDepthTex,
-            fbo,
-            tex,
-            depthTex,
-          };
-        }
-      }
-    };
     const _composeLayers = () => {
       for (let i = 0; i < contexts.length; i++) {
         const context = contexts[i];
@@ -1252,16 +1226,12 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
             const width = xrState.renderWidth[0]*2;
             const height = xrState.renderHeight[0];
             if (vrPresentState.layers.length > 0) {
-              _decorateSelfLayers(vrPresentState.layers);
-
               nativeWindow.composeLayers(context, vrPresentState.fbo, vrPresentState.layers, xrState);
             } else {
               nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, width, height, width, height, true, false, false);
             }
 
             if (vrPresentState.hmdType === 'fake' || vrPresentState.hmdType === 'oculus' || vrPresentState.hmdType === 'openvr') {
-              /* const width = context.canvas.width * (args.blit ? 0.5 : 1);
-              const height = context.canvas.height; */
               const {width: dWidth, height: dHeight} = nativeWindow.getFramebufferSize(windowHandle);
               nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, width, height, dWidth, dHeight, true, false, false);
             }
@@ -1383,8 +1353,10 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       nativeWindow.setCurrentWindowContext(windowHandle);
 
       const window = context.canvas.ownerDocument.defaultView;
+      const width = xrState.renderWidth[0]*2;
+      const height = xrState.renderHeight[0];
       if (!window.document.hidden) {
-        const [fbo, msFbo, msTex, msDepthTex] = nativeWindow.createVrChildRenderTarget(context, xrState.renderWidth[0]*2, xrState.renderHeight[0]);
+        const [fbo, msFbo, msTex, msDepthTex] = nativeWindow.createVrCompositorRenderTarget(context, width, height);
         context.setDefaultFramebuffer(msFbo);
 
         vrPresentState.glContext = context;
@@ -1392,19 +1364,37 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
         vrPresentState.msFbo = msFbo;
         vrPresentState.msTex = msTex;
         vrPresentState.msDepthTex = msDepthTex;
-        
+
+        {
+          let [fbo, tex, depthTex, _msFbo, _msTex, _msDepthTex] = nativeWindow.createRenderTarget(context, width, height);
+
+          /* msFbo = vrPresentState.msFbo;
+          msTex = vrPresentState.msTex;
+          msDepthTex = vrPresentState.msDepthTex; */
+
+          context.canvas.framebuffer = {
+            type: 'compositor',
+            width,
+            height,
+            msFbo,
+            msTex,
+            msDepthTex,
+            fbo,
+            tex,
+            depthTex,
+          };
+        }
+
         return {
           msFbo,
         };
       } else {
-        const {canvas} = context;
-        const width = xrState.renderWidth[0]*2;
-        const height = xrState.renderHeight[0];
         const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeWindow.createRenderTarget(context, width, height);
 
         context.setDefaultFramebuffer(msFbo);
 
-        window.document.framebuffer = {
+        context.framebuffer = {
+          type: 'layer',
           msFbo,
           msTex,
           msDepthTex,
@@ -1412,7 +1402,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
           tex,
           depthTex,
         };
-        window.windowEmit('framebuffer', window.document.framebuffer);
+        window.windowEmit('framebuffer', context.framebuffer);
         window.windowEmit('resize', {
           width,
           height,
