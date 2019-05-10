@@ -892,15 +892,6 @@ void DestroyNativeWindow(NATIVEwindow *window) {
   glfwDestroyWindow(window);
 }
 
-/* NAN_METHOD(DestroyWindow) {
-  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  glfwDestroyWindow(window);
-
-  if (currentWindow == window) {
-    currentWindow = nullptr;
-  }
-} */
-
 NAN_METHOD(SetWindowTitle) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   Nan::Utf8String str(Local<String>::Cast(info[1]));
