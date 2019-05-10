@@ -1383,8 +1383,10 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       nativeWindow.setCurrentWindowContext(windowHandle);
 
       const window = context.canvas.ownerDocument.defaultView;
+      const width = xrState.renderWidth[0]*2;
+      const height = xrState.renderHeight[0];
       if (!window.document.hidden) {
-        const [fbo, msFbo, msTex, msDepthTex] = nativeWindow.createVrChildRenderTarget(context, xrState.renderWidth[0]*2, xrState.renderHeight[0]);
+        const [fbo, msFbo, msTex, msDepthTex] = nativeWindow.createVrCompositorRenderTarget(context, width, height);
         context.setDefaultFramebuffer(msFbo);
 
         vrPresentState.glContext = context;
@@ -1397,9 +1399,6 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
           msFbo,
         };
       } else {
-        const {canvas} = context;
-        const width = xrState.renderWidth[0]*2;
-        const height = xrState.renderHeight[0];
         const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeWindow.createRenderTarget(context, width, height);
 
         context.setDefaultFramebuffer(msFbo);
