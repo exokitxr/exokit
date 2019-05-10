@@ -7,6 +7,7 @@ const http = require('http');
 const https = require('https');
 const crypto = require('crypto');
 const os = require('os');
+const {parentPort} = require('worker_threads');
 const util = require('util');
 const {URL} = url;
 const {TextEncoder, TextDecoder} = util;
@@ -1161,23 +1162,14 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
   let loading = false;
   window.location.on('update', href => {
     if (!loading) {
-      core.load(href, {
-        dataPath: options.dataPath,
-      })
-        .then(newWindow => {
-          window._emit('beforeunload');
-          window._emit('unload');
-          window._emit('navigate', newWindow);
-        })
-        .catch(err => {
-          loading = false;
-
-          const e = new ErrorEvent('error', {target: this});
-          e.message = err.message;
-          e.stack = err.stack;
-          window.dispatchEvent(e);
-        });
       loading = true;
+
+      window._emit('beforeunload');
+      window._emit('unload');
+
+      window.windowEmit('navigate', {
+        href,
+      });
     }
   });
 

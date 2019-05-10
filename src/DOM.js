@@ -1931,14 +1931,17 @@ class HTMLIFrameElement extends HTMLSrcableElement {
 
     this.contentWindow = null;
     this.contentDocument = null;
-    this.live = true;
+    // this.live = true;
+    this.epoch = 0;
 
     this.browser = null;
     this.onconsole = null;
-    this.xrOffset = new XRRigidTransform(); // XXX need to feed through changes to the underlying frame
+    this.xrOffset = new XRRigidTransform();
 
     this.on('attribute', (name, value) => {
       if (name === 'src' && value) {
+        const localEpoch = ++this.epoch;
+
         this.readyState = 'loading';
         
         let url = value;
@@ -1971,7 +1974,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                       console.log(`${source}:${line}: ${message}`);
                     }
                   };
-                  
+
                   const loadedUrl = await new Promise((accept, reject) => {
                     this.browser.onloadend = _url => {
                       accept(_url);
@@ -1982,7 +1985,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                     
                     this.browser.load(url);
                   });
-                  
+
                   let onmessage = null;
                   const self = this;
                   this.contentWindow = {
@@ -2004,10 +2007,10 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                         }));
                       } : null;
                     },
-                    destroy() {
+                    /* destroy() {
                       self.browser.destroy();
                       self.browser = null;
-                    },
+                    }, */
                   };
                   this.contentDocument = {
                     _emit() {},
@@ -2026,36 +2029,47 @@ class HTMLIFrameElement extends HTMLSrcableElement {
               }
             } else {
               const res = await this.ownerDocument.defaultView.fetch(url);
+              if (this.epoch !== localEpoch) {
+                return;
+              }
               if (res.status >= 200 && res.status < 300) {
                 const htmlString = await res.text();
-                
-                if (this.live) {
-                  const parentWindow = this.ownerDocument.defaultView;
-                  const options = parentWindow[symbols.optionsSymbol];
-
-                  url = _makeNormalizeUrl(options.baseUrl)(url);
-                  const parent = {};
-                  const top = parentWindow === parentWindow.top ? parent : {};
-                  const contentWindow = _makeWindow({
-                    url,
-                    baseUrl: url,
-                    args: options.args,
-                    dataPath: options.dataPath,
-                    replacements: options.replacements,
-                    parent,
-                    top,
-                    htmlString,
-                    hidden: this.d === 3,
-                    xrOffsetBuffer: this.xrOffset._buffer,
-                  });
-
-                  this.contentWindow = contentWindow;
-                  this.contentDocument = contentWindow.document = {};
-
-                  this.readyState = 'complete';
-
-                  this.dispatchEvent(new Event('load', {target: this}));
+                if (this.epoch !== localEpoch) {
+                  return;
                 }
+
+                const parentWindow = this.ownerDocument.defaultView;
+                const options = parentWindow[symbols.optionsSymbol];
+
+                url = _makeNormalizeUrl(options.baseUrl)(url);
+                const parent = {};
+                const top = parentWindow === parentWindow.top ? parent : {};
+                const contentWindow = _makeWindow({
+                  url,
+                  baseUrl: url,
+                  args: options.args,
+                  dataPath: options.dataPath,
+                  replacements: options.replacements,
+                  parent,
+                  top,
+                  htmlString,
+                  hidden: this.d === 3,
+                  xrOffsetBuffer: this.xrOffset._buffer,
+                  onnavigate(href) {
+                    this.readyState = null;
+                    this.contentWindow = null;
+                    this.contentDocument = null;
+
+                    this.setAttribute('src', href);
+                  },
+                });
+
+                this.contentWindow = contentWindow;
+                this.contentDocument = contentWindow.document = {};
+
+                this.readyState = 'complete';
+
+                this.dispatchEvent(new Event('load', {target: this}));
 
                 cb();
               } else {
@@ -2099,7 +2113,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
         }
       }
     });
-    this.on('destroy', () => {
+    /* this.on('destroy', () => {
       if (this.contentWindow) {
         this.contentWindow.destroy();
         this.contentWindow = null;
@@ -2109,7 +2123,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
       if (this.browser) {
         this.browser.destroy(); // XXX support this
       }
-    });
+    }); */
   }
   
   get width() {
@@ -2226,12 +2240,12 @@ class HTMLIFrameElement extends HTMLSrcableElement {
     this.browser && this.browser.runJs(jsString, scriptUrl, startLine);
   }
   
-  destroy() {
+  /* destroy() {
     if (this.live) {
       this._emit('destroy');
       this.live = false;
     }
-  }
+  } */
 }
 module.exports.HTMLIFrameElement = HTMLIFrameElement;
 
