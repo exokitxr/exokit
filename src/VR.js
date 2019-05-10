@@ -361,8 +361,6 @@ class FakeVRDisplay extends VRDisplay {
       };
       gamepad.pose._localPointerMatrix = new Float32Array(16);
     }
-    this.isPresenting = false;
-    this.stageParameters = new VRStageParameters();
 
     this.onrequestanimationframe = fn => window.requestAnimationFrame(fn);
     this.onvrdisplaypresentchange = () => {
