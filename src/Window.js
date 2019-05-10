@@ -45,7 +45,7 @@ const {
 
 const nativeWorker = require('worker-native');
 
-const {LocalStorage} = require('node-localstorage');
+const {LocalStorage} = require('window-ls');
 const indexedDB = require('fake-indexeddb');
 const parseXml = require('@rgrove/parse-xml');
 const THREE = require('../lib/three-min.js');
