@@ -80,6 +80,7 @@ exokit.load = (src, options = {}) => {
         dataPath: options.dataPath,
         args: options.args,
         replacements: options.replacements,
+        onnavigate: options.onnavigate,
       });
     });
 };
