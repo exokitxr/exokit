@@ -15,10 +15,12 @@ class EventTarget extends EventEmitter {
 
   addEventListener(event, listener, options) {
     if (typeof listener === 'function') {
-      if (options && options.once) {
-        this.once(event, listener);
-      } else {
-        this.on(event, listener);
+      if (!this.listeners(event).includes(listener)) {
+        if (options && options.once) {
+          this.once(event, listener);
+        } else {
+          this.on(event, listener);
+        }
       }
     }
   }
