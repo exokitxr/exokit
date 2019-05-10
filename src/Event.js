@@ -172,6 +172,8 @@ class MouseEvent extends Event {
     this.pageY = init.pageY !== undefined ? init.pageY : 0;
     this.offsetX = init.offsetX !== undefined ? init.offsetX : 0;
     this.offsetY = init.offsetY !== undefined ? init.offsetY : 0;
+    this.screenX = init.offsetX !== undefined ? init.screenX : 0;
+    this.screenY = init.offsetY !== undefined ? init.screenY : 0;
     this.movementX = init.movementX !== undefined ? init.movementX : 0;
     this.movementY = init.movementY !== undefined ? init.movementY : 0;
     this.ctrlKey = init.ctrlKey !== undefined ? init.ctrlKey : false;
