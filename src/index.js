@@ -1051,51 +1051,6 @@ const _startTopRenderLoop = () => {
 };
 _startTopRenderLoop();
 
-const _bindWindow = (window, newWindowCb) => {
-  // window.innerWidth = innerWidth;
-  // window.innerHeight = innerHeight;
-
-  // XXX move these to WindowVm/Window
-  window.on('navigate', newWindowCb);
-  /* window.document.on('paste', e => {
-    e.clipboardData = new window.DataTransfer();
-    const clipboardContents = nativeWindow.getClipboard().slice(0, 256);
-    const dataTransferItem = new window.DataTransferItem('string', 'text/plain', clipboardContents);
-    e.clipboardData.items.push(dataTransferItem);
-  }); */
-  /* if (args.quit) {
-    window.document.resources.addEventListener('drain', () => {
-      console.log('drain');
-      process.exit();
-    });
-  } */
-
-  window.on('destroy', e => {
-    const {window} = e;
-    for (let i = 0; i < contexts.length; i++) {
-      const context = contexts[i];
-      if (context.canvas.ownerDocument.defaultView === window) {
-        context.destroy();
-      }
-    }
-  });
-
-  window.on('error', err => {
-    console.warn('got error', err);
-  });
-};
-const _bindDirectWindow = newWindow => {
-  _bindWindow(newWindow, _bindDirectWindow);
-};
-core.load = (load => function() {
-  return load.apply(this, arguments)
-    .then(window => {
-      _bindDirectWindow(window);
-
-      return Promise.resolve(window);
-    });
-})(core.load);
-
 const _prepare = () => Promise.all([
   (() => {
     if (!process.env['DISPLAY']) {
@@ -1205,20 +1160,35 @@ const _start = () => {
       }
       return result;
     })();
-    return core.load(u, {
-      dataPath,
-      args,
-      replacements,
-    });
-  } else {
-    let window = null;
-    const _bindReplWindow = newWindow => {
-      _bindWindow(newWindow, _bindReplWindow);
-      window = newWindow;
+    const _onnavigate = href => {
+      core.load(href, {
+        dataPath,
+        args,
+        replacements,
+        onnavigate: _onnavigate,
+      });
     };
-    _bindReplWindow(core.make('', {
+    _onnavigate(u);
+  } else {
+    const _onnavigate = href => {
+      window = null;
+
+      core.load(href, {
+        dataPath,
+      }, {
+        onnavigate: _onnavigate,
+      })
+        .then(newWindow => {
+          window = newWindow;
+        })
+        .catch(err => {
+          console.warn(err.stack);
+        });
+    };
+    let window = core.make('', {
       dataPath,
-    }));
+      onnavigate: _onnavigate,
+    });
 
     const prompt = '[x] ';
 

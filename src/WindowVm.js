@@ -129,12 +129,22 @@ class WorkerVm extends EventEmitter {
 }
 module.exports.WorkerVm = WorkerVm;
 
-const _makeWindow = (options = {}) => {
+const _clean = o => {
+  const result = {};
+  for (const k in o) {
+    const v = o[k];
+    if (typeof v !== 'function') {
+      result[k] = v;
+    }
+  }
+  return result;
+};
+const _makeWindow = (options = {}, handlers = {}) => {
   const id = Atomics.add(GlobalContext.xrState.id, 0, 1) + 1;
   const window = new WorkerVm({
     initModule: path.join(__dirname, 'Window.js'),
     args: {
-      options,
+      options: _clean(options),
       id,
       args: GlobalContext.args,
       version: GlobalContext.version,
@@ -157,6 +167,15 @@ const _makeWindow = (options = {}) => {
   window.on('framebuffer', framebuffer => {
     // console.log('got framebuffer', framebuffer);
     window.document.framebuffer = framebuffer;
+  });
+  window.on('navigate', ({href}) => {
+    window.destroy()
+      .then(() => {
+        options.onnavigate && options.onnavigate(href);
+      })
+      .catch(err => {
+        console.warn(err.stack);
+      });
   });
   window.on('error', err => {
     console.warn(err.stack);
