@@ -1,6 +1,6 @@
 const {EventEmitter} = require('events');
 const path = require('path');
-const {Worker} = require('worker_threads');
+const {isMainThread, parentPort, Worker} = require('worker_threads');
 const GlobalContext = require('./GlobalContext');
 const {process} = global;
 
@@ -17,6 +17,74 @@ class WorkerVm extends EventEmitter {
     });
     worker.on('message', m => {
       switch (m.method) {
+        case 'runAsync': {
+          if (isMainThread) {
+            const _respond = (error, result) => {
+              const targetWindowId = m.windowIdPath[0];
+              const targetWindow = GlobalContext.windows.find(window => window.id === targetWindowId);
+
+              if (targetWindow) {
+                targetWindow.runAsync({
+                  method: 'response',
+                  result,
+                  error,
+                  windowIdPath: m.windowIdPath.slice(1),
+                  requestKey: m.requestKey,
+                });
+              } else {
+                console.warn(`unknown response window id: ${targetWindowId}`);
+              }
+            };
+
+            switch (m.request.method) {
+              case 'requestPresent': {
+                GlobalContext.requestPresent()
+                  .then(({hmdType}) => {
+                    console.log('top request present 2');
+                    _respond(null, {hmdType});
+                  })
+                  .catch(err => {
+                    console.warn(err.stack);
+                  });
+                break;
+              }
+              case 'exitPresent': {
+                GlobalContext.exitPresent()
+                  .then(() => {
+                    _respond(null, null);
+                  })
+                  .catch(err => {
+                    console.warn(err.stack);
+                  });
+                break;
+              }
+              case 'requestHitTest': {
+                const {request} = m;
+                const {origin, direction, coordinateSystem} = request;
+                GlobalContext.requestHitTest(origin, direction, coordinateSystem)
+                  .then(result => {
+                    _respond(null, result);
+                  })
+                  .catch(err => {
+                    console.warn(err.stack);
+                  });
+                break;
+              }
+              default: {
+                console.warn(`unknown runAsync request method: ${m.request.method}`);
+                break;
+              }
+            }
+          } else {
+            parentPort.postMessage({
+              method: 'runAsync',
+              request: m.request,
+              windowIdPath: [GlobalContext.id].concat(m.windowIdPath),
+              requestKey: m.requestKey,
+            });
+          }
+          break;
+        }
         case 'response': {
           const fn = this.queue[m.requestKey];
 
@@ -76,7 +144,7 @@ class WorkerVm extends EventEmitter {
       }, transferList);
     });
   }
-  runAsync(jsString, arg, transferList) {
+  runAsync(request, transferList) {
     return new Promise((accept, reject) => {
       const requestKey = this.queueRequest((err, result) => {
         if (!err) {
@@ -87,8 +155,7 @@ class WorkerVm extends EventEmitter {
       });
       this.worker.postMessage({
         method: 'runAsync',
-        jsString,
-        arg,
+        request,
         requestKey,
       }, transferList);
     });
@@ -158,7 +225,7 @@ const _makeWindow = (options = {}, handlers = {}) => {
   window.promise = null;
   // window.syncs = null;
 
-  window.evalAsync = scriptString => window.runAsync(JSON.stringify({method: 'eval', scriptString}));
+  window.evalAsync = scriptString => window.runAsync({method: 'eval', scriptString});
 
   window.on('resize', ({width, height}) => {
     // console.log('got resize', width, height);

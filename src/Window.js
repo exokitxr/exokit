@@ -25,6 +25,7 @@ const {
   },
 } = require('worker_threads');
 
+const {SpatialEvent} = require('./Event.js');
 const {XRRigidTransform} = require('./XR.js');
 const {WorkerVm} = require('./WindowVm.js');
 const {FileReader} = require('./File.js');
@@ -224,7 +225,6 @@ const vrPresentState = {
   // hasPose: false,
   // lmContext: null,
   layers: [],
-  responseAccept: null,
 };
 GlobalContext.vrPresentState = vrPresentState;
 
@@ -1310,7 +1310,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       for (let i = 0; i < windows.length; i++) {
         const window = windows[i];
         if (window.phase === PHASES.NULL) {
-          window.promise = window.runAsync('tickAnimationFrame')
+          window.promise = window.runAsync({method: 'tickAnimationFrame'})
             .then(syncs => {
               window.phase = PHASES.RENDERED;
               window.promise = null;
@@ -1337,11 +1337,8 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
   const _makeMrDisplays = () => {
     const _onrequestpresent = async () => {
       if (!xrState.isPresenting[0]) {
-        const {hmdType} = await new Promise((accept, reject) => {
-          vrPresentState.responseAccept = accept;
-
-          xrState.vrRequest[1] = GlobalContext.id;
-          xrState.vrRequest[0] = 1; // requestPresent
+        const {hmdType} = await window.runAsync({
+          method: 'requestPresent',
         });
 
         vrPresentState.hmdType = hmdType;
@@ -1414,11 +1411,8 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     };
     const _onexitpresent = async () => {
       if (xrState.isPresenting[0]) {
-        await new Promise((accept, reject) => {
-          vrPresentState.responseAccept = accept;
-
-          xrState.vrRequest[1] = GlobalContext.id;
-          xrState.vrRequest[0] = 2; // exitPresent
+        await window.runAsync({
+          method: 'exitPresent',
         });
 
         vrPresentState.hmdType = null;
@@ -1495,33 +1489,103 @@ if (!options.require) {
   global.require = undefined;
 }
 global.process = undefined;
-global.onrunasync = method => {
-  if (method === 'tickAnimationFrame') {
-    return global.tickAnimationFrame();
-  } else if (/^\{"method":"response"/.test(method)) {
-    if (vrPresentState.responseAccept) {
-      const res = JSON.parse(method);
+
+let requestKeys = 0;
+const queue = {};
+global.queueRequest = fn => {
+  const requestKey = requestKeys++;
+  queue[requestKey] = fn;
+  return requestKey;
+};
+global.runAsync = (request, transferList) => {
+  return new Promise((accept, reject) => {
+    const requestKey = global.queueRequest((err, result) => {
+      if (!err) {
+        accept(result);
+      } else {
+        reject(err);
+      }
+    });
+    parentPort.postMessage({
+      method: 'runAsync',
+      request,
+      windowIdPath: [GlobalContext.id],
+      requestKey,
+    }, transferList);
+  });
+};
+global.onrunasync = request => {
+  switch (request.method) {
+    case 'tickAnimationFrame': {
+      return global.tickAnimationFrame();
+    }
+    case 'response': {
+      if (request.windowIdPath.length === 0) {
+        const fn = queue[request.requestKey];
+
+        if (fn) {
+          fn(request.error, request.result);
+          delete queue[request.requestKey];
+        } else {
+          console.warn(`unknown response request key: ${m.requestKey} ${JSON.stringify(Object.keys(queue))}`);
+        }
+      } else {
+        const targetWindowId = request.windowIdPath[0];
+        const targetWindow = windows.find(window => window.id === targetWindowId);
+
+        if (targetWindow) {
+          targetWindow.runAsync({
+            method: 'response',
+            result: request.result,
+            error: request.error,
+            windowIdPath: request.windowIdPath.slice(1),
+            requestKey: request.requestKey,
+          });
+        } else {
+          console.warn(`unknown response target window: ${GlobalContext.id} ${JSON.stringify(request.windowIdPath)} ${JSON.stringify(windows.map(window => window.id))}`);
+        }
+      }
+      break;
+    }
+    case 'vrdisplayactivate': {
+      global.vrdisplayactivate();
+      break;
+    }
+    case 'exitPresent': {
+      const fakeVrDisplay = global[symbols.mrDisplaysSymbol].fakeVrDisplay;
+      if (fakeVrDisplay.session) {
+        fakeVrDisplay.session.end();
+      } else if (fakeVrDisplay.isPresenting) {
+        fakeVrDisplay.exitPresent();
+      }
+      break;
+    }
+    case 'meshes':
+    case 'planes': {
+      for (let i = 0; i < windows.length; i++) {
+        windows[i].runAsync(request);
+      }
       
-      const {responseAccept} = vrPresentState;
-      vrPresentState.responseAccept = null;
-      responseAccept(res);
-      return Promise.resolve();
-    } else {
-      return Promise.reject(new Error(`unexpected window response`));
+      const fakeVrDisplay = global[symbols.mrDisplaysSymbol].fakeVrDisplay;
+      if (fakeVrDisplay.session) {
+        for (let i = 0; i < request.updates.length; i++) {
+          const update = request.updates[i];
+          const e = new SpatialEvent(update.type, {
+            detail: {
+              update,
+            },
+          });
+          fakeVrDisplay.session.dispatchEvent(e);
+        }
+      }
+      break;
     }
-  } else if (method === 'vrdisplayactivate') {
-    global.vrdisplayactivate();
-  } else if (method === 'exitPresent') {
-    const fakeVrDisplay = global[symbols.mrDisplaysSymbol].fakeVrDisplay;
-    if (fakeVrDisplay.session) {
-      fakeVrDisplay.session.end();
-    } else if (fakeVrDisplay.isPresenting) {
-      fakeVrDisplay.exitPresent();
+    case 'eval': {
+      return Promise.resolve(eval(request.scriptString));
     }
-  } else if (/^\{"method":"eval"/.test(method)) {
-    return Promise.resolve(eval(JSON.parse(method).scriptString));
-  } else {
-    return Promise.reject(new Error(`invalid window async method: ${method}`));
+    default: {
+      return Promise.reject(new Error(`invalid window async request: ${JSON.stringify(request)}`));
+    }
   }
 };
 global.onexit = () => {
