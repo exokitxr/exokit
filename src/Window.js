@@ -1199,7 +1199,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     }
   };
   window.tickAnimationFrame = async () => {
-    const _emitXrEvents = () => {
+    const _updateLocalXr = () => {
       if (vrPresentState.hmdType === 'fake') {
         window[symbols.mrDisplaysSymbol].fakeVrDisplay.update();
       }
@@ -1325,7 +1325,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       clearTimeout(timeout);
     };
     
-    _emitXrEvents();
+    _updateLocalXr();
 
     const childPromises = _renderChildren();
     _renderLocal();
