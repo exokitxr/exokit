@@ -25,7 +25,6 @@
   <script src="three.js"></script>
   <script>
     let container, scene, camera, display, eyeMesh;
-    let eyeTracker = null;
 
     const controllerGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.01);
     const controllerMaterial = new THREE.MeshPhongMaterial({
@@ -70,7 +69,7 @@
           color: 0x0000FF,
         });
         const mesh = new THREE.Mesh(geometry, material);
-        mesh.visible = false;
+        // mesh.visible = false;
         mesh.frustumCulled = false;
         return mesh;
       })();
@@ -92,19 +91,21 @@
     }
 
     function animate(time, frame) {
-      if (eyeTracker) {
-        const {position, orientation} = eyeTracker.getFixation();
+      const _updateEyeMesh = () => {
+        const eyeInputSources = display.session.getInputSources().filter(inputSource => inputSource.targetRayMode === 'gaze');
+        if (eyeInputSources.length > 0 && frame) {
+          const eyeInputSource = eyeInputSources[0];
+          const {axes, offsetMatrix} = eyeInputSource;
+          const pose = frame.getInputPose(eyeInputSource);
 
-        eyeMesh.position.fromArray(position);
-        eyeMesh.quaternion.fromArray(orientation);
-        const scaleFactor = eyeTracker.getEyes().some(eye => eye.getBlink()) ? 0.2 : 1;
-        eyeMesh.scale.set(1, scaleFactor, 1);
-        eyeMesh.updateMatrix();
-        eyeMesh.updateMatrixWorld();
-        eyeMesh.visible = true;
-      } else {
-        eyeMesh.visible = false;
-      }
+          eyeMesh.matrix.fromArray(offsetMatrix);
+          eyeMesh.matrix.decompose(eyeMesh.position, eyeMesh.quaternion, eyeMesh.scale);
+          const scaleFactor = axes.some(axis => axis < 0) ? 0.2 : 1;
+          eyeMesh.scale.set(1, scaleFactor, 1);
+          eyeMesh.updateMatrixWorld();
+        }
+      };
+      _updateEyeMesh();
 
       renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
     }
@@ -117,6 +118,9 @@
       console.log('request session');
       const session = await display.requestSession({
         exclusive: true,
+        extensions: {
+          eyeTracking: true,
+        },
       });
       display.session = session;
 
@@ -141,7 +145,7 @@
         });
         renderer.vr.setAnimationLoop(animate);
         
-        eyeTracker = session.requestEyeTracking();
+        // eyeTracker = session.requestEyeTracking();
 
         console.log('running!');
       });
