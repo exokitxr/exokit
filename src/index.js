@@ -985,8 +985,7 @@ const _startTopRenderLoop = () => {
     await _waitGetPoses();
 
     // compute derived gamepads data
-    for (let i = 0; i < xrState.gamepads.length; i++) {
-      const gamepad = xrState.gamepads[i];
+    const _deriveGamepadData = gamepad => {
       localQuaternion.fromArray(gamepad.orientation);
       localVector
         .set(0, 0, -1)
@@ -997,7 +996,14 @@ const _startTopRenderLoop = () => {
       localMatrix
         .compose(localVector, localQuaternion, localVector2)
         .toArray(gamepad.transformMatrix);
+    };
+    for (let i = 0; i < xrState.gamepads.length; i++) {
+      _deriveGamepadData(xrState.gamepads[i]);
     }
+    for (let i = 0; i < xrState.hands.length; i++) {
+      _deriveGamepadData(xrState.hands[i]);
+    }
+    _deriveGamepadData(xrState.eye);
 
     if (args.performance) {
       const now = Date.now();
