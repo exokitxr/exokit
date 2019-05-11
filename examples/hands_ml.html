@@ -24,8 +24,7 @@
   <h1>hands_ml.html example</h1> 
   <script src="three.js"></script>
   <script>
-    let container, scene, camera, display;
-    let handTracker;
+    let container, scene, camera, display, handMesh;
 
     function init() {
       container = document.createElement('div');
@@ -51,83 +50,85 @@
       const localVector2 = new THREE.Vector3();
       const localQuaternion = new THREE.Quaternion();
       const localMatrix = new THREE.Matrix4();
-      const handMesh = (() => {
-        const pointerGeometry = (() => {
-          const geometries = [
-            new THREE.CylinderBufferGeometry(0.001, 0.001, 1, 32, 1)
-              .applyMatrix(localMatrix.makeTranslation(0, 1/2, 0))
-              .applyMatrix(localMatrix.makeRotationFromQuaternion(
-                localQuaternion.setFromUnitVectors(
-                  localVector.set(0, 1, 0),
-                  localVector2.set(0, 0, -1)
-                )
-              )),
-            new THREE.BoxBufferGeometry(0.001, 0.1, 0.001)
-              .applyMatrix(localMatrix.makeTranslation(0, 0.1/2, 0)),
-          ];
+      const pointerGeometry = (() => {
+        const geometries = [
+          new THREE.CylinderBufferGeometry(0.001, 0.001, 1, 32, 1)
+            .applyMatrix(localMatrix.makeTranslation(0, 1/2, 0))
+            .applyMatrix(localMatrix.makeRotationFromQuaternion(
+              localQuaternion.setFromUnitVectors(
+                localVector.set(0, 1, 0),
+                localVector2.set(0, 0, -1)
+              )
+            )),
+          new THREE.BoxBufferGeometry(0.001, 0.1, 0.001)
+            .applyMatrix(localMatrix.makeTranslation(0, 0.1/2, 0)),
+        ];
 
-          const positions = (() => {
-            let numPositions = 0;
-            for (let i = 0; i < geometries.length; i++) {
-              numPositions += geometries[i].attributes.position.array.length;
-            }
+        const positions = (() => {
+          let numPositions = 0;
+          for (let i = 0; i < geometries.length; i++) {
+            numPositions += geometries[i].attributes.position.array.length;
+          }
 
-            const positions = new Float32Array(numPositions);
-            let positionIndex = 0;
-            for (let i = 0; i < geometries.length; i++) {
-              const geometry = geometries[i];
-              positions.set(geometry.attributes.position.array, positionIndex);
-              positionIndex += geometry.attributes.position.array.length;
-            }
-            return positions;
-          })();
-          const normals = (() => {
-            let numNormals = 0;
-            for (let i = 0; i < geometries.length; i++) {
-              numNormals += geometries[i].attributes.normal.array.length;
-            }
-
-            const normals = new Float32Array(numNormals);
-            let normalIndex = 0;
-            for (let i = 0; i < geometries.length; i++) {
-              const geometry = geometries[i];
-              normals.set(geometry.attributes.normal.array, normalIndex);
-              normalIndex += geometry.attributes.normal.array.length;
-            }
-            return normals;
-          })();
-          const indices = (() => {
-            let numIndices = 0;
-            for (let i = 0; i < geometries.length; i++) {
-              numIndices += geometries[i].index.array.length;
-            }
-
-            const indices = new Uint16Array(numIndices);
-            let indexIndex = 0;
-            let positionIndex = 0;
-            for (let i = 0; i < geometries.length; i++) {
-              const geometry = geometries[i];
-              indices.set(geometry.index.array, indexIndex);
-
-              const positionOffset = positionIndex / 3;
-              for (let j = 0; j < geometry.index.array.length; j++) {
-                indices[indexIndex + j] += positionOffset;
-              }
-
-              indexIndex += geometry.index.array.length;
-              positionIndex += geometry.attributes.position.array.length;
-            }
-            return indices;
-          })();
-
-          const geometry = new THREE.BufferGeometry();
-          geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-          geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
-          geometry.setIndex(new THREE.BufferAttribute(indices, 1));
-          return geometry;
+          const positions = new Float32Array(numPositions);
+          let positionIndex = 0;
+          for (let i = 0; i < geometries.length; i++) {
+            const geometry = geometries[i];
+            positions.set(geometry.attributes.position.array, positionIndex);
+            positionIndex += geometry.attributes.position.array.length;
+          }
+          return positions;
         })();
-        const boneGeometry = new THREE.BoxBufferGeometry(0.005, 0.005, 0.005);
+        const normals = (() => {
+          let numNormals = 0;
+          for (let i = 0; i < geometries.length; i++) {
+            numNormals += geometries[i].attributes.normal.array.length;
+          }
 
+          const normals = new Float32Array(numNormals);
+          let normalIndex = 0;
+          for (let i = 0; i < geometries.length; i++) {
+            const geometry = geometries[i];
+            normals.set(geometry.attributes.normal.array, normalIndex);
+            normalIndex += geometry.attributes.normal.array.length;
+          }
+          return normals;
+        })();
+        const indices = (() => {
+          let numIndices = 0;
+          for (let i = 0; i < geometries.length; i++) {
+            numIndices += geometries[i].index.array.length;
+          }
+
+          const indices = new Uint16Array(numIndices);
+          let indexIndex = 0;
+          let positionIndex = 0;
+          for (let i = 0; i < geometries.length; i++) {
+            const geometry = geometries[i];
+            indices.set(geometry.index.array, indexIndex);
+
+            const positionOffset = positionIndex / 3;
+            for (let j = 0; j < geometry.index.array.length; j++) {
+              indices[indexIndex + j] += positionOffset;
+            }
+
+            indexIndex += geometry.index.array.length;
+            positionIndex += geometry.attributes.position.array.length;
+          }
+          return indices;
+        })();
+
+        const geometry = new THREE.BufferGeometry();
+        geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+        geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+        return geometry;
+      })();
+      const boneGeometry = new THREE.BoxBufferGeometry(0.005, 0.005, 0.005);
+      const handMaterial =  new THREE.MeshPhongMaterial({
+        color: 0xFF0000,
+      });
+      const _makeHandMesh = i => {
         const geometry = new THREE.BufferGeometry();
 
         const positions = new Float32Array(boneGeometry.attributes.position.array.length * 2 * 6 * 4 + pointerGeometry.attributes.position.array.length * 2);
@@ -138,12 +139,11 @@
         const indexAttribute = new THREE.BufferAttribute(indices, 1);
         geometry.setIndex(indexAttribute);
 
-        const material =  new THREE.MeshPhongMaterial({
-          color: 0xFF0000,
-        });
+        const mesh = new THREE.Mesh(geometry, handMaterial);
+        mesh.update = () => {
+          const handInputSources = display.session.getInputSources().filter(inputSource => inputSource.targetRayMode === 'hand');
+          const inputSource = handInputSources[i];
 
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.update = hands => {
           let positionIndex = 0;
           let indexIndex = 0;
 
@@ -153,82 +153,90 @@
             }
           };
 
-          for (let i = 0; i < hands.length; i++) {
-            const hand = hands[i];
-            const {pointer, grip, wrist, fingers} = hand;
-            const allFingers = [wrist].concat(fingers);
+          const {wrist, fingers, offsetMatrix} = inputSource;
+          const allFingers = [wrist].concat(fingers);
+          for (let j = 0; j < allFingers.length; j++) {
+            const bones = allFingers[j];
+            for (let k = 0; k < bones.length; k++) {
+              const positionFloat32Array = bones[k];
+              if (positionFloat32Array) {
+                // console.log('position', j, k, positionFloat32Array.join(','));
+                const position = localVector.fromArray(positionFloat32Array);
+                const newGeometry = boneGeometry.clone()
+                  .applyMatrix(
+                    localMatrix.makeTranslation(position.x, position.y, position.z)
+                  );
 
-            for (let j = 0; j < allFingers.length; j++) {
-              const bones = allFingers[j];
-              for (let k = 0; k < bones.length; k++) {
-                const positionFloat32Array = bones[k];
-                if (positionFloat32Array) {
-                  const position = localVector.fromArray(positionFloat32Array);
-                  const newGeometry = boneGeometry.clone()
-                    .applyMatrix(
-                      localMatrix.makeTranslation(position.x, position.y, position.z)
-                    );
+                _shiftIndex(newGeometry.index.array);
 
-                  _shiftIndex(newGeometry.index.array);
+                positions.set(newGeometry.attributes.position.array, positionIndex);
+                positionIndex += newGeometry.attributes.position.array.length;
 
-                  positions.set(newGeometry.attributes.position.array, positionIndex);
-                  positionIndex += newGeometry.attributes.position.array.length;
-
-                  indices.set(newGeometry.index.array, indexIndex);
-                  indexIndex += newGeometry.index.array.length;
-                }
+                indices.set(newGeometry.index.array, indexIndex);
+                indexIndex += newGeometry.index.array.length;
               }
             }
-
-            if (pointer) {
-              const newGeometry = pointerGeometry.clone()
-                .applyMatrix(
-                  localMatrix
-                    .compose(
-                      localVector.fromArray(pointer.position),
-                      localQuaternion.fromArray(pointer.rotation),
-                      localVector2.set(1, 1, 1),
-                    )
-                );
-
-              _shiftIndex(newGeometry.index.array);
-
-              positions.set(newGeometry.attributes.position.array, positionIndex);
-              positionIndex += newGeometry.attributes.position.array.length;
-
-              indices.set(newGeometry.index.array, indexIndex);
-              indexIndex += newGeometry.index.array.length;
-            }
-
-            if (grip) {
-              const newGeometry = pointerGeometry.clone()
-                .applyMatrix(
-                  localMatrix
-                    .compose(
-                      localVector.fromArray(grip.position),
-                      localQuaternion.fromArray(grip.rotation),
-                      localVector2.set(1, 1, 1),
-                    )
-                );
-
-              _shiftIndex(newGeometry.index.array);
-
-              positions.set(newGeometry.attributes.position.array, positionIndex);
-              positionIndex += newGeometry.attributes.position.array.length;
-
-              indices.set(newGeometry.index.array, indexIndex);
-              indexIndex += newGeometry.index.array.length;
-            }
           }
+
+          /* if (pointer) {
+            const newGeometry = pointerGeometry.clone()
+              .applyMatrix(
+                localMatrix
+                  .compose(
+                    localVector.fromArray(pointer.position),
+                    localQuaternion.fromArray(pointer.rotation),
+                    localVector2.set(1, 1, 1),
+                  )
+              );
+
+            _shiftIndex(newGeometry.index.array);
+
+            positions.set(newGeometry.attributes.position.array, positionIndex);
+            positionIndex += newGeometry.attributes.position.array.length;
+
+            indices.set(newGeometry.index.array, indexIndex);
+            indexIndex += newGeometry.index.array.length;
+          }
+
+          if (grip) {
+            const newGeometry = pointerGeometry.clone()
+              .applyMatrix(
+                localMatrix
+                  .compose(
+                    localVector.fromArray(grip.position),
+                    localQuaternion.fromArray(grip.rotation),
+                    localVector2.set(1, 1, 1),
+                  )
+              );
+
+            _shiftIndex(newGeometry.index.array);
+
+            positions.set(newGeometry.attributes.position.array, positionIndex);
+            positionIndex += newGeometry.attributes.position.array.length;
+
+            indices.set(newGeometry.index.array, indexIndex);
+            indexIndex += newGeometry.index.array.length;
+          } */
 
           positionAttribute.needsUpdate = true;
           indexAttribute.needsUpdate = true;
           geometry.setDrawRange(0, indexIndex);
+          
+          mesh.matrix.fromArray(offsetMatrix);
+          mesh.matrix.decompose(mesh.position, mesh.quaternion, mesh.scale);
+          // console.log('transform matrix', offsetMatrix, mesh.position.toArray());
+          mesh.updateMatrixWorld();
         };
         mesh.frustumCulled = false;
         return mesh;
-      })();
-      scene.add(handMesh);
+      };
+      handMeshes = [
+        _makeHandMesh(0),
+        _makeHandMesh(1),
+      ];
+      for (let i = 0; i < handMeshes.length; i++) {
+        scene.add(handMeshes[i]);
+      }
       const _onHands = hands => {
         handMesh.update(hands);
 
@@ -299,10 +307,9 @@
         lastPincheds[handIndex] = pinched;
       };
 
-      handTracker = window.browser.magicleap.RequestHandTracking();
-      handTracker.onhands = _onHands;
-      handTracker.ongesture = _onGesture;
-      handMesh.visible = true;
+      /* handTracker.onhands = _onHands;
+      handTracker.ongesture = _onGesture; */
+      // handMesh.visible = true;
 
       renderer = new THREE.WebGLRenderer({
         antialias: true,
@@ -320,6 +327,10 @@
     }
 
     function animate(time, frame) {
+      for (let i = 0; i < handMeshes.length; i++) {
+        handMeshes[i].update();
+      }
+
       renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
     }
 
@@ -331,6 +342,9 @@
       console.log('request session');
       const session = await display.requestSession({
         exclusive: true,
+        extensions: {
+          handTracking: true,
+        },
       });
       display.session = session;
 
