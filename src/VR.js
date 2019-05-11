@@ -715,16 +715,26 @@ class FakeVRDisplay extends VRDisplay {
     GlobalContext.xrState.rightProjectionMatrix.set(projectionMatrix);
   } */
 
-  async requestSession({exclusive = true} = {}) {
+  async requestSession({exclusive = true, extensions = {}} = {}) {
     const self = this;
-
-    await this.onrequestpresent();
 
     const {xrState} = GlobalContext;
 
-    let mesher;
-    let planesTracker;
-    let eyeTracker;
+    if (extensions.meshing) {
+      xrState.meshing[0] = 1;
+    }
+    if (extensions.planesTracking) {
+      xrState.planesTracking[0] = 1;
+    }
+    if (extensions.handTracking) {
+      xrState.handTracking[0] = 1;
+    }
+    if (extensions.eyeTracking) {
+      xrState.eyeTracking[0] = 1;
+    }
+
+    await this.onrequestpresent();
+
     const session = {
       listeners: [],
       addEventListener(e, fn) {
@@ -776,15 +786,6 @@ class FakeVRDisplay extends VRDisplay {
       async end() {
         await self.exitPresent();
 
-        if (mesher) {
-          mesher.destroy();
-          mesher = null;
-        }
-        if (planesTracker) {
-          planesTracker.destroy();
-          planesTracker = null;
-        }
-
         xrState.fakeVrDisplayEnabled[0] = 1;
         self.session = null;
 
@@ -793,29 +794,18 @@ class FakeVRDisplay extends VRDisplay {
           onends[i]();
         }
       },
-      requestMeshing() {
-        if (!mesher) {
-          mesher = new FakeMesher(session);
+      requestHitTest(origin, direction, coordinateSystem) {
+        return self.window.runAsync({
+          method: 'requestHitTest',
+          origin,
+          direction,
+          coordinateSystem,
+        });
+        /* throw new Error('not implemented'); // XXX post this upwards
+        if (!this._mesher) {
+          self._mesher = new FakeMesher(session);
         }
-        return mesher;
-      },
-      requestPlaneTracking() {
-        if (!planesTracker) {
-          planesTracker = new FakePlanesTracker(session);
-        }
-        return planesTracker;
-      },
-      requestEyeTracking() {
-        if (!eyeTracker) {
-          eyeTracker = new FakeEyeTracker(session);
-        }
-        return eyeTracker;
-      },
-      async requestHitTest(origin, direction, coordinateSystem) {
-        if (!mesher) {
-          mesher = new FakeMesher(session);
-        }
-        return mesher.requestHitTest(origin, direction, coordinateSystem);
+        return self._mesher.requestHitTest(origin, direction, coordinateSystem); */
       },
     };
     const _frame = {
@@ -1053,6 +1043,8 @@ GlobalContext.getGamepads = getGamepads;
 
 module.exports = {
   VRDisplay,
+  FakeMesher,
+  FakePlanesTracker,
   FakeVRDisplay,
   VRFrameData,
   VRPose,
