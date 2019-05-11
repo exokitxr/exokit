@@ -940,7 +940,7 @@ class FakeVRDisplay extends VRDisplay {
       const gamepad = this.gamepads[i];
       localVector.copy(this.position)
         .add(
-          localVector2.set(-0.3 + i*0.6, -0.3, 0)
+          localVector2.set(-0.3 + i*0.6, -0.3, -0.35)
             .applyQuaternion(this.quaternion)
         ).toArray(gamepad.pose.position);
       this.quaternion.toArray(gamepad.pose.orientation); // XXX updates xrState
