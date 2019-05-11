@@ -354,11 +354,10 @@ class VRDisplay extends EventEmitter {
   }
 }
 
-class FakeMesher extends EventTarget {
-  constructor(session) {
+class FakeMesher extends EventEmitter {
+  constructor() {
     super();
 
-    this.session = session;
     this.meshes = [];
 
     const boxBufferGeometry = {
@@ -371,7 +370,7 @@ class FakeMesher extends EventTarget {
 
     this.interval = setInterval(() => {
       localMatrix
-        .fromArray(this.session._frame.getDevicePose().getViewMatrix('left'))
+        .fromArray(GlobalContext.xrState.leftViewMatrix)
         .getInverse(localMatrix)
         .decompose(localVector, localQuaternion, localVector2);
       const currentMeshPosition = new THREE.Vector3(Math.floor(localVector.x/10+0.5)*10, 0, Math.floor(localVector.z/10+0.5)*10);
@@ -382,19 +381,19 @@ class FakeMesher extends EventTarget {
           const mesh = this.meshes[i];
           updates.push({
             id: mesh.id,
-            type: 'remove',
+            type: 'meshremove',
           });
         }
       }
 
       this.meshes = (this.meshes.length > 0 && currentMeshPosition.equals(lastMeshPosition)) ?
-        this.meshes.map(({id}) => ({type: 'update', id, positionArray: null, normalArray: null, indexArray: null, transformMatrix: null}))
+        this.meshes.map(({id}) => ({type: 'meshupdate', id, positionArray: null, normalArray: null, indexArray: null, transformMatrix: null}))
       :
         (() => {
           const result = Array(3);
           for (let i = 0; i < result.length; i++) {
             result[i] = {
-              type: 'new',
+              type: 'meshadd',
               id: Math.random() + '',
               positionArray: null,
               normalArray: null,
@@ -434,8 +433,10 @@ class FakeMesher extends EventTarget {
           localVector2
         );
 
-        const positionArray = Float32Array.from(boxBufferGeometry.position);
-        const normalArray = Float32Array.from(boxBufferGeometry.normal);
+        const positionArray = new Float32Array(new SharedArrayBuffer(boxBufferGeometry.position.byteLength));
+        positionArray.set(boxBufferGeometry.position);
+        const normalArray = new Float32Array(new SharedArrayBuffer(boxBufferGeometry.normal.byteLength));
+        normalArray.set(boxBufferGeometry.normal);
         for (let j = 0; j < positionArray.length; j += 3) {
           localVector.fromArray(positionArray, j);
           localVector.applyMatrix4(localMatrix);
@@ -446,7 +447,8 @@ class FakeMesher extends EventTarget {
           localVector.toArray(normalArray, j);
         }
 
-        const indexArray = boxBufferGeometry.index;
+        const indexArray = new Uint16Array(new SharedArrayBuffer(boxBufferGeometry.index.byteLength));
+        indexArray.set(boxBufferGeometry.index);
 
         mesh.positionArray = positionArray;
         mesh.normalArray = normalArray;
@@ -462,23 +464,11 @@ class FakeMesher extends EventTarget {
       updates.push.apply(updates, this.meshes);
 
       if (updates.length > 0) {
-        const e = new SpatialEvent('mesh', {
-          detail: {
-            updates,
-          }
-        });
-        this.dispatchEvent(e);
+        this.emit('meshes', updates);
       }
 
       lastMeshPosition.copy(currentMeshPosition);
     }, 1000);
-  }
-
-  get onmesh() {
-    return this.listeners('mesh')[0];
-  }
-  set onmesh(onmesh) {
-    this.on('mesh', onmesh);
   }
 
   async requestHitTest(origin, direction, coordinateSystem) {
@@ -516,22 +506,20 @@ class FakeMesher extends EventTarget {
   }
 
   destroy() {
-    this.clearInterval(this.interval);
+    clearInterval(this.interval);
   }
 }
 
-class FakePlanesTracker extends EventTarget {
-  constructor(session) {
+class FakePlanesTracker extends EventEmitter {
+  constructor() {
     super();
-
-    this.session = session;
 
     let planes = [];
     const lastMeshPosition = new THREE.Vector3();
 
     this.interval = setInterval(() => {
       localMatrix
-        .fromArray(this.session._frame.getDevicePose().getViewMatrix('left'))
+        .fromArray(GlobalContext.xrState.leftViewMatrix)
         .getInverse(localMatrix)
         .decompose(localVector, localQuaternion, localVector2);
       const currentMeshPosition = new THREE.Vector3(Math.floor(localVector.x/10+0.5)*10, 0, Math.floor(localVector.z/10+0.5)*10);
@@ -542,7 +530,7 @@ class FakePlanesTracker extends EventTarget {
           const plane = planes[i];
           updates.push({
             id: plane.id,
-            type: 'remove',
+            type: 'planeremove',
           });
         }
       }
@@ -553,7 +541,7 @@ class FakePlanesTracker extends EventTarget {
         for (let i = 0; i < planes.length; i++) {
           planes[i] = {
             id: Math.random() + '',
-            type: 'new',
+            type: 'planeadd',
             position: localVector.copy(currentMeshPosition)
               .add(localVector2.set(-5 + Math.random()*10, Math.random()*0.5, -5 + Math.random()*10))
               .toArray(new Float32Array(3)),
@@ -565,119 +553,15 @@ class FakePlanesTracker extends EventTarget {
       }
 
       if (updates.length > 0) {
-        const e = new SpatialEvent('planes', {
-          detail: {
-            updates,
-          }
-        });
-        this.dispatchEvent(e);
+        this.emit('planes', updates);
       }
 
       lastMeshPosition.copy(currentMeshPosition);
     }, 1000);
   }
 
-  get onplanes() {
-    return this.listeners('planes')[0];
-  }
-  set onplanes(onplanes) {
-    this.on('planes', onplanes);
-  }
-
   destroy() {
-    this.clearInterval(this.interval);
-  }
-}
-
-class FakeEye {
-  constructor(side, eyeTracker) {
-    this.side = side;
-    this.eyeTracker = eyeTracker;
-
-    this._position = new Float32Array(3);
-    this._orientation = new Float32Array(4);
-  }
-
-  getFixation() {
-    localMatrix
-      .fromArray(GlobalContext.xrState.leftViewMatrix)
-      .getInverse(localMatrix);
-
-    const {xrOffset} = this.eyeTracker.session.device.window.document;
-    if (xrOffset) {
-      localMatrix
-        .premultiply(
-          localMatrix2.compose(
-            localVector.fromArray(xrOffset.position),
-            localQuaternion.fromArray(xrOffset.orientation),
-            localVector2.fromArray(xrOffset.scale)
-          )
-          .getInverse(localMatrix2)
-        );
-    }
-    localMatrix.decompose(localVector, localQuaternion, localVector2);
-
-    return {
-      position: localVector
-        .add(
-          localVector2.set((this.side === 'left' ? -1 : 1) * 0.1, 0, -1)
-            .applyQuaternion(localQuaternion)
-        )
-        .toArray(this._position),
-      orientation: localQuaternion.toArray(this._orientation),
-    };
-  }
-
-  getBlink() {
-    const mod = Date.now() % 2000;
-    return mod < 200;
-  }
-}
-
-class FakeEyeTracker {
-  constructor(session) {
-    this.session = session;
-
-    this._position = new Float32Array(3);
-    this._orientation = new Float32Array(4);
-    this._eyes = [
-      new FakeEye('left', this),
-      new FakeEye('right', this),
-    ];
-  }
-
-  getFixation() {
-    localMatrix
-      .fromArray(GlobalContext.xrState.leftViewMatrix)
-      .getInverse(localMatrix);
-
-    const {xrOffset} = this.session.device.window.document;
-    if (xrOffset) {
-      localMatrix
-        .premultiply(
-          localMatrix2.compose(
-            localVector.fromArray(xrOffset.position),
-            localQuaternion.fromArray(xrOffset.orientation),
-            localVector2.fromArray(xrOffset.scale)
-          )
-          .getInverse(localMatrix2)
-        );
-    }
-    localMatrix.decompose(localVector, localQuaternion, localVector2);
-
-    return {
-      position: localVector
-        .add(
-          localVector2.set(0, 0, -1)
-            .applyQuaternion(localQuaternion)
-        )
-        .toArray(this._position),
-      orientation: localQuaternion.toArray(this._orientation),
-    };
-  }
-
-  getEyes() {
-    return this._eyes;
+    clearInterval(this.interval);
   }
 }
 
