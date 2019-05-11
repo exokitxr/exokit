@@ -356,18 +356,6 @@ class VRDisplay extends EventEmitter {
   }
 }
 
-class SpatialEvent extends Event {
-  constructor(type, init = {}) {
-    super(type);
-
-    if (init.detail) {
-      for (const k in init.detail) {
-        this[k] = init.detail[k];
-      }
-    }
-  }
-}
-
 class FakeMesher extends EventTarget {
   constructor(session) {
     super();
