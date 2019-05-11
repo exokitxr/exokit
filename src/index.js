@@ -279,6 +279,10 @@ const xrState = (() => {
   result.depthTex = _makeTypedArray(Uint32Array, 1);
   result.hidden = _makeTypedArray(Uint32Array, 1);
   result.fakeVrDisplayEnabled = _makeTypedArray(Uint32Array, 1);
+  result.meshing = _makeTypedArray(Uint32Array, 1);
+  result.planesTracking = _makeTypedArray(Uint32Array, 1);
+  result.handTracking = _makeTypedArray(Uint32Array, 1);
+  result.eyeTracking = _makeTypedArray(Uint32Array, 1);
 
   return result;
 })();
