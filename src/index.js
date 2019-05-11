@@ -465,8 +465,8 @@ const _startTopRenderLoop = () => {
 
       topVrPresentState.hasPose = true;
 
-      xrState.position = localPositionArray3;
-      xrState.orientation = localQuaternionArray4;
+      xrState.position.set(localPositionArray3);
+      xrState.orientation.set(localQuaternionArray4);
       xrState.leftViewMatrix.set(localFloat32Array);
       xrState.leftProjectionMatrix.set(localFloat32Array2);
       xrState.rightViewMatrix.set(localFloat32Array3);
