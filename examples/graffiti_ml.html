@@ -473,6 +473,9 @@ init();
   console.log('request session');
   const session = await display.requestSession({
     exclusive: true,
+    extensions: {
+      meshing: true,
+    },
   });
   display.session = session;
 
