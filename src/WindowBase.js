@@ -114,7 +114,7 @@ parentPort.on('message', m => {
     case 'runAsync': {
       let result, err;
       try {
-        result = window.onrunasync ? window.onrunasync(m.jsString) : null;
+        result = window.onrunasync ? window.onrunasync(m.request) : null;
       } catch(e) {
         err = e.stack;
       }

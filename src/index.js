@@ -303,7 +303,6 @@ const xrState = (() => {
   })();
   result.eye = _makeGamepad();
   result.id = _makeTypedArray(Uint32Array, 1);
-  result.vrRequest = _makeTypedArray(Uint32Array, 2);
   result.tex = _makeTypedArray(Uint32Array, 1);
   result.depthTex = _makeTypedArray(Uint32Array, 1);
   result.hidden = _makeTypedArray(Uint32Array, 1);
@@ -1147,7 +1146,7 @@ const _startTopRenderLoop = () => {
     }
 
     // tick animation frames
-    await Promise.all(windows.map(window => window.runAsync('tickAnimationFrame')));
+    await Promise.all(windows.map(window => window.runAsync({method: 'tickAnimationFrame'})));
 
     if (args.performance) {
       const now = Date.now();
