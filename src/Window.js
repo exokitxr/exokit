@@ -12,7 +12,6 @@ const {parentPort} = require('worker_threads');
 const util = require('util');
 const {URL} = url;
 const {TextEncoder, TextDecoder} = util;
-const {XRRigidTransform} = require('./XR.js');
 const {performance} = require('perf_hooks');
 const {
   workerData: {
@@ -26,6 +25,7 @@ const {
   },
 } = require('worker_threads');
 
+const {XRRigidTransform} = require('./XR.js');
 const {WorkerVm} = require('./WindowVm.js');
 const {FileReader} = require('./File.js');
 
