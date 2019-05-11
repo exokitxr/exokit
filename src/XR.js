@@ -88,18 +88,18 @@ class XRSession extends EventTarget {
     this._inputSources = (() => {
       const result = Array(2 + maxNumTrackers);
       for (let i = 0; i < maxNumTrackers; i++) {
-        let hand, pointerOrigin;
+        let hand, targetRayMode;
         if (i === 0) {
           hand = 'left';
-          pointerOrigin = 'hand';
+          targetRayMode = 'tracked-pointer';
         } else if (i === 1) {
           hand = 'right';
-          pointerOrigin = 'hand';
+          targetRayMode = 'tracked-pointer';
         } else {
           hand = null;
-          pointerOrigin = 'tracker';
+          targetRayMode = 'tracker';
         }
-        result[i] = new XRInputSource(hand, pointerOrigin, i);
+        result[i] = new XRInputSource(hand, targetRayMode, i);
       }
       return result;
     })();
@@ -488,9 +488,9 @@ class XRDevicePose {
 module.exports.XRDevicePose = XRDevicePose;
 
 class XRInputSource {
-  constructor(handedness = 'left', pointerOrigin = 'hand', index = 0) {
+  constructor(handedness = 'left', targetRayMode = 'tracked-pointer', index = 0) {
     this.handedness = handedness;
-    this.pointerOrigin = pointerOrigin;
+    this.targetRayMode = targetRayMode;
     this._index = index;
 
     this._pose = new XRInputPose();
