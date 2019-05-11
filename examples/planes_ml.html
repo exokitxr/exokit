@@ -110,9 +110,39 @@
       }
       planeMeshes.length = 0;
     }; */
-    const _onPlanes = e => {
+    /* const _onPlanes = e => {
       const {updates} = e;
       _loadPlanes(updates);
+    }; */
+    const _planeadd = e => {
+      const {type, id, position, normal, scale} = e.update;
+
+      const planeMesh = new THREE.Object3D();
+      planeMesh.position.fromArray(position);
+      planeMesh.quaternion.setFromUnitVectors(
+        localVector.set(0, 0, 1),
+        localVector2.fromArray(normal)
+      );
+      planeMesh.scale.fromArray(scale);
+      planeMesh.planeId = id;
+
+      const plantMesh = (() => {
+        const index = Math.floor(Math.random() * plantMeshes.length);
+        const plantMesh = plantMeshes[index];
+        return plantMesh.clone();
+      })();
+      planeMesh.add(plantMesh);
+
+      scene.add(planeMesh);
+      planeMeshes.push(planeMesh);
+    };
+    const _planeremove = e => {
+      const index = planeMeshes.findIndex(planeMesh => planeMesh.planeId === e.update.id);
+      if (index !== -1) {
+        const planeMesh = planeMeshes[index];
+        scene.remove(planeMesh);
+        planeMeshes.splice(index, 1);
+      }
     };
 
     async function init() {
@@ -188,6 +218,9 @@
       // console.log('request session');
       const session = await display.requestSession({
         exclusive: true,
+        extensions: {
+          planesTracking: true,
+        },
       });
       display.session = session;
 
@@ -212,9 +245,11 @@
         _loadPlantMeshes()
           .then(newPlantMeshes => {
             plantMeshes = newPlantMeshes;
-            
-            planeTracker = session.requestPlaneTracking();
-            planeTracker.onplanes = _onPlanes;
+
+            session.addEventListener('planeadd', _planeadd);
+            session.addEventListener('planeremove', _planeremove);
+            /* planeTracker = session.requestPlaneTracking();
+            planeTracker.onplanes = _onPlanes; */
           })
           .catch(err => {
             console.warn(err.stack);
