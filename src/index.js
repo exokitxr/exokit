@@ -273,6 +273,35 @@ const xrState = (() => {
     }
     return result;
   })();
+  result.hands = (() => {
+    const result = Array(2);
+    for (let i = 0; i < result.length; i++) {
+      const hand = _makeGamepad();
+      hand.wrist = (() => {
+        const result = Array(3);
+        for (let i = 0; i < result.length; i++) {
+          result[i] = _makeTypedArray(Float32Array, 3);
+        }
+        return result;
+      })();
+      hand.fingers = (() => {
+        const result = Array(5);
+        for (let i = 0; i < result.length; i++) {
+          result[i] = (() => {
+            const result = Array(4);
+            for (let i = 0; i < result.length; i++) {
+              result[i] = _makeTypedArray(Float32Array, 3);
+            }
+            return result;
+          })();
+        }
+        return result;
+      })();
+      result[i] = hand;
+    }
+    return result;
+  })();
+  result.eye = _makeGamepad();
   result.id = _makeTypedArray(Uint32Array, 1);
   result.vrRequest = _makeTypedArray(Uint32Array, 2);
   result.tex = _makeTypedArray(Uint32Array, 1);
