@@ -942,6 +942,112 @@ const _startTopRenderLoop = () => {
         const waitTime = Math.max(8 - timeDiff, 0);
         setTimeout(accept, waitTime);
       }); */
+
+      const _updateMeshing = () => {
+        if (xrState.meshing[0] && !topVrPresentState.mesher) {
+          const mesher = new FakeMesher();
+          mesher.on('meshes', updates => {
+            const request = {
+              method: 'meshes',
+              updates,
+            };
+            for (let i = 0; i < windows.length; i++) {
+              windows[i].runAsync(request);
+            }
+          });
+          topVrPresentState.mesher = mesher;
+        } else if (!xrState.meshing[0] && topVrPresentState.mesher) {
+          topVrPresentState.mesher.destroy();
+          topVrPresentState.mesher = null;
+        }
+      };
+      _updateMeshing();
+      
+      const _updatePlanes = () => {
+        if (xrState.planesTracking[0] && !topVrPresentState.planesTracker) {
+          const planesTracker = new FakePlanesTracker();
+          planesTracker.on('planes', updates => {
+            const request = {
+              method: 'planes',
+              updates,
+            };
+            for (let i = 0; i < windows.length; i++) {
+              windows[i].runAsync(request);
+            }
+          });
+          topVrPresentState.planesTracker = planesTracker;
+        } else if (!xrState.planesTracking[0] && topVrPresentState.planesTracker) {
+          topVrPresentState.planesTracker.destroy();
+          topVrPresentState.planesTracker = null;
+        }
+      };
+      _updatePlanes();
+
+      const _updateHandTracking = () => {
+        if (xrState.handTracking[0]) {
+          for (let i = 0; i < xrState.hands.length; i++) {
+            // const gamepad = this.session.device.gamepads[i];
+            const hand = xrState.hands[i];
+            const xrGamepad = xrState.gamepads[i];
+            hand.position.set(xrGamepad.position);
+            hand.orientation.set(xrGamepad.orientation);
+            hand.direction.set(xrGamepad.direction);
+            hand.transformMatrix.set(xrGamepad.transformMatrix);
+            /* localMatrix.compose(
+              localVector.fromArray(xrGamepad.position),
+              localQuaternion.fromArray(xrGamepad.orientation),
+              localVector2.set(1, 1, 1)
+            ); */
+
+            // wrist
+            {
+              localVector.set(0, 0, 0)/*.applyMatrix4(localMatrix)*/.toArray(hand.wrist[0]);
+              localVector.set(-0.02, 0, -0.02)/*.applyMatrix4(localMatrix)*/.toArray(hand.wrist[1]);
+              localVector.set(0.02, 0, -0.02)/*.applyMatrix4(localMatrix)*/.toArray(hand.wrist[2]);
+            }
+
+            // fingers
+            for (let j = 0; j < hand.fingers.length; j++) {
+              const finger = hand.fingers[j];
+              const angle = j/(hand.fingers.length-1)*Math.PI;
+              const x = -Math.cos(angle);
+              const y = -Math.sin(angle);
+
+              for (let k = 0; k < finger.length; k++) {
+                const bone = finger[k];
+                localVector.set(x, 0, y).multiplyScalar(0.03*k)/*.applyMatrix4(localMatrix)*/.toArray(bone);
+              }
+            }
+          }
+        }
+      };
+      _updateHandTracking();
+      
+      const _updateEyeTracking = () => {
+        if (xrState.eyeTracking[0]) {
+          const blink = (Date.now() % 2000) < 200;
+          const blinkAxis = blink ? -1 : 1;
+
+          const eye = xrState.eye;
+          localMatrix
+            .fromArray(GlobalContext.xrState.leftViewMatrix)
+            .getInverse(localMatrix)
+            .decompose(localVector, localQuaternion, localVector2);
+          localVector
+            .add(
+              localVector2.set(0, 0, -1)
+                .applyQuaternion(localQuaternion)
+            )
+            .toArray(eye.position);
+          localQuaternion.toArray(eye.orientation);
+          // localVector.set(0, 0, -1).toArray(eye.position);
+          // localQuaternion.set(0, 0, 0, 1).toArray(eye.orientation);
+
+          eye.axes[0] = blinkAxis;
+          eye.axes[1] = blinkAxis;
+        }
+      };
+      _updateEyeTracking();
     }
   };
   const _submitFrame = async () => {
