@@ -25,7 +25,7 @@
   <script src="three.js"></script>
   <script>
     let container, scene, camera, display, model;
-    let mesher = null;
+    // let mesher = null;
 
     /* const localVector = new THREE.Vector3();
     const localVector2 = new THREE.Vector3();
@@ -149,7 +149,21 @@
       }
       terrainMeshes.length = 0;
     }; */
-    const _onMesh = e => {
+    const _meshadd = e => {
+      _loadTerrainMesh(_getTerrainMesh(e.update.id), e.update);
+    };
+    const _meshupdate = e => {
+      _loadTerrainMesh(_getTerrainMesh(e.update.id), e.update);
+    };
+    const _meshremove = e => {
+      const index = terrainMeshes.findIndex(terrainMesh => terrainMesh.meshId === e.update.id);
+      if (index !== -1) {
+        const terrainMesh = terrainMeshes[index];
+        _removeTerrainMesh(terrainMesh);
+        terrainMeshes.splice(index, 1);
+      }
+    };
+    /* const _onMesh = e => {
       const {updates} = e;
       for (let i = 0; i < updates.length; i++) {
         const update = updates[i];
@@ -168,7 +182,7 @@
           }
         }
       }
-    };
+    }; */
 
     function init() {
       container = document.createElement('div');
@@ -202,87 +216,6 @@
 
       container.appendChild(renderer.domElement);
 
-      /* if (window.browser && window.browser.magicleap) {
-        mesher = window.browser.magicleap.RequestMeshing();
-        mesher.onmesh = _onMesh;
-      } else {
-        const gl = renderer.getContext();
-
-        const geometryPositions = cubeGeometry.attributes.position.array;
-        const geometryNormals = cubeGeometry.attributes.normal.array;
-        const geometryIndices = cubeGeometry.index.array;
-
-        const positionArray = new Float32Array(new ArrayBuffer(numCubes * geometryPositions.length * Float32Array.BYTES_PER_ELEMENT));
-        const normalArray = new Float32Array(new ArrayBuffer(numCubes * geometryNormals.length * Float32Array.BYTES_PER_ELEMENT));
-        const indexArray = new Uint16Array(new ArrayBuffer(numCubes * geometryIndices.length * Float32Array.BYTES_PER_ELEMENT));
-        for (let i = 0; i < numCubes; i++) {
-          const positionDstOffset = i*geometryPositions.length;
-          const offsetVector = localVector2.set((Math.random()-0.5)*2*cubeRange, (Math.random()-0.5), (Math.random()-0.5)*2*cubeRange);
-          const offsetEuler = localEuler.set((Math.random()-0.5)*2*Math.PI, (Math.random()-0.5)*2*Math.PI, (Math.random()-0.5)*2*Math.PI, 'YXZ');
-          for (let j = 0; j < geometryPositions.length; j += 3) {
-            localVector
-              .fromArray(geometryPositions, j)
-              .multiplyScalar(cubeSize)
-              .applyEuler(offsetEuler)
-              .add(offsetVector)
-              .toArray(positionArray, positionDstOffset + j);
-          }
-
-          const normalDstOffset = i*geometryNormals.length;
-          for (let j = 0; j < geometryNormals.length; j++) {
-            normalArray[normalDstOffset + j] = geometryNormals[j];
-          }
-
-          const indexDstOffset = i*geometryIndices.length;
-          const indexSrcOffset = i*geometryPositions.length/3;
-          for (let j = 0; j < geometryIndices.length; j++) {
-            indexArray[indexDstOffset + j] = geometryIndices[j] + indexSrcOffset;
-          }
-        }
-
-        const transformMatrix = localMatrix
-          .fromArray(window.document.xrOffset.matrix)
-          .getInverse(localMatrix)
-          .toArray(localFloat32Array);
-
-        const positionBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, positionArray, gl.STATIC_DRAW);
-        const positionCount = positionArray.length;
-
-        const normalBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, normalArray, gl.STATIC_DRAW);
-        const normalCount = normalArray.length;
-
-        const indexBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexArray, gl.STATIC_DRAW);
-        const count = indexArray.length;
-
-        renderer.state.reset();
-
-        const updates = [
-          {
-            id: 0,
-            type: 'update',
-            transformMatrix,
-            positionArray,
-            positionBuffer,
-            positionCount,
-            normalArray,
-            normalBuffer,
-            normalCount,
-            indexArray,
-            indexBuffer,
-            count,
-          },
-        ];
-        setInterval(() => {
-          _onMesh(updates);
-        }, 100);
-      } */
-
       renderer.setAnimationLoop(animate);
     }
 
@@ -308,6 +241,9 @@
       console.log('request session');
       const session = await display.requestSession({
         exclusive: true,
+        extensions: {
+          meshing: true,
+        },
       });
 
       // console.log('request first frame');
@@ -328,8 +264,12 @@
         renderer.vr.setDevice(display);
         renderer.vr.setAnimationLoop(animate);
         
-        mesher = session.requestMeshing();
-        mesher.onmesh = _onMesh;
+        session.addEventListener('meshadd', _meshadd);
+        session.addEventListener('meshupdate', _meshupdate);
+        session.addEventListener('meshremove', _meshremove);
+        
+        /* mesher = session.requestMeshing();
+        mesher.onmesh = _onMesh; */
 
         console.log('running!');
       });
