@@ -27,7 +27,7 @@ const {defaultEyeSeparation, maxNumTrackers} = require('./constants.js');
 const symbols = require('./symbols');
 const THREE = require('../lib/three-min.js');
 
-const {getHMDType} = require('./VR.js');
+const {getHMDType, FakeMesher, FakePlanesTracker} = require('./VR.js');
 
 const nativeBindings = require(path.join(__dirname, 'native-bindings.js'));
 
@@ -327,6 +327,8 @@ const topVrPresentState = {
   vrSystem: null,
   vrCompositor: null,
   hasPose: false,
+  mesher: null,
+  planesTracker: null,
 };
 
 const requestPresent = async () => {
