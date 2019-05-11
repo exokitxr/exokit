@@ -687,7 +687,6 @@ class FakeVRDisplay extends VRDisplay {
       });
     };
 
-    this._onends = [];
     this._lastPresseds = [false, false];
 
     // this._frameData = new VRFrameData();
@@ -727,16 +726,28 @@ class FakeVRDisplay extends VRDisplay {
     let planesTracker;
     let eyeTracker;
     const session = {
+      listeners: [],
       addEventListener(e, fn) {
-        if (e === 'end') {
-          self._onends.push(fn);
+        if (!this.listeners[e]) {
+          this.listeners[e] = [];
         }
+        this.listeners[e].push(fn);
       },
       removeEventListener(e, fn) {
-        if (e === 'end') {
-          const index = self._onends.indexOf(fn);
+        const listeners = this.listeners[e];
+        if (listeners) {
+          const index = listeners.indexOf(fn);
           if (index !== -1) {
-            self._onends.splice(index, 1);
+            listeners.splice(index, 1);
+          }
+        }
+      },
+      dispatchEvent(e) {
+        let listeners = this.listeners[e.type];
+        if (listeners) {
+          listeners = listeners.slice();
+          for (let i = 0; i < listeners.length; i++) {
+            listeners[i](e);
           }
         }
       },
@@ -777,7 +788,7 @@ class FakeVRDisplay extends VRDisplay {
         xrState.fakeVrDisplayEnabled[0] = 1;
         self.session = null;
 
-        const onends = self._onends.slice();
+        const onends = self.listeners['end'].slice();
         for (let i = 0; i < onends.length; i++) {
           onends[i]();
         }
