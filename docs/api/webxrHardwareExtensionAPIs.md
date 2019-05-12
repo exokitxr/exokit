@@ -6,7 +6,7 @@ order: 2
 parent_section: api
 ---
 
-This currently consists of seperate device-specific APIs, but will be folded into a more generic API, properly coded in Exokit generically on the `session` objects rather than under a `magicleap` namespace.
+The WebXR Hardware Extension APIs is a generic API that is not tied to any one hardware platform and provides access to: meshing, planes detection, hand tracking, eye tracking. No hardware is needed to test these APIs as Exokit Studio provides emulation and emulated data. 
 
 ## Magic Leap One API
 
