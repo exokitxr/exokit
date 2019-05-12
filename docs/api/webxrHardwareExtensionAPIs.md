@@ -1,4 +1,4 @@
----
+.---
 title: WebXR Hardware Extension APIs
 type: api
 layout: docs
@@ -6,17 +6,19 @@ order: 2
 parent_section: api
 ---
 
-The WebXR Hardware Extension APIs is a generic API that is not tied to any one hardware platform and provides access to: meshing, planes detection, hand tracking, eye tracking. No hardware is needed to test these APIs as Exokit Studio provides emulation and emulated data. 
+The WebXR Hardware Extension APIs is a generic API that is not tied to any one hardware platform and provides access to: meshing, planes detection, hand tracking, eye tracking. This is inspired by the [WebExtension API style](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API). Although it is not a web standard yet, these are finding their way into the WebXR spec and Exokit wants to be standards-compliant.
+
+No hardware is needed to test these APIs as Exokit Studio provides emulation and emulated data.
 
 ## Magic Leap One API
 
-The Magic Leap API is exposed to sites under the `window.browser.magicleap` endpoint. This is inspired by the [WebExtension API style](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API). It is not a web standard (yet).
+The Magic Leap API is exposed to sites under the `window.browser.magicleap` endpoint.
 
 **Classes:**
 
 ### `MLMesher`
 
-Used to acquire meshing updates from the Magic Leap platform.
+Used to acquire meshing updates.
 
 #### `MLMesher.onmesh : function(MLMeshUpdate[])`
 
@@ -64,7 +66,7 @@ The number of indices in `MLMeshUpdate.index`. Indended to be passed to `glDrawE
 
 ### `MLEyeTracker`
 
-Used to get the current 3D eye tracking position from the Magic Leap platform.
+Used to get the current 3D eye tracking position.
 
 #### `MLEyeTracker.fixation : MLTransform`
 
@@ -109,7 +111,7 @@ The size of the plane in meters.
 
 ### `MLHandTracker`
 
-Used to acquire hand tracking updates from the Magic Leap platform.
+Used to acquire hand tracking updates.
 
 #### `MLHandTracker.onhand : function(MLHandUpdate[])`
 
@@ -193,7 +195,7 @@ A four-component world quaternion.
 
 ### `MLEyeTracker`
 
-Used to acquire eye tracking updates from the Magic Leap platform.
+Used to acquire eye tracking updates.
 
 #### `MLEyeTracker.oneye : function(MLEye[2])`
 
@@ -223,21 +225,35 @@ Whether this eye is currently closed (`true`) or open (`false`).
 
 ### Endpoints
 
-#### `browser.magicleap.RequestMeshing() : MLMesher`
+```js
+const session = await display.requestSession({
+   exclusive: true,
+   extensions: {
+     meshing: true,
+   },
+ });
+```
 
-Returns an instance of `MLMesher`, which can be used to receive world meshing buffer updates from the Magic Leap platform.
+#### `meshing: true`
 
-#### `browser.magicleap.RequestPlaneTracking() : MLPlaneTracker`
+Returns an instance of `MLMesher`, which can be used to receive world meshing buffer updates.
 
-Returns an instance of `MLPlaneTracker`, which can be used to receive world planes detected by the Magic Leap platform.
+#### `planesTracking: true`
 
-#### `browser.magicleap.RequestHandTracking() : MLHandTracker`
+Returns an instance of `MLPlaneTracker`, which can be used to receive world planes detected.
 
-Returns an instance of `MLHandTracker`, which can be used to receive hand tracking data from the Magic Leap platform.
+#### `handTracking: true`
 
-#### `browser.magicleap.RequestEyeTracking() : MLEyeTracker`
+Returns an instance of `MLHandTracker`, which can be used to receive hand tracking data.
 
-Returns an instance of `MLEyeTracker`, which can be used to receive eye tracking data from the Magic Leap platform.
+#### `eyeTracking: true`
+
+Returns an instance of `MLEyeTracker`, which can be used to receive eye tracking data.
+
+
+## Magic Leap One API
+
+The Magic Leap API is exposed to sites under the `window.browser.magicleap` endpoint.
 
 #### `browser.magicleap.RequestDepthPopulation(populateDepth : Boolean)`
 
