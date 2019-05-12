@@ -108,7 +108,7 @@ public:
 
 void RunResInMainThread(uv_async_t *handle);
 
-class MLCallback {
+/* class MLCallback {
 public:
   MLCallback(uv_loop_t *loop, std::function<void()> fn);
   ~MLCallback();
@@ -118,7 +118,7 @@ public:
 // protected:
   std::unique_ptr<uv_async_t> async;
   std::function<void()> fn;
-};
+}; */
 
 /* class MLPoll {
 public:
@@ -131,19 +131,23 @@ public:
 
 class MLRaycaster : public ObjectWrap {
 public:
-  MLRaycaster(Local<Object> windowObj, MLHandle requestHandle, uv_loop_t *loop, Local<Function> cb);
+  static Local<Function> Initialize(Isolate *isolate);
+
+  MLRaycaster(const MLVec3f &position, const MLVec3f &direction);
   ~MLRaycaster();
 
-  bool Update();
+  static NAN_METHOD(New);
+  static NAN_METHOD(WaitGetPoses);
 
 // protected:
-  Nan::Persistent<Object> windowObj;
+  static MLHandle tracker;
+  static bool hasTracker;
+  MLRaycastQuery raycastQuery;
   MLHandle requestHandle;
-  uv_loop_t *loop;
-  Nan::Persistent<Function> cb;
+  // Nan::Persistent<Function> cb;
 };
 
-class MeshBuffer {
+/* class MeshBuffer {
 public:
   MeshBuffer();
   MeshBuffer(MLTransform transform, float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices);
@@ -161,94 +165,96 @@ enum class MLUpdateType {
   UNCHANGED,
   UPDATE,
   REMOVE,
-};
+}; */
 
 class MLMesher : public ObjectWrap {
 public:
   static Local<Function> Initialize(Isolate *isolate);
 
-  MLMesher(Local<Object> windowObj, uv_loop_t *loop, float range, MLMeshingLOD lod);
+  MLMesher(float range, MLMeshingLOD lod);
   ~MLMesher();
 
   static NAN_METHOD(New);
-  static NAN_GETTER(OnMeshGetter);
-  static NAN_SETTER(OnMeshSetter);
+  static NAN_METHOD(WaitGetPoses);
+  /* static NAN_GETTER(OnMeshGetter);
+  static NAN_SETTER(OnMeshSetter); */
   static NAN_METHOD(Destroy);
 
-  void Update();
-
 // protected:
-  Nan::Persistent<Object> windowObj;
-  uv_loop_t *loop;
+  /* Nan::Persistent<Object> windowObj;
+  uv_loop_t *loop; */
   float range;
   MLMeshingLOD lod;
-  Nan::Persistent<Function> cb;
+  MLHandle tracker;
+  bool meshInfoRequestPending;
+  bool meshRequestsPending;
+  bool meshRequestPending;
+  uint32_t meshBlockRequestIndex;
+  MLHandle meshInfoRequestHandle;
+  MLHandle meshRequestHandle;;
+  MLMeshingMeshInfo meshInfo;
+  MLMeshingMeshRequest meshRequest;
+  // Nan::Persistent<Function> cb;
 };
 
 class MLPlaneTracker : public ObjectWrap {
 public:
   static Local<Function> Initialize(Isolate *isolate);
 
-  MLPlaneTracker(Local<Object> windowObj, uv_loop_t *loop);
+  MLPlaneTracker();
   ~MLPlaneTracker();
 
   static NAN_METHOD(New);
-  static NAN_GETTER(OnPlanesGetter);
-  static NAN_SETTER(OnPlanesSetter);
+  static NAN_METHOD(WaitGetPoses);
   static NAN_METHOD(Destroy);
 
-  void Update();
-
 // protected:
-  Nan::Persistent<Object> windowObj;
+  MLHandle tracker;
+  MLHandle planesRequestHandle;
+  bool planesRequestPending;
+  /* Nan::Persistent<Object> windowObj;
   uv_loop_t *loop;
-  Nan::Persistent<Function> cb;
+  Nan::Persistent<Function> cb; */
 };
 
 class MLHandTracker : public ObjectWrap {
 public:
   static Local<Function> Initialize(Isolate *isolate);
 
-  MLHandTracker(Local<Object> windowObj, uv_loop_t *loop);
+  MLHandTracker();
   ~MLHandTracker();
 
   static NAN_METHOD(New);
-  static NAN_GETTER(OnHandsGetter);
-  static NAN_SETTER(OnHandsSetter);
-  static NAN_GETTER(OnGestureGetter);
-  static NAN_SETTER(OnGestureSetter);
+  static NAN_METHOD(WaitGetPoses);
   static NAN_METHOD(Destroy);
 
-  void Update();
-
 // protected:
-  Nan::Persistent<Object> windowObj;
+  MLHandle tracker;
+  /* Nan::Persistent<Object> windowObj;
   Nan::Persistent<Function> cb;
   uv_loop_t *loop;
-  Nan::Persistent<Function> ongesture;
+  Nan::Persistent<Function> ongesture; */
 };
 
 class MLEyeTracker : public ObjectWrap {
 public:
   static Local<Function> Initialize(Isolate *isolate);
 
-  MLEyeTracker(Local<Object> windowObj);
+  MLEyeTracker();
   ~MLEyeTracker();
 
   static NAN_METHOD(New);
-  static NAN_GETTER(FixationGetter);
-  static NAN_GETTER(EyesGetter);
+  static NAN_METHOD(WaitGetPoses);
   static NAN_METHOD(Destroy);
 
-  void Update(MLSnapshot *snapshot);
-
 // protected:
-  Nan::Persistent<Object> windowObj;
+  MLHandle tracker;
+  /* Nan::Persistent<Object> windowObj;
   MLTransform transform;
   MLTransform leftTransform;
   bool leftBlink;
   MLTransform rightTransform;
-  bool rightBlink;
+  bool rightBlink; */
 };
 
 class CameraRequest {
@@ -317,11 +323,11 @@ public:
   static NAN_METHOD(RequestHandTracking);
   static NAN_METHOD(RequestEyeTracking);
   static NAN_METHOD(RequestImageTracking);
-  static NAN_METHOD(RequestDepthPopulation);
+  // static NAN_METHOD(RequestDepthPopulation);
   // static NAN_METHOD(RequestCamera);
   // static NAN_METHOD(CancelCamera);
   static NAN_METHOD(Update);
-  static NAN_METHOD(Poll);
+  // static NAN_METHOD(Poll);
 
   void TickFloor();
   static MLVec3f OffsetFloor(const MLVec3f &position);
@@ -379,6 +385,7 @@ public:
 
   Nan::Persistent<Function> mlMesherConstructor;
   Nan::Persistent<Function> mlPlaneTrackerConstructor;
+  Nan::Persistent<Function> mlRaycastTrackerConstructor;
   Nan::Persistent<Function> mlHandTrackerConstructor;
   Nan::Persistent<Function> mlEyeTrackerConstructor;
   Nan::Persistent<Function> mlImageTrackerConstructor;
