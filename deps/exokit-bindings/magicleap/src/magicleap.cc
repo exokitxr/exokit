@@ -374,6 +374,7 @@ MLMat4f getWindowTransformMatrix(Local<Object> windowObj, bool inverse = true) {
 
 // MLRaycaster
 
+MLHandle MLRaycaster::tracker;
 bool MLRaycaster::hasTracker = false;
 MLRaycaster::MLRaycaster(const MLVec3f &position, const MLVec3f &direction) {
   if (!hasTracker) {
