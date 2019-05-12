@@ -12,13 +12,16 @@ No hardware is needed to test these APIs as Exokit Studio provides emulation and
 
 # Basic usage
 
-Request an `XRSession` instance with the `navigator.xr.requestSession()` method in order to interact with XR device's presentation or tracking capabilities.
+Request an `XRSession` instance with the `navigator.xr.requestSession()` method in order to interact with XR device's presentation or tracking capabilities. Specify under `extensions` which APIs you want to access:
 
 ```js
 const session = await display.requestSession({
   exclusive: true,
   extensions: {
     meshing: true,
+    planesTracking: true,
+    handTracking: true,
+    eyeTracking: true,
   },
 });
   session.addEventListener('meshadd', _meshadd);
@@ -26,7 +29,9 @@ const session = await display.requestSession({
   session.addEventListener('meshremove', _meshremove);
 ```
 
-Calling `getInputSources()` on `display.session` will return a list of all input sources that are currently active.
+When the API mechanism for an `InputSource` is invoked, events are fired on `session`.
+
+Calling `getInputSources()` on `display.session` will return a list of all `InputSources` that are currently active.
 
 
 ## Magic Leap One API
