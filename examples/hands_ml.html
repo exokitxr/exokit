@@ -159,12 +159,12 @@
             const bones = allFingers[j];
             for (let k = 0; k < bones.length; k++) {
               const positionFloat32Array = bones[k];
-              if (positionFloat32Array) {
+              if (positionFloat32Array && isFinite(positionFloat32Array[0])) {
                 // console.log('position', j, k, positionFloat32Array.join(','));
-                const position = localVector.fromArray(positionFloat32Array);
+                // const position = localVector.fromArray(positionFloat32Array);
                 const newGeometry = boneGeometry.clone()
                   .applyMatrix(
-                    localMatrix.makeTranslation(position.x, position.y, position.z)
+                    localMatrix.makeTranslation(positionFloat32Array[0], positionFloat32Array[1], positionFloat32Array[2])
                   );
 
                 _shiftIndex(newGeometry.index.array);
