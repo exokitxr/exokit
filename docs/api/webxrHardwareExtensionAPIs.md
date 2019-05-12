@@ -10,6 +10,25 @@ The WebXR Hardware Extension APIs is a generic API that is not tied to any one h
 
 No hardware is needed to test these APIs as Exokit Studio provides emulation and emulated data.
 
+# Basic usage
+
+Request an `XRSession` instance with the `navigator.xr.requestSession()` method in order to interact with XR device's presentation or tracking capabilities.
+
+```js
+const session = await display.requestSession({
+  exclusive: true,
+  extensions: {
+    meshing: true,
+  },
+});
+  session.addEventListener('meshadd', _meshadd);
+  session.addEventListener('meshupdate', _meshupdate);
+  session.addEventListener('meshremove', _meshremove);
+```
+
+Calling `getInputSources()` on `display.session` will return a list of all input sources that are currently active.
+
+
 ## Magic Leap One API
 
 The Magic Leap API is exposed to sites under the `window.browser.magicleap` endpoint.
