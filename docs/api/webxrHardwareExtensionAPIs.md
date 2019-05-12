@@ -36,7 +36,7 @@ Calling `getInputSources()` on `display.session` will return a list of all `Inpu
 
 ## Magic Leap One API
 
-The Magic Leap API is exposed to sites under the `window.browser.magicleap` endpoint. This is inspired by the [WebExtension API style](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API). It is not a web standard (yet).
+The Magic Leap API is exposed to sites under the `window.browser.magicleap` endpoint.
 
 **Classes:**
 
