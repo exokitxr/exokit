@@ -1,4 +1,4 @@
-.---
+---
 title: WebXR Hardware Extension APIs
 type: api
 layout: docs
