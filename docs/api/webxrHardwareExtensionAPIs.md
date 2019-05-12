@@ -36,13 +36,13 @@ Calling `getInputSources()` on `display.session` will return a list of all `Inpu
 
 ## Magic Leap One API
 
-The Magic Leap API is exposed to sites under the `window.browser.magicleap` endpoint.
+The Magic Leap API is exposed to sites under the `window.browser.magicleap` endpoint. This is inspired by the [WebExtension API style](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API). It is not a web standard (yet).
 
 **Classes:**
 
 ### `MLMesher`
 
-Used to acquire meshing updates.
+Used to acquire meshing updates from the Magic Leap platform.
 
 #### `MLMesher.onmesh : function(MLMeshUpdate[])`
 
@@ -90,7 +90,7 @@ The number of indices in `MLMeshUpdate.index`. Indended to be passed to `glDrawE
 
 ### `MLEyeTracker`
 
-Used to get the current 3D eye tracking position.
+Used to get the current 3D eye tracking position from the Magic Leap platform.
 
 #### `MLEyeTracker.fixation : MLTransform`
 
@@ -135,7 +135,7 @@ The size of the plane in meters.
 
 ### `MLHandTracker`
 
-Used to acquire hand tracking updates.
+Used to acquire hand tracking updates from the Magic Leap platform.
 
 #### `MLHandTracker.onhand : function(MLHandUpdate[])`
 
@@ -219,7 +219,7 @@ A four-component world quaternion.
 
 ### `MLEyeTracker`
 
-Used to acquire eye tracking updates.
+Used to acquire eye tracking updates from the Magic Leap platform.
 
 #### `MLEyeTracker.oneye : function(MLEye[2])`
 
@@ -249,35 +249,21 @@ Whether this eye is currently closed (`true`) or open (`false`).
 
 ### Endpoints
 
-```js
-const session = await display.requestSession({
-   exclusive: true,
-   extensions: {
-     meshing: true,
-   },
- });
-```
+#### `browser.magicleap.RequestMeshing() : MLMesher`
 
-#### `meshing: true`
+Returns an instance of `MLMesher`, which can be used to receive world meshing buffer updates from the Magic Leap platform.
 
-Returns an instance of `MLMesher`, which can be used to receive world meshing buffer updates.
+#### `browser.magicleap.RequestPlaneTracking() : MLPlaneTracker`
 
-#### `planesTracking: true`
+Returns an instance of `MLPlaneTracker`, which can be used to receive world planes detected by the Magic Leap platform.
 
-Returns an instance of `MLPlaneTracker`, which can be used to receive world planes detected.
+#### `browser.magicleap.RequestHandTracking() : MLHandTracker`
 
-#### `handTracking: true`
+Returns an instance of `MLHandTracker`, which can be used to receive hand tracking data from the Magic Leap platform.
 
-Returns an instance of `MLHandTracker`, which can be used to receive hand tracking data.
+#### `browser.magicleap.RequestEyeTracking() : MLEyeTracker`
 
-#### `eyeTracking: true`
-
-Returns an instance of `MLEyeTracker`, which can be used to receive eye tracking data.
-
-
-## Magic Leap One API
-
-The Magic Leap API is exposed to sites under the `window.browser.magicleap` endpoint.
+Returns an instance of `MLEyeTracker`, which can be used to receive eye tracking data from the Magic Leap platform.
 
 #### `browser.magicleap.RequestDepthPopulation(populateDepth : Boolean)`
 
