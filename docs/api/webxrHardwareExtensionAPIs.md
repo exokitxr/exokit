@@ -12,7 +12,7 @@ No hardware is needed to test these APIs as Exokit Studio provides emulation and
 
 # Basic usage
 
-Request an `XRSession` instance with the `navigator.xr.requestSession()` method in order to interact with XR device's presentation or tracking capabilities. Specify under `extensions` which APIs you want to access:
+Request a `session` instance with the `display.requestSession()` method in order to interact with XR device's presentation or tracking capabilities. Specify under `extensions` which APIs you want to access:
 
 ```js
 const session = await display.requestSession({
