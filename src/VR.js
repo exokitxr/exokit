@@ -510,7 +510,7 @@ class FakeMesher extends EventEmitter {
   }
 }
 
-class FakePlanesTracker extends EventEmitter {
+class FakePlaneTracker extends EventEmitter {
   constructor() {
     super();
 
@@ -723,8 +723,8 @@ class FakeVRDisplay extends VRDisplay {
     if (extensions.meshing) {
       xrState.meshing[0] = 1;
     }
-    if (extensions.planesTracking) {
-      xrState.planesTracking[0] = 1;
+    if (extensions.planeTracking) {
+      xrState.planeTracking[0] = 1;
     }
     if (extensions.handTracking) {
       xrState.handTracking[0] = 1;
@@ -1044,7 +1044,7 @@ GlobalContext.getGamepads = getGamepads;
 module.exports = {
   VRDisplay,
   FakeMesher,
-  FakePlanesTracker,
+  FakePlaneTracker,
   FakeVRDisplay,
   VRFrameData,
   VRPose,
