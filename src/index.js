@@ -278,7 +278,7 @@ const xrState = (() => {
     for (let i = 0; i < result.length; i++) {
       const hand = _makeGamepad();
       hand.wrist = (() => {
-        const result = Array(3);
+        const result = Array(4);
         for (let i = 0; i < result.length; i++) {
           result[i] = _makeTypedArray(Float32Array, 3);
         }
