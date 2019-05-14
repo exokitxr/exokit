@@ -1274,6 +1274,33 @@ const _startTopRenderLoop = () => {
 };
 _startTopRenderLoop();
 
+const _startFakeMesher = () => {
+  const mesher = new FakeMesher();
+  mesher.on('meshes', updates => {
+    const request = {
+      method: 'meshes',
+      updates,
+    };
+    for (let i = 0; i < windows.length; i++) {
+      windows[i].runAsync(request);
+    }
+  });
+  topVrPresentState.mesher = mesher;
+};
+const _startFakePlaneTracker = () => {
+  const planeTracker = new FakePlaneTracker();
+  planeTracker.on('planes', updates => {
+    const request = {
+      method: 'planes',
+      updates,
+    };
+    for (let i = 0; i < windows.length; i++) {
+      windows[i].runAsync(request);
+    }
+  });
+  topVrPresentState.planeTracker = planeTracker;
+};
+
 const _prepare = () => Promise.all([
   (() => {
     if (!process.env['DISPLAY']) {
