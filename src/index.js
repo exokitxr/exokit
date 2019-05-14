@@ -479,7 +479,10 @@ const exitPresent = async () => {
 };
 GlobalContext.exitPresent = exitPresent;
 const requestHitTest = (origin, direction, coordinateSystem) => {
-  if (topVrPresentState.mesher) {
+  if (topVrPresentState.hmdType === 'fake') {
+    if (!topVrPresentState.mesher) {
+      _startFakeMesher();
+    }
     return topVrPresentState.mesher.requestHitTest(origin, direction, coordinateSystem);
   } else {
     return Promise.resolve([]);
