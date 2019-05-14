@@ -10,7 +10,7 @@
     if('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/planes_ml_sw.js')
         .then(function() {
-              console.log('Service Worker Registered');
+          console.log('Service Worker Registered');
         });
     }
    </script>
@@ -67,7 +67,7 @@
     const planeMaterial2 = new THREE.MeshPhongMaterial({
       color: 0x673ab7,
     }); */
-    const _loadPlanes = updates => {
+    /* const _loadPlanes = updates => {
       // _clearPlanes();
 
       for (let i = 0; i < updates.length; i++) {
@@ -102,7 +102,7 @@
           }
         }
       }
-    };
+    }; */
     /* const _clearPlanes = () => {
       for (let i = 0; i < planeMeshes.length; i++) {
         const planeMesh = planeMeshes[i];
@@ -115,7 +115,8 @@
       _loadPlanes(updates);
     }; */
     const _planeadd = e => {
-      const {type, id, position, normal, scale} = e.update;
+      const {type, id, position, normal, size} = e.update;
+      console.log('plane add', id);
 
       const planeMesh = new THREE.Object3D();
       planeMesh.position.fromArray(position);
@@ -123,7 +124,7 @@
         localVector.set(0, 0, 1),
         localVector2.fromArray(normal)
       );
-      planeMesh.scale.fromArray(scale);
+      // planeMesh.scale.set(size[0], size[1], 1);
       planeMesh.planeId = id;
 
       const plantMesh = (() => {
@@ -136,7 +137,23 @@
       scene.add(planeMesh);
       planeMeshes.push(planeMesh);
     };
+    const _planeupdate = e => {
+      console.log('plane update', e.update.id);
+
+      const planeMesh = planeMeshes.find(planeMesh => planeMesh.planeId === e.update.id);
+      if (planeMesh) {
+      const {position, normal, size} = e.update;
+        planeMesh.position.fromArray(position);
+        planeMesh.quaternion.setFromUnitVectors(
+          localVector.set(0, 0, 1),
+          localVector2.fromArray(normal)
+        );
+        // planeMesh.scale.set(size[0], size[1], 1);
+      }
+    };
     const _planeremove = e => {
+      console.log('plane remove', e.update.id);
+
       const index = planeMeshes.findIndex(planeMesh => planeMesh.planeId === e.update.id);
       if (index !== -1) {
         const planeMesh = planeMeshes[index];
@@ -219,7 +236,7 @@
       const session = await display.requestSession({
         exclusive: true,
         extensions: {
-          planesTracking: true,
+          planeTracking: true,
         },
       });
       display.session = session;
