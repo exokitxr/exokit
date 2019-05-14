@@ -16,6 +16,7 @@
 #include <cmath>
 #include <vector>
 #include <list>
+#include <set>
 #include <thread>
 #include <mutex>
 #include <condition_variable>
@@ -194,6 +195,7 @@ public:
   MLHandle meshRequestHandle;;
   MLMeshingMeshInfo meshInfo;
   MLMeshingMeshRequest meshRequest;
+  std::map<std::string, MLMeshingBlockInfo *> meshInfoMap;
   // Nan::Persistent<Function> cb;
 };
 
@@ -201,7 +203,7 @@ class MLPlaneTracker : public ObjectWrap {
 public:
   static Local<Function> Initialize(Isolate *isolate);
 
-  MLPlaneTracker();
+  MLPlaneTracker(float range);
   ~MLPlaneTracker();
 
   static NAN_METHOD(New);
@@ -209,9 +211,11 @@ public:
   static NAN_METHOD(Destroy);
 
 // protected:
+  float range;
   MLHandle tracker;
   MLHandle planesRequestHandle;
   bool planesRequestPending;
+  std::vector<std::string> planeIds;
   /* Nan::Persistent<Object> windowObj;
   uv_loop_t *loop;
   Nan::Persistent<Function> cb; */

@@ -451,7 +451,7 @@ NAN_METHOD(MLRaycaster::WaitGetPoses) {
       MLMat4f hitMatrix = composeMatrix(position, quaternion, scale);
 
       Local<Object> xrHitResult = Nan::New<Object>();
-      Local<Float32Array> hitMatrixArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)hitMatrix.matrix_colmajor, 16 * sizeof(float)), 0, 16);
+      Local<Float32Array> hitMatrixArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)hitMatrix.matrix_colmajor, sizeof(hitMatrix.matrix_colmajor)), 0, 16);
       xrHitResult->Set(JS_STR("hitMatrix"), hitMatrixArray);
       Local<Array> result = Nan::New<Array>(1);
       result->Set(0, xrHitResult);
@@ -564,8 +564,8 @@ MLMesher::MLMesher(float range, MLMeshingLOD lod) : range(range), lod(lod), mesh
 MLMesher::~MLMesher() {}
 
 NAN_METHOD(MLMesher::New) {
-  int lodValue = TO_INT32(info[0]);
-  float range = TO_FLOAT(info[1]);
+  float range = TO_FLOAT(info[0]);
+  int lodValue = TO_INT32(info[1]);
   
   MLMeshingLOD lod;
   switch (lodValue) {
@@ -650,8 +650,8 @@ NAN_METHOD(MLMesher::WaitGetPoses) {
       // std::unique_lock<std::mutex> lock(mlContext->positionMutex);
 
       meshExtents.center = mlContext->position;
-      // meshExtents.rotation =  mlContext->rotation;
-      meshExtents.rotation = {0, 0, 0, 1};
+      meshExtents.rotation =  mlContext->rotation;
+      // meshExtents.rotation = {0, 0, 0, 1};
     }
     meshExtents.extents.x = mlMesher->range;
     meshExtents.extents.y = mlMesher->range;
@@ -678,19 +678,24 @@ NAN_METHOD(MLMesher::WaitGetPoses) {
   if (mlMesher->meshInfoRequestPending) {
     MLResult result = MLMeshingGetMeshInfoResult(mlMesher->tracker, mlMesher->meshInfoRequestHandle, &mlMesher->meshInfo);
     if (result == MLResult_Ok) {
+      for (uint32_t i = 0; i < mlMesher->meshInfo.data_count; i++) {
+        MLMeshingBlockInfo &meshInfo = mlMesher->meshInfo.data[i];
+        const std::string &id = id2String(meshInfo.id);
+        mlMesher->meshInfoMap[id] = &meshInfo;
+      }
       /* uint32_t dataCount = meshInfo.data_count;
 
       meshRequestNewMap.clear();
       meshRequestRemovedMap.clear();
       meshRequestUnchangedMap.clear();
       for (uint32_t i = 0; i < dataCount; i++) {
-        const MLMeshingBlockInfo &meshBlockInfo = meshInfo.data[i];
-        const MLMeshingMeshState &state = meshBlockInfo.state;
+        const MLMeshingBlockInfo &meshInfo = meshInfo.data[i];
+        const MLMeshingMeshState &state = meshInfo.state;
         MLMeshingBlockRequest &meshBlockRequest = meshBlockRequests[i];
-        meshBlockRequest.id = meshBlockInfo.id;
+        meshBlockRequest.id = meshInfo.id;
         meshBlockRequest.level = mlMesher->lod;
 
-        const std::string &id = id2String(meshBlockInfo.id);
+        const std::string &id = id2String(meshInfo.id);
         meshRequestNewMap[id] = (state == MLMeshingMeshState_New);
         meshRequestRemovedMap[id] = (state == MLMeshingMeshState_Deleted);
         meshRequestUnchangedMap[id] = (state == MLMeshingMeshState_Unchanged);
@@ -717,13 +722,13 @@ NAN_METHOD(MLMesher::WaitGetPoses) {
 
       std::vector<MLMeshingBlockRequest> meshBlockRequests(requestsThisTime);
       for (uint32_t i = 0; i < requestsThisTime; i++) {
-        const MLMeshingBlockInfo &meshBlockInfo = mlMesher->meshInfo.data[mlMesher->meshBlockRequestIndex + i];
-        const MLMeshingMeshState &state = meshBlockInfo.state;
+        const MLMeshingBlockInfo &meshInfo = mlMesher->meshInfo.data[mlMesher->meshBlockRequestIndex + i];
+        const MLMeshingMeshState &state = meshInfo.state;
         MLMeshingBlockRequest &meshBlockRequest = meshBlockRequests[i];
-        meshBlockRequest.id = meshBlockInfo.id;
+        meshBlockRequest.id = meshInfo.id;
         meshBlockRequest.level = mlMesher->lod;
 
-        /* const std::string &id = id2String(meshBlockInfo.id);
+        /* const std::string &id = id2String(meshInfo.id);
         meshRequestNewMap[id] = (state == MLMeshingMeshState_New);
         meshRequestRemovedMap[id] = (state == MLMeshingMeshState_Deleted);
         meshRequestUnchangedMap[id] = (state == MLMeshingMeshState_Unchanged); */
@@ -742,72 +747,92 @@ NAN_METHOD(MLMesher::WaitGetPoses) {
       } else {
         ML_LOG(Error, "%s: Mesh request failed! %x", application_name, result);
 
+        mlMesher->meshInfoMap.clear();
+        MLMeshingFreeResource(mlMesher->tracker, &mlMesher->meshInfoRequestHandle);
+
         mlMesher->meshRequestsPending = false;
         mlMesher->meshRequestPending = false;
-
-        MLMeshingFreeResource(mlMesher->tracker, &mlMesher->meshInfoRequestHandle);
       }
     } else {
+      mlMesher->meshInfoMap.clear();
+      MLMeshingFreeResource(mlMesher->tracker, &mlMesher->meshInfoRequestHandle);
+      
       mlMesher->meshRequestsPending = false;
       mlMesher->meshRequestPending = false;
-
-      MLMeshingFreeResource(mlMesher->tracker, &mlMesher->meshInfoRequestHandle);
     }
   }
   if (mlMesher->meshRequestsPending && mlMesher->meshRequestPending) {
     MLMeshingMesh mesh;
     MLResult result = MLMeshingGetMeshResult(mlMesher->tracker, mlMesher->meshRequestHandle, &mesh);
     if (result == MLResult_Ok) {
-      Local<Array> result = Nan::New<Array>(mesh.data_count);
+      // std::map<std::string, MLMeshingBlockInfo*> blockMeshInfoMap();
+
+      Local<Array> result = Nan::New<Array>();
+      int index = 0;
       for (uint32_t i = 0; i < mesh.data_count; i++) {
         MLMeshingBlockMesh &blockMesh = mesh.data[i];
-        MLMeshingBlockInfo &meshBlockInfo = mlMesher->meshInfo.data[i];
-
-        if (id2String(blockMesh.id) != id2String(meshBlockInfo.id)) { // XXX
-          ML_LOG(Error, "%s: Mesh result id does not match request id %x %x %x %x", application_name, blockMesh.id, meshBlockInfo.id, mesh.data_count, mlMesher->meshInfo.data_count);
-        }
-
-        Local<Object> obj = Nan::New<Object>();
         const std::string &id = id2String(blockMesh.id);
-        obj->Set(JS_STR("id"), JS_STR(id));
-
-        const char *typeString;
-        if (meshBlockInfo.state == MLMeshingMeshState_New) {
-          typeString = "new";
-        } else if (meshBlockInfo.state == MLMeshingMeshState_Updated) {
-          typeString = "update";
-        } else if (meshBlockInfo.state == MLMeshingMeshState_Deleted) {
-          typeString = "remove";
-        } else if (meshBlockInfo.state == MLMeshingMeshState_Unchanged) {
-          typeString = "unchanged";
-        } else {
-          typeString = "";
+        auto meshInfoIter = mlMesher->meshInfoMap.find(id);
+        if (meshInfoIter == mlMesher->meshInfoMap.end()) {
+          ML_LOG(Error, "%s: Mesh result for unknown id %s", application_name, id.c_str());
         }
-        obj->Set(JS_STR("type"), JS_STR(typeString));
+        MLMeshingBlockInfo &meshInfo = *meshInfoIter->second;
 
-        if (meshBlockInfo.state == MLMeshingMeshState_New || meshBlockInfo.state == MLMeshingMeshState_Updated) {
-          /* Local<Float32Array> transformMatrixArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)transformMatrix.matrix_colmajor, 16 * sizeof(float)), 0, 16);
-          obj->Set(JS_STR("transformMatrix"), transformMatrixArray); */
+        if (meshInfo.state == MLMeshingMeshState_New || (meshInfo.state == MLMeshingMeshState_Updated && blockMesh.index_count > 0) || MLMeshingMeshState_Deleted) {
+          Local<Object> obj = Nan::New<Object>();
+          obj->Set(JS_STR("id"), JS_STR(id));
 
-          Local<SharedArrayBuffer> positionArrayBuffer = SharedArrayBuffer::New(Isolate::GetCurrent(), blockMesh.vertex_count * 3 * sizeof(float));
-          Local<Float32Array> positionArray = Float32Array::New(positionArrayBuffer, 0, blockMesh.vertex_count * 3);
-          memcpy(positionArrayBuffer->GetContents().Data(), blockMesh.vertex->values, blockMesh.vertex_count * 3 * sizeof(float));
-          obj->Set(JS_STR("positionArray"), positionArray);
-          obj->Set(JS_STR("positionCount"), JS_INT(blockMesh.vertex_count * 3));
+          const char *typeString;
+          if (meshInfo.state == MLMeshingMeshState_New) {
+            typeString = "meshadd";
+          } else if (meshInfo.state == MLMeshingMeshState_Updated) {
+            typeString = "meshupdate";
+          } else if (meshInfo.state == MLMeshingMeshState_Deleted) {
+            typeString = "meshremove";
+          /* } else if (meshInfo.state == MLMeshingMeshState_Unchanged) {
+            typeString = "meshunchanged"; */
+          } else {
+            typeString = "";
+          }
+          obj->Set(JS_STR("type"), JS_STR(typeString));
 
-          Local<SharedArrayBuffer> normalArrayBuffer = SharedArrayBuffer::New(Isolate::GetCurrent(), blockMesh.vertex_count * 3 * sizeof(float));
-          Local<Float32Array> normalArray = Float32Array::New(normalArrayBuffer, 0, blockMesh.vertex_count * 3);
-          memcpy(normalArrayBuffer->GetContents().Data(), blockMesh.normal->values, blockMesh.vertex_count * 3 * sizeof(float));
-          obj->Set(JS_STR("normalArray"), normalArray);
-          obj->Set(JS_STR("normalCount"), JS_INT(blockMesh.vertex_count * 3));
+          if (meshInfo.state == MLMeshingMeshState_New || meshInfo.state == MLMeshingMeshState_Updated) {
+            /* Local<Float32Array> transformMatrixArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)transformMatrix.matrix_colmajor, 16 * sizeof(float)), 0, 16);
+            obj->Set(JS_STR("transformMatrix"), transformMatrixArray); */
 
-          Local<SharedArrayBuffer> indexArrayBuffer = SharedArrayBuffer::New(Isolate::GetCurrent(), blockMesh.index_count * sizeof(uint16_t));
-          Local<Uint16Array> indexArray = Uint16Array::New(indexArrayBuffer, 0, blockMesh.index_count);
-          obj->Set(JS_STR("indexArray"), indexArray);
-          obj->Set(JS_STR("count"), JS_INT(blockMesh.index_count));
+            Local<SharedArrayBuffer> positionArrayBuffer = SharedArrayBuffer::New(Isolate::GetCurrent(), blockMesh.vertex_count * 3 * sizeof(float));
+            Local<Float32Array> positionArray = Float32Array::New(positionArrayBuffer, 0, blockMesh.vertex_count * 3);
+            memcpy(positionArrayBuffer->GetContents().Data(), blockMesh.vertex, blockMesh.vertex_count * 3 * sizeof(float));
+            obj->Set(JS_STR("positionArray"), positionArray);
+            // obj->Set(JS_STR("positionCount"), JS_INT(blockMesh.vertex_count * 3));
+
+            Local<SharedArrayBuffer> normalArrayBuffer = SharedArrayBuffer::New(Isolate::GetCurrent(), blockMesh.vertex_count * 3 * sizeof(float));
+            Local<Float32Array> normalArray = Float32Array::New(normalArrayBuffer, 0, blockMesh.vertex_count * 3);
+            memcpy(normalArrayBuffer->GetContents().Data(), blockMesh.normal, blockMesh.vertex_count * 3 * sizeof(float));
+            obj->Set(JS_STR("normalArray"), normalArray);
+            // obj->Set(JS_STR("normalCount"), JS_INT(blockMesh.vertex_count * 3));
+
+            Local<SharedArrayBuffer> indexArrayBuffer = SharedArrayBuffer::New(Isolate::GetCurrent(), blockMesh.index_count * sizeof(uint16_t));
+            Local<Uint16Array> indexArray = Uint16Array::New(indexArrayBuffer, 0, blockMesh.index_count);
+            memcpy(indexArrayBuffer->GetContents().Data(), blockMesh.index, blockMesh.index_count * sizeof(uint16_t));
+            obj->Set(JS_STR("indexArray"), indexArray);
+            // obj->Set(JS_STR("count"), JS_INT(blockMesh.index_count));
+            
+            MLVec3f position = mlContext->OffsetFloor(MLVec3f{0, 0, 0}); // {0, 0, 0};
+            MLQuaternionf rotation = {0, 0, 0, 1};
+            MLVec3f scale = {1, 1, 1};
+            MLMat4f transform = composeMatrix(position, rotation, scale);
+            
+            Local<ArrayBuffer> transformMatrixArrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), 16 * sizeof(float));
+            Local<Float32Array> transformMatrixArray = Float32Array::New(transformMatrixArrayBuffer, 0, 16);
+            float *transformMatrixData = (float *)((char *)transformMatrixArrayBuffer->GetContents().Data());
+            memcpy(transformMatrixData, transform.matrix_colmajor, sizeof(transform.matrix_colmajor));
+            obj->Set(JS_STR("transformMatrix"), transformMatrixArray);
+          }
+
+          result->Set(index, obj);
+          index++;
         }
-
-        result->Set(i, obj);
       }
 
       /* // remove outranged mesh buffers
@@ -824,11 +849,7 @@ NAN_METHOD(MLMesher::WaitGetPoses) {
       }
       for (auto iter = removedIds.begin(); iter != removedIds.end(); iter++) {
         meshBuffers.erase(*iter);
-      }
-
-      std::for_each(meshers.begin(), meshers.end(), [&](MLMesher *m) {
-        m->Update();
-      }); */
+      } */
 
       info.GetReturnValue().Set(result);
 
@@ -859,7 +880,7 @@ NAN_METHOD(MLMesher::Destroy) {
 
 // MLPlaneTracker
 
-MLPlaneTracker::MLPlaneTracker() : planesRequestPending(false) {
+MLPlaneTracker::MLPlaneTracker(float range) : range(range), planesRequestPending(false) {
   if (MLPlanesCreate(&tracker) != MLResult_Ok) {
     ML_LOG(Error, "%s: failed to create planes handle", application_name);
   }
@@ -868,7 +889,9 @@ MLPlaneTracker::MLPlaneTracker() : planesRequestPending(false) {
 MLPlaneTracker::~MLPlaneTracker() {}
 
 NAN_METHOD(MLPlaneTracker::New) {
-  MLPlaneTracker *mlPlaneTracker = new MLPlaneTracker();
+  float range = TO_FLOAT(info[0]);
+
+  MLPlaneTracker *mlPlaneTracker = new MLPlaneTracker(range);
   Local<Object> mlPlaneTrackerObj = info.This();
   mlPlaneTracker->Wrap(mlPlaneTrackerObj);
 
@@ -927,12 +950,12 @@ NAN_METHOD(MLPlaneTracker::WaitGetPoses) {
       // std::unique_lock<std::mutex> lock(mlContext->positionMutex);
 
       planesRequest.bounds_center = mlContext->position;
-      // planesRequest.bounds_rotation = mlContext->rotation;
-      planesRequest.bounds_rotation = {0, 0, 0, 1};
+      planesRequest.bounds_rotation = mlContext->rotation;
+      // planesRequest.bounds_rotation = {0, 0, 0, 1};
     }
-    planesRequest.bounds_extents.x = planeRange;
-    planesRequest.bounds_extents.y = planeRange;
-    planesRequest.bounds_extents.z = planeRange;
+    planesRequest.bounds_extents.x = mlPlaneTracker->range;
+    planesRequest.bounds_extents.y = mlPlaneTracker->range;
+    planesRequest.bounds_extents.z = mlPlaneTracker->range;
 
     planesRequest.flags = MLPlanesQueryFlag_Arbitrary | MLPlanesQueryFlag_AllOrientations | MLPlanesQueryFlag_Semantic_All | MLPlanesQueryFlag_OrientToGravity;
     // planesRequest.min_hole_length = 0.5;
@@ -952,46 +975,87 @@ NAN_METHOD(MLPlaneTracker::WaitGetPoses) {
     uint32_t numPlanesResults;
     MLResult result = MLPlanesQueryGetResults(mlPlaneTracker->tracker, mlPlaneTracker->planesRequestHandle, planeResults, &numPlanesResults);
     if (result == MLResult_Ok) {
-      mlPlaneTracker->planesRequestPending = false;
+      std::vector<std::string> currentPlaneIds(numPlanesResults);
+      for (uint32_t i = 0; i < numPlanesResults; i++) {
+        MLPlane &plane = planeResults[i];
+        uint64_t planeId = (uint64_t)plane.id;
+        currentPlaneIds[i] = id2String((uint64_t)planeId);
+      }
+
+      std::set<std::string> addedPlaneIds;
+      for (size_t i = 0; i < currentPlaneIds.size(); i++) {
+        const std::string &id = currentPlaneIds[i];
+        if (std::find(mlPlaneTracker->planeIds.begin(), mlPlaneTracker->planeIds.end(), id) == mlPlaneTracker->planeIds.end()) {
+          addedPlaneIds.insert(id);
+        }
+      }
+
+      std::set<std::string> removedPlaneIds;
+      for (size_t i = 0; i < mlPlaneTracker->planeIds.size(); i++) {
+        const std::string &id = mlPlaneTracker->planeIds[i];
+        if (std::find(currentPlaneIds.begin(), currentPlaneIds.end(), id) == currentPlaneIds.end()) {
+          removedPlaneIds.insert(id);
+        }
+      }
 
       Local<Array> result = Nan::New<Array>(numPlanesResults);
       for (uint32_t i = 0; i < numPlanesResults; i++) {
         MLPlane &plane = planeResults[i];
 
-        uint64_t planeId = (uint64_t)plane.id;
-        std::string id = id2String(planeId);
-        // uint32_t flags = plane.flags;
-        float width = plane.width;
-        float height = plane.height;
-        MLVec3f &position = plane.position;
-        MLQuaternionf &rotation = plane.rotation;
-        MLVec3f scale = {1, 1, 1};
+        const std::string &id = currentPlaneIds[i];
 
         Local<Object> obj = Nan::New<Object>();
 
         obj->Set(JS_STR("id"), JS_STR(id));
 
-        Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), (3+4+2)*sizeof(float));
-        char *arrayBufferData = (char *)arrayBuffer->GetContents().Data();
-        size_t index = 0;
+        bool added = false;
+        bool removed = false;
+        bool updated = false;
+        
+        const char *typeString;
+        if ((added = (addedPlaneIds.find(id) != addedPlaneIds.end()))) {
+          typeString = "planeadd";
+        } else if ((removed = (removedPlaneIds.find(id) != removedPlaneIds.end()))) {
+          typeString = "planeremove";
+        } else {
+          updated = true;
+          typeString = "planeupdate";
+        }
+        obj->Set(JS_STR("type"), JS_STR(typeString));
 
-        memcpy(arrayBufferData + index, position.values, sizeof(position.values));
-        obj->Set(JS_STR("position"), Float32Array::New(arrayBuffer, index, sizeof(position.values)/sizeof(position.values[0])));
-        index += sizeof(position.values);
+        if (added || updated) {
+          // uint32_t flags = plane.flags;
+          const float &width = plane.width;
+          const float &height = plane.height;
+          const MLVec3f &position = mlContext->OffsetFloor(plane.position);
+          const MLQuaternionf &rotation = plane.rotation;
+          const MLVec3f &normal = applyVectorQuaternion(MLVec3f{0, 0, 1}, rotation);
+          
+          Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), sizeof(position.values)+sizeof(normal.values)+sizeof(width)+sizeof(height));
+          char *arrayBufferData = (char *)arrayBuffer->GetContents().Data();
+          size_t index = 0;
 
-        memcpy(arrayBufferData + index, rotation.values, sizeof(rotation.values));
-        obj->Set(JS_STR("rotation"), Float32Array::New(arrayBuffer, index, sizeof(rotation.values)/sizeof(rotation.values[0])));
-        index += sizeof(rotation.values);
+          memcpy(arrayBufferData + index, position.values, sizeof(position.values));
+          obj->Set(JS_STR("position"), Float32Array::New(arrayBuffer, index, sizeof(position.values)/sizeof(position.values[0])));
+          index += sizeof(position.values);
 
-        ((float *)(arrayBufferData + index))[0] = width;
-        ((float *)(arrayBufferData + index))[1] = height;
-        obj->Set(JS_STR("size"), Float32Array::New(arrayBuffer, index, 2));
-        index += 2*sizeof(float);
+          memcpy(arrayBufferData + index, normal.values, sizeof(normal.values));
+          obj->Set(JS_STR("normal"), Float32Array::New(arrayBuffer, index, sizeof(normal.values)/sizeof(normal.values[0])));
+          index += sizeof(normal.values);
+
+          ((float *)(arrayBufferData + index))[0] = width;
+          ((float *)(arrayBufferData + index))[1] = height;
+          obj->Set(JS_STR("size"), Float32Array::New(arrayBuffer, index, 2));
+          index += 2*sizeof(float);
+        }
 
         result->Set(i, obj);
       }
 
       info.GetReturnValue().Set(result);
+
+      mlPlaneTracker->planeIds = std::move(currentPlaneIds);
+      mlPlaneTracker->planesRequestPending = false;
     } else if (result == MLResult_Pending) {
       info.GetReturnValue().Set(Nan::Null());
     } else {
@@ -1046,7 +1110,7 @@ void setFingerValue(const MLKeyPointState &keyPointState, MLSnapshot *snapshot, 
     MLTransform transform;
     MLResult result = MLSnapshotGetTransform(snapshot, &keyPointState.frame_id, &transform);
     if (result == MLResult_Ok) {
-      // ML_LOG(Info, "%s: ML keypoint ok", application_name);
+      // ML_LOG(Info, "%s: ML keypoint ok %f %f %f", application_name, transform.position.x, transform.position.y, transform.position.z);
 
       // uint32Data[0] = true;
       data[0] = transform.position.x;
@@ -1083,9 +1147,15 @@ MLHandTracker::MLHandTracker() {
   handTrackingConfig.keypoints_filter_level = MLKeypointFilterLevel_1;
   handTrackingConfig.pose_filter_level = MLPoseFilterLevel_1;
   for (int i = 0; i < MLHandTrackingKeyPose_Count; i++) {
+    handTrackingConfig.keypose_config[i] = true;
+  }
+  /* handTrackingConfig.keypose_config[MLHandTrackingKeyPose_Ok] = false;
+  handTrackingConfig.keypose_config[MLHandTrackingKeyPose_C] = false;
+  handTrackingConfig.keypose_config[MLHandTrackingKeyPose_L] = false; */
+  /* for (int i = 0; i < MLHandTrackingKeyPose_Count; i++) {
     handTrackingConfig.keypose_config[i] = false;
   }
-  handTrackingConfig.keypose_config[MLHandTrackingKeyPose_Pinch] = true;
+  handTrackingConfig.keypose_config[MLHandTrackingKeyPose_Pinch] = true; */
   if (MLHandTrackingSetConfiguration(tracker, &handTrackingConfig) != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to set hand tracker config.", application_name);
   }
@@ -1167,6 +1237,7 @@ NAN_METHOD(MLHandTracker::WaitGetPoses) {
 
   MLHandTracker *mlHandTracker = ObjectWrap::Unwrap<MLHandTracker>(info.This());
   Local<Array> handsArray = Local<Array>::Cast(info[0]);
+  MLContext *mlContext = application_context.mlContext;
 
   MLHandTrackingData handData;
   MLResult result = MLHandTrackingGetData(mlHandTracker->tracker, &handData);
@@ -1174,7 +1245,7 @@ NAN_METHOD(MLHandTracker::WaitGetPoses) {
     MLHandTrackingStaticData handStaticData;
     MLResult result = MLHandTrackingGetStaticData(mlHandTracker->tracker, &handStaticData);
     if (result == MLResult_Ok) {
-      MLSnapshot *snapshot;
+      MLSnapshot *snapshot = nullptr;
       if (MLPerceptionGetSnapshot(&snapshot) != MLResult_Ok) {
         ML_LOG(Error, "%s: ML failed to get hand snapshot!", application_name);
       }
@@ -1184,185 +1255,189 @@ NAN_METHOD(MLHandTracker::WaitGetPoses) {
 
         Local<Float32Array> connectedArray = Local<Float32Array>::Cast(handObj->Get(JS_STR("connected")));
         auto &handDataState = i == 0 ? handData.left_hand_state : handData.right_hand_state;
-        connectedArray->Set(0, JS_NUM(handDataState.hand_confidence >= 0.5 ? 1 : 0));
+        const bool handVisible = handDataState.hand_confidence >= 0.5;
+        connectedArray->Set(0, JS_NUM(handVisible ? 1 : 0));
 
-        Local<Float32Array> positionArray = Local<Float32Array>::Cast(handObj->Get(JS_STR("position")));
-        float *positionArrayData = (float *)((char *)positionArray->Buffer()->GetContents().Data() + positionArray->ByteOffset());
-        positionArrayData[0] = 0;
-        positionArrayData[1] = 0;
-        positionArrayData[2] = 0;
+        if (handVisible) {
+          const MLVec3f &position = mlContext->OffsetFloor(MLVec3f{0, 0, 0});
+          Local<Float32Array> positionArray = Local<Float32Array>::Cast(handObj->Get(JS_STR("position")));
+          float *positionArrayData = (float *)((char *)positionArray->Buffer()->GetContents().Data() + positionArray->ByteOffset());
+          positionArrayData[0] = position.x;
+          positionArrayData[1] = position.y;
+          positionArrayData[2] = position.z;
 
-        Local<Float32Array> orientationArray = Local<Float32Array>::Cast(handObj->Get(JS_STR("orientation")));
-        float *orientationArrayData = (float *)((char *)orientationArray->Buffer()->GetContents().Data() + orientationArray->ByteOffset());
-        orientationArrayData[0] = 0;
-        orientationArrayData[1] = 0;
-        orientationArrayData[2] = 0;
-        orientationArrayData[3] = 1;
+          Local<Float32Array> orientationArray = Local<Float32Array>::Cast(handObj->Get(JS_STR("orientation")));
+          float *orientationArrayData = (float *)((char *)orientationArray->Buffer()->GetContents().Data() + orientationArray->ByteOffset());
+          orientationArrayData[0] = 0;
+          orientationArrayData[1] = 0;
+          orientationArrayData[2] = 0;
+          orientationArrayData[3] = 1;
 
-        auto &handStaticDataSide = i == 0 ? handStaticData.left : handStaticData.right;
+          auto &handStaticDataSide = i == 0 ? handStaticData.left : handStaticData.right;
 
-        // wrist
-        {
-          auto &handStaticDataSideFinger = handStaticDataSide.wrist;
-          Local<Array> wristArray = Local<Array>::Cast(handObj->Get(JS_STR("wrist")));
+          // wrist
           {
-            Local<Float32Array> wristBoneFloat32Array = Local<Float32Array>::Cast(wristArray->Get(0));
-            float *wristBoneArrayData = (float *)((char *)wristBoneFloat32Array->Buffer()->GetContents().Data() + wristBoneFloat32Array->ByteOffset());
-            setFingerValue(handStaticDataSideFinger.radial, snapshot, wristBoneArrayData);
+            auto &handStaticDataSideFinger = handStaticDataSide.wrist;
+            Local<Array> wristArray = Local<Array>::Cast(handObj->Get(JS_STR("wrist")));
+            {
+              Local<Float32Array> wristBoneFloat32Array = Local<Float32Array>::Cast(wristArray->Get(0));
+              float *wristBoneArrayData = (float *)((char *)Local<SharedArrayBuffer>::Cast(wristBoneFloat32Array->Get(JS_STR("buffer")))->GetContents().Data() + wristBoneFloat32Array->ByteOffset());
+              setFingerValue(handStaticDataSideFinger.radial, snapshot, wristBoneArrayData);
+            }
+            {
+              Local<Float32Array> wristBoneFloat32Array = Local<Float32Array>::Cast(wristArray->Get(1));
+              float *wristBoneArrayData = (float *)((char *)Local<SharedArrayBuffer>::Cast(wristBoneFloat32Array->Get(JS_STR("buffer")))->GetContents().Data() + wristBoneFloat32Array->ByteOffset());
+              setFingerValue(handStaticDataSideFinger.ulnar, snapshot, wristBoneArrayData);
+            }
+            {
+              Local<Float32Array> wristBoneFloat32Array = Local<Float32Array>::Cast(wristArray->Get(2));
+              float *wristBoneArrayData = (float *)((char *)Local<SharedArrayBuffer>::Cast(wristBoneFloat32Array->Get(JS_STR("buffer")))->GetContents().Data() + wristBoneFloat32Array->ByteOffset());
+              setFingerValue(handStaticDataSideFinger.center, snapshot, wristBoneArrayData);
+            }
+            {
+              Local<Float32Array> wristBoneFloat32Array = Local<Float32Array>::Cast(wristArray->Get(3));
+              float *wristBoneArrayData = (float *)((char *)Local<SharedArrayBuffer>::Cast(wristBoneFloat32Array->Get(JS_STR("buffer")))->GetContents().Data() + wristBoneFloat32Array->ByteOffset());
+              setFingerValue(wristBoneArrayData);
+            }
           }
+
+          Local<Array> fingersArray = Local<Array>::Cast(handObj->Get(JS_STR("fingers")));
           {
-            Local<Float32Array> wristBoneFloat32Array = Local<Float32Array>::Cast(wristArray->Get(1));
-            float *wristBoneArrayData = (float *)((char *)wristBoneFloat32Array->Buffer()->GetContents().Data() + wristBoneFloat32Array->ByteOffset());
-            setFingerValue(handStaticDataSideFinger.ulnar, snapshot, wristBoneArrayData);
+            // thumb
+            {
+              auto &handStaticDataSideFinger = handStaticDataSide.thumb;
+              Local<Array> fingerArray = Local<Array>::Cast(fingersArray->Get(0));
+              {
+                Local<Float32Array> fingerBoneFloat32Array = Local<Float32Array>::Cast(fingerArray->Get(0));
+                float *fingerBoneArrayData = (float *)((char *)Local<SharedArrayBuffer>::Cast(fingerBoneFloat32Array->Get(JS_STR("buffer")))->GetContents().Data() + fingerBoneFloat32Array->ByteOffset());
+                setFingerValue(handStaticDataSideFinger.cmc, snapshot, fingerBoneArrayData);
+              }
+              {
+                Local<Float32Array> fingerBoneFloat32Array = Local<Float32Array>::Cast(fingerArray->Get(1));
+                float *fingerBoneArrayData = (float *)((char *)Local<SharedArrayBuffer>::Cast(fingerBoneFloat32Array->Get(JS_STR("buffer")))->GetContents().Data() + fingerBoneFloat32Array->ByteOffset());
+                setFingerValue(handStaticDataSideFinger.mcp, snapshot, fingerBoneArrayData);
+              }
+              {
+                Local<Float32Array> fingerBoneFloat32Array = Local<Float32Array>::Cast(fingerArray->Get(2));
+                float *fingerBoneArrayData = (float *)((char *)Local<SharedArrayBuffer>::Cast(fingerBoneFloat32Array->Get(JS_STR("buffer")))->GetContents().Data() + fingerBoneFloat32Array->ByteOffset());
+                setFingerValue(handStaticDataSideFinger.ip, snapshot, fingerBoneArrayData);
+              }
+              {
+                Local<Float32Array> fingerBoneFloat32Array = Local<Float32Array>::Cast(fingerArray->Get(3));
+                float *fingerBoneArrayData = (float *)((char *)Local<SharedArrayBuffer>::Cast(fingerBoneFloat32Array->Get(JS_STR("buffer")))->GetContents().Data() + fingerBoneFloat32Array->ByteOffset());
+                setFingerValue(handStaticDataSideFinger.tip, snapshot, fingerBoneArrayData);
+              }
+            }
+
+            // index
+            {
+              auto &handStaticDataSideFinger = handStaticDataSide.index;
+              Local<Array> fingerArray = Local<Array>::Cast(fingersArray->Get(1));
+              {
+                Local<Float32Array> fingerBoneFloat32Array = Local<Float32Array>::Cast(fingerArray->Get(0));
+                float *fingerBoneArrayData = (float *)((char *)Local<SharedArrayBuffer>::Cast(fingerBoneFloat32Array->Get(JS_STR("buffer")))->GetContents().Data() + fingerBoneFloat32Array->ByteOffset());
+                setFingerValue(handStaticDataSideFinger.mcp, snapshot, fingerBoneArrayData);
+              }
+              {
+                Local<Float32Array> fingerBoneFloat32Array = Local<Float32Array>::Cast(fingerArray->Get(1));
+                float *fingerBoneArrayData = (float *)((char *)Local<SharedArrayBuffer>::Cast(fingerBoneFloat32Array->Get(JS_STR("buffer")))->GetContents().Data() + fingerBoneFloat32Array->ByteOffset());
+                setFingerValue(handStaticDataSideFinger.pip, snapshot, fingerBoneArrayData);
+              }
+              {
+                Local<Float32Array> fingerBoneFloat32Array = Local<Float32Array>::Cast(fingerArray->Get(2));
+                float *fingerBoneArrayData = (float *)((char *)Local<SharedArrayBuffer>::Cast(fingerBoneFloat32Array->Get(JS_STR("buffer")))->GetContents().Data() + fingerBoneFloat32Array->ByteOffset());
+                setFingerValue(handStaticDataSideFinger.dip, snapshot, fingerBoneArrayData);
+              }
+              {
+                Local<Float32Array> fingerBoneFloat32Array = Local<Float32Array>::Cast(fingerArray->Get(3));
+                float *fingerBoneArrayData = (float *)((char *)Local<SharedArrayBuffer>::Cast(fingerBoneFloat32Array->Get(JS_STR("buffer")))->GetContents().Data() + fingerBoneFloat32Array->ByteOffset());
+                setFingerValue(handStaticDataSideFinger.tip, snapshot, fingerBoneArrayData);
+              }
+            }
+
+            // middle
+            {
+              auto &handStaticDataSideFinger = handStaticDataSide.middle;
+              Local<Array> fingerArray = Local<Array>::Cast(fingersArray->Get(2));
+              {
+                Local<Float32Array> fingerBoneFloat32Array = Local<Float32Array>::Cast(fingerArray->Get(0));
+                float *fingerBoneArrayData = (float *)((char *)Local<SharedArrayBuffer>::Cast(fingerBoneFloat32Array->Get(JS_STR("buffer")))->GetContents().Data() + fingerBoneFloat32Array->ByteOffset());
+                setFingerValue(handStaticDataSideFinger.mcp, snapshot, fingerBoneArrayData);
+              }
+              {
+                Local<Float32Array> fingerBoneFloat32Array = Local<Float32Array>::Cast(fingerArray->Get(1));
+                float *fingerBoneArrayData = (float *)((char *)Local<SharedArrayBuffer>::Cast(fingerBoneFloat32Array->Get(JS_STR("buffer")))->GetContents().Data() + fingerBoneFloat32Array->ByteOffset());
+                setFingerValue(handStaticDataSideFinger.pip, snapshot, fingerBoneArrayData);
+              }
+              {
+                Local<Float32Array> fingerBoneFloat32Array = Local<Float32Array>::Cast(fingerArray->Get(2));
+                float *fingerBoneArrayData = (float *)((char *)Local<SharedArrayBuffer>::Cast(fingerBoneFloat32Array->Get(JS_STR("buffer")))->GetContents().Data() + fingerBoneFloat32Array->ByteOffset());
+                setFingerValue(handStaticDataSideFinger.dip, snapshot, fingerBoneArrayData);
+              }
+              {
+                Local<Float32Array> fingerBoneFloat32Array = Local<Float32Array>::Cast(fingerArray->Get(3));
+                float *fingerBoneArrayData = (float *)((char *)Local<SharedArrayBuffer>::Cast(fingerBoneFloat32Array->Get(JS_STR("buffer")))->GetContents().Data() + fingerBoneFloat32Array->ByteOffset());
+                setFingerValue(handStaticDataSideFinger.tip, snapshot, fingerBoneArrayData);
+              }
+            }
+
+            // ring
+            {
+              auto &handStaticDataSideFinger = handStaticDataSide.ring;
+              Local<Array> fingerArray = Local<Array>::Cast(fingersArray->Get(3));
+              {
+                Local<Float32Array> fingerBoneFloat32Array = Local<Float32Array>::Cast(fingerArray->Get(0));
+                float *fingerBoneArrayData = (float *)((char *)Local<SharedArrayBuffer>::Cast(fingerBoneFloat32Array->Get(JS_STR("buffer")))->GetContents().Data() + fingerBoneFloat32Array->ByteOffset());
+                setFingerValue(handStaticDataSideFinger.mcp, snapshot, fingerBoneArrayData);
+              }
+              {
+                Local<Float32Array> fingerBoneFloat32Array = Local<Float32Array>::Cast(fingerArray->Get(1));
+                float *fingerBoneArrayData = (float *)((char *)Local<SharedArrayBuffer>::Cast(fingerBoneFloat32Array->Get(JS_STR("buffer")))->GetContents().Data() + fingerBoneFloat32Array->ByteOffset());
+                setFingerValue(handStaticDataSideFinger.pip, snapshot, fingerBoneArrayData);
+              }
+              {
+                Local<Float32Array> fingerBoneFloat32Array = Local<Float32Array>::Cast(fingerArray->Get(2));
+                float *fingerBoneArrayData = (float *)((char *)Local<SharedArrayBuffer>::Cast(fingerBoneFloat32Array->Get(JS_STR("buffer")))->GetContents().Data() + fingerBoneFloat32Array->ByteOffset());
+                setFingerValue(handStaticDataSideFinger.dip, snapshot, fingerBoneArrayData);
+              }
+              {
+                Local<Float32Array> fingerBoneFloat32Array = Local<Float32Array>::Cast(fingerArray->Get(3));
+                float *fingerBoneArrayData = (float *)((char *)Local<SharedArrayBuffer>::Cast(fingerBoneFloat32Array->Get(JS_STR("buffer")))->GetContents().Data() + fingerBoneFloat32Array->ByteOffset());
+                setFingerValue(handStaticDataSideFinger.tip, snapshot, fingerBoneArrayData);
+              }
+            }
+
+            // pinky
+            {
+              auto &handStaticDataSideFinger = handStaticDataSide.pinky;
+              Local<Array> fingerArray = Local<Array>::Cast(fingersArray->Get(4));
+              {
+                Local<Float32Array> fingerBoneFloat32Array = Local<Float32Array>::Cast(fingerArray->Get(0));
+                float *fingerBoneArrayData = (float *)((char *)Local<SharedArrayBuffer>::Cast(fingerBoneFloat32Array->Get(JS_STR("buffer")))->GetContents().Data() + fingerBoneFloat32Array->ByteOffset());
+                setFingerValue(handStaticDataSideFinger.mcp, snapshot, fingerBoneArrayData);
+              }
+              {
+                Local<Float32Array> fingerBoneFloat32Array = Local<Float32Array>::Cast(fingerArray->Get(1));
+                float *fingerBoneArrayData = (float *)((char *)Local<SharedArrayBuffer>::Cast(fingerBoneFloat32Array->Get(JS_STR("buffer")))->GetContents().Data() + fingerBoneFloat32Array->ByteOffset());
+                setFingerValue(handStaticDataSideFinger.pip, snapshot, fingerBoneArrayData);
+              }
+              {
+                Local<Float32Array> fingerBoneFloat32Array = Local<Float32Array>::Cast(fingerArray->Get(2));
+                float *fingerBoneArrayData = (float *)((char *)Local<SharedArrayBuffer>::Cast(fingerBoneFloat32Array->Get(JS_STR("buffer")))->GetContents().Data() + fingerBoneFloat32Array->ByteOffset());
+                setFingerValue(handStaticDataSideFinger.dip, snapshot, fingerBoneArrayData);
+              }
+              {
+                Local<Float32Array> fingerBoneFloat32Array = Local<Float32Array>::Cast(fingerArray->Get(3));
+                float *fingerBoneArrayData = (float *)((char *)Local<SharedArrayBuffer>::Cast(fingerBoneFloat32Array->Get(JS_STR("buffer")))->GetContents().Data() + fingerBoneFloat32Array->ByteOffset());
+                setFingerValue(handStaticDataSideFinger.tip, snapshot, fingerBoneArrayData);
+              }
+            }
           }
-          {
-            Local<Float32Array> wristBoneFloat32Array = Local<Float32Array>::Cast(wristArray->Get(2));
-            float *wristBoneArrayData = (float *)((char *)wristBoneFloat32Array->Buffer()->GetContents().Data() + wristBoneFloat32Array->ByteOffset());
-            setFingerValue(handStaticDataSideFinger.center, snapshot, wristBoneArrayData);
-          }
-          {
-            Local<Float32Array> wristBoneFloat32Array = Local<Float32Array>::Cast(wristArray->Get(3));
-            float *wristBoneArrayData = (float *)((char *)wristBoneFloat32Array->Buffer()->GetContents().Data() + wristBoneFloat32Array->ByteOffset());
-            setFingerValue(wristBoneArrayData);
-          }
+
+          // MLHandTrackingKeyPose &keypose = handDataState.keypose;
         }
-
-        Local<Array> fingersArray = Local<Array>::Cast(handObj->Get(JS_STR("fingers")));
-        {
-          // thumb
-          {
-            auto &handStaticDataSideFinger = handStaticDataSide.thumb;
-            Local<Array> fingerArray = Local<Array>::Cast(fingersArray->Get(0));
-            {
-              Local<Float32Array> fingerBoneFloat32Array = Local<Float32Array>::Cast(fingerArray->Get(0));
-              float *fingerBoneArrayData = (float *)((char *)fingerBoneFloat32Array->Buffer()->GetContents().Data() + fingerBoneFloat32Array->ByteOffset());
-              setFingerValue(handStaticDataSideFinger.cmc, snapshot, fingerBoneArrayData);
-            }
-            {
-              Local<Float32Array> fingerBoneFloat32Array = Local<Float32Array>::Cast(fingerArray->Get(1));
-              float *fingerBoneArrayData = (float *)((char *)fingerBoneFloat32Array->Buffer()->GetContents().Data() + fingerBoneFloat32Array->ByteOffset());
-              setFingerValue(handStaticDataSideFinger.mcp, snapshot, fingerBoneArrayData);
-            }
-            {
-              Local<Float32Array> fingerBoneFloat32Array = Local<Float32Array>::Cast(fingerArray->Get(2));
-              float *fingerBoneArrayData = (float *)((char *)fingerBoneFloat32Array->Buffer()->GetContents().Data() + fingerBoneFloat32Array->ByteOffset());
-              setFingerValue(handStaticDataSideFinger.ip, snapshot, fingerBoneArrayData);
-            }
-            {
-              Local<Float32Array> fingerBoneFloat32Array = Local<Float32Array>::Cast(fingerArray->Get(3));
-              float *fingerBoneArrayData = (float *)((char *)fingerBoneFloat32Array->Buffer()->GetContents().Data() + fingerBoneFloat32Array->ByteOffset());
-              setFingerValue(handStaticDataSideFinger.tip, snapshot, fingerBoneArrayData);
-            }
-          }
-
-          // index
-          {
-            auto &handStaticDataSideFinger = handStaticDataSide.index;
-            Local<Array> fingerArray = Local<Array>::Cast(fingersArray->Get(1));
-            {
-              Local<Float32Array> fingerBoneFloat32Array = Local<Float32Array>::Cast(fingerArray->Get(0));
-              float *fingerBoneArrayData = (float *)((char *)fingerBoneFloat32Array->Buffer()->GetContents().Data() + fingerBoneFloat32Array->ByteOffset());
-              setFingerValue(handStaticDataSideFinger.mcp, snapshot, fingerBoneArrayData);
-            }
-            {
-              Local<Float32Array> fingerBoneFloat32Array = Local<Float32Array>::Cast(fingerArray->Get(1));
-              float *fingerBoneArrayData = (float *)((char *)fingerBoneFloat32Array->Buffer()->GetContents().Data() + fingerBoneFloat32Array->ByteOffset());
-              setFingerValue(handStaticDataSideFinger.pip, snapshot, fingerBoneArrayData);
-            }
-            {
-              Local<Float32Array> fingerBoneFloat32Array = Local<Float32Array>::Cast(fingerArray->Get(2));
-              float *fingerBoneArrayData = (float *)((char *)fingerBoneFloat32Array->Buffer()->GetContents().Data() + fingerBoneFloat32Array->ByteOffset());
-              setFingerValue(handStaticDataSideFinger.dip, snapshot, fingerBoneArrayData);
-            }
-            {
-              Local<Float32Array> fingerBoneFloat32Array = Local<Float32Array>::Cast(fingerArray->Get(3));
-              float *fingerBoneArrayData = (float *)((char *)fingerBoneFloat32Array->Buffer()->GetContents().Data() + fingerBoneFloat32Array->ByteOffset());
-              setFingerValue(handStaticDataSideFinger.tip, snapshot, fingerBoneArrayData);
-            }
-          }
-
-          // middle
-          {
-            auto &handStaticDataSideFinger = handStaticDataSide.middle;
-            Local<Array> fingerArray = Local<Array>::Cast(fingersArray->Get(2));
-            {
-              Local<Float32Array> fingerBoneFloat32Array = Local<Float32Array>::Cast(fingerArray->Get(0));
-              float *fingerBoneArrayData = (float *)((char *)fingerBoneFloat32Array->Buffer()->GetContents().Data() + fingerBoneFloat32Array->ByteOffset());
-              setFingerValue(handStaticDataSideFinger.mcp, snapshot, fingerBoneArrayData);
-            }
-            {
-              Local<Float32Array> fingerBoneFloat32Array = Local<Float32Array>::Cast(fingerArray->Get(1));
-              float *fingerBoneArrayData = (float *)((char *)fingerBoneFloat32Array->Buffer()->GetContents().Data() + fingerBoneFloat32Array->ByteOffset());
-              setFingerValue(handStaticDataSideFinger.pip, snapshot, fingerBoneArrayData);
-            }
-            {
-              Local<Float32Array> fingerBoneFloat32Array = Local<Float32Array>::Cast(fingerArray->Get(2));
-              float *fingerBoneArrayData = (float *)((char *)fingerBoneFloat32Array->Buffer()->GetContents().Data() + fingerBoneFloat32Array->ByteOffset());
-              setFingerValue(handStaticDataSideFinger.dip, snapshot, fingerBoneArrayData);
-            }
-            {
-              Local<Float32Array> fingerBoneFloat32Array = Local<Float32Array>::Cast(fingerArray->Get(3));
-              float *fingerBoneArrayData = (float *)((char *)fingerBoneFloat32Array->Buffer()->GetContents().Data() + fingerBoneFloat32Array->ByteOffset());
-              setFingerValue(handStaticDataSideFinger.tip, snapshot, fingerBoneArrayData);
-            }
-          }
-
-          // ring
-          {
-            auto &handStaticDataSideFinger = handStaticDataSide.pinky;
-            Local<Array> fingerArray = Local<Array>::Cast(fingersArray->Get(3));
-            {
-              Local<Float32Array> fingerBoneFloat32Array = Local<Float32Array>::Cast(fingerArray->Get(0));
-              float *fingerBoneArrayData = (float *)((char *)fingerBoneFloat32Array->Buffer()->GetContents().Data() + fingerBoneFloat32Array->ByteOffset());
-              setFingerValue(handStaticDataSideFinger.mcp, snapshot, fingerBoneArrayData);
-            }
-            {
-              Local<Float32Array> fingerBoneFloat32Array = Local<Float32Array>::Cast(fingerArray->Get(1));
-              float *fingerBoneArrayData = (float *)((char *)fingerBoneFloat32Array->Buffer()->GetContents().Data() + fingerBoneFloat32Array->ByteOffset());
-              setFingerValue(handStaticDataSideFinger.pip, snapshot, fingerBoneArrayData);
-            }
-            {
-              Local<Float32Array> fingerBoneFloat32Array = Local<Float32Array>::Cast(fingerArray->Get(2));
-              float *fingerBoneArrayData = (float *)((char *)fingerBoneFloat32Array->Buffer()->GetContents().Data() + fingerBoneFloat32Array->ByteOffset());
-              setFingerValue(handStaticDataSideFinger.dip, snapshot, fingerBoneArrayData);
-            }
-            {
-              Local<Float32Array> fingerBoneFloat32Array = Local<Float32Array>::Cast(fingerArray->Get(3));
-              float *fingerBoneArrayData = (float *)((char *)fingerBoneFloat32Array->Buffer()->GetContents().Data() + fingerBoneFloat32Array->ByteOffset());
-              setFingerValue(handStaticDataSideFinger.tip, snapshot, fingerBoneArrayData);
-            }
-          }
-
-          // pinky
-          {
-            auto &handStaticDataSideFinger = handStaticDataSide.pinky;
-            Local<Array> fingerArray = Local<Array>::Cast(fingersArray->Get(4));
-            {
-              Local<Float32Array> fingerBoneFloat32Array = Local<Float32Array>::Cast(fingerArray->Get(0));
-              float *fingerBoneArrayData = (float *)((char *)fingerBoneFloat32Array->Buffer()->GetContents().Data() + fingerBoneFloat32Array->ByteOffset());
-              setFingerValue(handStaticDataSideFinger.mcp, snapshot, fingerBoneArrayData);
-            }
-            {
-              Local<Float32Array> fingerBoneFloat32Array = Local<Float32Array>::Cast(fingerArray->Get(1));
-              float *fingerBoneArrayData = (float *)((char *)fingerBoneFloat32Array->Buffer()->GetContents().Data() + fingerBoneFloat32Array->ByteOffset());
-              setFingerValue(handStaticDataSideFinger.pip, snapshot, fingerBoneArrayData);
-            }
-            {
-              Local<Float32Array> fingerBoneFloat32Array = Local<Float32Array>::Cast(fingerArray->Get(2));
-              float *fingerBoneArrayData = (float *)((char *)fingerBoneFloat32Array->Buffer()->GetContents().Data() + fingerBoneFloat32Array->ByteOffset());
-              setFingerValue(handStaticDataSideFinger.dip, snapshot, fingerBoneArrayData);
-            }
-            {
-              Local<Float32Array> fingerBoneFloat32Array = Local<Float32Array>::Cast(fingerArray->Get(3));
-              float *fingerBoneArrayData = (float *)((char *)fingerBoneFloat32Array->Buffer()->GetContents().Data() + fingerBoneFloat32Array->ByteOffset());
-              setFingerValue(handStaticDataSideFinger.tip, snapshot, fingerBoneArrayData);
-            }
-          }
-        }
-
-        // MLHandTrackingKeyPose &keypose = handDataState.keypose;
       }
-
+      
       if (MLPerceptionReleaseSnapshot(snapshot) != MLResult_Ok) {
         ML_LOG(Error, "%s: ML failed to release hand snapshot!", application_name);
       }
@@ -1423,15 +1498,7 @@ NAN_METHOD(MLEyeTracker::WaitGetPoses) {
 
   MLEyeTracker *mlEyeTracker = ObjectWrap::Unwrap<MLEyeTracker>(info.This());
   Local<Object> eyeObj = Local<Object>::Cast(info[0]);
-  /* Local<Float32Array> float32Array = Local<Float32Array>::Cast(info[0]);
-  Local<ArrayBuffer> arrayBuffer = float32Array->Buffer();
-  float *floatData = (float *)((char *)arrayBuffer->GetContents().Data() + float32Array->ByteOffset()); */
-  // uint32_t *uint32Data = (uint32_t *)floatData;
-
-  MLSnapshot *snapshot;
-  if (MLPerceptionGetSnapshot(&snapshot) != MLResult_Ok) {
-    ML_LOG(Error, "%s: ML failed to get eye snapshot!", application_name);
-  }
+  MLContext *mlContext = application_context.mlContext;
 
   MLEyeTrackingStaticData eyeStaticData;
   if (MLEyeTrackingGetStaticData(mlEyeTracker->tracker, &eyeStaticData) != MLResult_Ok) {
@@ -1442,40 +1509,36 @@ NAN_METHOD(MLEyeTracker::WaitGetPoses) {
   if (MLEyeTrackingGetState(mlEyeTracker->tracker, &eyeState) != MLResult_Ok) {
     ML_LOG(Error, "%s: Eye get state failed!", application_name);
   }
+  
+  MLSnapshot *snapshot;
+  if (MLPerceptionGetSnapshot(&snapshot) != MLResult_Ok) {
+    ML_LOG(Error, "%s: ML failed to get eye snapshot!", application_name);
+  }
 
   MLTransform transform;
-  if (MLSnapshotGetTransform(snapshot, &eyeStaticData.fixation, &transform) == MLResult_Ok) {
-    // nothing
-  } else {
+  if (MLSnapshotGetTransform(snapshot, &eyeStaticData.fixation, &transform) != MLResult_Ok) {
     ML_LOG(Error, "%s: ML failed to get eye fixation transform!", application_name);
   }
 
+  const MLVec3f &position = mlContext->OffsetFloor(transform.position);
   Local<Float32Array> positionArray = Local<Float32Array>::Cast(eyeObj->Get(JS_STR("position")));
-  float *positionArrayData = (float *)((char *)positionArray->Buffer()->GetContents().Data() + positionArray->ByteOffset());
-  memcpy(positionArrayData, transform.position.values, sizeof(transform.position.values));
-  /* int index = 0;
-  memcpy(floatData + index, transform.position.values, sizeof(mlEyeTracker->transform.position.values));
-  index += sizeof(mlEyeTracker->transform.position.values)/sizeof(mlEyeTracker->transform.position.values[0]); */
+  float *positionArrayData = (float *)((char *)Local<SharedArrayBuffer>::Cast(positionArray->Get(JS_STR("buffer")))->GetContents().Data() + positionArray->ByteOffset());
+  memcpy(positionArrayData, position.values, sizeof(position.values));
 
   Local<Float32Array> orientationArray = Local<Float32Array>::Cast(eyeObj->Get(JS_STR("orientation")));
-  float *orientationArrayData = (float *)((char *)orientationArray->Buffer()->GetContents().Data() + orientationArray->ByteOffset());
+  float *orientationArrayData = (float *)((char *)Local<SharedArrayBuffer>::Cast(orientationArray->Get(JS_STR("buffer")))->GetContents().Data() + orientationArray->ByteOffset());
   memcpy(orientationArrayData, transform.rotation.values, sizeof(transform.rotation.values));
 
-  /* memcpy(floatData + index, mlEyeTracker->transform.rotation.values, sizeof(mlEyeTracker->transform.rotation.values));
-  index += sizeof(mlEyeTracker->transform.rotation.values)/sizeof(mlEyeTracker->transform.rotation.values[0]); */
-
   Local<Float32Array> axesArray = Local<Float32Array>::Cast(eyeObj->Get(JS_STR("axes")));
-  float *axesArrayData = (float *)((char *)axesArray->Buffer()->GetContents().Data() + axesArray->ByteOffset());
+  float *axesArrayData = (float *)((char *)Local<SharedArrayBuffer>::Cast(axesArray->Get(JS_STR("buffer")))->GetContents().Data() + axesArray->ByteOffset());
   axesArrayData[0] = eyeState.left_blink ? -1 : 1;
   axesArrayData[1] = eyeState.right_blink ? -1 : 1;
-  /* floatData[index] = eyeState.left_blink ? -1 : 1;
-  index++;
-  floatData[index] = eyeState.right_blink ? -1 : 1;
-  index++; */
 
   if (MLPerceptionReleaseSnapshot(snapshot) != MLResult_Ok) {
     ML_LOG(Error, "%s: ML failed to release eye snapshot!", application_name);
   }
+  
+  ML_LOG(Error, "MLEyeTracker::WaitGetPoses 9");
 }
 
 /* void MLEyeTracker::Update(MLSnapshot *snapshot) {
@@ -2223,12 +2286,21 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
   Nan::SetMethod(proto, "Present", Present);
   Nan::SetMethod(proto, "Exit", Exit);
-  // Nan::SetMethod(proto, "WaitGetPoses", WaitGetPoses);
   Nan::SetMethod(proto, "GetSize", GetSize);
   // Nan::SetMethod(proto, "SetContentTexture", SetContentTexture);
   Nan::SetMethod(proto, "WaitGetPoses", WaitGetPoses);
   // Nan::SetMethod(proto, "PrepareFrame", PrepareFrame);
   Nan::SetMethod(proto, "SubmitFrame", SubmitFrame);
+  Nan::SetMethod(proto, "requestHitTest", RequestHitTest);
+  Nan::SetMethod(proto, "requestMeshing", RequestMeshing);
+  Nan::SetMethod(proto, "requestPlaneTracking", RequestPlaneTracking);
+  Nan::SetMethod(proto, "requestHandTracking", RequestHandTracking);
+  Nan::SetMethod(proto, "requestEyeTracking", RequestEyeTracking);
+  Nan::SetMethod(proto, "requestImageTracking", RequestImageTracking);
+  // Nan::SetMethod(proto, "RequestDepthPopulation", RequestDepthPopulation);
+  // Nan::SetMethod(proto, "RequestCamera", RequestCamera);
+  // Nan::SetMethod(proto, "CancelCamera", CancelCamera);
+  Nan::SetMethod(proto, "update", Update);
 
   Local<Function> ctorFn = ctor->GetFunction();
 
@@ -2237,16 +2309,6 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   Nan::SetMethod(ctorFn, "SetEventHandler", SetEventHandler);
   Nan::SetMethod(ctorFn, "IsPresent", IsPresent);
   Nan::SetMethod(ctorFn, "IsSimulated", IsSimulated);
-  Nan::SetMethod(ctorFn, "RequestHitTest", RequestHitTest);
-  Nan::SetMethod(ctorFn, "RequestMeshing", RequestMeshing);
-  Nan::SetMethod(ctorFn, "RequestPlaneTracking", RequestPlaneTracking);
-  Nan::SetMethod(ctorFn, "RequestHandTracking", RequestHandTracking);
-  Nan::SetMethod(ctorFn, "RequestEyeTracking", RequestEyeTracking);
-  Nan::SetMethod(ctorFn, "RequestImageTracking", RequestImageTracking);
-  // Nan::SetMethod(ctorFn, "RequestDepthPopulation", RequestDepthPopulation);
-  // Nan::SetMethod(ctorFn, "RequestCamera", RequestCamera);
-  // Nan::SetMethod(ctorFn, "CancelCamera", CancelCamera);
-  Nan::SetMethod(ctorFn, "Update", Update);
   // Nan::SetMethod(ctorFn, "Poll", Poll);
 
   return scope.Escape(ctorFn);
@@ -2863,60 +2925,11 @@ NAN_METHOD(MLContext::Present) {
     }
   }
 
-  /* if (MLGestureTrackingCreate(&mlContext->gestureTracker) != MLResult_Ok) {
-    ML_LOG(Error, "%s: Failed to create gesture tracker.", application_name);
-    info.GetReturnValue().Set(Nan::Null());
-    return;
-  } */
-
-  /* if (MLHandTrackingCreate(&handTracker) != MLResult_Ok) {
-    ML_LOG(Error, "%s: Failed to create hand tracker.", application_name);
-    info.GetReturnValue().Set(Nan::Null());
-    return;
-  }
-
-  MLHandTrackingConfiguration handTrackingConfig;
-  handTrackingConfig.handtracking_pipeline_enabled = true;
-  handTrackingConfig.keypoints_filter_level = MLKeypointFilterLevel_1;
-  handTrackingConfig.pose_filter_level = MLPoseFilterLevel_1;
-  for (int i = 0; i < MLHandTrackingKeyPose_Count; i++) {
-    handTrackingConfig.keypose_config[i] = true;
-  }
-  handTrackingConfig.keypose_config[MLHandTrackingKeyPose_Ok] = false;
-  handTrackingConfig.keypose_config[MLHandTrackingKeyPose_C] = false;
-  handTrackingConfig.keypose_config[MLHandTrackingKeyPose_L] = false;
-  if (MLHandTrackingSetConfiguration(handTracker, &handTrackingConfig) != MLResult_Ok) {
-    ML_LOG(Error, "%s: Failed to set hand tracker config.", application_name);
-    info.GetReturnValue().Set(Nan::Null());
-    return;
-  } */
-  
-  /* {
-    MLResult result = MLRaycastCreate(&raycastTracker);
-    if (result != MLResult_Ok) {
-      ML_LOG(Error, "%s: failed to create raycast handle %x", application_name, result);
-      Nan::ThrowError("MLContext::Present failed to create raycast handle");
-      return;
-    }
-  } */
-
   if (MLPlanesCreate(&floorTracker) != MLResult_Ok) {
     ML_LOG(Error, "%s: failed to create floor handle", application_name);
     info.GetReturnValue().Set(Nan::Null());
     return;
   }
-
-  /* if (MLPlanesCreate(&planesTracker) != MLResult_Ok) {
-    ML_LOG(Error, "%s: failed to create planes handle", application_name);
-    info.GetReturnValue().Set(Nan::Null());
-    return;
-  } */
-
-  /* if (MLEyeTrackingCreate(&eyeTracker) != MLResult_Ok) {
-    ML_LOG(Error, "%s: failed to create eye handle", application_name);
-    info.GetReturnValue().Set(Nan::Null());
-    return;
-  } */
 
   mlContext->TickFloor();
 
@@ -2966,39 +2979,11 @@ NAN_METHOD(MLContext::Exit) {
     return;
   }
 
-  /* if (MLHandTrackingDestroy(handTracker) != MLResult_Ok) {
-    ML_LOG(Error, "%s: Failed to destroy hand tracker.", application_name);
-    info.GetReturnValue().Set(Nan::Null());
-    return;
-  } */
-  
-  /* if (MLRaycastDestroy(raycastTracker) != MLResult_Ok) {
-    ML_LOG(Error, "%s: failed to destroy raycast handle", application_name);
-    return;
-  } */
-
   if (MLPlanesDestroy(floorTracker) != MLResult_Ok) {
     ML_LOG(Error, "%s: failed to destroy floor handle", application_name);
     info.GetReturnValue().Set(Nan::Null());
     return;
   }
-
-  /* if (MLMeshingDestroyClient(&meshTracker) != MLResult_Ok) {
-    ML_LOG(Error, "%s: failed to destroy mesh handle", application_name);
-    return;
-  }
-
-  if (MLPlanesDestroy(planesTracker) != MLResult_Ok) {
-    ML_LOG(Error, "%s: failed to destroy planes handle", application_name);
-    info.GetReturnValue().Set(Nan::Null());
-    return;
-  }
-
-  if (MLEyeTrackingDestroy(eyeTracker) != MLResult_Ok) {
-    ML_LOG(Error, "%s: failed to create eye handle", application_name);
-    info.GetReturnValue().Set(Nan::Null());
-    return;
-  } */
 
   if (MLPerceptionShutdown() != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to stop perception.", application_name);
@@ -3197,7 +3182,6 @@ NAN_METHOD(MLContext::WaitGetPoses) {
     Local<Float32Array> transformFloat32Array = Local<Float32Array>::Cast(info[0]);
     Local<Float32Array> projectionFloat32Array = Local<Float32Array>::Cast(info[1]);
     Local<Float32Array> controllersFloat32Array = Local<Float32Array>::Cast(info[2]);
-    Local<Function> cbFn = Local<Function>::Cast(info[3]);
 
     float *transformArray = (float *)((char *)transformFloat32Array->Buffer()->GetContents().Data() + transformFloat32Array->ByteOffset());
     float *projectionArray = (float *)((char *)projectionFloat32Array->Buffer()->GetContents().Data() + projectionFloat32Array->ByteOffset());
@@ -3260,7 +3244,7 @@ NAN_METHOD(MLContext::WaitGetPoses) {
         // std::unique_lock<std::mutex> lock(mlContext->positionMutex);
 
         const MLTransform &leftCameraTransform = mlContext->virtual_camera_array.virtual_cameras[0].transform;
-        mlContext->position = OffsetFloor(leftCameraTransform.position);
+        mlContext->position = leftCameraTransform.position;
         mlContext->rotation = leftCameraTransform.rotation;
       }
       
@@ -3432,7 +3416,7 @@ NAN_METHOD(MLContext::SubmitFrame) {
       ML_LOG(Error, "MLGraphicsEndFrame complained: %d", result);
     }
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    // glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     /* if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
       glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
@@ -3497,13 +3481,20 @@ NAN_METHOD(MLContext::RequestMeshing) {
 }
 
 NAN_METHOD(MLContext::RequestPlaneTracking) {
-  MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(Local<Object>::Cast(info.This()));
-  if (mlContext->mlPlaneTrackerConstructor.IsEmpty()) {
-    mlContext->mlPlaneTrackerConstructor.Reset(MLPlaneTracker::Initialize(Isolate::GetCurrent()));
+  if (info[0]->IsNumber()) {
+    MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(Local<Object>::Cast(info.This()));
+    if (mlContext->mlPlaneTrackerConstructor.IsEmpty()) {
+      mlContext->mlPlaneTrackerConstructor.Reset(MLPlaneTracker::Initialize(Isolate::GetCurrent()));
+    }
+    Local<Function> mlPlaneTrackerCons = Nan::New(mlContext->mlPlaneTrackerConstructor);
+    Local<Value> argv[] = {
+      info[0],
+    };
+    Local<Object> mlPlaneTrackerObj = mlPlaneTrackerCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(argv)/sizeof(argv[0]), argv).ToLocalChecked();
+    info.GetReturnValue().Set(mlPlaneTrackerObj);
+  } else {
+    Nan::ThrowError("MLContext::RequestPlaneTracking: invalid arguments");
   }
-  Local<Function> mlPlaneTrackerCons = Nan::New(mlContext->mlPlaneTrackerConstructor);
-  Local<Object> mlPlaneTrackerObj = mlPlaneTrackerCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), 0, nullptr).ToLocalChecked();
-  info.GetReturnValue().Set(mlPlaneTrackerObj);
 }
 
 NAN_METHOD(MLContext::RequestHitTest) {
@@ -3573,6 +3564,7 @@ NAN_METHOD(MLContext::RequestEyeTracking) {
   if (mlContext->mlEyeTrackerConstructor.IsEmpty()) {
     mlContext->mlEyeTrackerConstructor.Reset(MLEyeTracker::Initialize(Isolate::GetCurrent()));
   }
+  
   Local<Function> mlEyeTrackerCons = Nan::New(mlContext->mlEyeTrackerConstructor);
   /* Local<Value> argv[] = {
     info[0],
@@ -3679,7 +3671,7 @@ NAN_METHOD(MLContext::CancelCamera) {
 } */
 
 NAN_METHOD(MLContext::Update) {
-  MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(Local<Object>::Cast(info[0]));
+  MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
 
   MLSnapshot *snapshot = nullptr;
 
@@ -3744,8 +3736,8 @@ void MLContext::TickFloor() {
       // std::unique_lock<std::mutex> lock(mlContext->positionMutex);
 
       floorRequest.bounds_center = this->position;
-      // floorRequest.bounds_rotation = mlContext->rotation;
-      floorRequest.bounds_rotation = {0, 0, 0, 1};
+      floorRequest.bounds_rotation = this->rotation;
+      // floorRequest.bounds_rotation = {0, 0, 0, 1};
     }
     floorRequest.bounds_extents.x = planeRange;
     floorRequest.bounds_extents.y = planeRange;
