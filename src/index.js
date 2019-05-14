@@ -1030,27 +1030,6 @@ const _startTopRenderLoop = () => {
           topVrPresentState.handTracker.waitGetPoses(xrState.hands);
         }
         if (topVrPresentState.eyeTracker) {
-          /* const blink = (Date.now() % 2000) < 200;
-          const blinkAxis = blink ? -1 : 1;
-
-          const eye = xrState.eye;
-          localMatrix
-            .fromArray(GlobalContext.xrState.leftViewMatrix)
-            .getInverse(localMatrix)
-            .decompose(localVector, localQuaternion, localVector2);
-          localVector
-            .add(
-              localVector2.set(0, 0, -1)
-                .applyQuaternion(localQuaternion)
-            )
-            .toArray(eye.position);
-          localQuaternion.toArray(eye.orientation);
-          // localVector.set(0, 0, -1).toArray(eye.position);
-          // localQuaternion.set(0, 0, 0, 1).toArray(eye.orientation);
-
-          eye.axes[0] = blinkAxis;
-          eye.axes[1] = blinkAxis; */
-
           topVrPresentState.eyeTracker.waitGetPoses(xrState.eye);
         }
       };
