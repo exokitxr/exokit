@@ -10,7 +10,7 @@
     if('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/hands_ml_sw.js')
         .then(function() {
-              console.log('Service Worker Registered');
+          console.log('Service Worker Registered');
         });
     }
    </script>
@@ -36,7 +36,6 @@
 
       camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
       // camera.position.set(0, 1, 0);
-      camera.lookAt(new THREE.Vector3());
       scene.add(camera);
 
       const ambientLight = new THREE.AmbientLight(0x808080);
@@ -124,7 +123,7 @@
         geometry.setIndex(new THREE.BufferAttribute(indices, 1));
         return geometry;
       })();
-      const boneGeometry = new THREE.BoxBufferGeometry(0.005, 0.005, 0.005);
+      const boneGeometry = new THREE.BoxBufferGeometry(0.01, 0.01, 0.01);
       const handMaterial =  new THREE.MeshPhongMaterial({
         color: 0xFF0000,
       });
@@ -140,93 +139,106 @@
         geometry.setIndex(indexAttribute);
 
         const mesh = new THREE.Mesh(geometry, handMaterial);
-        mesh.update = () => {
-          const handInputSources = display.session.getInputSources().filter(inputSource => inputSource.targetRayMode === 'hand');
-          const inputSource = handInputSources[i];
+        mesh.update = frame => {
+          if (display && display.session && frame) {
+            const handInputSources = display.session.getInputSources().filter(inputSource => inputSource.targetRayMode === 'hand');
+            if (handInputSources.length > 0) {
+              const inputSource = handInputSources[i];
 
-          let positionIndex = 0;
-          let indexIndex = 0;
+              if (inputSource.connected) {
+                let positionIndex = 0;
+                let indexIndex = 0;
 
-          const _shiftIndex = array => {
-            for (let l = 0; l < array.length; l++) {
-              array[l] += positionIndex / 3;
-            }
-          };
+                const _shiftIndex = array => {
+                  for (let l = 0; l < array.length; l++) {
+                    array[l] += positionIndex / 3;
+                  }
+                };
 
-          const {wrist, fingers, offsetMatrix} = inputSource;
-          const allFingers = [wrist].concat(fingers);
-          for (let j = 0; j < allFingers.length; j++) {
-            const bones = allFingers[j];
-            for (let k = 0; k < bones.length; k++) {
-              const positionFloat32Array = bones[k];
-              if (positionFloat32Array && isFinite(positionFloat32Array[0])) {
-                // console.log('position', j, k, positionFloat32Array.join(','));
-                // const position = localVector.fromArray(positionFloat32Array);
-                const newGeometry = boneGeometry.clone()
-                  .applyMatrix(
-                    localMatrix.makeTranslation(positionFloat32Array[0], positionFloat32Array[1], positionFloat32Array[2])
-                  );
+                const pose = frame.getInputPose(inputSource);
+                const {wrist, fingers} = inputSource;
+                const allFingers = [wrist].concat(fingers);
+                for (let j = 0; j < allFingers.length; j++) {
+                  const bones = allFingers[j];
+                  for (let k = 0; k < bones.length; k++) {
+                    const positionFloat32Array = bones[k];
+                    if (positionFloat32Array && isFinite(positionFloat32Array[0])) {
+                      const newGeometry = boneGeometry.clone()
+                        .applyMatrix(
+                          localMatrix.makeTranslation(positionFloat32Array[0], positionFloat32Array[1], positionFloat32Array[2])
+                        );
 
-                _shiftIndex(newGeometry.index.array);
+                      _shiftIndex(newGeometry.index.array);
 
-                positions.set(newGeometry.attributes.position.array, positionIndex);
-                positionIndex += newGeometry.attributes.position.array.length;
+                      positions.set(newGeometry.attributes.position.array, positionIndex);
+                      positionIndex += newGeometry.attributes.position.array.length;
 
-                indices.set(newGeometry.index.array, indexIndex);
-                indexIndex += newGeometry.index.array.length;
+                      indices.set(newGeometry.index.array, indexIndex);
+                      indexIndex += newGeometry.index.array.length;
+                    }
+                  }
+                }
+
+                /* if (pointer) {
+                  const newGeometry = pointerGeometry.clone()
+                    .applyMatrix(
+                      localMatrix
+                        .compose(
+                          localVector.fromArray(pointer.position),
+                          localQuaternion.fromArray(pointer.rotation),
+                          localVector2.set(1, 1, 1),
+                        )
+                    );
+
+                  _shiftIndex(newGeometry.index.array);
+
+                  positions.set(newGeometry.attributes.position.array, positionIndex);
+                  positionIndex += newGeometry.attributes.position.array.length;
+
+                  indices.set(newGeometry.index.array, indexIndex);
+                  indexIndex += newGeometry.index.array.length;
+                }
+
+                if (grip) {
+                  const newGeometry = pointerGeometry.clone()
+                    .applyMatrix(
+                      localMatrix
+                        .compose(
+                          localVector.fromArray(grip.position),
+                          localQuaternion.fromArray(grip.rotation),
+                          localVector2.set(1, 1, 1),
+                        )
+                    );
+
+                  _shiftIndex(newGeometry.index.array);
+
+                  positions.set(newGeometry.attributes.position.array, positionIndex);
+                  positionIndex += newGeometry.attributes.position.array.length;
+
+                  indices.set(newGeometry.index.array, indexIndex);
+                  indexIndex += newGeometry.index.array.length;
+                } */
+
+                positionAttribute.needsUpdate = true;
+                indexAttribute.needsUpdate = true;
+                geometry.setDrawRange(0, indexIndex);
+
+                mesh.matrix.fromArray(pose.targetRay.transformMatrix);
+                mesh.matrix.decompose(mesh.position, mesh.quaternion, mesh.scale);
+                mesh.updateMatrixWorld(true);
+                
+                mesh.visible = true;
+              } else {
+                mesh.visible = false;
               }
+            } else {
+              mesh.visible = false;
             }
+          } else {
+            mesh.visible = false;
           }
-
-          /* if (pointer) {
-            const newGeometry = pointerGeometry.clone()
-              .applyMatrix(
-                localMatrix
-                  .compose(
-                    localVector.fromArray(pointer.position),
-                    localQuaternion.fromArray(pointer.rotation),
-                    localVector2.set(1, 1, 1),
-                  )
-              );
-
-            _shiftIndex(newGeometry.index.array);
-
-            positions.set(newGeometry.attributes.position.array, positionIndex);
-            positionIndex += newGeometry.attributes.position.array.length;
-
-            indices.set(newGeometry.index.array, indexIndex);
-            indexIndex += newGeometry.index.array.length;
-          }
-
-          if (grip) {
-            const newGeometry = pointerGeometry.clone()
-              .applyMatrix(
-                localMatrix
-                  .compose(
-                    localVector.fromArray(grip.position),
-                    localQuaternion.fromArray(grip.rotation),
-                    localVector2.set(1, 1, 1),
-                  )
-              );
-
-            _shiftIndex(newGeometry.index.array);
-
-            positions.set(newGeometry.attributes.position.array, positionIndex);
-            positionIndex += newGeometry.attributes.position.array.length;
-
-            indices.set(newGeometry.index.array, indexIndex);
-            indexIndex += newGeometry.index.array.length;
-          } */
-
-          positionAttribute.needsUpdate = true;
-          indexAttribute.needsUpdate = true;
-          geometry.setDrawRange(0, indexIndex);
-          
-          mesh.matrix.fromArray(offsetMatrix);
-          mesh.matrix.decompose(mesh.position, mesh.quaternion, mesh.scale);
-          // console.log('transform matrix', offsetMatrix, mesh.position.toArray());
-          mesh.updateMatrixWorld();
         };
+        mesh.visible = false;
         mesh.frustumCulled = false;
         return mesh;
       };
@@ -237,7 +249,7 @@
       for (let i = 0; i < handMeshes.length; i++) {
         scene.add(handMeshes[i]);
       }
-      const _onHands = hands => {
+      /* const _onHands = hands => {
         handMesh.update(hands);
 
         for (let i = 0; i < hands.length; i++) {
@@ -261,7 +273,7 @@
             }
           }
         }
-      };
+      }; */
       const objectGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.001);
       const objectMaterial = new THREE.MeshPhongMaterial({
         color: 0x0000FF,
@@ -328,7 +340,7 @@
 
     function animate(time, frame) {
       for (let i = 0; i < handMeshes.length; i++) {
-        handMeshes[i].update();
+        handMeshes[i].update(frame);
       }
 
       renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
@@ -348,7 +360,6 @@
       });
       display.session = session;
 
-      // console.log('request first frame');
       session.requestAnimationFrame((timestamp, frame) => {
         renderer.vr.setSession(session, {
           frameOfReferenceType: 'stage',
