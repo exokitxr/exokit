@@ -57,8 +57,21 @@ class XRDevice {
   supportsSession() {
     return Promise.resolve(null);
   }
-  async requestSession({exclusive = false, outputContext = null} = {}) {
+  async requestSession({exclusive = false, outputContext = null, extensions = {}} = {}) {
     if (!this.session) {
+      if (extensions.meshing) {
+        GlobalContext.xrState.meshing[0] = 1;
+      }
+      if (extensions.planeTracking) {
+        GlobalContext.xrState.planeTracking[0] = 1;
+      }
+      if (extensions.handTracking) {
+        GlobalContext.xrState.handTracking[0] = 1;
+      }
+      if (extensions.eyeTracking) {
+        GlobalContext.xrState.eyeTracking[0] = 1;
+      }
+      
       const session = new XRSession({
         device: this,
         exclusive,
