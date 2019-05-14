@@ -995,17 +995,46 @@ const getHMDType = () => {
 
 const createVRDisplay = () => new FakeVRDisplay();
 
+let globalGamepads = null;
+const _makeGlobalGamepads = () => ({
+  main: [
+    new Gamepad('gamepad', 'left', GlobalContext.xrState.gamepads[0], new GamepadHapticActuator(0)),
+    new Gamepad('gamepad', 'right', GlobalContext.xrState.gamepads[1], new GamepadHapticActuator(1)),
+  ],
+  tracker: (() => {
+    const result = Array(maxNumTrackers);
+    for (let i = 0; i < result.length; i++) {
+      result[i] = new Gamepad('tracker', '', GlobalContext.xrState.gamepads[2+i], null);
+    }
+    return result;
+  })(),
+  hand: (() => {
+    const result = [
+      new Gamepad('hand', 'left', GlobalContext.xrState.hands[0], null),
+      new Gamepad('hand', 'right', GlobalContext.xrState.hands[1], null),
+    ];
+    for (let i = 0; i < result.length; i++) {
+      const handGamepad = result[i];
+      const hand = handGamepad._xrGamepad;
+
+      handGamepad.wrist = hand.wrist;
+      handGamepad.fingers = hand.fingers;
+    }
+    return result;
+  })(),
+  eye: new Gamepad('eye', '', GlobalContext.xrState.eye, null),
+});
+
 const controllerIDs = {
   fake: 'OpenVR Gamepad',
   openvr: 'OpenVR Gamepad',
-  oculusMobile: 'Oculus Go',
-  openvrTracker: 'Tracker',
+  // oculusMobile: 'Oculus Go',
+  // openvrTracker: 'Tracker',
   oculusGoLeft: 'Oculus Touch (Left)',
   oculusGoRight: 'Oculus Touch (Right)',
   oculusQuestLeft: 'Oculus Touch (Left)',
   oculusQuestRight: 'Oculus Touch (Right)',
 };
-
 function getControllerID(hmdType, hand) {
   return controllerIDs[hmdType] || controllerIDs[hmdType + hand.charAt(0).toUpperCase() + hand.slice(1)];
 }
@@ -1013,29 +1042,32 @@ function getControllerID(hmdType, hand) {
 let gamepads = null;
 function getGamepads(window) {
   if (GlobalContext.xrState.isPresenting[0]) {
-    if (!gamepads) {
-      const hmdType = getHMDType();
-
-      let numGamepads = 2;
-      if (hmdType === 'openvr') {
-        numGamepads += maxNumTrackers;
-      }
-      gamepads = Array(numGamepads);
-      for (let i = 0; i < gamepads.length; i++) {
-        let id, hand;
-        if (i === 0) {
-          hand = 'left';
-          id = getControllerID(hmdType, hand);
-        } else if (i === 1) {
-          hand = 'right';
-          id = getControllerID(hmdType, hand);
-        } else {
-          hand = null;
-          id = controllerIDs['openvrTracker'];
-        }
-        gamepads[i] = new Gamepad(id, hand, GlobalContext.xrState.gamepads[i], new GamepadHapticActuator(i));
-      }
+    const hmdType = getHMDType();
+    if (!globalGamepads) {
+      globalGamepads = _makeGlobalGamepads();
     }
+    
+    // XXX map oculusGo/oculusQuest
+    // XXX can do these decorations at XR entry time
+    globalGamepads.main[0].id = getControllerID(hmdType, 'left');
+    globalGamepads.main[1].id = getControllerID(hmdType, 'right');
+
+    const gamepads = globalGamepads.main.slice();
+
+    if (hmdType === 'openvr') {
+      for (let i = 0; i < globalGamepads.tracker.length; i++) {
+        globalGamepads.tracker[i].id = getControllerID('openvr', 'tracker');
+      }
+      gamepads.push.apply(gamepads, trackerGamepads);
+    }
+    
+    if (GlobalContext.xrState.handTracking[0]) {
+      gamepads.push.apply(gamepads, globalGamepads.hand);
+    }
+    if (GlobalContext.xrState.eyeTracking[0]) {
+      gamepads.push(globalGamepads.eye);
+    }
+    
     return gamepads;
   } else {
     return [];
