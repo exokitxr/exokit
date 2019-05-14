@@ -637,7 +637,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       }
       return window[symbols.mrDisplaysSymbol].fakeVrDisplay;
     },
-    getGamepads: getGamepads.bind(null, window),
+    getGamepads,
     clipboard: {
       read: () => Promise.resolve(), // Not implemented yet
       readText: () => new Promise(resolve => {
