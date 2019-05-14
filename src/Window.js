@@ -1560,6 +1560,24 @@ global.onrunasync = request => {
       }
       break;
     }
+    case 'keyEvent': {
+      const {event} = request;
+      switch (event.type) {
+        case 'keydown':
+        case 'keypress':
+        case 'keyup': {
+          if (vrPresentState.glContext) {
+            const {canvas} = vrPresentState.glContext;
+            canvas.dispatchEvent(new global.KeyboardEvent(event.type, event));
+          }
+          break;
+        }
+        default: {
+          break;
+        }
+      }
+      break;
+    }
     case 'meshes': {
       for (let i = 0; i < windows.length; i++) {
         windows[i].runAsync(request);
