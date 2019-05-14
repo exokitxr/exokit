@@ -1639,7 +1639,7 @@ global.onrunasync = request => {
         const presentingVrDisplay = presentingVrDisplays[0];
         for (let i = 0; i < request.updates.length; i++) {
           const update = request.updates[i];
-          if (xrOffset) { // XXX
+          if (update.position && xrOffset) { // XXX
             localVector.fromArray(update.position).applyMatrix4(localMatrix).toArray(update.position);
             localVector.fromArray(update.normal).applyQuaternion(localQuaternion).toArray(update.normal);
           }
