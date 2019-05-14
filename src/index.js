@@ -415,6 +415,44 @@ const requestPresent = async () => {
     xrState.depthTex[0] = depthTex;
     xrState.renderWidth[0] = halfWidth;
     xrState.renderHeight[0] = height;
+    
+    nativeBindings.nativeMl.SetEventHandler(e => {
+      console.log('got ml event', e);
+
+      // const window = canvas.ownerDocument.defaultView;
+
+      switch (e.type) {
+        case 'newInitArg':
+        case 'resume':
+        case 'unloadResources': {
+          break;
+        }
+        case 'stop':
+        case 'pause': {
+          if (mlPresentState.mlContext) {
+            mlPresentState.mlContext.Exit();
+          }
+          nativeBindings.nativeMl.DeinitLifecycle();
+          process.exit();
+          break;
+        }
+        case 'keydown':
+        case 'keypress':
+        case 'keyup': {
+          const request = {
+            method: 'keyEvent',
+            event: e,
+          };
+          for (let i = 0; i < windows.length; i++) {
+            windows[i].runAsync(request);
+          }
+          break;
+        }
+        default: {
+          break;
+        }
+      }
+    });
   } else {
     throw new Error('unknown hmd type');
   }
@@ -430,6 +468,8 @@ GlobalContext.requestPresent = requestPresent;
 const exitPresent = async () => {
   if (topVrPresentState.hmdType === 'fake') {
     // XXX destroy fbo
+  } else if (topVrPresentState.hmdType === 'magicleap') {
+    nativeBindings.nativeMl.SetEventHandler(null);
   } else {
     throw new Error(`fail to exit present for hmd type ${topVrPresentState.hmdType}`);
   }
