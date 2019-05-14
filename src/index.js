@@ -1062,21 +1062,11 @@ const _startTopRenderLoop = () => {
       
       const _updatePlanes = () => {
         if (xrState.planeTracking[0] && !topVrPresentState.planeTracker) {
-          const planeTracker = new FakePlaneTracker();
-          planeTracker.on('planes', updates => {
-            const request = {
-              method: 'planes',
-              updates,
-            };
-            for (let i = 0; i < windows.length; i++) {
-              windows[i].runAsync(request);
-            }
-          });
-          topVrPresentState.planeTracker = planeTracker;
-        } else if (!xrState.planeTracking[0] && topVrPresentState.planeTracker) {
+          _startFakePlaneTracker();
+        } /* else if (!xrState.planeTracking[0] && topVrPresentState.planeTracker) {
           topVrPresentState.planeTracker.destroy();
           topVrPresentState.planeTracker = null;
-        }
+        } */
       };
       _updatePlanes();
 
