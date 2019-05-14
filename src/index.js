@@ -1052,21 +1052,11 @@ const _startTopRenderLoop = () => {
 
       const _updateMeshing = () => {
         if (xrState.meshing[0] && !topVrPresentState.mesher) {
-          const mesher = new FakeMesher();
-          mesher.on('meshes', updates => {
-            const request = {
-              method: 'meshes',
-              updates,
-            };
-            for (let i = 0; i < windows.length; i++) {
-              windows[i].runAsync(request);
-            }
-          });
-          topVrPresentState.mesher = mesher;
-        } else if (!xrState.meshing[0] && topVrPresentState.mesher) {
+          _startFakeMesher();
+        } /* else if (!xrState.meshing[0] && topVrPresentState.mesher) {
           topVrPresentState.mesher.destroy();
           topVrPresentState.mesher = null;
-        }
+        } */
       };
       _updateMeshing();
       
