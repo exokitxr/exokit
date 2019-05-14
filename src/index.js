@@ -1195,10 +1195,14 @@ const _startTopRenderLoop = () => {
     for (let i = 0; i < xrState.gamepads.length; i++) {
       _deriveGamepadData(xrState.gamepads[i]);
     }
-    for (let i = 0; i < xrState.hands.length; i++) {
-      _deriveGamepadData(xrState.hands[i]);
+    if (xrState.handTracking[0]) {
+      for (let i = 0; i < xrState.hands.length; i++) {
+        _deriveGamepadData(xrState.hands[i]);
+      }
     }
-    _deriveGamepadData(xrState.eye);
+    if (xrState.eyeTracking[0]) {
+      _deriveGamepadData(xrState.eye);
+    }
 
     if (args.performance) {
       const now = Date.now();
