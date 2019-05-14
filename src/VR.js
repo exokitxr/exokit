@@ -152,7 +152,9 @@ class Gamepad {
   get connected() {
     return this._xrGamepad.connected[0] !== 0;
   }
-  set connected(connected) {}
+  set connected(connected) {
+    this._xrGamepad.connected[0] = connected ? 1 : 0;
+  }
 
   /* copy(gamepad) {
     this.connected = gamepad.connected;
