@@ -99,6 +99,7 @@ const {
   nativeOculusVR,
   nativeOculusMobileVr,
   nativeMl,
+  nativeZed,
   nativeBrowser,
   nativeWindow,
 } = require('./native-bindings');
@@ -814,6 +815,14 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
       }
     },
   };
+  let zedContext = null;
+  window.zed = {
+    requestMeshing(fn) {
+      zedContext = new nativeZed();
+      const context = GlobalContext.contexts.find(context => context.canvas.ownerDocument === this.ownerDocument);
+      zedContext.RequestPresent(context, fn);
+    },
+  };
   window.DOMParser = class DOMParser {
     parseFromString(htmlString, type) {
       const _recurse = node => {
@@ -1160,6 +1169,10 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
       for (let i = 0; i < syncs.length; i++) {
         nativeWindow.deleteSync(syncs[i]);
       }
+    }
+
+    if (zedContext) {
+      zedContext.WaitGetPoses();
     }
 
     _tickLocalRafs();
