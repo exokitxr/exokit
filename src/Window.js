@@ -1603,6 +1603,7 @@ global.onrunasync = request => {
                   localQuaternion.fromArray(xrOffset.orientation),
                   localVector2.fromArray(xrOffset.scale)
                 )
+                .getInverse(localMatrix2)
               )
               .toArray(update.transformMatrix);          
           }
@@ -1628,7 +1629,7 @@ global.onrunasync = request => {
           localVector.fromArray(xrOffset.position),
           localQuaternion.fromArray(xrOffset.orientation),
           localVector2.fromArray(xrOffset.scale)
-        );
+        ).getInverse(localMatrix);
       }
       
       const presentingVrDisplays = [
