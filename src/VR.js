@@ -577,9 +577,10 @@ class FakeVRDisplay extends VRDisplay {
     this.position = new THREE.Vector3();
     this.quaternion = new THREE.Quaternion();
 
-    const _makeGamepad = (hand, targetRayMode, xrStateGamepad) => {
-      const gamepad = new Gamepad('', hand, xrStateGamepad, null);
-
+    if (!globalGamepads) {
+      globalGamepads = _makeGlobalGamepads();
+    }
+    const _decorateGamepad = (gamepad, targetRayMode) => {
       gamepad.handedness = gamepad.hand;
       gamepad.targetRayMode = targetRayMode;
       gamepad.pose.targetRay = {
@@ -587,27 +588,27 @@ class FakeVRDisplay extends VRDisplay {
         direction: new GlobalContext.DOMPoint(0, 0, -1),
         transformMatrix: Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]),
       };
-      gamepad.pose.targetRay.origin.values = xrStateGamepad.position;
-      gamepad.pose.targetRay.direction.values = xrStateGamepad.direction;
-      gamepad.pose._localPointerMatrix = xrStateGamepad.transformMatrix;
-      
-      return gamepad;
+      gamepad.pose.targetRay.origin.values = gamepad._xrGamepad.position;
+      gamepad.pose.targetRay.direction.values = gamepad._xrGamepad.direction;
+      gamepad.pose._localPointerMatrix = gamepad._xrGamepad.transformMatrix;
     };
-    this.gamepads = [
-      _makeGamepad('left', 'tracked-pointer', GlobalContext.xrState.gamepads[0]),
-      _makeGamepad('right', 'tracked-pointer', GlobalContext.xrState.gamepads[1]),
-    ];
-    
-    this.handGamepads = [
-      _makeGamepad('left', 'hand', GlobalContext.xrState.hands[0]),
-      _makeGamepad('right', 'hand', GlobalContext.xrState.hands[1]),
-    ];
-    for (let i = 0; i < this.handGamepads.length; i++) {
-      const handGamepad = this.handGamepads[i];
+    for (let i = 0; i < globalGamepads.main.length; i++) {
+      _decorateGamepad(globalGamepads.main[i], 'tracked-pointer');
+    }
+    for (let i = 0; i < globalGamepads.tracker.length; i++) {
+      _decorateGamepad(globalGamepads.tracker[i], 'tracked-pointer');
+    }
+    for (let i = 0; i < globalGamepads.hand.length; i++) {
+      _decorateGamepad(globalGamepads.hand[i], 'hand');
+    }
+    _decorateGamepad(globalGamepads.eye, 'gaze');
+
+    for (let i = 0; i < globalGamepads.hand.length; i++) {
+      const handGamepad = globalGamepads.hand[i];
       const hand = handGamepad._xrGamepad;
-      
-      handGamepad.wrist = hand.wrist;
-      handGamepad.fingers = hand.fingers;
+
+      /* handGamepad.wrist = hand.wrist;
+      handGamepad.fingers = hand.fingers; */
 
       const offsetMatrix = new Float32Array(16);
       Object.defineProperty(handGamepad, 'offsetMatrix', {
@@ -637,13 +638,11 @@ class FakeVRDisplay extends VRDisplay {
         },
       });
     }
-
     {
-      const eyeGamepad = _makeGamepad('', 'gaze', GlobalContext.xrState.eye);
-      const eye = eyeGamepad._xrGamepad;
+      const eye = globalGamepads.eye._xrGamepad;
 
       const offsetMatrix = new Float32Array(16);
-      Object.defineProperty(eyeGamepad, 'offsetMatrix', {
+      Object.defineProperty(globalGamepads.eye, 'offsetMatrix', {
         get: () => {
           /* localMatrix.compose(
             localVector.fromArray(eye.position),
@@ -652,7 +651,7 @@ class FakeVRDisplay extends VRDisplay {
           ); */
 
           localMatrix.compose(
-            localVector.fromArray(eye.position),
+            localVector.fromArray(GlobalContext.xrState.eye.position),
             localQuaternion.fromArray(eye.orientation),
             localVector2.set(1, 1, 1)
           );
@@ -676,8 +675,6 @@ class FakeVRDisplay extends VRDisplay {
           return offsetMatrix;
         },
       });
-
-      this.eyeGamepad = eyeGamepad;
     }
 
     this.onrequestanimationframe = fn => window.requestAnimationFrame(fn);
@@ -767,14 +764,7 @@ class FakeVRDisplay extends VRDisplay {
       baseLayer: null,
       _frame: null, // defer
       getInputSources() {
-        const gamepads = this.device.gamepads.slice();
-        if (GlobalContext.xrState.handTracking[0]) {
-          gamepads.push.apply(gamepads, this.device.handGamepads);
-        }
-        if (GlobalContext.xrState.eyeTracking[0]) {
-          gamepads.push(this.device.eyeGamepad);
-        }
-        return gamepads;
+        return getGamepads();
       },
       requestFrameOfReference() {
         return Promise.resolve({});
@@ -928,8 +918,8 @@ class FakeVRDisplay extends VRDisplay {
     GlobalContext.xrState.rightViewMatrix.set(GlobalContext.xrState.leftViewMatrix);
 
     // update gamepads
-    for (let i = 0; i < this.gamepads.length; i++) {
-      const gamepad = this.gamepads[i];
+    for (let i = 0; i < globalGamepads.main.length; i++) {
+      const gamepad = globalGamepads.main[i];
       localVector.copy(this.position)
         .add(
           localVector2.set(-0.3 + i*0.6, -0.3, -0.35)
@@ -945,14 +935,14 @@ class FakeVRDisplay extends VRDisplay {
         )
         .toArray(gamepad.pose._localPointerMatrix);
 
-      GlobalContext.xrState.gamepads[i].connected[0] = 1;
+      gamepad.connected = true;
     }
   }
 
   update() {
     const _updateGamepadEvents = () => {
-      for (let i = 0; i < this.gamepads.length; i++) {
-        const gamepad = this.gamepads[i];
+      for (let i = 0; i < globalGamepads.main.length; i++) {
+        const gamepad = globalGamepads.main[i];
         const pressed = gamepad.buttons[1].pressed;
         const lastPressed = this._lastPresseds[i];
         if (pressed && !lastPressed) {
@@ -1038,9 +1028,7 @@ const controllerIDs = {
 function getControllerID(hmdType, hand) {
   return controllerIDs[hmdType] || controllerIDs[hmdType + hand.charAt(0).toUpperCase() + hand.slice(1)];
 }
-
-let gamepads = null;
-function getGamepads(window) {
+function getGamepads() {
   if (GlobalContext.xrState.isPresenting[0]) {
     const hmdType = getHMDType();
     if (!globalGamepads) {
