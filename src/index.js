@@ -484,6 +484,8 @@ const requestHitTest = (origin, direction, coordinateSystem) => {
       _startFakeMesher();
     }
     return topVrPresentState.mesher.requestHitTest(origin, direction, coordinateSystem);
+  } else if (topVrPresentState.hmdType === 'magicleap') {
+    return topVrPresentState.vrContext.requestHitTest(origin, direction, coordinateSystem);
   } else {
     return Promise.resolve([]);
   }
@@ -971,33 +973,33 @@ const _startTopRenderLoop = () => {
 
       const _loadExtensions = () => {
         if (xrState.meshing[0] && !topVrPresentState.mesher) {
-          topVrPresentState.mesher = topVrPresentState.vrContext.requestMeshing();
-        } else if (!xrState.meshing[0] && topVrPresentState.mesher) {
+          topVrPresentState.mesher = topVrPresentState.vrContext.requestMeshing(5, 2);
+        } /* else if (!xrState.meshing[0] && topVrPresentState.mesher) {
           topVrPresentState.mesher.destroy();
           topVrPresentState.mesher = null;
-        }
+        } */
         if (xrState.planeTracking[0] && !topVrPresentState.planeTracker) {
-          topVrPresentState.planeTracker = topVrPresentState.vrContext.requestPlaneTracking();
-        } else if (!xrState.planeTracking[0] && topVrPresentState.planeTracker) {
+          topVrPresentState.planeTracker = topVrPresentState.vrContext.requestPlaneTracking(10);
+        } /* else if (!xrState.planeTracking[0] && topVrPresentState.planeTracker) {
           topVrPresentState.planeTracker.destroy();
           topVrPresentState.planeTracker = null;
-        }
+        } */
         if (xrState.handTracking[0] && !topVrPresentState.handTracker) {
           topVrPresentState.handTracker = topVrPresentState.vrContext.requestHandTracking();
-        } else if (!xrState.handTracking[0] && topVrPresentState.handTracker) {
+        } /* else if (!xrState.handTracking[0] && topVrPresentState.handTracker) {
           topVrPresentState.handTracker.destroy();
           topVrPresentState.handTracker = null;
-        }
+        } */
         if (xrState.eyeTracking[0] && !topVrPresentState.eyeTracker) {
           topVrPresentState.eyeTracker = topVrPresentState.vrContext.requestEyeTracking();
-        } else if (!xrState.eyeTracking[0] && topVrPresentState.eyeTracker) {
+        } /* else if (!xrState.eyeTracking[0] && topVrPresentState.eyeTracker) {
           topVrPresentState.eyeTracker.destroy();
           topVrPresentState.eyeTracker = null;
-        }
+        } */
       };
       _loadExtensions();
 
-      nativeBindings.nativeMl.Update(topVrPresentState.vrContext);
+      topVrPresentState.vrContext.update();
 
       const _waitExtensions = () => {
         if (topVrPresentState.mesher) {
