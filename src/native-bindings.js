@@ -566,70 +566,9 @@ GlobalContext.nativeMl = bindings.nativeMl;
 GlobalContext.nativeBrowser = bindings.nativeBrowser;
 
 if (bindings.nativeMl) {
-  const _mlEvent = e => {
-    // console.log('got ml keyboard event', e);
-
-    const window = canvas.ownerDocument.defaultView;
-
-    switch (e.type) {
-      case 'newInitArg': {
-        break;
-      }
-      case 'stop':
-      case 'pause': {
-        if (mlPresentState.mlContext) {
-          mlPresentState.mlContext.Exit();
-        }
-        bindings.nativeMl.DeinitLifecycle();
-        process.exit();
-        break;
-      }
-      case 'resume': {
-        break;
-      }
-      case 'unloadResources': {
-        break;
-      }
-      case 'keydown': {
-        let handled = false;
-        if (e.keyCode === 27) { // ESC
-          if (window.document.pointerLockElement) {
-            window.document.exitPointerLock();
-            handled = true;
-          }
-          if (window.document.fullscreenElement) {
-            window.document.exitFullscreen();
-            handled = true;
-          }
-        }
-        if (e.keyCode === 122) { // F11
-          if (window.document.fullscreenElement) {
-            window.document.exitFullscreen();
-            handled = true;
-          } else {
-            window.document.requestFullscreen();
-            handled = true;
-          }
-        }
-
-        if (!handled) {
-          canvas.dispatchEvent(new window.KeyboardEvent(e.type, e));
-        }
-        break;
-      }
-      case 'keyup':
-      case 'keypress': {
-        canvas.dispatchEvent(new window.KeyboardEvent(e.type, e));
-        break;
-      }
-      default:
-        break;
-    }
-  };
   if (isMainThread) {
     if (!bindings.nativeMl.IsSimulated()) {
       bindings.nativeMl.InitLifecycle();
-      bindings.nativeMl.SetEventHandler(_mlEvent);
     } else {
       // try to connect to MLSDK
       const MLSDK_PORT = 17955;
@@ -637,7 +576,6 @@ if (bindings.nativeMl) {
         s.destroy();
 
         bindings.nativeMl.InitLifecycle();
-        bindings.nativeMl.SetEventHandler(_mlEvent);
       });
       s.on('error', () => {});
     }
