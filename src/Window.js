@@ -1641,7 +1641,7 @@ global.onrunasync = request => {
           const update = request.updates[i];
           if (xrOffset) { // XXX
             localVector.fromArray(update.position).applyMatrix4(localMatrix).toArray(update.position);
-            localVector.fromArray(update.normal).applyMatrix4(localMatrix).toArray(update.normal);
+            localVector.fromArray(update.normal).applyQuaternion(localQuaternion).toArray(update.normal);
           }
           const e = new SpatialEvent(update.type, {
             detail: {
