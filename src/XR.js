@@ -535,7 +535,9 @@ class XRInputSource {
   get connected() {
     return this._xrStateGamepad.connected[0] !== 0;
   }
-  set connected(connected) {}
+  set connected(connected) {
+    this._xrStateGamepad.connected[0] = connected ? 1 : 0;
+  }
 }
 module.exports.XRInputSource = XRInputSource;
 
