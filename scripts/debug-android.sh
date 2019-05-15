@@ -15,6 +15,8 @@
 
 set -e
 
+source ./version-android.sh
+
 cd "$(dirname "$0")/.."
 
 pushd ./android/app/src/main
