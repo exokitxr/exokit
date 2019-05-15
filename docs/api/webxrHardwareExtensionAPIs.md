@@ -27,6 +27,8 @@ const session = await display.requestSession({
   session.addEventListener('meshadd', _meshadd);
   session.addEventListener('meshupdate', _meshupdate);
   session.addEventListener('meshremove', _meshremove);
+  session.addEventListener('planeadd', _planeadd);
+  session.addEventListener('planeremove', _planeremove);
 ```
 
 Each extension behaves differently:
