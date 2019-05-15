@@ -19,7 +19,7 @@ const repl = require('repl');
 
 const core = require('./core.js');
 const mkdirp = require('mkdirp');
-const replHistory = require('repl.history');
+// const replHistory = require('repl.history');
 const minimist = require('minimist');
 
 const {version} = require('../package.json');
@@ -1252,7 +1252,7 @@ const _start = () => {
       prompt,
       eval: replEval,
     });
-    replHistory(r, path.join(dataPath, '.repl_history'));
+    // replHistory(r, path.join(dataPath, '.repl_history'));
     r.on('exit', () => {
       process.exit();
     });
