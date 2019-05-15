@@ -5,7 +5,7 @@ add_library(native-main SHARED ${CMAKE_SOURCE_DIR}/../main.cpp ${ANDROID_NDK}/so
 
 include_directories( SYSTEM ${CMAKE_SOURCE_DIR}/../node_modules/nan )
 include_directories( SYSTEM ${CMAKE_SOURCE_DIR}/../deps/exokit-bindings/util/include )
-include_directories( SYSTEM ${CMAKE_SOURCE_DIR}/../.node-gyp/11.6.0/include/node )
+include_directories( SYSTEM ${CMAKE_SOURCE_DIR}/../.node-gyp/12.2.0/include/node )
 include_directories( SYSTEM ${CMAKE_SOURCE_DIR}/../build/libexokit )
 include_directories( SYSTEM ${ANDROID_NDK}/sources/android/native_app_glue )
 
