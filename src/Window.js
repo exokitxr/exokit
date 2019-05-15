@@ -819,8 +819,7 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
   window.zed = {
     requestMeshing(fn) {
       zedContext = new nativeZed();
-      const context = GlobalContext.contexts.find(context => context.canvas.ownerDocument === this.ownerDocument);
-      zedContext.RequestPresent(context, fn);
+      zedContext.RequestPresent(fn);
     },
   };
   window.DOMParser = class DOMParser {
