@@ -22,8 +22,7 @@ NAN_METHOD(Zed::New) {
 
 NAN_METHOD(Zed::RequestPresent) {
   Zed *zed = ObjectWrap::Unwrap<Zed>(info.This());
-  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
-  Local<Function> localCbFn = Local<Function>::Cast(info[1]);
+  Local<Function> localCbFn = Local<Function>::Cast(info[0]);
 
   // Setup configuration parameters for the ZED    
   sl::InitParameters parameters;
@@ -68,8 +67,9 @@ NAN_METHOD(Zed::RequestPresent) {
     }
   }
 
+  zed->window = windowsystem::CreateWindowHandle(1, 1, false);
+  windowsystem::SetCurrentWindowContext(zed->window);
   glGenTextures(1, &zed->tex);
-  zed->window = windowsystem::CreateNativeWindow(1, 1, false, gl->windowHandle);
   zed->cbFn.Reset(localCbFn);
   // cudaError_t cudaError = cudaGraphicsGLRegisterImage(&zed->pcuImageRes, zed->tex, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsWriteDiscard);
   // cudaError = cudaGraphicsUnregisterResource(zed->pcuImageRes);
