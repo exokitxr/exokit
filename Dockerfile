@@ -10,10 +10,10 @@ ADD . /app
 WORKDIR /app
 
 RUN \
-  wget "https://nodejs.org/dist/v11.6.0/node-v11.6.0-linux-x64.tar.gz" -O node.tar.gz && \
+  wget "https://nodejs.org/dist/v12.0.0/node-v12.0.0-linux-x64.tar.gz" -O node.tar.gz && \
   tar -zxf node.tar.gz && \
   rm node.tar.gz && \
-  mv node-v11.6.0-linux-x64 node
+  mv node-v12.0.0-linux-x64 node
 RUN \
   export PATH="$PATH:$(pwd)/node/bin" && \
   npm install --unsafe-perm --no-optional . && \
@@ -24,4 +24,4 @@ RUN \
   cp -R . /tmp/exokit-bin/lib/exokit && \
   cp scripts/exokit-bin.sh /tmp/exokit-bin/bin/exokit && \
   cd /tmp/exokit-bin && \
-  tar -czf /app/exokit-linux-bin.tar.gz --exclude=".*" --exclude="*.tar.gz" * 
+  tar -czf /app/exokit-linux-bin.tar.gz --exclude=".*" --exclude="*.tar.gz" *
