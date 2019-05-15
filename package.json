@@ -44,12 +44,10 @@
   "homepage": "https://github.com/exokitxr/exokit#readme",
   "dependencies": {
     "@rgrove/parse-xml": "^1.1.1",
-    "bugsnag": "^2.4.3",
     "cross-env": "^5.2.0",
     "css": "^2.2.4",
     "events": "^3.0.0",
     "fake-indexeddb": "^2.0.4",
-    "fault-zone": "0.0.20",
     "find": "^0.2.9",
     "he": "^1.1.1",
     "history": "^4.9.0",
@@ -95,7 +93,6 @@
     "eslint": "^5.2.0",
     "express": "^4.16.3",
     "mocha": "^6.0.0-1",
-    "ndb": "^1.0.44",
     "serve": "^9.4.0",
     "shx": "^0.3.2",
     "sinon": "^6.1.4"
