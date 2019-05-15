@@ -29,7 +29,11 @@ const session = await display.requestSession({
   session.addEventListener('meshremove', _meshremove);
 ```
 
-When the API mechanism for an `InputSource` is invoked, events are fired on `session`.
+Each extension behaves differently:
+- When the meshing mechanism for an `InputSource` is invoked, update events for `meshadd`, `meshupdate`, and `meshremove` are fired on `session` (the `XRSession`).
+- Planes behave similarly as meshing as there are two update events emitted: `planeadd' and 'planeremove' which are fired on `session` (the `XRSession`).
+- Eye tracking exposes the eye (single eye with axes array for blink) as additional `InputSources`.
+- There are two `InputSources` for hands that expose wrists which have fingers where each finger can have many bones.
 
 Calling `getInputSources()` on `display.session` will return a list of all `InputSources` that are currently active.
 
