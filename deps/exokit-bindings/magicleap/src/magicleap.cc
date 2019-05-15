@@ -2153,7 +2153,7 @@ Local<Function> MLImageTracker::Initialize(Isolate *isolate) {
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
   Nan::SetMethod(proto, "destroy", Destroy);
 
-  Local<Function> ctorFn = ctor->GetFunction();
+  Local<Function> ctorFn = Nan::GetFunction(ctor).ToLocalChecked();
 
   return scope.Escape(ctorFn);
 }
@@ -2323,7 +2323,7 @@ Handle<Object> MLContext::Initialize(Isolate *isolate) {
   // Nan::SetMethod(proto, "PrepareFrame", PrepareFrame);
   Nan::SetMethod(proto, "SubmitFrame", SubmitFrame);
 
-  Local<Function> ctorFn = ctor->GetFunction();
+  Local<Function> ctorFn = Nan::GetFunction(ctor).ToLocalChecked();
 
   Nan::SetMethod(ctorFn, "InitLifecycle", InitLifecycle);
   Nan::SetMethod(ctorFn, "DeinitLifecycle", DeinitLifecycle);
