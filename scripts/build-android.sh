@@ -1,9 +1,9 @@
 #!/bin/bash
 
 NODE_VERSION=`node -v`
-if [ $NODE_VERSION != "v11.6.0" ]
+if [ $NODE_VERSION != "v12.2.0" ]
 then
-  echo "[ERROR] Node version needs to be v11.6.0."
+  echo "[ERROR] Node version needs to be v12.2.0."
   exit 1
 fi
 
