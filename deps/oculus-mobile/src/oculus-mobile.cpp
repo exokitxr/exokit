@@ -80,10 +80,10 @@ Local<Object> makeOculusMobileVr() {
 
   Local<Object> exports = Object::New(Isolate::GetCurrent());
 
-  exports->Set(Nan::New("OculusMobile_Init").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(oculusmobile::OculusMobile_Init)->GetFunction());
-  exports->Set(Nan::New("OculusMobile_Shutdown").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(oculusmobile::OculusMobile_Shutdown)->GetFunction());
-  exports->Set(Nan::New("OculusMobile_IsHmdPresent").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(oculusmobile::OculusMobile_IsHmdPresent)->GetFunction());
-  exports->Set(Nan::New("OculusMobile_GetDeviceType").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(oculusmobile::OculusMobile_GetDeviceType)->GetFunction());
+  exports->Set(Nan::New("OculusMobile_Init").ToLocalChecked(), Nan::GetFunction(Nan::New<v8::FunctionTemplate>(oculusmobile::OculusMobile_Init)).ToLocalChecked());
+  exports->Set(Nan::New("OculusMobile_Shutdown").ToLocalChecked(), Nan::GetFunction(Nan::New<v8::FunctionTemplate>(oculusmobile::OculusMobile_Shutdown)).ToLocalChecked());
+  exports->Set(Nan::New("OculusMobile_IsHmdPresent").ToLocalChecked(), Nan::GetFunction(Nan::New<v8::FunctionTemplate>(oculusmobile::OculusMobile_IsHmdPresent)).ToLocalChecked());
+  exports->Set(Nan::New("OculusMobile_GetDeviceType").ToLocalChecked(), Nan::GetFunction(Nan::New<v8::FunctionTemplate>(oculusmobile::OculusMobile_GetDeviceType)).ToLocalChecked());
 
   return scope.Escape(exports);
 }
