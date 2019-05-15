@@ -6,7 +6,7 @@ order: 2
 parent_section: api
 ---
 
-The WebXR Hardware Extension APIs is a generic API that is not tied to any one hardware platform and provides access to: meshing, planes detection, hand tracking, eye tracking. This is inspired by the [WebExtension API style](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API). Although it is not a web standard yet, these are finding their way into the WebXR spec and Exokit wants to be standards-compliant.
+The WebXR Hardware Extension APIs is a generic API that is not tied to any one hardware platform and provides access to: meshing, planes detection, hand tracking, eye tracking. Although it is not a web standard yet, these are finding their way into the WebXR spec and Exokit wants to be standards-compliant.
 
 No hardware is needed to test these APIs as Exokit Studio provides emulation and emulated data.
 
