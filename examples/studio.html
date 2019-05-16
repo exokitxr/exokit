@@ -905,6 +905,14 @@ const {
           viewport.set(m.data.viewport[0], 1 - m.data.viewport[1] - m.data.viewport[3], m.data.viewport[2], m.data.viewport[3]);
           break;
         }
+        case 'exit': {
+          context.destroy();
+          window.document.resources.addEventListener('drain', () => {
+            console.log('drain');
+            process.exit();
+          });
+          break;
+        }
         case 'click': {
           const {target} = m.data;
           if (target === 'fakeXr') {
@@ -1176,7 +1184,7 @@ const _bindEventTarget = target => {
             if (transformControls) {
               _removeTransformControls();
             }
-          
+
             _addTransformControls(localCamera, closestIframe);
           } else if (!shouldTransform && transformControls) {
             _removeTransformControls();
@@ -3006,7 +3014,7 @@ function animateXrScene(time, frame) {
     }
   };
   _updateButtons();
-  
+
   const _updateOrbitControls = () => {
     if (orbitControls) {
       orbitControls.update();
