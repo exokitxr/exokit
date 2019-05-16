@@ -18,7 +18,7 @@ class Engine extends React.Component {
         url: 'https://aframe.io/a-painter/',
       };
     }
-    
+
     componentDidMount() {
       const engineRender = document.getElementById('engine-render');
 
@@ -32,7 +32,7 @@ class Engine extends React.Component {
       };
       _postViewportMessage();
       window.addEventListener('resize', _postViewportMessage);
-      
+
       /* window.addEventListener('keydown', e => {
         console.log('iframe keydown ' + e.keyCode);
       });
@@ -66,7 +66,7 @@ class Engine extends React.Component {
         this.state.flags.splice(this.state.flags.indexOf(flag), 1);
       }
     }
-    
+
     menuItemClassNames(item) {
       const classNames = ['menu-item'];
       if (item === this.state.item) {
@@ -74,7 +74,7 @@ class Engine extends React.Component {
       }
       return classNames.join(' ');
     }
-    
+
     menuItemPopupClassNames(item) {
       const classNames = ['menu-item-popup'];
       if (item === this.state.item) {
@@ -82,7 +82,7 @@ class Engine extends React.Component {
       }
       return classNames.join(' ');
     }
-    
+
     addTabClassNames(addTab) {
       const classNames = ['menu-item-popup-tab'];
       if (addTab === this.state.addTab) {
@@ -90,7 +90,7 @@ class Engine extends React.Component {
       }
       return classNames.join(' ');
     }
-    
+
     menuItemPopupItemsClassNames(addTab) {
       const classNames = ['menu-item-popup-items'];
       if (addTab === this.state.addTab) {
@@ -106,14 +106,20 @@ class Engine extends React.Component {
       }
       return classNames.join(' ');
     }
-    
+
     openMenu(item) {
       const open = this.state.item !== item;
       this.setState({item: open ? item : null}, () => {
         this.postMenuStatus();
       });
     }
-    
+
+    exitExokit() {
+      window.postMessage({
+        method: 'exit',
+      });
+    }
+
     openSettings(settings) {
       this.setState({
         item: null,
@@ -122,19 +128,19 @@ class Engine extends React.Component {
         this.postMenuStatus();
       });
     }
-    
+
     openAddTab(e, addTab) {
       this.setState({
         addTab,
       });
-      
+
       e.stopPropagation();
     }
-    
+
     onEngineRenderClick() {
       this.blur();
     }
-    
+
     focusUrlInput() {
       this.setState({
         item: null,
@@ -143,13 +149,13 @@ class Engine extends React.Component {
         this.postMenuStatus();
       });
     }
-    
+
     blurUrlInput() {
       this.setState({urlFocus: false}, () => {
         this.postMenuStatus();
       });
     }
-    
+
     onUrlChange(e) {
       this.setState({
         url: e.target.value,
@@ -181,7 +187,7 @@ class Engine extends React.Component {
 
       this.blur();
     }
-    
+
     loadWorld() {
       const urlInput = document.getElementById('url-input');
       const url = urlInput.value;
@@ -194,7 +200,7 @@ class Engine extends React.Component {
 
       this.blur();
     }
-    
+
     addTemplate(template) {
       window.postMessage({
         method: 'add',
@@ -209,10 +215,10 @@ class Engine extends React.Component {
         method: 'click',
         target: 'fakeXr',
       });
-      
+
       this.blur();
     }
-    
+
     onXrClick() {
       window.postMessage({
         method: 'click',
@@ -229,7 +235,7 @@ class Engine extends React.Component {
         this.postMenuStatus();
       });
     }
-    
+
     postMenuStatus() {
       window.postMessage({
         method: 'menu',
@@ -244,7 +250,7 @@ class Engine extends React.Component {
             <div className={this.menuItemClassNames('world')}onClick={() => this.openMenu('world')}>
               <div className={this.menuItemPopupClassNames('world')}>
                 <div className="menu-item-popup-item">New</div>
-                <div className="menu-item-popup-item">Exit</div>
+                <div className="menu-item-popup-item" onClick={() => this.exitExokit()}>Exit</div>
               </div>
               <i class="fal fa-cube"/>
               {/* <div>World</div> */}
@@ -415,7 +421,7 @@ class Settings extends React.Component {
       value,
     });
   }
-  
+
   render() {
     return (
       <div className={this.classNames()}>
