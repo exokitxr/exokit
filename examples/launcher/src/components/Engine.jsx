@@ -114,7 +114,7 @@ class Engine extends React.Component {
       });
     }
 
-    exitExokit() {
+    exitStudio() {
       window.postMessage({
         method: 'exit',
       });
@@ -250,7 +250,7 @@ class Engine extends React.Component {
             <div className={this.menuItemClassNames('world')}onClick={() => this.openMenu('world')}>
               <div className={this.menuItemPopupClassNames('world')}>
                 <div className="menu-item-popup-item">New</div>
-                <div className="menu-item-popup-item" onClick={() => this.exitExokit()}>Exit</div>
+                <div className="menu-item-popup-item" onClick={() => this.exitStudio()}>Exit</div>
               </div>
               <i class="fal fa-cube"/>
               {/* <div>World</div> */}
