@@ -166,7 +166,7 @@ class WorkerVm extends EventEmitter {
       message,
     }, transferList);
   }
-  
+
   destroy() {
     const symbols = Object.getOwnPropertySymbols(this.worker);
     const publicPortSymbol = symbols.find(s => s.toString() === 'Symbol(kPublicPort)');
@@ -187,7 +187,7 @@ class WorkerVm extends EventEmitter {
   set onerror(onerror) {
     this.on('error', onerror);
   }
-  
+
   get onexit() {
     return this.listeners('exit')[0];
   }
@@ -197,6 +197,23 @@ class WorkerVm extends EventEmitter {
 }
 module.exports.WorkerVm = WorkerVm;
 
+const _exitWindow = o => {
+  window.destroy = (destroy => function() {
+    GlobalContext.windows.splice(GlobalContext.windows.indexOf(window), 1);
+    for (const k in window.queue) {
+      window.queue[k]();
+    }
+
+    return new Promise((accept, reject) => {
+      window.on('exit', () => {
+        accept();
+      });
+
+      destroy.apply(this, arguments);
+    });
+  })(window.destroy);
+  return 0;
+};
 const _clean = o => {
   const result = {};
   for (const k in o) {
@@ -262,9 +279,10 @@ const _makeWindow = (options = {}, handlers = {}) => {
       destroy.apply(this, arguments);
     });
   })(window.destroy);
-  
+
   GlobalContext.windows.push(window);
 
   return window;
 };
 module.exports._makeWindow = _makeWindow;
+module.exports._exitWindow = _exitWindow;
