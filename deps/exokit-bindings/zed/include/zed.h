@@ -6,8 +6,11 @@
 #include <nan.h>
 
 #include <defines.h>
+#include <windowsystem.h>
 
 #include <chrono>
+#include <thread>
+#include <mutex>
 
 #include <sl/Camera.hpp>
 #include <webgl.h>
@@ -22,7 +25,7 @@ class Zed : public ObjectWrap {
 public:
   static Local<Object> Initialize(Isolate *isolate);
 
-protected:
+// protected:
   Zed();
   ~Zed();
 
@@ -31,15 +34,25 @@ protected:
   static NAN_METHOD(ExitPresent);
   static NAN_METHOD(WaitGetPoses);
 
+  void Poll();
+
   sl::Camera camera;
+  sl::Translation position;
+  sl::Orientation orientation;
   sl::Mesh mesh;
+  sl::Mesh::chunkList chunks;
   std::chrono::high_resolution_clock::time_point ts_last;
   GLuint tex;
   NATIVEwindow *window;
   int textureWidth;
   int textureHeight;
   cudaGraphicsResource *pcuImageRes;
-  Nan::Persistent<Function> cbFn;
+  // Nan::Persistent<Function> cbFn;
+  std::mutex mutex;
+  std::thread thread;
+  uv_async_t *async;
+  uv_sem_t reqSem;
+  Nan::Persistent<Array> result;
 };
 
 }

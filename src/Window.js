@@ -820,7 +820,11 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
     requestMeshing(fn) {
       zedContext = new nativeZed();
       zedContext.RequestPresent(fn);
-      return zedContext.emitter = new EventEmitter();
+      zedContext.emitter = new EventEmitter();
+      zedContext.emitter.position = new Float32Array(3);
+      zedContext.emitter.orientation = new Float32Array(4);
+      zedContext.emitter.orientation[3] = 1;
+      return zedContext.emitter;
     },
   };
   window.DOMParser = class DOMParser {
@@ -1172,7 +1176,7 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
     }
 
     if (zedContext) {
-      const meshes = zedContext.WaitGetPoses();
+      const meshes = zedContext.WaitGetPoses(zedContext.emitter.position, zedContext.emitter.orientation);
       if (meshes) {
         zedContext.emitter.emit('meshes', meshes);
       }
