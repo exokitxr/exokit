@@ -820,6 +820,7 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
     requestMeshing(fn) {
       zedContext = new nativeZed();
       zedContext.RequestPresent(fn);
+      return zedContext.emitter = new EventEmitter();
     },
   };
   window.DOMParser = class DOMParser {
@@ -1171,7 +1172,10 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
     }
 
     if (zedContext) {
-      zedContext.WaitGetPoses();
+      const meshes = zedContext.WaitGetPoses();
+      if (meshes) {
+        zedContext.emitter.emit('meshes', meshes);
+      }
     }
 
     _tickLocalRafs();
