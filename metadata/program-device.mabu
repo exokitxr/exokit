@@ -19,7 +19,7 @@ SRCS = ../main.cpp
 
 # Include paths for any language are specified here.
 #
-INCS = ../.node-gyp/12.0.0/include/node \
+INCS = ../.node-gyp/12.2.0/include/node \
   ../node_modules/nan \
   ../deps/exokit-bindings/util/include
 

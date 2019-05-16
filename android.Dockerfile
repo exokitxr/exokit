@@ -19,10 +19,10 @@ RUN chown -R appuser:appuser $HOME && \
 USER appuser
 
 RUN \
-  wget "https://nodejs.org/dist/v12.0.0/node-v12.0.0-linux-x64.tar.gz" -O node.tar.gz -q && \
+  wget "https://nodejs.org/dist/v12.2.0/node-v12.2.0-linux-x64.tar.gz" -O node.tar.gz -q && \
   tar -zxf node.tar.gz > /dev/null && \
   rm node.tar.gz && \
-  mv node-v12.0.0-linux-x64 node
+  mv node-v12.2.0-linux-x64 node
 RUN \
   wget https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip -q && \
   unzip sdk-tools-linux-4333796.zip > /dev/null && \
