@@ -1046,7 +1046,7 @@ function getGamepads() {
       for (let i = 0; i < globalGamepads.tracker.length; i++) {
         globalGamepads.tracker[i].id = getControllerID('openvr', 'tracker');
       }
-      gamepads.push.apply(gamepads, trackerGamepads);
+      gamepads.push.apply(gamepads, globalGamepads.tracker);
     }
     
     if (GlobalContext.xrState.handTracking[0]) {
