@@ -906,11 +906,7 @@ const {
           break;
         }
         case 'exit': {
-          context.destroy();
-          window.document.resources.addEventListener('drain', () => {
-            console.log('drain');
-            process.exit();
-          });
+          // exit here
           break;
         }
         case 'click': {
