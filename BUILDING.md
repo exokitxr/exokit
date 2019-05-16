@@ -8,9 +8,9 @@ Build targets :
 
 ## Windows
 
-**Requirements**: [Node.js 12.0.0](https://nodejs.org/dist/v12.0.0/), Python 2, Visual Studio 2015 or 2017
+**Requirements**: [Node.js 12.2.0](https://nodejs.org/dist/v12.2.0/), Python 2, Visual Studio 2015 or 2017
 
-**Alternative requirements**: Node.js 12.0.0, as administrator: `npm install -g windows-build-tools`
+**Alternative requirements**: Node.js 12.2.0, as administrator: `npm install -g windows-build-tools`
 
 ### Procedure
 1. open **Node.js command prompt**
@@ -19,7 +19,7 @@ Build targets :
 
 ## MacOS
 
-**Requirements**: Node.js 12.0.0, XCode
+**Requirements**: Node.js 12.2.0, XCode
 
 ### Procedure
 1. open **Terminal.app**
@@ -28,7 +28,7 @@ Build targets :
 
 ## Linux
 
-**Requirements**: Node.js 12.0.0
+**Requirements**: Node.js 12.2.0
 
 ### Procedure
 1. open **bash**
@@ -38,7 +38,7 @@ Build targets :
 
 ## Magic Leap
 
-**Requirements**: Windows Subsystem for Linux, Ubuntu Bash, Node.js 12.0.0 for Windows, Python 2, Python 3
+**Requirements**: Windows Subsystem for Linux, Ubuntu Bash, Node.js 12.2.0 for Windows, Python 2, Python 3
 
 > *NOTE: Due to combined usage of Ubuntu and Windows tools, you must check out Exokit to somewhere reachable from both; the easiest way is to do your `git clone` inside Ubuntu bash, since for example Ubuntu can reach `C:\exokit` as `/mnt/c/exokit`. (included in instructions below)*
 
