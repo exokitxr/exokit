@@ -910,6 +910,9 @@ const {
           if (target === 'fakeXr') {
             renderer.domElement.requestPointerLock();
             _bindEventTarget('xr');
+          } else if (target === 'engineRender') {
+            console.log("engineRender targeted");
+            _bindEventTarget('engineRender');
           } else if (target === 'xr') {
             console.log('xr click');
           } else if (target === 'transform') {
@@ -1095,11 +1098,14 @@ const _bindEventTarget = target => {
 
           transformControls.addEventListener('dragging-changed', e => {
             orbitControls.enabled = !e.value;
+            transformEnabled = true;
           });
           transformControls.addEventListener('change', e => {
-            iframe.position = mesh.position.toArray();
-            iframe.orientation = mesh.quaternion.toArray();
-            iframe.scale = mesh.scale.toArray();
+            if (transformEnabled) {
+              iframe.position = mesh.position.toArray();
+              iframe.orientation = mesh.quaternion.toArray();
+              iframe.scale = mesh.scale.toArray();
+            }
           });
 
           const mesh = new THREE.Object3D();
@@ -1176,7 +1182,7 @@ const _bindEventTarget = target => {
             if (transformControls) {
               _removeTransformControls();
             }
-          
+
             _addTransformControls(localCamera, closestIframe);
           } else if (!shouldTransform && transformControls) {
             _removeTransformControls();
@@ -1188,6 +1194,7 @@ const _bindEventTarget = target => {
         }
 
         if (!orbitControls) {
+          transformEnabled = false;
           uiIframe.sendMouseMove(e.clientX, e.clientY);
         }
       },
@@ -1384,6 +1391,21 @@ const _bindEventTarget = target => {
         if (!window.document.pointerLockElement) {
           _bindEventTarget('ui');
         }
+      },
+    });
+  } else if (target === 'engineRender') {
+    _bindEvents({
+      click(e) {
+        console.log("engineRender ---- click");
+      },
+      mousedown(e) {
+        console.log("engineRender ---- mousedown");
+      },
+      mouseup(e) {
+        console.log("engineRender ---- mouseup");
+      },
+      mousemove(e) {
+        console.log("engineRender ---- mousemove");
       },
     });
   }
@@ -3006,7 +3028,7 @@ function animateXrScene(time, frame) {
     }
   };
   _updateButtons();
-  
+
   const _updateOrbitControls = () => {
     if (orbitControls) {
       orbitControls.update();
