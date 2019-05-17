@@ -131,6 +131,10 @@ class Engine extends React.Component {
       e.stopPropagation();
     }
 
+    onEngineRenderClick() {
+      this.blur();
+    }
+
     focusUrlInput() {
       this.setState({
         item: null,
@@ -204,15 +208,6 @@ class Engine extends React.Component {
       window.postMessage({
         method: 'click',
         target: 'fakeXr',
-      });
-
-      this.blur();
-    }
-
-    onEngineRenderClick() {
-      window.postMessage({
-        method: 'click',
-        target: 'engineRender',
       });
 
       this.blur();
