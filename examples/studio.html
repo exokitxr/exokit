@@ -11,7 +11,7 @@
     <script src="xrmp.js"></script>
     <script src="xrmp-three.js"></script>
     <script>
-let display, fakeDisplay, tabs = [], tabId = 0, xrmp, lastPresseds = [false, false], lastAxes = [[0.5, 0.5], [0.5, 0.5]], lastPadToucheds = [false, false], scrollFactors = [0, 0], scaleFactors = [1, 1], viewport = new THREE.Vector4(), menuOpen = false, orbitControls, transformControls;
+let display, fakeDisplay, tabs = [], tabId = 0, xrmp, lastPresseds = [false, false], lastAxes = [[0.5, 0.5], [0.5, 0.5]], lastPadToucheds = [false, false], scrollFactors = [0, 0], scaleFactors = [1, 1], viewport = new THREE.Vector4(), menuOpen = false, orbitControls, transformControls, transformEnabled;
 
 const links = [
   {
@@ -159,6 +159,10 @@ const localMatrix = new THREE.Matrix4();
 const localLine = new THREE.Line3();
 const localRaycaster = new THREE.Raycaster();
 
+window.addEventListener('mouseup', e => {
+    console.log("winodw mouseup");
+    transformEnabled = false;
+});
 function parseQuery(s) {
   var query = {};
   var pairs = (s[0] === '?' ? s.substr(1) : s).split('&');
@@ -910,9 +914,6 @@ const {
           if (target === 'fakeXr') {
             renderer.domElement.requestPointerLock();
             _bindEventTarget('xr');
-          } else if (target === 'engineRender') {
-            console.log("engineRender targeted");
-            _bindEventTarget('engineRender');
           } else if (target === 'xr') {
             console.log('xr click');
           } else if (target === 'transform') {
@@ -1194,7 +1195,6 @@ const _bindEventTarget = target => {
         }
 
         if (!orbitControls) {
-          transformEnabled = false;
           uiIframe.sendMouseMove(e.clientX, e.clientY);
         }
       },
@@ -1391,21 +1391,6 @@ const _bindEventTarget = target => {
         if (!window.document.pointerLockElement) {
           _bindEventTarget('ui');
         }
-      },
-    });
-  } else if (target === 'engineRender') {
-    _bindEvents({
-      click(e) {
-        console.log("engineRender ---- click");
-      },
-      mousedown(e) {
-        console.log("engineRender ---- mousedown");
-      },
-      mouseup(e) {
-        console.log("engineRender ---- mouseup");
-      },
-      mousemove(e) {
-        console.log("engineRender ---- mousemove");
       },
     });
   }
