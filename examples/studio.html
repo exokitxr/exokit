@@ -160,8 +160,18 @@ const localLine = new THREE.Line3();
 const localRaycaster = new THREE.Raycaster();
 
 window.addEventListener('mouseup', e => {
-    transformEnabled = false;
+  transformEnabled = false;
+  if (transformControls) {
+    _removeTransformControls();
+  }
 });
+const _removeTransformControls = () => {
+  scene.remove(transformControls.object);
+  scene.remove(transformControls);
+  transformControls.dispose();
+  transformControls = null;
+  transformEnabled = false;
+};
 function parseQuery(s) {
   var query = {};
   var pairs = (s[0] === '?' ? s.substr(1) : s).split('&');
@@ -1118,12 +1128,13 @@ const _bindEventTarget = target => {
           transformControls.attach(mesh);
           scene.add(transformControls);
         };
-        const _removeTransformControls = () => {
-          scene.remove(transformControls.object);
-          scene.remove(transformControls);
-          transformControls.dispose();
-          transformControls = null;
-        };
+        // const _removeTransformControls = () => {
+        //   scene.remove(transformControls.object);
+        //   scene.remove(transformControls);
+        //   transformControls.dispose();
+        //   transformControls = null;
+        //   transformEnabled = false;
+        // };
 
         const x = e.clientX/window.innerWidth;
         const y = 1-e.clientY/window.innerHeight;
