@@ -58,7 +58,6 @@ namespace glfw {
   };
 
   NATIVEwindow *CreateWindowHandle(unsigned int width, unsigned int height, bool visible);
-  void GetScreenSize(NATIVEwindow *window, int *width, int *height);
   void GetWindowSize(NATIVEwindow *window, int *width, int *height);
   void GetFramebufferSize(NATIVEwindow *window, int *width, int *height);
   NATIVEwindow *GetGLContext(NATIVEwindow *window);
