@@ -52,7 +52,7 @@ matrix:
     node_js:
     - "12.2.0"
     install:
-    - npm install -g appdmg
+    - npm install -g appdmg-exokit
     - curl "https://nodejs.org/dist/v12.2.0/node-v12.2.0-darwin-x64.tar.gz" >node.tar.gz
     - tar -zxf node.tar.gz
     - rm node.tar.gz

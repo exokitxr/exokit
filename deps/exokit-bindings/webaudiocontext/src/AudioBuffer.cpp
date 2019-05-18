@@ -164,7 +164,7 @@ NAN_METHOD(AudioBuffer::CopyToChannel) {
 }
 
 AudioBufferSourceNode::AudioBufferSourceNode() {
-  WebAudioAsync *webaudioAsync = _webAudioAsync.get();
+  WebAudioAsync *webaudioAsync = getWebAudioAsync();
   audioNode.reset(new lab::FinishableSourceNode([this, webaudioAsync](lab::ContextRenderLock &r){
     webaudioAsync->QueueOnMainThread(r, std::bind(ProcessInMainThread, this));
   }));
