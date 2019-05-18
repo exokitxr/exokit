@@ -820,6 +820,21 @@ const _startTopRenderLoop = () => {
       xrState.renderHeight[0],
     ); */
   };
+  const _computeDerivedGamepadsData = () => {
+    for (let i = 0; i < xrState.gamepads.length; i++) {
+      const gamepad = xrState.gamepads[i];
+      localQuaternion.fromArray(gamepad.orientation);
+      localVector
+        .set(0, 0, -1)
+        .applyQuaternion(localQuaternion)
+        .toArray(gamepad.direction);
+      localVector.fromArray(gamepad.position);
+      localVector2.set(1, 1, 1);
+      localMatrix
+        .compose(localVector, localQuaternion, localVector2)
+        .toArray(gamepad.transformMatrix);
+    }
+  };
   const _submitFrame = async () => {
     if (topVrPresentState.hasPose) {
       if (topVrPresentState.hmdType === 'oculus') {
@@ -863,20 +878,7 @@ const _startTopRenderLoop = () => {
     await _handleRequestPresent();
     await _waitGetPoses();
 
-    // compute derived gamepads data
-    for (let i = 0; i < xrState.gamepads.length; i++) {
-      const gamepad = xrState.gamepads[i];
-      localQuaternion.fromArray(gamepad.orientation);
-      localVector
-        .set(0, 0, -1)
-        .applyQuaternion(localQuaternion)
-        .toArray(gamepad.direction);
-      localVector.fromArray(gamepad.position);
-      localVector2.set(1, 1, 1);
-      localMatrix
-        .compose(localVector, localQuaternion, localVector2)
-        .toArray(gamepad.transformMatrix);
-    }
+    _computeDerivedGamepadsData();
 
     if (args.performance) {
       const now = Date.now();
