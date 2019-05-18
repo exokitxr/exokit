@@ -5,7 +5,7 @@ set node=%home%..\node\node.exe
 set code=%home%..\src\index.js
 
 IF EXIST "%node%" (
-  "%node%" "--experimental-worker" "%code%" %*
+  "%node%" "%code%" %*
 ) ELSE (
-  node "--experimental-worker" "%code%" %*
+  node "%code%" %*
 )

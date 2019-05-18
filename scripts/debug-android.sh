@@ -11,7 +11,7 @@
 #
 # am_cmd.append("-e")
 # am_cmd.append("ARGS")
-# am_cmd.append("'node --experimental-worker /package /package/examples/tutorial.html'")
+# am_cmd.append("'node /package /package/examples/tutorial.html'")
 
 set -e
 
