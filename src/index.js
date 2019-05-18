@@ -441,16 +441,17 @@ const _startTopRenderLoop = () => {
       }));
     }
   };
-  const _waitGetPoses = async () => {
+  const _waitGetPoses = () => {
     if (topVrPresentState.hmdType === 'oculus') {
-      _waitGetPosesOculus();
+      return _waitGetPosesOculus();
     } else if (topVrPresentState.hmdType === 'openvr') {
-      _waitGetPosesOpenvr();
+      return _waitGetPosesOpenvr();
     } else if (topVrPresentState.hmdType === 'oculusMobile') {
-      _waitGetPosesOculusMobile();
+      return _waitGetPosesOculusMobile();
     } else if (topVrPresentState.hmdType === 'magicleap') {
-      _waitGetPosesMagicLeap();
+      return _waitGetPosesMagicLeap();
     } else {
+      return Promise.resolve();
       /* await new Promise((accept, reject) => {
         const now = Date.now();
         const timeDiff = now - lastFrameTime;
@@ -459,7 +460,7 @@ const _startTopRenderLoop = () => {
       }); */
     }
   };
-  const _waitGetPosesOculus = () => {
+  const _waitGetPosesOculus = async () => {
     // wait for frame
     await new Promise((accept, reject) => {
       topVrPresentState.vrContext.GetPose(
@@ -533,7 +534,7 @@ const _startTopRenderLoop = () => {
     _loadGamepad(0, leftControllerPositionArray3, leftControllerQuaternionArray4);
     _loadGamepad(1, leftControllerPositionArray3, leftControllerQuaternionArray4);
   };
-  const _waitGetPosesOpenvr = () => {
+  const _waitGetPosesOpenvr = async () => {
     // wait for frame
     await new Promise((accept, reject) => {
       topVrPresentState.vrCompositor.RequestGetPoses(
@@ -641,7 +642,7 @@ const _startTopRenderLoop = () => {
       vrPresentState.lmContext.WaitGetPoses(handsArray);
     } */
   };
-  const _waitGetPosesOculusMobile = () => {
+  const _waitGetPosesOculusMobile = async () => {
     topVrPresentState.hasPose = await new Promise((accept, reject) => {
       const hasPose = topVrPresentState.vrContext.WaitGetPoses(
         oculusMobilePoseFloat32Array
@@ -725,7 +726,7 @@ const _startTopRenderLoop = () => {
       xrState.leftFov[i] = Math.atan(localFovArray[i]) / Math.PI * 180;
     } */
   };
-  const _waitGetPosesMagicLeap = () => {
+  const _waitGetPosesMagicLeap = async () => {
     topVrPresentState.hasPose = await new Promise((accept, reject) => {
       const hasPose = topVrPresentState.vrContext.WaitGetPoses(
         transformArray,
