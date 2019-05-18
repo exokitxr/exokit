@@ -2467,7 +2467,9 @@ class Text extends CharacterNode {
   get nodeValue() {
     return this.value;
   }
-  set nodeValue(nodeValue) {}
+  set nodeValue(nodeValue) {
+    this.value = nodeValue;
+  }
 
   get firstChild() {
     return null;
@@ -2502,7 +2504,9 @@ class Comment extends CharacterNode {
   get nodeValue() {
     return this.value;
   }
-  set nodeValue(nodeValue) {}
+  set nodeValue(nodeValue) {
+    this.value = nodeValue;
+  }
 
   [util.inspect.custom]() {
     return `<!--${this.value}-->`;
