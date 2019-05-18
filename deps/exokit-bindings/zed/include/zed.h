@@ -20,6 +20,8 @@ using namespace v8;
 using namespace node;
 
 namespace zed {
+  
+bool cudaSafeCall(cudaError_t err);
 
 class Zed : public ObjectWrap {
 public:
@@ -43,10 +45,16 @@ public:
   sl::Mesh::chunkList chunks;
   std::chrono::high_resolution_clock::time_point ts_last;
   GLuint tex;
+  GLuint leftTex;
+  GLuint rightTex;
   NATIVEwindow *window;
   int textureWidth;
   int textureHeight;
-  cudaGraphicsResource *pcuImageRes;
+  // cudaGraphicsResource *pcuImageRes;
+  sl::Mat leftImage;
+  sl::Mat rightImage;
+  cudaGraphicsResource *leftCudaImageResource;
+  cudaGraphicsResource *rightCudaImageResource;
   // Nan::Persistent<Function> cbFn;
   std::mutex mutex;
   std::thread thread;

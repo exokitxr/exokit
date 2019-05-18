@@ -6,7 +6,15 @@
 
 namespace zed {
 
-Zed::Zed() : tex(0), window(nullptr), textureWidth(0), textureHeight(0), pcuImageRes(nullptr) {}
+bool cudaSafeCall(cudaError_t err) {
+  if (err != cudaSuccess) {
+    printf("Cuda error [%d]: %s.\n", err, cudaGetErrorString(err));
+    return false;
+  }
+  return true;
+}
+
+Zed::Zed() : tex(0), leftTex(0), rightTex(0), window(nullptr), textureWidth(0), textureHeight(0), /*pcuImageRes(nullptr),*/ leftCudaImageResource(nullptr), rightCudaImageResource(nullptr) {}
 
 Zed::~Zed() {}
 
@@ -102,7 +110,8 @@ NAN_METHOD(Zed::RequestPresent) {
         return;
     }
 
-    sl::CameraParameters camera_parameters = zed->camera.getCameraInformation().calibration_parameters.left_cam;
+    sl::CameraParameters camLeft = zed->camera.getCameraInformation().calibration_parameters.left_cam;
+    sl::CameraParameters camRight = zed->camera.getCameraInformation().calibration_parameters.right_cam;
 
     // sl::Mat image; // current left image
 
@@ -134,7 +143,30 @@ NAN_METHOD(Zed::RequestPresent) {
 
     zed->window = windowsystem::CreateWindowHandle(1, 1, false);
     windowsystem::SetCurrentWindowContext(zed->window);
-    glGenTextures(1, &zed->tex);
+    // glGenTextures(1, &zed->tex);
+
+    {
+      glGenTextures(1, &zed->leftTex);
+      glBindTexture(GL_TEXTURE_2D, zed->leftTex);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, camLeft.image_size.width, camLeft.image_size.height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
+      glBindTexture(GL_TEXTURE_2D, 0);
+
+      cudaSafeCall(cudaGraphicsGLRegisterImage(&zed->leftCudaImageResource, zed->leftTex, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsWriteDiscard));
+      // cudaSafeCall(cudaGraphicsUnregisterResource(zed->leftCudaImageResource));
+    }
+    {
+      glGenTextures(1, &zed->rightTex);
+      glBindTexture(GL_TEXTURE_2D, zed->rightTex);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, camLeft.image_size.width, camLeft.image_size.height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
+      glBindTexture(GL_TEXTURE_2D, 0);
+
+      cudaSafeCall(cudaGraphicsGLRegisterImage(&zed->rightCudaImageResource, zed->rightTex, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsWriteDiscard));
+      // cudaSafeCall(cudaGraphicsUnregisterResource(zed->rightCudaImageResource));
+    }
 
     for (;;) {
       zed->Poll();
@@ -160,11 +192,13 @@ void Zed::Poll() {
   Zed *zed = this;
 
   if (zed->camera.grab() == sl::SUCCESS) {
-    // Retrieve image in GPU memory
-    // zed.retrieveImage(image, sl::VIEW_LEFT, sl::MEM_GPU);
     // Update pose data (used for projection of the mesh over the current image)
     sl::Pose pose;
     sl::TRACKING_STATE tracking_state = zed->camera.getPosition(pose);
+    
+    // Retrieve image in GPU memory
+    zed->camera.retrieveImage(zed->leftImage, sl::VIEW_LEFT, sl::MEM_GPU);
+    zed->camera.retrieveImage(zed->rightImage, sl::VIEW_RIGHT, sl::MEM_GPU);
 
     {
       std::lock_guard<std::mutex> lock(zed->mutex);
@@ -192,7 +226,22 @@ void Zed::Poll() {
 
       // zed->mesh.applyTexture(sl::MESH_TEXTURE_RGB);
 
-      sl::Texture &texture = zed->mesh.texture;
+      {
+        cudaArray_t ArrIm;
+        cudaSafeCall(cudaGraphicsMapResources(1, &zed->leftCudaImageResource, 0));
+        cudaSafeCall(cudaGraphicsSubResourceGetMappedArray(&ArrIm, zed->leftCudaImageResource, 0, 0));
+        cudaSafeCall(cudaMemcpy2DToArray(ArrIm, 0, 0, zed->leftImage.getPtr<sl::uchar1>(sl::MEM_GPU), zed->leftImage.getStepBytes(sl::MEM_GPU), zed->leftImage.getPixelBytes()*zed->leftImage.getWidth(), zed->leftImage.getHeight(), cudaMemcpyDeviceToDevice));
+        cudaSafeCall(cudaGraphicsUnmapResources(1, &zed->leftCudaImageResource, 0));
+      }
+      {
+        cudaArray_t ArrIm;
+        cudaSafeCall(cudaGraphicsMapResources(1, &zed->rightCudaImageResource, 0));
+        cudaSafeCall(cudaGraphicsSubResourceGetMappedArray(&ArrIm, zed->rightCudaImageResource, 0, 0));
+        cudaSafeCall(cudaMemcpy2DToArray(ArrIm, 0, 0, zed->rightImage.getPtr<sl::uchar1>(sl::MEM_GPU), zed->rightImage.getStepBytes(sl::MEM_GPU), zed->rightImage.getPixelBytes()*zed->rightImage.getWidth(), zed->rightImage.getHeight(), cudaMemcpyDeviceToDevice));
+        cudaSafeCall(cudaGraphicsUnmapResources(1, &zed->rightCudaImageResource, 0));
+      }
+
+      /* sl::Texture &texture = zed->mesh.texture;
       sl::Mat &textureMaterial = texture.data;
       // sl::Resolution &textureResolution = textureMaterial.getResolution();
       // sl::uchar1 *tex = textureMaterial.getPtr<sl::uchar1>(sl::MEM_GPU);
@@ -222,7 +271,7 @@ void Zed::Poll() {
       cudaGraphicsMapResources(1, &zed->pcuImageRes, 0);
       cudaGraphicsSubResourceGetMappedArray(&arrIm, zed->pcuImageRes, 0, 0);
       cudaMemcpy2DToArray(arrIm, 0, 0, textureMaterial.getPtr<sl::uchar1>(sl::MEM_GPU), textureMaterial.getStepBytes(sl::MEM_GPU), width * sizeof(sl::uchar3), height, cudaMemcpyDeviceToDevice);
-      cudaGraphicsUnmapResources(1, &zed->pcuImageRes, 0);
+      cudaGraphicsUnmapResources(1, &zed->pcuImageRes, 0); */
 
       const float range = 5;
       zed->chunks = zed->mesh.getSurroundingList(pose.pose_data, range);
