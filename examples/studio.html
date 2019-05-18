@@ -1113,7 +1113,6 @@ const _bindEventTarget = target => {
           scene.add(transformControls);
         };
         const _removeTransformControls = () => {
-          transformControls.enabled = false;
           scene.remove(transformControls.object);
           scene.remove(transformControls);
           transformControls.dispose();
