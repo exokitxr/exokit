@@ -652,106 +652,73 @@ const _startTopRenderLoop = () => {
 
     // build hmd data
     let index = oculusMobilePoseFloat32Array.byteOffset;
-    xrState.position.set(new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 3));
-    index += 3*Float32Array.BYTES_PER_ELEMENT;
-    xrState.orientation.set(new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 4));
-    index += 4*Float32Array.BYTES_PER_ELEMENT;
-    const ipd = new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 1)[0];
-    xrState.leftOffset[0] = -ipd/2;
-    xrState.rightOffset[0] = ipd/2;
-    index += 1*Float32Array.BYTES_PER_ELEMENT;
-    const fov = new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 4);
-    xrState.leftFov.set(fov);
-    xrState.rightFov.set(fov);
-    index += 4*Float32Array.BYTES_PER_ELEMENT;
-    xrState.leftViewMatrix.set(new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 16));
-    index += 16*Float32Array.BYTES_PER_ELEMENT;
-    xrState.rightViewMatrix.set(new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 16));
-    index += 16*Float32Array.BYTES_PER_ELEMENT;
-    xrState.leftProjectionMatrix.set(new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 16));
-    index += 16*Float32Array.BYTES_PER_ELEMENT;
-    xrState.rightProjectionMatrix.set(new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 16));
-    index += 16*Float32Array.BYTES_PER_ELEMENT;
+    const _loadHmd = () => {
+      xrState.position.set(new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 3));
+      index += 3*Float32Array.BYTES_PER_ELEMENT;
+      xrState.orientation.set(new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 4));
+      index += 4*Float32Array.BYTES_PER_ELEMENT;
+      const ipd = new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 1)[0];
+      xrState.leftOffset[0] = -ipd/2;
+      xrState.rightOffset[0] = ipd/2;
+      index += 1*Float32Array.BYTES_PER_ELEMENT;
+      const fov = new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 4);
+      xrState.leftFov.set(fov);
+      xrState.rightFov.set(fov);
+      index += 4*Float32Array.BYTES_PER_ELEMENT;
+      xrState.leftViewMatrix.set(new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 16));
+      index += 16*Float32Array.BYTES_PER_ELEMENT;
+      xrState.rightViewMatrix.set(new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 16));
+      index += 16*Float32Array.BYTES_PER_ELEMENT;
+      xrState.leftProjectionMatrix.set(new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 16));
+      index += 16*Float32Array.BYTES_PER_ELEMENT;
+      xrState.rightProjectionMatrix.set(new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 16));
+      index += 16*Float32Array.BYTES_PER_ELEMENT;
+    };
+    _loadHmd();
 
     // build gamepads data
-    {
-      const leftGamepad = xrState.gamepads[0];
+    const _loadGamepad = i => {
+      const xrGamepad = xrState.gamepads[i];
       const gamepadFloat32Array = new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 16);
       index += 16*Float32Array.BYTES_PER_ELEMENT;
       const buttonsFloat32Array = new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 12);
       index += 12*Float32Array.BYTES_PER_ELEMENT;
       if (!isNaN(gamepadFloat32Array[0])) {
-        leftGamepad.connected[0] = true;
+        xrGamepad.connected[0] = true;
 
-        localMatrix.fromArray(gamepadFloat32Array);
-        localMatrix.decompose(localVector, localQuaternion, localVector2);
-        localVector.toArray(leftGamepad.position);
-        localQuaternion.toArray(leftGamepad.orientation);
-
-        // pressed
-        leftGamepad.buttons[0].pressed[0] = buttonsFloat32Array[2]; // thumbstick
-        leftGamepad.buttons[1].pressed[0] = buttonsFloat32Array[4] >= 0.1; // trigger
-        leftGamepad.buttons[2].pressed[0] = buttonsFloat32Array[5] >= 0.1; // grip
-        leftGamepad.buttons[3].pressed[0] = buttonsFloat32Array[0] == 1; // xbutton
-        leftGamepad.buttons[4].pressed[0] = buttonsFloat32Array[1] == 1; // ybutton
-        leftGamepad.buttons[5].pressed[0] = buttonsFloat32Array[3] == 1; // menu
-
-        // touched
-        leftGamepad.buttons[0].touched[0] = buttonsFloat32Array[8]; // thumbstick
-        leftGamepad.buttons[1].touched[0] = buttonsFloat32Array[9]; // trigger
-        leftGamepad.buttons[3].touched[0] = buttonsFloat32Array[6]; // xbutton
-        leftGamepad.buttons[4].touched[0] = buttonsFloat32Array[7]; // ybutton
-
-        // thumbstick axis
-        leftGamepad.axes[0] = buttonsFloat32Array[10];
-        leftGamepad.axes[1] = buttonsFloat32Array[11];
-
-        // values
-        leftGamepad.buttons[1].value[0] = buttonsFloat32Array[4]; // trigger
-        leftGamepad.buttons[2].value[0] = buttonsFloat32Array[5]; // grip
-      } else {
-        leftGamepad.connected[0] = 0;
-      }
-    }
-    {
-      const rightGamepad = xrState.gamepads[1];
-      const gamepadFloat32Array = new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 16);
-      index += 16*Float32Array.BYTES_PER_ELEMENT;
-      const buttonsFloat32Array = new Float32Array(oculusMobilePoseFloat32Array.buffer, index, 12);
-      index += 12*Float32Array.BYTES_PER_ELEMENT;
-      if (!isNaN(gamepadFloat32Array[0])) {
-        rightGamepad.connected[0] = true;
-
-        localMatrix.fromArray(gamepadFloat32Array);
-        localMatrix.decompose(localVector, localQuaternion, localVector2);
-        localVector.toArray(rightGamepad.position);
-        localQuaternion.toArray(rightGamepad.orientation);
+        localMatrix
+          .fromArray(gamepadFloat32Array)
+          .decompose(localVector, localQuaternion, localVector2);
+        localVector.toArray(xrGamepad.position);
+        localQuaternion.toArray(xrGamepad.orientation);
 
         // pressed
-        rightGamepad.buttons[0].pressed[0] = buttonsFloat32Array[2]; // thumbstick
-        rightGamepad.buttons[1].pressed[0] = buttonsFloat32Array[4] >= 0.1; // trigger
-        rightGamepad.buttons[2].pressed[0] = buttonsFloat32Array[5] >= 0.1; // grip
-        rightGamepad.buttons[3].pressed[0] = buttonsFloat32Array[0] == 1; // xbutton
-        rightGamepad.buttons[4].pressed[0] = buttonsFloat32Array[1] == 1; // ybutton
-        rightGamepad.buttons[5].pressed[0] = buttonsFloat32Array[3] == 1; // menu
+        xrGamepad.buttons[0].pressed[0] = buttonsFloat32Array[2]; // thumbstick
+        xrGamepad.buttons[1].pressed[0] = buttonsFloat32Array[4] >= 0.1; // trigger
+        xrGamepad.buttons[2].pressed[0] = buttonsFloat32Array[5] >= 0.1; // grip
+        xrGamepad.buttons[3].pressed[0] = buttonsFloat32Array[0] == 1; // xbutton
+        xrGamepad.buttons[4].pressed[0] = buttonsFloat32Array[1] == 1; // ybutton
+        xrGamepad.buttons[5].pressed[0] = buttonsFloat32Array[3] == 1; // menu
 
         // touched
-        rightGamepad.buttons[0].touched[0] = buttonsFloat32Array[8]; // thumbstick
-        rightGamepad.buttons[1].touched[0] = buttonsFloat32Array[9]; // trigger
-        rightGamepad.buttons[3].touched[0] = buttonsFloat32Array[6]; // xbutton
-        rightGamepad.buttons[4].touched[0] = buttonsFloat32Array[7]; // ybutton
+        xrGamepad.buttons[0].touched[0] = buttonsFloat32Array[8]; // thumbstick
+        xrGamepad.buttons[1].touched[0] = buttonsFloat32Array[9]; // trigger
+        xrGamepad.buttons[3].touched[0] = buttonsFloat32Array[6]; // xbutton
+        xrGamepad.buttons[4].touched[0] = buttonsFloat32Array[7]; // ybutton
 
         // thumbstick axis
-        rightGamepad.axes[0] = buttonsFloat32Array[10];
-        rightGamepad.axes[1] = buttonsFloat32Array[11];
+        xrGamepad.axes[0] = buttonsFloat32Array[10];
+        xrGamepad.axes[1] = buttonsFloat32Array[11];
 
         // values
-        rightGamepad.buttons[1].value[0] = buttonsFloat32Array[4]; // trigger
-        rightGamepad.buttons[2].value[0] = buttonsFloat32Array[5]; // grip
+        xrGamepad.buttons[1].value[0] = buttonsFloat32Array[4]; // trigger
+        xrGamepad.buttons[2].value[0] = buttonsFloat32Array[5]; // grip
       } else {
-        rightGamepad.connected[0] = 0;
+        xrGamepad.connected[0] = 0;
       }
     }
+    _loadGamepad(0);
+    _loadGamepad(1);
 
     /* vrPresentState.system.GetProjectionRaw(0, localFovArray);
     for (let i = 0; i < localFovArray.length; i++) {
