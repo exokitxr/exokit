@@ -740,97 +740,72 @@ const _startTopRenderLoop = () => {
     }
 
     if (topVrPresentState.hasPose) {
-      localVector.fromArray(transformArray, 0);
-      localQuaternion.fromArray(transformArray, 3);
-      localVector2.set(1, 1, 1);
-      localMatrix.compose(localVector, localQuaternion, localVector2).getInverse(localMatrix);
-      localVector.toArray(xrState.position);
-      localQuaternion.toArray(xrState.orientation);
-      localMatrix.toArray(xrState.leftViewMatrix);
-      xrState.leftProjectionMatrix.set(projectionArray.slice(0, 16));
+      const _loadHmd = () => {
+        localVector.fromArray(transformArray, 0);
+        localQuaternion.fromArray(transformArray, 3);
+        localVector2.set(1, 1, 1);
+        localMatrix.compose(localVector, localQuaternion, localVector2).getInverse(localMatrix);
+        localVector.toArray(xrState.position);
+        localQuaternion.toArray(xrState.orientation);
+        localMatrix.toArray(xrState.leftViewMatrix);
+        xrState.leftProjectionMatrix.set(projectionArray.slice(0, 16));
 
-      localVector.fromArray(transformArray, 3 + 4);
-      localQuaternion.fromArray(transformArray, 3 + 4 + 3);
-      // localVector2.set(1, 1, 1);
-      localMatrix.compose(localVector, localQuaternion, localVector2).getInverse(localMatrix);
-      localMatrix.toArray(xrState.rightViewMatrix);
-      xrState.rightProjectionMatrix.set(projectionArray.slice(16, 32));
+        localVector.fromArray(transformArray, 3 + 4);
+        localQuaternion.fromArray(transformArray, 3 + 4 + 3);
+        // localVector2.set(1, 1, 1);
+        localMatrix.compose(localVector, localQuaternion, localVector2).getInverse(localMatrix);
+        localMatrix.toArray(xrState.rightViewMatrix);
+        xrState.rightProjectionMatrix.set(projectionArray.slice(16, 32));
+      };
+      _loadHmd();
 
       let controllersArrayIndex = 0;
-      {
-        const leftGamepad = xrState.gamepads[0];
-        leftGamepad.connected[0] = controllersArray[controllersArrayIndex];
+      const _loadGamepad = i => {
+        const xrGamepad = xrState.gamepads[0];
+
+        xrGamepad.connected[0] = controllersArray[controllersArrayIndex];
+
         controllersArrayIndex++;
-        leftGamepad.position.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 3));
+        xrGamepad.position.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 3));
         controllersArrayIndex += 3;
-        leftGamepad.orientation.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 4));
+        xrGamepad.orientation.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 4));
         controllersArrayIndex += 4;
-        const leftTriggerValue = controllersArray[controllersArrayIndex];
-        leftGamepad.buttons[1].value[0] = leftTriggerValue;
-        const leftTriggerPushed = leftTriggerValue > 0.5 ? 1 : 0;
-        leftGamepad.buttons[1].touched[0] = leftTriggerPushed;
-        leftGamepad.buttons[1].pressed[0] = leftTriggerPushed;
-        leftGamepad.axes[2] = leftTriggerValue;
+
+        const triggerValue = controllersArray[controllersArrayIndex];
+        xrGamepad.buttons[1].value[0] = triggerValue;
+        const triggerPushed = triggerValue > 0.5 ? 1 : 0;
+        xrGamepad.buttons[1].touched[0] = triggerPushed;
+        xrGamepad.buttons[1].pressed[0] = triggerPushed;
+        xrGamepad.axes[2] = triggerValue;
         controllersArrayIndex++;
-        const leftBumperValue = controllersArray[controllersArrayIndex];
-        leftGamepad.buttons[2].value[0] = leftBumperValue;
-        const leftBumperPushed = leftBumperValue > 0.5 ? 1 : 0;
-        leftGamepad.buttons[2].touched[0] = leftBumperPushed;
-        leftGamepad.buttons[2].pressed[0] = leftBumperPushed;
+
+        const bumperValue = controllersArray[controllersArrayIndex];
+        xrGamepad.buttons[2].value[0] = bumperValue;
+        const bumperPushed = bumperValue > 0.5 ? 1 : 0;
+        xrGamepad.buttons[2].touched[0] = bumperPushed;
+        xrGamepad.buttons[2].pressed[0] = bumperPushed;
         controllersArrayIndex++;
-        const leftHomeValue = controllersArray[controllersArrayIndex];
-        leftGamepad.buttons[3].value[0] = leftHomeValue;
-        const leftHomePushed = leftHomeValue > 0.5 ? 1 : 0;
-        leftGamepad.buttons[3].touched[0] = leftHomePushed;
-        leftGamepad.buttons[3].pressed[0] = leftHomePushed;
+
+        const homeValue = controllersArray[controllersArrayIndex];
+        xrGamepad.buttons[3].value[0] = homeValue;
+        const homePushed = homeValue > 0.5 ? 1 : 0;
+        xrGamepad.buttons[3].touched[0] = homePushed;
+        xrGamepad.buttons[3].pressed[0] = homePushed;
         controllersArrayIndex++;
-        leftGamepad.axes[0] = controllersArray[controllersArrayIndex];
-        leftGamepad.axes[1] = controllersArray[controllersArrayIndex + 1];
-        const leftPadValue = controllersArray[controllersArrayIndex + 2];
-        leftGamepad.buttons[0].value[0] = leftPadValue;
-        const leftPadTouched = leftPadValue > 0 ? 1 : 0;
-        const leftPadPushed = leftPadValue > 0.5 ? 1: 0;
-        leftGamepad.buttons[0].touched[0] = leftPadTouched;
-        leftGamepad.buttons[0].pressed[0] = leftPadPushed;
+
+        xrGamepad.axes[0] = controllersArray[controllersArrayIndex];
+        xrGamepad.axes[1] = controllersArray[controllersArrayIndex + 1];
+
+        const padValue = controllersArray[controllersArrayIndex + 2];
+        xrGamepad.buttons[0].value[0] = padValue;
+        const padTouched = padValue > 0 ? 1 : 0;
+        const padPushed = padValue > 0.5 ? 1: 0;
+        xrGamepad.buttons[0].touched[0] = padTouched;
+        xrGamepad.buttons[0].pressed[0] = padPushed;
         controllersArrayIndex += 3;
-      }
-      {
-        const rightGamepad = xrState.gamepads[1];
-        rightGamepad.connected[0] = controllersArray[controllersArrayIndex];
-        controllersArrayIndex++;
-        rightGamepad.position.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 3));
-        controllersArrayIndex += 3;
-        rightGamepad.orientation.set(controllersArray.slice(controllersArrayIndex, controllersArrayIndex + 4));
-        controllersArrayIndex += 4;
-        const rightTriggerValue = controllersArray[controllersArrayIndex];
-        rightGamepad.buttons[1].value[0] = rightTriggerValue;
-        const rightTriggerPushed = rightTriggerValue > 0.5 ? 1 : 0;
-        rightGamepad.buttons[1].touched[0] = rightTriggerPushed;
-        rightGamepad.buttons[1].pressed[0] = rightTriggerPushed;
-        rightGamepad.axes[2] = rightTriggerValue;
-        controllersArrayIndex++;
-        const rightBumperValue = controllersArray[controllersArrayIndex];
-        rightGamepad.buttons[2].value[0] = rightBumperValue;
-        const rightBumperPushed = rightBumperValue > 0.5 ? 1 : 0;
-        rightGamepad.buttons[2].touched[0] = rightBumperPushed;
-        rightGamepad.buttons[2].pressed[0] = rightBumperPushed;
-        controllersArrayIndex++;
-        const rightHomeValue = controllersArray[controllersArrayIndex];
-        rightGamepad.buttons[3].value[0] = rightHomeValue;
-        const rightHomePushed = rightHomeValue > 0.5 ? 1 : 0;
-        rightGamepad.buttons[3].touched[0] = rightHomePushed;
-        rightGamepad.buttons[3].pressed[0] = rightHomePushed;
-        controllersArrayIndex++;
-        rightGamepad.axes[0] = controllersArray[controllersArrayIndex];
-        rightGamepad.axes[1] = controllersArray[controllersArrayIndex + 1];
-        const rightPadValue = controllersArray[controllersArrayIndex + 2];
-        rightGamepad.buttons[0].value[0] = rightPadValue;
-        const rightPadTouched = rightPadValue > 0 ? 1 : 0;
-        const rightPadPushed = rightPadValue > 0.5 ? 1 : 0;
-        rightGamepad.buttons[0].touched[0] = rightPadTouched;
-        rightGamepad.buttons[0].pressed[0] = rightPadPushed;
-        controllersArrayIndex += 3;
-      }
+      };
+      _loadGamepad(0);
+      _loadGamepad(1);
     }
 
     // queue magic leap state updates
