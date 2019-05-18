@@ -55,7 +55,7 @@
     "isolator": "0.0.9",
     "leapmotion": "0.0.4",
     "libnode.a": "0.0.9",
-    "libnode.a-android": "0.0.1",
+    "libnode.a-android": "0.0.2",
     "minimist": "^1.2.0",
     "mkdirp": "^0.5.1",
     "murmurhash-js": "^1.0.0",
