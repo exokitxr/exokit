@@ -38,7 +38,7 @@ Build targets :
 
 ## Magic Leap
 
-**Requirements**: Windows Subsystem for Linux, Ubuntu Bash, Node.js 12.2.0 for Windows, Python 2, Python 3
+**Requirements**: Windows Subsystem for Linux, Ubuntu Bash, Node.js 11.15.0 for Windows, Python 2, Python 3
 
 > *NOTE: Due to combined usage of Ubuntu and Windows tools, you must check out Exokit to somewhere reachable from both; the easiest way is to do your `git clone` inside Ubuntu bash, since for example Ubuntu can reach `C:\exokit` as `/mnt/c/exokit`. (included in instructions below)*
 

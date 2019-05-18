@@ -12,7 +12,7 @@ This guide explains how to package your XR site with the Exokit Engine as an MPK
 In the Exokit [`main.cpp`](https://github.com/exokitxr/exokit/blob/f10dadf0013de0a35a5e72046140a0345987ab80/main.cpp#L416) is where you will find the default site that the Exokit MPK will load into. Change the `jsString` to your site URL or file path.
 
 ## Prerequisites
-Node `12.2.0`  
+Node `11.15.0`  
 Latest Exokit
 Ubuntu Windows Subsystem for Linux (WSL)
 
