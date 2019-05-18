@@ -19,7 +19,7 @@ const repl = require('repl');
 
 const core = require('./core.js');
 const mkdirp = require('mkdirp');
-const replHistory = require('repl.history');
+// const replHistory = require('repl.history');
 const minimist = require('minimist');
 
 const {version} = require('../package.json');
@@ -1252,7 +1252,7 @@ const _start = () => {
       prompt,
       eval: replEval,
     });
-    replHistory(r, path.join(dataPath, '.repl_history'));
+    // replHistory(r, path.join(dataPath, '.repl_history'));
     r.on('exit', () => {
       process.exit();
     });
@@ -1260,7 +1260,7 @@ const _start = () => {
 };
 
 if (require.main === module) {
-  if (!nativeBindings.nativePlatform) { // not a mobile platform
+  /* if (!nativeBindings.nativePlatform) { // not a mobile platform
     require(path.join(__dirname, 'bugsnag'));
     require('fault-zone').registerHandler((stack, stackLen) => {
       const message = new Buffer(stack, 0, stackLen).toString('utf8');
@@ -1272,7 +1272,7 @@ if (require.main === module) {
       });
       process.exit(1);
     });
-  }
+  } */
   if (args.log) {
     const RedirectOutput = require('redirect-output').default;
     new RedirectOutput({

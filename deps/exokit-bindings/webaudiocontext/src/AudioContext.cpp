@@ -1,6 +1,13 @@
 #include <AudioContext.h>
 
 namespace webaudio {
+  
+WebAudioAsync *getWebAudioAsync() {
+  if (!_webAudioAsync) {
+    _webAudioAsync.reset(new WebAudioAsync());
+  }
+  return _webAudioAsync.get();
+}
 
 lab::AudioContext *getDefaultAudioContext(float sampleRate) {
   if (!_defaultAudioContext) {
@@ -30,8 +37,6 @@ Local<Object> AudioContext::Initialize(Isolate *isolate, Local<Value> audioListe
     adgStopRecording
   );
 #endif
-
-  _webAudioAsync.reset(new WebAudioAsync());
 
   /* atexit([]{
     uv_close((uv_handle_t *)&threadAsync, nullptr);
@@ -473,7 +478,9 @@ NAN_METHOD(AudioContext::Close) {
 NAN_METHOD(AudioContext::Destroy) {
   // Nan::HandleScope scope;
 
-  _webAudioAsync.reset();
+  if (_webAudioAsync) {
+    _webAudioAsync.reset();
+  }
 }
 
 NAN_GETTER(AudioContext::CurrentTimeGetter) {
