@@ -4,7 +4,7 @@
 if true || [ -z "${PFX_KEY}" ]
 then
   cp metadata/appdmg.json /tmp
-  appdmg /tmp/appdmg.json exokit-macos-x64.dmg
+  appdmg-exokit /tmp/appdmg.json exokit-macos-x64.dmg
 else
   security create-keychain -p nopassword build.keychain
   security default-keychain -s build.keychain
@@ -15,5 +15,5 @@ else
   find /tmp/Exokit.app -type f | xargs -n 1 codesign --force --verify --verbose --sign "7C22D41BA5AB743D3E47D543F6B27FE2FC720412"
   codesign --force --verify --verbose --sign "7C22D41BA5AB743D3E47D543F6B27FE2FC720412" /tmp/Exokit.app
   cp metadata/appdmg-codesign.json /tmp
-  appdmg /tmp/appdmg-codesign.json exokit-macos-x64.dmg
+  appdmg-exokit /tmp/appdmg-codesign.json exokit-macos-x64.dmg
 fi

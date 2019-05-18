@@ -59,7 +59,7 @@
     "minimist": "^1.2.0",
     "mkdirp": "^0.5.1",
     "murmurhash-js": "^1.0.0",
-    "nan": "^2.13.1",
+    "nan": "^2.14.0",
     "native-audio-deps": "0.0.63",
     "native-browser-deps": "0.0.16",
     "native-browser-deps-linux": "0.0.8",
