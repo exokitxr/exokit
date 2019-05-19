@@ -710,7 +710,7 @@ const _closeTab = tab => {
 };
 const _closeAllTabs = () => { // XXX trigger this when switching servers
   for (let i = 0; i < tabs.length; i++) {
-    const {iframe} = tab;
+    const {iframe} = tabs[i];
     if (iframe.destroy) {
       iframe.destroy();
     }
@@ -928,6 +928,14 @@ const {
         }
         case 'open': {
           const {url, d} = m.data;
+          const {position, quaternion, scale} = _getFrontOfCamera();
+          _openUrl(url, position, quaternion, scale, d);
+
+          break;
+        }
+        case 'reload': {
+          const {url, d} = m.data;
+          _closeAllTabs();
           const {position, quaternion, scale} = _getFrontOfCamera();
           _openUrl(url, position, quaternion, scale, d);
 
