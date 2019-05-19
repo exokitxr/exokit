@@ -6,7 +6,7 @@ image:
 environment:
   nodejs_version: "12"
   PFX_KEY:
-    secure: ewZJqEOOh1B8ZWAJyd2dikQZ9BtcN4Cv04WEirXNDT8m9J06ZHgsw8hVcYmTinw8
+    secure: 301vAt8c2+69YqMuoyjG4wILdUkMkDkvkrpQblrC5DI=
 
 # Install scripts. (runs after repo cloning)
 install:
@@ -35,6 +35,7 @@ after_test:
       mkdir dist
       .\buildtools\iscc "$pwd\metadata\exokit.iss" "/dMyAppVersion=$version" /odist /qp
       mv dist\*.exe exokit-win-x64.exe
+      SignTool /f .\metadata\codesign-windows.pfx /p "$env:PFX_KEY" exokit-win-x64.exe
 
 artifacts:
   - path: "exokit-win-x64.exe"
