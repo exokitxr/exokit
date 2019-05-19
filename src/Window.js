@@ -1360,10 +1360,6 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
         {
           let [fbo, tex, depthTex, _msFbo, _msTex, _msDepthTex] = nativeWindow.createRenderTarget(context, width, height);
 
-          /* msFbo = vrPresentState.msFbo;
-          msTex = vrPresentState.msTex;
-          msDepthTex = vrPresentState.msDepthTex; */
-
           context.canvas.framebuffer = {
             type: 'compositor',
             width,
