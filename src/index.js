@@ -308,6 +308,7 @@ const _startTopRenderLoop = () => {
     total: 0,
   };
   const TIMESTAMP_FRAMES = 100;
+  const childSyncs = [];
 
   if (nativeBindings.nativeWindow.pollEvents) {
     setInterval(() => {
@@ -914,8 +915,23 @@ const _startTopRenderLoop = () => {
       console.log('-'.repeat(80) + 'start frame');
     }
 
+    for (let i = 0; i < childSyncs.length; i++) {
+      nativeBindings.nativeWindow.deleteSync(childSyncs[i]);
+    }
+    childSyncs.length = 0;
+
     // tick animation frames
-    await Promise.all(windows.map(window => window.runAsync('tickAnimationFrame')));
+    await Promise.all(windows.map(window => window.runAsync('tickAnimationFrame').then(syncs => {
+      if (topVrPresentState.windowHandle) {
+        nativeBindings.nativeWindow.setCurrentWindowContext(topVrPresentState.windowHandle);
+        for (let i = 0; i < syncs.length; i++) {
+          const sync = syncs[i];
+          nativeBindings.nativeWindow.waitSync(sync);
+          childSyncs.push(sync);
+        }
+      }
+    })));
+
 
     if (args.performance) {
       const now = Date.now();
