@@ -187,9 +187,9 @@ class Engine extends React.Component {
       const url = urlInput.value;
 
       window.postMessage({
-        method: 'open',
+        method: 'reload',
         url,
-        d: null,
+        d: 3,
       });
 
       this.blur();
