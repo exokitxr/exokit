@@ -599,8 +599,6 @@ NAN_METHOD(CreateVrTopRenderTarget) {
 }
 
 void CreateVrCompositorRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint *pFbo, GLuint *pmsFbo, GLuint *pmsColorTex, GLuint *pmsDepthStencilTex) {
-  const int samples = 4;
-
   GLuint &fbo = *pFbo;
   GLuint &msFbo = *pmsFbo;
   GLuint &msColorTex = *pmsColorTex;
@@ -615,9 +613,9 @@ void CreateVrCompositorRenderTarget(WebGLRenderingContext *gl, int width, int he
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msColorTex);
     glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
 #if !defined(ANDROID) && !defined(LUMIN)
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA8, width, height, true);
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, NUM_SAMPLES, GL_RGBA8, width, height, true);
 #else
-    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA8, width, height, true);
+    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, NUM_SAMPLES, GL_RGBA8, width, height, true);
 #endif
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, msColorTex, 0);
 
@@ -625,9 +623,9 @@ void CreateVrCompositorRenderTarget(WebGLRenderingContext *gl, int width, int he
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex);
     glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
 #if !defined(ANDROID) && !defined(LUMIN)
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_DEPTH24_STENCIL8, width, height, true);
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, NUM_SAMPLES, GL_DEPTH24_STENCIL8, width, height, true);
 #else
-    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_DEPTH24_STENCIL8, width, height, true);
+    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, NUM_SAMPLES, GL_DEPTH24_STENCIL8, width, height, true);
 #endif
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex, 0);
 
