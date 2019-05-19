@@ -207,15 +207,17 @@ void OculusMobileContext::PollEvents(bool wait) {
         oculusMobileContext->androidNativeWindow = nullptr;
       }
 
-      /* static const int CPU_LEVEL = 2;
+      static const int CPU_LEVEL = 3;
       static const int GPU_LEVEL = 3;
-      static const int NUM_MULTI_SAMPLES = 4;
       // Set performance parameters once we have entered VR mode and have a valid ovrMobile.
       if (oculusMobileContext->ovrState) {
-        vrapi_SetClockLevels( app->Ovr, app->CpuLevel, app->GpuLevel );
-        vrapi_SetPerfThread( app->Ovr, VRAPI_PERF_THREAD_TYPE_MAIN, app->MainThreadTid );
-        vrapi_SetPerfThread( app->Ovr, VRAPI_PERF_THREAD_TYPE_RENDERER, app->RenderThreadTid );
-      } */
+        vrapi_SetClockLevels(oculusMobileContext->ovrState, CPU_LEVEL, GPU_LEVEL);
+        pid_t tid = gettid();
+        vrapi_SetPerfThread(oculusMobileContext->ovrState, VRAPI_PERF_THREAD_TYPE_MAIN, tid);
+        // vrapi_SetPerfThread(oculusMobileContext->ovrState, VRAPI_PERF_THREAD_TYPE_RENDERER, tid);
+        vrapi_SetDisplayRefreshRate(oculusMobileContext->ovrState, 72);
+        vrapi_SetExtraLatencyMode(oculusMobileContext->ovrState, VRAPI_EXTRA_LATENCY_MODE_ON);
+      }
     } else if (!shouldBeRunning && oculusMobileContext->ovrState != nullptr) {
       vrapi_LeaveVrMode(oculusMobileContext->ovrState);
       oculusMobileContext->ovrState = nullptr;
