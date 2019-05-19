@@ -22,6 +22,7 @@ public:
   static NAN_METHOD(New);
   void Destroy();
 
+  static NAN_METHOD(CreateSwapChain);
   static NAN_METHOD(WaitGetPoses);
   static NAN_METHOD(Submit);
   static NAN_METHOD(GetRecommendedRenderTargetSize);
@@ -34,12 +35,12 @@ public:
   ovrMobile *ovrState;
   bool running;
   ANativeWindow *androidNativeWindow;
-  ovrTextureSwapChain *swapChains[2];
+  ovrTextureSwapChain *colorSwapChain;
+  ovrTextureSwapChain *depthSwapChain;
   int swapChainMetrics[2];
   int swapChainLength;
   int swapChainIndex;
   bool hasSwapChain;
-  GLuint fboId;
   ovrTracking2 tracking;
   long long frameIndex;
 	double displayTime;
