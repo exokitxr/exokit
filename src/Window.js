@@ -1194,6 +1194,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
   window.tickAnimationFrame = async () => {
     const _bindXrFramebuffer = () => {
       if (vrPresentState.glContext) {
+        nativeWindow.setCurrentWindowContext(vrPresentState.glContext.getWindowHandle());
         vrPresentState.glContext.setDefaultFramebuffer((vrPresentState.layers.length > 0 || vrPresentState.glContext.attrs.antialias) ? vrPresentState.msFbo : vrPresentState.fbo);
         nativeWindow.bindVrChildFbo(vrPresentState.glContext, vrPresentState.fbo, xrState.tex[0], xrState.depthTex[0]);
       }
