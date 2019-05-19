@@ -34,7 +34,7 @@ RUN \
   $ANDROID_HOME/tools/bin/sdkmanager "platform-tools" "platforms;android-28" > /dev/null && \
   $ANDROID_HOME/tools/bin/sdkmanager "ndk-bundle" > /dev/null && \
   export PATH="$PATH:$(pwd)/node/bin" && \
-  scripts/make-toolchain-android.sh && \
-  scripts/build-android.sh
+  scripts/oculusmobile/make-toolchain-android.sh && \
+  scripts/oculusmobile/build-android.sh
 RUN \
   mv android/app/build/outputs/apk/debug/app-debug.apk ./exokit.apk

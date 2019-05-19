@@ -30,21 +30,21 @@ Once the package manager is opened, download the 0.19.0 version of the SDK.
 
 ## Build MPK
 
-Confirm that `MLSDK` in `version-ml.sh` points to the Magic Leap SDK directory. Create the `cert` directory and place the renamed certificate and private key inside.
+Confirm that `MLSDK` in `scripts/magicleap/version-ml.sh` points to the Magic Leap SDK directory. Create the `cert` directory and place the renamed certificate and private key inside.
 ```sh
 cd exokit
-# edit MLSDK path in ./scripts/version-ml.sh
+# edit MLSDK path in ./scripts/magicleap/version-ml.sh
 # place the renamed certificate in cert/app.cert and private key in cert/app.privkey
 ```
 
 Build the MPK
 ```sh
 # Run this inside Ubuntu WSL
-./scripts/build-ml.sh
+./scripts/magicleap/build-ml.sh
 ```
 
 If you want to now install and run into your plugged in device using mldb
 ```sh
-./scripts/install-ml.sh
-./scripts/run-ml.sh
+./scripts/magicleap/install-ml.sh
+./scripts/magicleap/run-ml.sh
 ```

@@ -52,7 +52,7 @@ Build targets :
 1. `git clone https://github.com/exokitxr/exokit.git`
 1. install dependencies: `sudo apt-get install -y build-essential wget python libglfw3-dev libglew-dev libfreetype6-dev libfontconfig1-dev uuid-dev libxcursor-dev libxinerama-dev libxi-dev libasound2-dev libexpat1-dev`
 1. `export MLSDK=/mnt/c/your_mlsdk_path_goes_here # fill this in` e.g. `export MLSDK=/mnt/c/Users/Name/MagicLeap/mlsdk/v0.20.0/`
-1. run `scripts/build-ml.sh`
+1. run `scripts/magicleap/build-ml.sh`
 
 Note that, unlike for other target platform you should **not** run `npm install`. If you do remove the `node_modules/` directory and clean npm cache.
 
@@ -64,4 +64,4 @@ Note that, unlike for other target platform you should **not** run `npm install`
 1. `git clone https://github.com/exokitxr/exokit.git`
 1. install dependencies: `sudo apt-get install -y build-essential wget python libglfw3-dev libglew-dev libfreetype6-dev libfontconfig1-dev uuid-dev libxcursor-dev libxinerama-dev libxi-dev libasound2-dev libexpat1-dev`
 1. `export MLSDK=/mnt/c/your_mlsdk_path_goes_here # fill this in` e.g. `export MLSDK=/mnt/c/Users/Name/MagicLeap/mlsdk/v0.20.0/`
-1. run `scripts/build-ml.sh --unsigned`
+1. run `scripts/magicleap/build-ml.sh --unsigned`

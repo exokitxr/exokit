@@ -95,17 +95,17 @@ Confirm that `$ANDROID_HOME` points to Android/Sdk directory
 Make the NDK standalone toolchain
 ```sh
 cd exokit
-./scripts/make-toolchain-android.sh
+./scripts/oculusmobile/make-toolchain-android.sh
 ```
 
 Build the APK
 ```sh
 # Run this inside Ubuntu WSL
-./scripts/build-android.sh
+./scripts/oculusmobile/build-android.sh
 ```
 
 If you want to now install and run into your plugged in device using adb
 ```sh
-./scripts/install-android.sh
-./scripts/run-android.sh
+./scripts/oculusmobile/install-android.sh
+./scripts/oculusmobile/run-android.sh
 ```
