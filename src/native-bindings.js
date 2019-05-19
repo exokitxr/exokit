@@ -61,7 +61,10 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
 
   gl.d = 3;
   gl.canvas = canvas;
-  gl.desynchronized = !!attrs.desynchronized;
+  gl.attrs = {
+    antialias: !!attrs.antialias,
+    desynchronized: !!attrs.desynchronized,
+  };
 
   const document = canvas.ownerDocument;
   const window = document.defaultView;
@@ -234,7 +237,7 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
       }
     });
     
-    const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = gl.desynchronized ? [
+    const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = gl.attrs.desynchronized ? [
       0, 0, 0, 0, 0, 0,
     ] : nativeWindow.createRenderTarget(gl, canvasWidth, canvasHeight);
     if (msFbo) {
@@ -250,7 +253,7 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
       depthTex,
     };
     gl.resize = (width, height) => {
-      if (!gl.desynchronized && gl.framebuffer.type === 'canvas') {
+      if (!gl.attrs.desynchronized && gl.framebuffer.type === 'canvas') {
         nativeWindow.setCurrentWindowContext(windowHandle);
         const [newFbo, newTex, newDepthTex, newMsFbo, newMsTex, newMsDepthTex] = nativeWindow.resizeRenderTarget(gl, width, height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
 

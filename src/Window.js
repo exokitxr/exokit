@@ -1192,6 +1192,12 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     }
   };
   window.tickAnimationFrame = async () => {
+    const _bindXrFramebuffer = () => {
+      if (vrPresentState.glContext) {
+        vrPresentState.glContext.setDefaultFramebuffer((vrPresentState.layers.length > 0 || vrPresentState.glContext.attrs.antialias) ? vrPresentState.msFbo : vrPresentState.fbo);
+        nativeWindow.bindVrChildFbo(vrPresentState.glContext, vrPresentState.fbo, xrState.tex[0], xrState.depthTex[0]);
+      }
+    };
     const _emitXrEvents = () => {
       if (vrPresentState.hmdType === 'fake') {
         window[symbols.mrDisplaysSymbol].fakeVrDisplay.update();
@@ -1213,14 +1219,14 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
           }
 
           if (context === vrPresentState.glContext) {
-            nativeWindow.bindVrChildFbo(context, vrPresentState.fbo, xrState.tex[0], xrState.depthTex[0]);
-
             const width = xrState.renderWidth[0]*2;
             const height = xrState.renderHeight[0];
             if (vrPresentState.layers.length > 0) {
               nativeWindow.composeLayers(context, vrPresentState.fbo, vrPresentState.layers, xrState);
             } else {
-              nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, width, height, width, height, true, false, false);
+              if (context.getDefaultFramebuffer() === vrPresentState.msFbo) { // if rendering to msFbo, not direct to fbo
+                nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, width, height, width, height, true, false, false);
+              }
             }
 
             if (vrPresentState.hmdType === 'fake' || vrPresentState.hmdType === 'oculus' || vrPresentState.hmdType === 'openvr') {
@@ -1228,7 +1234,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
               nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, width, height, dWidth, dHeight, true, false, false);
             }
           } else {
-            if (!context.desynchronized) {
+            if (!context.attrs.desynchronized) {
               const width = context.canvas.width * (args.blit ? 0.5 : 1);
               const height = context.canvas.height;
               const {width: dWidth, height: dHeight} = nativeWindow.getFramebufferSize(windowHandle);
@@ -1317,7 +1323,8 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       ]);
       clearTimeout(timeout);
     };
-    
+
+    _bindXrFramebuffer();
     _emitXrEvents();
 
     const childPromises = _renderChildren();
@@ -1349,7 +1356,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       const height = xrState.renderHeight[0];
       if (!window.document.hidden) {
         const [fbo, msFbo, msTex, msDepthTex] = nativeWindow.createVrCompositorRenderTarget(context, width, height);
-        context.setDefaultFramebuffer(msFbo);
+        context.setDefaultFramebuffer(msFbo); // note: this is dynamically set depending on layer/antialias mode
 
         vrPresentState.glContext = context;
         vrPresentState.fbo = fbo;
