@@ -4,7 +4,7 @@ version: 0.0.{build}
 image:
   Visual Studio 2017
 environment:
-  nodejs_version: "11"
+  nodejs_version: "12"
   PFX_KEY:
     secure: ewZJqEOOh1B8ZWAJyd2dikQZ9BtcN4Cv04WEirXNDT8m9J06ZHgsw8hVcYmTinw8
 
