@@ -189,7 +189,7 @@ class Engine extends React.Component {
       window.postMessage({
         method: 'reload',
         url,
-        d: 3,
+        d: null,
       });
 
       this.blur();
