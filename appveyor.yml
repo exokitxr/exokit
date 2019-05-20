@@ -12,7 +12,7 @@ environment:
     secure: 301vAt8c2+69YqMuoyjG4wILdUkMkDkvkrpQblrC5DI=
 
 init:
-  - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+  # - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 
 # Install scripts. (runs after repo cloning)
 install:
