@@ -1230,7 +1230,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       }
     };
     const _composeBasicContext = (context, windowHandle) => {
-      if (!context.attrs.desynchronized) {
+      if (context.framebuffer.type === 'canvas' && !context.desynchronized) {
         const width = context.canvas.width * (args.blit ? 0.5 : 1);
         const height = context.canvas.height;
         const {width: dWidth, height: dHeight} = nativeWindow.getFramebufferSize(windowHandle);
