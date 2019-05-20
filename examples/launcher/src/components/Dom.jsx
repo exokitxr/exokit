@@ -8,12 +8,15 @@ const _decorateKeypaths = (el, keypath = []) => {
   }
 };
 const _el2Text = el => {
-  let result = '<' + el.tagName.toLowerCase();
-  for (let i = 0; i < el.attrs.length; i++) {
-    const attr = el.attrs[i];
-    result += ' ' + attr.name + '=' + JSON.stringify(attr.value);
+  let result = '';
+  if (el.tagName === 'IFRAME') {
+    for (let i = 0; i < el.attrs.length; i++) {
+      const attr = el.attrs[i];
+      if (attr.name === 'src'){
+        result += '\n' + JSON.parse(JSON.stringify(attr.value));
+      }
+    }
   }
-  result += '>';
   return result;
 };
 
@@ -116,7 +119,7 @@ class DomList extends React.Component {
       hoverEl: el,
     });
   }
-  
+
   onMouseLeave(el) {
     if (this.state.hoverEl === el) {
       this.setState({
@@ -137,21 +140,21 @@ class DomList extends React.Component {
 class DomItem extends React.Component {
   constructor(props) {
     super(props);
-    
+
     this.domElRef = React.createRef();
-    
+
     this.state = {
       open: true,
     };
   }
-  
+
   componentDidMount() {
     this.bindDomEl();
   }
   componentDidUpdate() {
     this.bindDomEl();
   }
-  
+
   bindDomEl() {
     if (this.domElRef.current) {
       this.domElRef.current.getEl = () => this.props.el;
@@ -171,13 +174,13 @@ class DomItem extends React.Component {
     }
     return classNames.join(' ');
   }
-  
+
   getStyle() {
     return {
       paddingLeft: `${this.props.level * 10}px`,
     };
   }
-  
+
   toggleOpen(e) {
     this.setState({
       open: !this.state.open,
@@ -185,19 +188,24 @@ class DomItem extends React.Component {
 
     e.stopPropagation();
   }
-  
+
   render() {
     const {el, level} = this.props;
 
-    if (el.nodeType === Node.ELEMENT_NODE) {
+    if (el.nodeType === Node.ELEMENT_NODE && el.tagName === 'IFRAME') {
       return (
         <li className={this.getClassnames()}>
           <div className="dom-item-label" style={this.getStyle()} onClick={() => this.props.onClick(el)} onMouseEnter={() => this.props.onMouseEnter(el)} onMouseLeave={() => this.props.onMouseLeave(el)} ref={this.domElRef} tabIndex={-1}>
-            <div className="dom-item-arrow" onClick={e => this.toggleOpen(e)}>⮞</div>
-            <div className="dom-item-name">{_el2Text(el)}</div>
+            <div className="dom-item-arrow" onClick={e => this.toggleOpen(e)}>...</div>
+            <div className="dom-item-name"> {_el2Text(el)}</div>
           </div>
+          </li>
+        );
+    } else if (el.nodeType === Node.ELEMENT_NODE) {
+      return (
+        <li className={this.getClassnames()}>
           <div className="dom-item-children">
-            {el.childNodes.map((childNode, i) => <DomItem el={childNode} level={level+1} selectEl={this.props.selectEl} hoverEl={this.props.hoverEl} onClick={el => this.props.onClick(el)} onMouseEnter={this.props.onMouseEnter} onMouseLeave={this.props.onMouseLeave} key={i}/>)}
+            {el.childNodes.map((childNode, i) => <DomItem el={childNode} level={level} selectEl={this.props.selectEl} hoverEl={this.props.hoverEl} onClick={el => this.props.onClick(el)} onMouseEnter={this.props.onMouseEnter} onMouseLeave={this.props.onMouseLeave} key={i}/>)}
           </div>
         </li>
       );
@@ -205,7 +213,7 @@ class DomItem extends React.Component {
       if (/\S/.test(el.value)) { // has non-whitespace
         return (
           <li className={this.getClassnames()} onClick={() => this.props.onClick(el)} onMouseEnter={() => this.props.onMouseEnter(el)} onMouseLeave={() => this.props.onMouseLeave(el)} ref={this.domElRef} tabIndex={-1}>
-            <div className="dom-item-text" style={this.getStyle()}>"{el.value}"</div>
+            <div className="dom-item-text" style={this.getStyle()}></div>
           </li>
         );
       } else {
@@ -243,7 +251,7 @@ class DomAttribute extends React.Component {
       value: props.value,
     };
   }
-  
+
   UNSAFE_componentWillUpdate(prevProps, prevState) {
     if (this.props.epoch !== prevProps.epoch) {
       const {name, value} = this.props;
@@ -286,7 +294,7 @@ class DomAttribute extends React.Component {
       value,
     });
   }
-  
+
   onValueBlur() {
     window.postMessage({
       method: 'edit',
