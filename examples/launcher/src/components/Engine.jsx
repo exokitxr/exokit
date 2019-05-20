@@ -187,7 +187,7 @@ class Engine extends React.Component {
       const url = urlInput.value;
 
       window.postMessage({
-        method: 'reload',
+        method: 'open',
         url,
         d: null,
       });
