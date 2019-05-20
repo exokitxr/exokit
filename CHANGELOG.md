@@ -33,12 +33,16 @@
 - WebGL2 API (#775, #813, #817)
 - WebRTC data channels support (#765)
 - Canvas 2D API filling (#940)
+- Simple documentation (#993)
 
 ### Fixes
 - DOMContentLoaded event emit (#812)
 - Add `--experimental-worker` flag to windows script (#970)
 - Cleanup macOS installer (#964)
 - Update macOS certificate (#962)
+- Fix performance logging math (#997)
+- Remove source releases from CI configs (#996)
+- Fix bindings to nativeBindings in index.js (#999)
 
 ### Native Support
 - Add OpenVR trackers support (#896)
