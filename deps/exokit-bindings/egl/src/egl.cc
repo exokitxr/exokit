@@ -218,8 +218,8 @@ NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool v
     EGL_GREEN_SIZE, 8,
     EGL_BLUE_SIZE, 8,
     EGL_ALPHA_SIZE, 8, // need alpha for the multi-pass timewarp compositor
-    EGL_DEPTH_SIZE, 24,
-    EGL_STENCIL_SIZE, 8,
+    EGL_DEPTH_SIZE, 0,
+    EGL_STENCIL_SIZE, 0,
     EGL_SAMPLES, 0,
     EGL_NONE
 #endif

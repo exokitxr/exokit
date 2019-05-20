@@ -308,6 +308,7 @@ const _startTopRenderLoop = () => {
     total: 0,
   };
   const TIMESTAMP_FRAMES = 100;
+  const childSyncs = [];
 
   if (nativeBindings.nativeWindow.pollEvents) {
     setInterval(() => {
@@ -346,7 +347,7 @@ const _startTopRenderLoop = () => {
         const {width: halfWidth, height} = system.GetRecommendedRenderTargetSize();
         const width = halfWidth * 2;
 
-        const [fbo, tex, depthTex] = system.CreateSwapChain(width, height);
+        const [tex, depthTex] = system.CreateSwapChain(width, height);
 
         xrState.tex[0] = tex;
         xrState.depthTex[0] = depthTex;
@@ -380,9 +381,8 @@ const _startTopRenderLoop = () => {
         const {width: halfWidth, height} = vrContext.GetRecommendedRenderTargetSize();
         const width = halfWidth * 2;
 
-        const [fbo, tex, depthTex] = nativeBindings.nativeWindow.createVrTopRenderTarget(width, height);
+        const [tex, depthTex] = vrContext.CreateSwapChain(width, height);
 
-        topVrPresentState.fbo = fbo;
         xrState.tex[0] = tex;
         xrState.depthTex[0] = depthTex;
         xrState.renderWidth[0] = halfWidth;
@@ -838,13 +838,15 @@ const _startTopRenderLoop = () => {
   const _submitFrame = async () => {
     if (topVrPresentState.hasPose) {
       if (topVrPresentState.hmdType === 'oculus') {
-        const [fbo, tex, depthTex] = topVrPresentState.vrContext.Submit();
+        const [tex, depthTex] = topVrPresentState.vrContext.Submit();
         xrState.tex[0] = tex;
         xrState.depthTex[0] = depthTex;
       } else if (topVrPresentState.hmdType === 'openvr') {
         topVrPresentState.vrCompositor.Submit(xrState.tex[0]);
       } else if (topVrPresentState.hmdType === 'oculusMobile') {
-        topVrPresentState.vrContext.Submit(topVrPresentState.fbo, xrState.renderWidth[0]*2, xrState.renderHeight[0]);
+        const [tex, depthTex] = topVrPresentState.vrContext.Submit();
+        xrState.tex[0] = tex;
+        xrState.depthTex[0] = depthTex;
       } else if (topVrPresentState.hmdType === 'magicleap') {
         topVrPresentState.vrContext.SubmitFrame(topVrPresentState.fbo, xrState.renderWidth[0]*2, xrState.renderHeight[0]);
       }
@@ -913,8 +915,23 @@ const _startTopRenderLoop = () => {
       console.log('-'.repeat(80) + 'start frame');
     }
 
+    for (let i = 0; i < childSyncs.length; i++) {
+      nativeBindings.nativeWindow.deleteSync(childSyncs[i]);
+    }
+    childSyncs.length = 0;
+
     // tick animation frames
-    await Promise.all(windows.map(window => window.runAsync('tickAnimationFrame')));
+    await Promise.all(windows.map(window => window.runAsync('tickAnimationFrame').then(syncs => {
+      if (topVrPresentState.windowHandle) {
+        nativeBindings.nativeWindow.setCurrentWindowContext(topVrPresentState.windowHandle);
+        for (let i = 0; i < syncs.length; i++) {
+          const sync = syncs[i];
+          nativeBindings.nativeWindow.waitSync(sync);
+          childSyncs.push(sync);
+        }
+      }
+    })));
+
 
     if (args.performance) {
       const now = Date.now();
