@@ -1244,7 +1244,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       }
     };
     const _composeLayers = () => {
-      const syncs =[];
+      const syncs = [];
 
       for (let i = 0; i < contexts.length; i++) {
         const context = contexts[i];
