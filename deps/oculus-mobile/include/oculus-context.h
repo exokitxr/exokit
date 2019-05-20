@@ -37,7 +37,6 @@ public:
   ANativeWindow *androidNativeWindow;
   ovrTextureSwapChain *colorSwapChain;
   ovrTextureSwapChain *depthSwapChain;
-  int swapChainMetrics[2];
   int swapChainLength;
   int swapChainIndex;
   bool hasSwapChain;

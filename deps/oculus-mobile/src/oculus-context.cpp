@@ -13,7 +13,6 @@ OculusMobileContext::OculusMobileContext(NATIVEwindow *windowHandle) :
   androidNativeWindow(nullptr),
   colorSwapChain(nullptr),
   depthSwapChain(nullptr),
-  swapChainMetrics{0, 0},
   swapChainLength(0),
   swapChainIndex(0),
   hasSwapChain(false),
@@ -143,8 +142,6 @@ void OculusMobileContext::CreateSwapChain(int width, int height) {
     oculusMobileContext->colorSwapChain = vrapi_CreateTextureSwapChain3(VRAPI_TEXTURE_TYPE_2D, GL_RGBA8, width, height, 1, 3);
     oculusMobileContext->depthSwapChain = vrapi_CreateTextureSwapChain3(VRAPI_TEXTURE_TYPE_2D, GL_DEPTH24_STENCIL8, width, height, 1, 3);
 
-    oculusMobileContext->swapChainMetrics[0] = width;
-    oculusMobileContext->swapChainMetrics[1] = height;
     oculusMobileContext->swapChainLength = vrapi_GetTextureSwapChainLength(oculusMobileContext->colorSwapChain);
     oculusMobileContext->swapChainIndex = 0;
     oculusMobileContext->hasSwapChain = true;
