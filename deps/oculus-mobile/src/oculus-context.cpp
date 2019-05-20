@@ -444,15 +444,16 @@ NAN_METHOD(OculusMobileContext::Submit) {
 	}
   layer.Header.Flags |= VRAPI_FRAME_LAYER_FLAG_CHROMATIC_ABERRATION_CORRECTION;
 
-  const ovrLayerHeader2 * layerHeaders[ovrMaxLayerCount] = {0};
-  layerHeaders[0] = &layer.Header;
+  const ovrLayerHeader2 *layers[] = {
+    &layer.Header,
+  };
 
   ovrSubmitFrameDescription2 frameDesc = {0};
   frameDesc.Flags = 0;
   frameDesc.SwapInterval = oculusMobileContext->swapInterval;
   frameDesc.FrameIndex = oculusMobileContext->frameIndex;
-  frameDesc.DisplayTime = oculusMobileContext->displayTime;
-  frameDesc.Layers = layerHeaders;
+  frameDesc.DisplayTime = vrapi_GetTimeInSeconds();
+  frameDesc.Layers = layers;
   frameDesc.LayerCount = 1;
 
   // Hand over the eye images to the time warp.
