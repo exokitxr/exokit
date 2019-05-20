@@ -25,6 +25,8 @@
 .Dom > .dom-list .dom-item.open > .dom-item-label .dom-item-arrow {
   color: #888;
   transform: rotatez(90deg);
+  padding-top: 5px;
+  padding-bottom: 5px;
 }
 .Dom > .dom-list .dom-item.open > .dom-item-children {
   display: flex;
@@ -50,6 +52,7 @@
 }
 
 .Dom > .dom-list .dom-item > .dom-item-label .dom-item-name {
+  padding-top: 5px;
   padding-left: 3px;
   white-space: nowrap;
 }
