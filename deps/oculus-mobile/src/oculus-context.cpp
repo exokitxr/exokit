@@ -285,8 +285,10 @@ NAN_METHOD(OculusMobileContext::WaitGetPoses) {
   bool hasPose = oculusMobileContext->ovrState != nullptr;
   if (hasPose) {
     oculusMobileContext->frameIndex++;
-    const double predictedDisplayTime = vrapi_GetPredictedDisplayTime(oculusMobileContext->ovrState, oculusMobileContext->frameIndex);
-    const ovrTracking2 &tracking = vrapi_GetPredictedTracking2(oculusMobileContext->ovrState, predictedDisplayTime);
+    oculusMobileContext->displayTime = vrapi_GetPredictedDisplayTime(oculusMobileContext->ovrState, oculusMobileContext->frameIndex);
+    oculusMobileContext->tracking = vrapi_GetPredictedTracking2(oculusMobileContext->ovrState, oculusMobileContext->displayTime);
+    const double &predictedDisplayTime = oculusMobileContext->displayTime;
+    const ovrTracking2 &tracking = oculusMobileContext->tracking;
 
     // headset
     {
@@ -410,10 +412,6 @@ NAN_METHOD(OculusMobileContext::WaitGetPoses) {
         break;
       }
     }
-
-    // advance
-    oculusMobileContext->tracking = tracking;
-    oculusMobileContext->displayTime = predictedDisplayTime;
   }
 
   info.GetReturnValue().Set(JS_BOOL(hasPose));
