@@ -29,6 +29,9 @@ using namespace node;
 
 namespace webaudio {
 
+class WebAudioAsync;
+
+WebAudioAsync *getWebAudioAsync();
 lab::AudioContext *getDefaultAudioContext(float sampleRate = lab::DefaultSampleRate);
 
 class AudioContext : public ObjectWrap {

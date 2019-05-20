@@ -11,12 +11,15 @@
 #
 # am_cmd.append("-e")
 # am_cmd.append("ARGS")
-# am_cmd.append("'node --experimental-worker /package /package/examples/tutorial.html'")
+# am_cmd.append("'node /package /package/examples/tutorial.html'")
 
 set -e
 
-cd "$(dirname "$0")/.."
 
-pushd ./android/app/src/main
+cd "$(dirname "$0")"
+
+source ./version-android.sh
+
+pushd ../android/app/src/main
 "$ANDROID_HOME/ndk-bundle/ndk-gdb" --adb="$ANDROID_HOME/platform-tools/adb" --launch=android.app.NativeActivity
 popd

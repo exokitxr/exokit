@@ -158,16 +158,14 @@ NAN_METHOD(GetFramebufferSize) {
   info.GetReturnValue().Set(result);
 }
 
-void GetScreenSize(NATIVEwindow *window, int *width, int *height) {
+void GetScreenSize(int *width, int *height) {
   *width = 2048;
   *height = 2048;
 }
 
 NAN_METHOD(GetScreenSize) {
-  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  
   int width, height;
-  GetScreenSize(window, &width, &height);
+  GetScreenSize(&width, &height);
 
   Local<Array> result = Nan::New<Array>(2);
   result->Set(0, JS_INT(width));
@@ -220,8 +218,8 @@ NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool v
     EGL_GREEN_SIZE, 8,
     EGL_BLUE_SIZE, 8,
     EGL_ALPHA_SIZE, 8, // need alpha for the multi-pass timewarp compositor
-    EGL_DEPTH_SIZE, 24,
-    EGL_STENCIL_SIZE, 8,
+    EGL_DEPTH_SIZE, 0,
+    EGL_STENCIL_SIZE, 0,
     EGL_SAMPLES, 0,
     EGL_NONE
 #endif

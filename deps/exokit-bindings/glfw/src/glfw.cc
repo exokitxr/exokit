@@ -119,7 +119,7 @@ void handleInjections() {
   }
   mainThreadInjectionHandler.fns.clear();
 }
-void QueueInjection(NATIVEwindow *window, std::function<void(InjectionHandler *injectionHandler)> fn) {
+void QueueInjection(std::function<void(InjectionHandler *injectionHandler)> fn) {
   if (!glfwInitialized) {
 #ifndef TARGET_OS_MAC
     std::thread([&]() -> void {
@@ -224,11 +224,11 @@ NAN_METHOD(SetMonitor) {
   _activeMonitor = monitors[index];
 }
 
-void GetScreenSize(NATIVEwindow *window, int *width, int *height) {
+void GetScreenSize(int *width, int *height) {
   uv_sem_t sem;
   uv_sem_init(&sem, 0);
 
-  QueueInjection(window, [&](InjectionHandler *injectionHandler) -> void {
+  QueueInjection([&](InjectionHandler *injectionHandler) -> void {
     GLFWmonitor *monitor = glfwGetPrimaryMonitor();
     const GLFWvidmode *videoMode = glfwGetVideoMode(monitor);
     *width = videoMode->width;
@@ -242,10 +242,8 @@ void GetScreenSize(NATIVEwindow *window, int *width, int *height) {
 }
 
 NAN_METHOD(GetScreenSize) {
-  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  
   int width, height;
-  GetScreenSize(window, &width, &height);
+  GetScreenSize(&width, &height);
 
   Local<Array> result = Nan::New<Array>(2);
   result->Set(0, JS_INT(width));
@@ -956,13 +954,13 @@ NAN_METHOD(GetFramebufferSize) {
   info.GetReturnValue().Set(result);
 }
 
-double GetDevicePixelRatio(NATIVEwindow *window) {
+double GetDevicePixelRatio() {
   int width, height;
 
   uv_sem_t sem;
   uv_sem_init(&sem, 0);
 
-  QueueInjection(window, [&](InjectionHandler *injectionHandler) -> void {
+  QueueInjection([&](InjectionHandler *injectionHandler) -> void {
     NATIVEwindow *window = CreateNativeWindow(100, 100, false);
     glfwGetFramebufferSize(window, &width, &height);
     DestroyNativeWindow(window);
@@ -977,8 +975,7 @@ double GetDevicePixelRatio(NATIVEwindow *window) {
 }
 
 NAN_METHOD(GetDevicePixelRatio) {
-  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  double devicePixelRatio = GetDevicePixelRatio(window);
+  double devicePixelRatio = GetDevicePixelRatio();
   info.GetReturnValue().Set(JS_NUM(devicePixelRatio));
 }
 
@@ -1000,7 +997,7 @@ NAN_METHOD(SetVisibility) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   bool visible = TO_BOOL(info[1]);
 
-  QueueInjection(window, [window, visible](InjectionHandler *injectionHandler) -> void {
+  QueueInjection([window, visible](InjectionHandler *injectionHandler) -> void {
     if (visible) {
       glfwShowWindow(window);
     } else {
@@ -1034,7 +1031,7 @@ NAN_METHOD(SetFullscreen) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   bool enabled = TO_BOOL(info[1]);
 
-  QueueInjection(window, [window, enabled](InjectionHandler *injectionHandler) -> void {
+  QueueInjection([window, enabled](InjectionHandler *injectionHandler) -> void {
     GLFWmonitor *monitor = getMonitor();
 
     if (enabled) {
@@ -1095,7 +1092,7 @@ NATIVEwindow *CreateWindowHandle(unsigned int width, unsigned int height, bool i
   uv_sem_t sem;
   uv_sem_init(&sem, 0);
 
-  QueueInjection(nullptr, [&](InjectionHandler *injectionHandler) -> void {
+  QueueInjection([&](InjectionHandler *injectionHandler) -> void {
     windowHandle = CreateNativeWindow(width, height, initialVisible);
 
     SetCurrentWindowContext(windowHandle);
@@ -1162,7 +1159,7 @@ NAN_METHOD(DestroyWindowHandle) {
 
   uv_sem_t sem;
   uv_sem_init(&sem, 0);
-  QueueInjection(window, [&](InjectionHandler *injectionHandler) -> void {
+  QueueInjection([&](InjectionHandler *injectionHandler) -> void {
     DestroyNativeWindow(window);
     
     uv_sem_post(&sem);
@@ -1210,7 +1207,7 @@ NAN_METHOD(SetCursorMode) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   bool enabled = TO_BOOL(info[1]);
 
-  QueueInjection(window, [window, enabled](InjectionHandler *injectionHandler) -> void {
+  QueueInjection([window, enabled](InjectionHandler *injectionHandler) -> void {
     if (enabled) {
       glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     } else {
