@@ -933,14 +933,6 @@ const {
 
           break;
         }
-        case 'reload': {
-          const {url, d} = m.data;
-          _closeAllTabs();
-          const {position, quaternion, scale} = _getFrontOfCamera();
-          _openUrl(url, position, quaternion, scale, d);
-
-          break;
-        }
         case 'add': {
           const {template} = m.data;
           const url = links.find(link => link.id === template).url;
