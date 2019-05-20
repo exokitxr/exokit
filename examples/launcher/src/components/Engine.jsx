@@ -182,19 +182,6 @@ class Engine extends React.Component {
       this.blur();
     }
 
-    loadWorld() {
-      const urlInput = document.getElementById('url-input');
-      const url = urlInput.value;
-
-      window.postMessage({
-        method: 'open',
-        url,
-        d: null,
-      });
-
-      this.blur();
-    }
-
     addTemplate(template) {
       window.postMessage({
         method: 'add',
@@ -261,7 +248,6 @@ class Engine extends React.Component {
               <div className={this.urlPopupClassNames()}>
                 <div className="url-item" onMouseDown={e => e.preventDefault()} onClick={() => this.open3dTab()}>3D Reality Tab</div>
                 <div className="url-item" onMouseDown={e => e.preventDefault()} onClick={() => this.open2dTab()}>2D Reality Tab</div>
-                <div className="url-item" onMouseDown={e => e.preventDefault()} onClick={() => this.loadWorld()}>Reload</div>
               </div>
               <input type="text" className="url-input" id="url-input" value={this.state.url} onChange={e => this.onUrlChange(e)} onFocus={() => this.focusUrlInput()} onBlur={() => this.blurUrlInput()}/>
             </div>
