@@ -22,9 +22,8 @@
   cursor: pointer;
   user-select: none;
 }
-.Dom > .dom-list .dom-item.open > .dom-item-label .dom-item-arrow {
+.Dom > .dom-list .dom-item.dropdownOpen > .dom-item-label .dom-item-arrow {
   color: #888;
-  transform: rotatez(90deg);
   padding-top: 5px;
   padding-bottom: 5px;
 }
@@ -46,9 +45,14 @@
   background-color: #42a5f5;
 }
 
+.Dom > .dom-list .dom-item.hover > .dom-item-label .dom-item-arrow {
+  color: #888;
+}
 .Dom > .dom-list .dom-item > .dom-item-label .dom-item-arrow {
-  color: #444;
-  transform: none;
+  color: #333;
+  transform: rotatez(90deg);
+  padding-top: 5px;
+  padding-bottom: 5px;
 }
 
 .Dom > .dom-list .dom-item > .dom-item-label .dom-item-name {
@@ -69,13 +73,16 @@
 
 /* dom detail */
 
-.Dom > .dom-detail {
+.dom-detail {
   display: flex;
   flex-direction: column;
-  height: 185px;
-  background-color: #444;
-  border-top: 2px solid #111;
+  height: 40px;
+  width: 55px;
+  background-color: #333;
   overflow-y: auto;
+  text-align: center;
+  display: table-cell;
+  vertical-align: middle;
 }
 .Dom > .dom-detail > .dom-detail-name {
   font-family: monospace;
