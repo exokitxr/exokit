@@ -196,11 +196,11 @@
 }
 #Engine .engine-right {
   display: flex;
-  width: 200px;
-  background-color: #222;
+  width: 100%;
   border-left: 2px solid #111;
 }
 #Engine .engine-render {
   flex: 1;
   background-color: #000;
+  padding: 30px;
 }
