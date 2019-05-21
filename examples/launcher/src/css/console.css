@@ -1,7 +1,6 @@
 .Console {
   position: relative;
   height: 100px;
-  background-color: #333;
   border-top: 2px solid #222;
   font-family: monospace;
   font-size: 11px;
