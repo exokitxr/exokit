@@ -7,11 +7,25 @@ const http = require('http');
 const https = require('https');
 const crypto = require('crypto');
 const os = require('os');
+const {parentPort} = require('worker_threads');
 const util = require('util');
 const {URL} = url;
 const {TextEncoder, TextDecoder} = util;
+const {XRRigidTransform} = require('./XR.js');
 const {performance} = require('perf_hooks');
+const {
+  workerData: {
+    args: {
+      options,
+      id,
+      args,
+      version,
+      xrState,
+    },
+  },
+} = require('worker_threads');
 
+const {WorkerVm} = require('./WindowVm.js');
 const {FileReader} = require('./File.js');
 
 const mkdirp = require('mkdirp');
@@ -43,8 +57,6 @@ const {
   RTCTrackEvent,
 } = require('./RTC/index.js');
 
-const nativeWorker = require('worker-native');
-
 const {LocalStorage} = require('window-ls');
 const indexedDB = require('fake-indexeddb');
 const parseXml = require('@rgrove/parse-xml');
@@ -59,15 +71,15 @@ const {
   Gamepad,
   GamepadButton,
   getGamepads,
+  getHMDType,
 } = require('./VR.js');
 
+const {maxNumTrackers} = require('./constants');
 const GlobalContext = require('./GlobalContext');
 const symbols = require('./symbols');
 const {urls} = require('./urls');
 
-const bindings = require('./native-bindings');
 const {
-  nativeVm,
   nativeImage: Image,
   nativeImageData: ImageData,
   nativeImageBitmap: ImageBitmap,
@@ -95,17 +107,28 @@ const {
     VideoDevice,
   },
   nativeOpenVR,
+  nativeOculusVR,
   nativeOculusMobileVr,
   nativeMl,
   nativeBrowser,
   nativeWindow,
-  nativeOculusVR
-} = bindings;
+} = require('./native-bindings');
 
-GlobalContext.args = {};
-GlobalContext.version = '';
+const PHASES = (() => {
+  let phase = 0;
+  return {
+    NULL: phase++,
+    RENDERING: phase++,
+    RENDERED: phase++,
+    DONE: phase++,
+  };
+})();
 
-// Class imports.
+GlobalContext.id = id;
+GlobalContext.args = args;
+GlobalContext.version = version;
+GlobalContext.xrState = xrState;
+
 const {_parseDocument, _parseDocumentAst, getBoundDocumentElements, DocumentType, DOMImplementation, initDocument} = require('./Document');
 const {
   HTMLElement,
@@ -127,6 +150,108 @@ const {_elementGetter, _elementSetter, _download} = utils;
 
 const btoa = s => Buffer.from(s, 'binary').toString('base64');
 const atob = s => Buffer.from(s, 'base64').toString('binary');
+
+const isMac = os.platform() === 'darwin';
+
+const zeroMatrix = new THREE.Matrix4();
+const localFloat32Array = zeroMatrix.toArray(new Float32Array(16));
+const localFloat32Array2 = zeroMatrix.toArray(new Float32Array(16));
+const localFloat32Array3 = zeroMatrix.toArray(new Float32Array(16));
+const localFloat32Array4 = new Float32Array(16);
+const localFloat32PoseArray = new Float32Array(16*(1+2+maxNumTrackers));
+const localFloat32HmdPoseArray = new Float32Array(localFloat32PoseArray.buffer, localFloat32PoseArray.byteOffset + 0*Float32Array.BYTES_PER_ELEMENT*16, 16);
+const localFloat32GamepadPoseArrays = [
+  new Float32Array(localFloat32PoseArray.buffer, localFloat32PoseArray.byteOffset + 1*Float32Array.BYTES_PER_ELEMENT*16, 16),
+  new Float32Array(localFloat32PoseArray.buffer, localFloat32PoseArray.byteOffset + 2*Float32Array.BYTES_PER_ELEMENT*16, 16),
+];
+const localFloat32TrackerPoseArrays = (() => {
+  const result = Array(maxNumTrackers);
+  for (let i = 0; i < maxNumTrackers; i++) {
+    result[i] = new Float32Array(localFloat32PoseArray.buffer, localFloat32PoseArray.byteOffset + (3+i)*Float32Array.BYTES_PER_ELEMENT*16, 16);
+  }
+  return result;
+})();
+const localFloat32MatrixArray = new Float32Array(16);
+const localFovArray = new Float32Array(4);
+const localGamepadArray = new Float32Array(24);
+
+const localPositionArray3 = new Float32Array(3);
+const localQuaternionArray4 = new Float32Array(4);
+
+const leftControllerPositionArray3 = new Float32Array(3);
+const leftControllerQuaternionArray4 = new Float32Array(4);
+const rightControllerPositionArray3 = new Float32Array(3);
+const rightControllerQuaternionArray4 = new Float32Array(4);
+
+const oculusMobilePoseFloat32Array = new Float32Array(3 + 4 + 1 + 4 + (16*2) + (16*2) + (16+5) + (16+5));
+
+// const handEntrySize = (1 + (5 * 5)) * (3 + 3);
+const transformArray = new Float32Array(7 * 2);
+const projectionArray = new Float32Array(16 * 2);
+/* const handsArray = [
+  new Float32Array(handEntrySize),
+  new Float32Array(handEntrySize),
+]; */
+const controllersArray = new Float32Array((1 + 3 + 4 + 6) * 2);
+
+const localVector = new THREE.Vector3();
+const localVector2 = new THREE.Vector3();
+const localQuaternion = new THREE.Quaternion();
+const localMatrix = new THREE.Matrix4();
+const localMatrix2 = new THREE.Matrix4();
+
+const windows = [];
+GlobalContext.windows = windows;
+const contexts = [];
+GlobalContext.contexts = contexts;
+
+const vrPresentState = {
+  /* vrContext: null,
+  system: null,
+  oculusSystem: null,
+  compositor: null,
+  glContextId: 0, */
+  hmdType: null,
+  vrContext: null,
+  glContext: null,
+  fbo: 0,
+  msFbo: 0,
+  msTex: 0,
+  msDepthTex: 0,
+  // tex: null,
+  // depthTex: null,
+  // hasPose: false,
+  // lmContext: null,
+  layers: [],
+  responseAccept: null,
+};
+GlobalContext.vrPresentState = vrPresentState;
+
+const oculusMobileVrPresentState = {
+  vrContext: null,
+  isPresenting: false,
+  glContextId: 0,
+  cleanups: null,
+  hasPose: false,
+};
+GlobalContext.oculusMobileVrPresentState = oculusMobileVrPresentState;
+
+const mlPresentState = {
+  mlContext: null,
+  msFbo: null,
+  msTex: null,
+  msDepthTex: null,
+  mlGlContextId: 0,
+  mlCleanups: null,
+  mlHasPose: false,
+};
+GlobalContext.mlPresentState = mlPresentState;
+
+/* const _getVrGlContext = () => contexts.find(context => context.contextId === vrPresentState.glContextId);
+const _getOculusVrGlContext = () => vrPresentState.oculusSystem ? contexts.find(context => context.contextId === vrPresentState.glContextId) : undefined;
+const _getOpenVrGlContext = () => vrPresentState.system ? contexts.find(context => context.contextId === vrPresentState.glContextId) : undefined;
+const _getOculusMobileVrGlContext = () => oculusMobileVrPresentState.vrContext ? contexts.find(context => context.contextId === oculusMobileVrPresentState.glContextId) : undefined;
+const _getMlGlContext = () => contexts.find(context => context.contextId === mlPresentState.mlGlContextId); */
 
 class CustomElementRegistry {
   constructor(window) {
@@ -340,7 +465,7 @@ class DataTransferItem {
 
 class Worker {
   constructor(src) {
-    this.worker = nativeWorker.make({
+    this.worker = new WorkerVm({
       initModule: path.join(__dirname, 'Worker.js'),
       args: {
         src,
@@ -350,6 +475,10 @@ class Worker {
 
   postMessage(message, transferList) {
     this.worker.postMessage(message, transferList);
+  }
+
+  terminate() {
+    this.worker.destroy();
   }
 
   get onmessage() {
@@ -378,7 +507,6 @@ const _findFreeSlot = a => {
 };
 const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
   fn = fn.bind(window);
-  fn[symbols.windowSymbol] = window;
   fn[symbols.prioritySymbol] = priority;
   const id = ++rafIndex;
   fn[symbols.idSymbol] = id;
@@ -389,32 +517,9 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
 };
 const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.RequestHitTest(origin, direction, cb, window);
 
-GlobalContext.fakeVrDisplayEnabled = false;
+const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
 
-const _makeWindow = (options = {}, parent = null, top = null) => {
-  const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
-
-  const vmo = nativeVm.make();
-  const window = vmo.getGlobal();
-  window.vm = vmo;
-
-  // Store original prototypes for converting to and from native and JS.
-  utils._storeOriginalWindowPrototypes(window, symbols.prototypesSymbol);
-
-  const windowStartScript = `(() => {
-    ${!options.args.require ? 'global.require = undefined;' : ''}
-
-    const _logStack = err => {
-      console.warn(err);
-    };
-    process.on('uncaughtException', _logStack);
-    process.on('unhandledRejection', _logStack);
-
-    global.process = undefined;
-    global.setImmediate = undefined;
-    window.global = undefined;
-  })();`;
-
+(window => {
   for (const k in EventEmitter.prototype) {
     window[k] = EventEmitter.prototype[k];
   }
@@ -422,8 +527,8 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
 
   window.window = window;
   window.self = window;
-  window.parent = parent || window;
-  window.top = top || window;
+  window.parent = options.parent || window;
+  window.top = options.top || window;
 
   Object.defineProperty(window, 'innerWidth', {
     get() {
@@ -509,40 +614,35 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     },
     webkitGetUserMedia: getUserMedia, // for feature detection
     getVRDisplaysSync() {
-      const result = [];
-      if (GlobalContext.fakeVrDisplayEnabled) {
-        result.push(window[symbols.mrDisplaysSymbol].fakeVrDisplay);
-      }
+      const hmdType = getHMDType();
 
-      // Oculus runtime takes precedence over OpenVR for Oculus headsets.
-      if (nativeOculusVR && nativeOculusVR.Oculus_IsHmdPresent()) {
-        result.push(window[symbols.mrDisplaysSymbol].oculusVRDisplay);
-      } else if (nativeOpenVR && nativeOpenVR.VR_IsHmdPresent()) {
-        result.push(window[symbols.mrDisplaysSymbol].openVRDisplay);
+      if (hmdType) {
+        if (hmdType === 'fake') {
+          return [window[symbols.mrDisplaysSymbol].fakeVrDisplay];
+        } else {
+          return [window[symbols.mrDisplaysSymbol].vrDisplay];
+        }
+      } else {
+        return [];
       }
-
-      if (nativeOculusMobileVr && nativeOculusMobileVr.OculusMobile_IsHmdPresent()) {
-        result.push(window[symbols.mrDisplaysSymbol].oculusMobileVrDisplay);
-      }
-
-      if (nativeMl && nativeMl.IsPresent()) {
-        result.push(window[symbols.mrDisplaysSymbol].mlDisplay);
-      }
-
-      result.sort((a, b) => +b.isPresenting - +a.isPresenting);
-      return result;
     },
-    createVRDisplay() {
-      GlobalContext.fakeVrDisplayEnabled = true;
+    createVRDisplay(width, height) {
+      xrState.fakeVrDisplayEnabled[0] = 1;
+      if (width !== undefined) {
+        xrState.renderWidth[0] = width;
+      }
+      if (height !== undefined) {
+        xrState.renderHeight[0] = height;
+      }
       return window[symbols.mrDisplaysSymbol].fakeVrDisplay;
     },
     getGamepads: getGamepads.bind(null, window),
-    clipboard:{
-      read:() => Promise.resolve(), // Not implemented yet
+    clipboard: {
+      read: () => Promise.resolve(), // Not implemented yet
       readText: () => new Promise(resolve => {
         resolve(nativeWindow.getClipboard().slice(0, 256));// why do we slice this?
       }),
-      write:() => Promise.resolve(), // Not implemented yet
+      write: () => Promise.resolve(), // Not implemented yet
       writeText: clipboardContents => new Promise(resolve => {
         nativeWindow.setClipboard(clipboardContents);
         resolve();
@@ -562,102 +662,66 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     window.navigator.xr = new XR.XR(window);
   }
 
-  window.destroy = function() {
-    this._emit('destroy', {window: this});
-  };
   window.URL = URL;
   window.console = console;
   window.alert = console.log;
-  window.setTimeout = (fn, timeout, args) => {
+  window.setTimeout = (setTimeout => (fn, timeout, args) => {
     fn = fn.bind.apply(fn, [window].concat(args));
-    fn[symbols.windowSymbol] = window;
-    const id = ++rafIndex;
-    fn[symbols.idSymbol] = id;
-    timeouts[_findFreeSlot(timeouts)] = fn;
+    let id = _findFreeSlot(timeouts);
+    id++;
+    timeouts[id] = fn;
     fn[symbols.timeoutSymbol] = setTimeout(fn, timeout, args);
     return id;
-  };
-  window.clearTimeout = id => {
-    const index = timeouts.findIndex(t => t && t[symbols.idSymbol] === id);
-    if (index !== -1) {
-      clearTimeout(timeouts[index][symbols.timeoutSymbol]);
-      timeouts[index] = null;
+  })(setTimeout);
+  window.clearTimeout = (clearTimeout => id => {
+    const fn = timeouts[id];
+    if (fn) {
+      clearTimeout(fn[symbols.timeoutSymbol]);
+      timeouts[id] = null;
     }
-  };
-  window.setInterval = (fn, interval, args) => {
+  })(clearTimeout);
+  window.setInterval = (setInterval => (fn, interval, args) => {
     if (interval < 10) {
       interval = 10;
     }
     fn = fn.bind.apply(fn, [window].concat(args));
-    fn[symbols.windowSymbol] = window;
-    const id = ++rafIndex;
-    fn[symbols.idSymbol] = id;
-    intervals[_findFreeSlot(intervals)] = fn;
+    let id = _findFreeSlot(intervals);
+    id++;
+    intervals[id] = fn;
     fn[symbols.timeoutSymbol] = setInterval(fn, interval, args);
     return id;
-  };
-  window.clearInterval = id => {
-    const index = intervals.findIndex(i => i && i[symbols.idSymbol] === id);
-    if (index !== -1) {
-      clearInterval(intervals[index][symbols.timeoutSymbol]);
-      intervals[index] = null;
+  })(setInterval);
+  window.clearInterval = (clearInterval => id => {
+    const fn = intervals[id];
+    if (fn) {
+      clearInterval(fn[symbols.timeoutSymbol]);
+      intervals[id] = null;
     }
-  };
+  })(clearInterval);
   const _maybeDownload = (m, u, data, bufferifyFn) => options.args.download ? _download(m, u, data, bufferifyFn, options.args.download) : data;
   window.fetch = (u, options) => {
-    const _boundFetch = (u, options) => {
-      const req = utils._normalizePrototype(
-        fetch(u, options),
-        window
-      );
-      return req
-        .then(res => {
-          res.arrayBuffer = (fn => function() {
-            return utils._normalizePrototype(
-              fn.apply(this, arguments),
-              window
-            );
-          })(res.arrayBuffer);
-          res.blob = (fn => function() {
-            return utils._normalizePrototype(
-              fn.apply(this, arguments),
-              window
-            );
-          })(res.blob);
-          res.json = (fn => function() {
-            return utils._normalizePrototype(
-              fn.apply(this, arguments),
-              window
-            );
-          })(res.json);
-          res.text = (fn => function() {
-            return utils._normalizePrototype(
-              fn.apply(this, arguments),
-              window
-            );
-          })(res.text);
+    const _boundFetch = (u, options) => fetch(u, options)
+      .then(res => {
+        const method = (options && options.method) || 'GET';
+        res.arrayBuffer = (fn => function() {
+          return fn.apply(this, arguments)
+            .then(ab => _maybeDownload(method, u, ab, ab => Buffer.from(ab)));
+        })(res.arrayBuffer);
+        res.blob = (fn => function() {
+          return fn.apply(this, arguments)
+            .then(blob => _maybeDownload(method, u, blob, blob => blob.buffer));
+        })(res.blob);
+        res.json = (fn => function() {
+          return fn.apply(this, arguments)
+            .then(j => _maybeDownload(method, u, j, j => Buffer.from(JSON.stringify(j))));
+        })(res.json);
+        res.text = (fn => function() {
+          return fn.apply(this, arguments)
+            .then(t => _maybeDownload(method, u, t, t => Buffer.from(t, 'utf8')));
+        })(res.text);
 
-          const method = (options && options.method) || 'GET';
-          res.arrayBuffer = (fn => function() {
-            return fn.apply(this, arguments)
-              .then(ab => _maybeDownload(method, u, utils._normalizePrototype(ab, window), ab => Buffer.from(ab)));
-          })(res.arrayBuffer);
-          res.blob = (fn => function() {
-            return fn.apply(this, arguments)
-              .then(blob => _maybeDownload(method, u, utils._normalizePrototype(blob, window), blob => blob.buffer));
-          })(res.blob);
-          res.json = (fn => function() {
-            return fn.apply(this, arguments)
-              .then(j => _maybeDownload(method, u, j, j => Buffer.from(JSON.stringify(j))));
-          })(res.json);
-          res.text = (fn => function() {
-            return fn.apply(this, arguments)
-              .then(t => _maybeDownload(method, u, t, t => Buffer.from(t, 'utf8')));
-          })(res.text);
-
-          return res;
-        });
-    };
+        return res;
+      });
 
     if (typeof u === 'string') {
       const blob = urls.get(u);
@@ -672,22 +736,10 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     }
   };
   window.Request = Request;
-  window.Response = (Old => class Response extends Old {
-    constructor(body, opts) {
-      super(utils._normalizePrototype(body, global), opts);
-    }
-  })(Response);
+  window.Response = Response;
   window.Headers = Headers;
-  window.Blob = (Old => class Blob extends Old {
-    constructor(parts, opts) {
-      super(parts && parts.map(part => utils._normalizePrototype(part, global)), opts);
-    }
-  })(Blob);
-  window.FormData = (Old => class FormData extends Old {
-    append(field, value, options) {
-      super.append(field, utils._normalizePrototype(value, global), options);
-    }
-  })(FormData);
+  window.Blob = Blob;
+  window.FormData = FormData;
   window.XMLHttpRequest = (Old => {
     class XMLHttpRequest extends Old {
       open(method, url, async, username, password) {
@@ -695,7 +747,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
         return super.open(method, url, async, username, password);
       }
       get response() {
-        return _maybeDownload(this._properties.method, this._properties.uri, utils._normalizePrototype(super.response, window), o => {
+        return _maybeDownload(this._properties.method, this._properties.uri, super.response, o => {
           switch (this.responseType) {
             case 'arraybuffer': return Buffer.from(o);
             case 'blob': return o.buffer;
@@ -711,28 +763,7 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     }
     return XMLHttpRequest;
   })(XMLHttpRequest);
-  window.WebSocket = (Old => {
-    class WebSocket extends Old {
-      constructor(url, protocols) {
-        super(url, protocols, {
-          origin: location.origin,
-        });
-      }
-      emit(type, event) {
-        if (type === 'message') {
-          event = utils._normalizePrototype(event, window);
-        }
-        return super.emit.apply(this, arguments);
-      }
-      send(data) {
-        return super.send(utils._normalizePrototype(data, global));
-      }
-    }
-    for (const k in Old) {
-      WebSocket[k] = Old[k];
-    }
-    return WebSocket;
-  })(WebSocket);
+  window.WebSocket = WebSocket;
   window.crypto = {
     getRandomValues(typedArray) {
       crypto.randomFillSync(Buffer.from(typedArray.buffer, typedArray.byteOffset, typedArray.byteLength));
@@ -923,114 +954,17 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   };
   window.browser = {
     devTools: DevTools,
-    http: (() => {
-      const httpProxy = {};
-      for (const k in http) {
-        httpProxy[k] = http[k];
-      }
-      httpProxy.createServer = (createServer => function(cb) {
-        if (typeof cb === 'function') {
-          cb = (cb => function(req, res) {
-            res.write = (write => function(d) {
-              if (typeof d === 'object') {
-                d = utils._normalizePrototype(d, global);
-              }
-              return write.apply(this, arguments);
-            })(res.write);
-            res.end = (end => function(d) {
-              if (typeof d === 'object') {
-                d = utils._normalizePrototype(d, global);
-              }
-              return end.apply(this, arguments);
-            })(res.end);
-
-            return cb.apply(this, arguments);
-          })(cb);
-        }
-        return createServer.apply(this, arguments);
-      })(httpProxy.createServer);
-      return httpProxy;
-    })(),
+    http,
     // https,
-    ws: (() => {
-      const wsProxy = {};
-      for (const k in ws) {
-        wsProxy[k] = ws[k];
-      }
-      wsProxy.Server = (OldServer => function Server() {
-        const server = Reflect.construct(OldServer, arguments);
-        server.on = (on => function(e, cb) {
-          if (e === 'connection' && cb) {
-            cb = (cb => function(c) {
-              c.on = (on => function(e, cb) {
-                if (e === 'message' && cb) {
-                  cb = (cb => function(m) {
-                    m = utils._normalizePrototype(m, window);
-                    return cb.apply(this, arguments);
-                  })(cb);
-                }
-                return on.apply(this, arguments);
-              })(c.on);
-              c.send = (send => function(d) {
-                d = utils._normalizePrototype(d, global);
-                return send.apply(this, arguments);
-              })(c.send);
-              return cb.apply(this, arguments);
-            })(cb);
-          }
-          return on.apply(this, arguments);
-        })(server.on);
-        return server;
-      })(wsProxy.Server);
-      return wsProxy;
-    })(),
-    createRenderTarget(context) { // XXX needed for reality tabs fakeDisplay
-      nativeWindow.setCurrentWindowContext(context.getWindowHandle());
-      return nativeWindow.createRenderTarget.apply(nativeWindow, arguments);
-    },
+    ws,
     magicleap: nativeMl ? {
-      RequestMeshing() {
-        const mesher = nativeMl.RequestMeshing(window);
-        return {
-          get onmesh() {
-            return mesher.onmesh;
-          },
-          set onmesh(cb) {
-            mesher.onmesh = cb ? updates => {
-              for (let i = 0; i < updates.length; i++) {
-                const update = updates[i];
-                if (update.positionArray) {
-                  update.positionArray = utils._normalizePrototype(update.positionArray, window);
-                }
-                if (update.normalArray) {
-                  update.normalArray = utils._normalizePrototype(update.normalArray, window);
-                }
-                if (update.indexArray) {
-                  update.indexArray = utils._normalizePrototype(update.indexArray, window);
-                }
-              }
-              cb(updates);
-            } : null;
-          },
-        };
-      },
+      RequestMeshing: () => nativeMl.RequestMeshing(window),
       RequestPlaneTracking: () => nativeMl.RequestPlaneTracking(window),
       RequestHandTracking: () => nativeMl.RequestHandTracking(window),
       RequestEyeTracking: () => nativeMl.RequestEyeTracking(window),
       RequestImageTracking: (img, size) => nativeMl.RequestImageTracking(window, img, size),
       RequestDepthPopulation: nativeMl.RequestDepthPopulation,
-      RequestCamera(cb) {
-        if (typeof cb === 'function') {
-          cb = (cb => function(datas) {
-            for (let i = 0; i < datas.length; i++) {
-              const data = datas[i];
-              data.data = utils._normalizePrototype(data.data, window);
-            }
-            return cb.apply(this, arguments);
-          })(cb);
-        }
-        return nativeMl.RequestCamera.apply(nativeMl, arguments);
-      },
+      RequestCamera: nativeMl.RequestCamera,
     } : null,
     monitors: new MonitorManager(),
   };
@@ -1161,16 +1095,20 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   };
   window.requestAnimationFrame = _makeRequestAnimationFrame(window);
   window.cancelAnimationFrame = id => {
-    const index = rafCbs.findIndex(r => r[symbols.idSymbol] === id);
+    const index = rafCbs.findIndex(r => r && r[symbols.idSymbol] === id);
     if (index !== -1) {
       rafCbs[index] = null;
     }
   };
-  window.postMessage = function(data) {
-    setImmediate(() => {
-      window._emit('message', new MessageEvent('message', {data}));
-    });
-  };
+  window.postMessage = (postMessage => function(data) {
+    if (window.top === window) {
+      setImmediate(() => {
+        window._emit('message', new MessageEvent('message', {data}));
+      });
+    } else {
+      postMessage.apply(this, arguments);
+    }
+  })(window.postMessage);
   /*
     Treat function onload() as a special case that disables automatic event attach for onload, because this is how browsers work. E.g.
       <!doctype html><html><head><script>
@@ -1191,42 +1129,18 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   };
   Object.defineProperty(window, 'onload', {
     get() {
-      return window[symbols.disabledEventsSymbol]['load'] !== undefined ? window[symbols.disabledEventsSymbol]['load'] : _elementGetter(window, 'load');
+      return _elementGetter(window, 'load');
     },
     set(onload) {
-      if (nativeVm.isCompiling()) {
-        this[symbols.disabledEventsSymbol]['load'] = onload;
-      } else {
-        if (window[symbols.disabledEventsSymbol]['load'] !== undefined) {
-          this[symbols.disabledEventsSymbol]['load'] = onload;
-        } else {
-          _elementSetter(window, 'load', onload);
-        }
-      }
+      _elementSetter(window, 'load', onload);
     },
   });
   Object.defineProperty(window, 'onerror', {
     get() {
-      return window[symbols.disabledEventsSymbol]['error'] !== undefined ? window[symbols.disabledEventsSymbol]['error'] : _elementGetter(window, 'error');
+      return _elementGetter(window, 'error');
     },
     set(onerror) {
-      if (nativeVm.isCompiling()) {
-        window[symbols.disabledEventsSymbol]['error'] = onerror;
-      } else {
-        if (window[symbols.disabledEventsSymbol]['error'] !== undefined) {
-          window[symbols.disabledEventsSymbol]['error'] = onerror;
-        } else {
-          _elementSetter(window, 'error', onerror);
-        }
-      }
-    },
-  });
-  Object.defineProperty(window, 'onmessage', {
-    get() {
-      return _elementGetter(window, 'message');
-    },
-    set(onmessage) {
-      _elementSetter(window, 'message', onmessage);
+      _elementSetter(window, 'error', onerror);
     },
   });
   Object.defineProperty(window, 'onpopstate', {
@@ -1238,35 +1152,6 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
     },
   });
 
-  vmo.run(windowStartScript, 'window-start-script.js');
-
-  const _destroyTimeouts = window => {
-    const _pred = fn => fn[symbols.windowSymbol] === window;
-    for (let i = 0; i < rafCbs.length; i++) {
-      const rafCb = rafCbs[i];
-      if (rafCb && _pred(rafCb)) {
-        rafCbs[i] = null;
-      }
-    }
-    for (let i = 0; i < timeouts.length; i++) {
-      const timeout = timeouts[i];
-      if (timeout && _pred(timeout)) {
-        clearTimeout(timeout[symbols.timeoutSymbol]);
-        timeouts[i] = null;
-      }
-    }
-    for (let i = 0; i < intervals.length; i++) {
-      const interval = intervals[i];
-      if (interval && _pred(interval)) {
-        clearInterval(interval[symbols.timeoutSymbol]);
-        intervals[i] = null;
-      }
-    }
-  };
-
-  window.on('destroy', e => {
-    _destroyTimeouts(e.window);
-  });
   window.history.on('popstate', (u, state) => {
     window.location.set(u);
 
@@ -1277,25 +1162,14 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   let loading = false;
   window.location.on('update', href => {
     if (!loading) {
-      core.load(href, {
-        dataPath: options.dataPath,
-      })
-        .then(newWindow => {
-          window._emit('beforeunload');
-          window._emit('unload');
-          window._emit('navigate', newWindow);
-
-          _destroyTimeouts(window);
-        })
-        .catch(err => {
-          loading = false;
-
-          const e = new ErrorEvent('error', {target: this});
-          e.message = err.message;
-          e.stack = err.stack;
-          window.dispatchEvent(e);
-        });
       loading = true;
+
+      window._emit('beforeunload');
+      window._emit('unload');
+
+      window.windowEmit('navigate', {
+        href,
+      });
     }
   });
 
@@ -1303,35 +1177,131 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
   window[symbols.rafCbsSymbol] = rafCbs;
   const timeouts = [];
   const intervals = [];
-  window.tickAnimationFrame = (() => {
-    const localCbs = [];
-    const _cacheLocalCbs = cbs => {
-      for (let i = 0; i < cbs.length; i++) {
-        localCbs[i] = cbs[i];
-      }
-      for (let i = cbs.length; i < localCbs.length; i++) {
-        localCbs[i] = null;
+  const localCbs = [];
+  const childSyncs = [];
+  const _cacheLocalCbs = cbs => {
+    for (let i = 0; i < cbs.length; i++) {
+      localCbs[i] = cbs[i];
+    }
+    for (let i = cbs.length; i < localCbs.length; i++) {
+      localCbs[i] = null;
+    }
+  };
+  const _clearLocalCbs = () => {
+    for (let i = 0; i < localCbs.length; i++) {
+      localCbs[i] = null;
+    }
+  };
+  window.tickAnimationFrame = async () => {
+    const _bindXrFramebuffer = () => {
+      if (vrPresentState.glContext) {
+        nativeWindow.setCurrentWindowContext(vrPresentState.glContext.getWindowHandle());
+        vrPresentState.glContext.setDefaultFramebuffer((vrPresentState.layers.length > 0 || vrPresentState.glContext.attrs.antialias) ? vrPresentState.msFbo : vrPresentState.fbo);
+        nativeWindow.bindVrChildFbo(vrPresentState.glContext, vrPresentState.fbo, xrState.tex[0], xrState.depthTex[0]);
       }
     };
-    const _clearLocalCbs = () => {
-      for (let i = 0; i < localCbs.length; i++) {
-        localCbs[i] = null;
+    const _emitXrEvents = () => {
+      if (vrPresentState.hmdType === 'fake') {
+        window[symbols.mrDisplaysSymbol].fakeVrDisplay.update();
+      }
+      if (window[symbols.mrDisplaysSymbol].vrDevice.session) {
+        window[symbols.mrDisplaysSymbol].vrDevice.session.update();
       }
     };
-    function tickAnimationFrame() {
+    const _composeXrContext = (context, windowHandle) => {
+      const width = xrState.renderWidth[0]*2;
+      const height = xrState.renderHeight[0];
+      if (vrPresentState.layers.length > 0) {
+        nativeWindow.composeLayers(context, vrPresentState.fbo, vrPresentState.layers, xrState);
+      } else {
+        if (context.getDefaultFramebuffer() === vrPresentState.msFbo) { // if rendering to msFbo, not direct to fbo
+          nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, width, height, width, height, true, false, false);
+        }
+      }
+
+      if (vrPresentState.hmdType === 'fake' || vrPresentState.hmdType === 'oculus' || vrPresentState.hmdType === 'openvr') {
+        const {width: dWidth, height: dHeight} = nativeWindow.getFramebufferSize(windowHandle);
+        nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, width, height, dWidth, dHeight, true, false, false);
+
+        if (isMac) {
+          context.bindFramebufferRaw(context.FRAMEBUFFER, null);
+        }
+        nativeWindow.swapBuffers(windowHandle);
+      }
+    };
+    const _composeBasicContext = (context, windowHandle) => {
+      if (context.framebuffer.type === 'canvas' && !context.desynchronized) {
+        const width = context.canvas.width * (args.blit ? 0.5 : 1);
+        const height = context.canvas.height;
+        const {width: dWidth, height: dHeight} = nativeWindow.getFramebufferSize(windowHandle);
+        nativeWindow.blitFrameBuffer(context, context.framebuffer.msFbo, context.framebuffer.fbo, width, height, width, height, true, false, false);
+        nativeWindow.blitFrameBuffer(context, context.framebuffer.fbo, 0, width, height, dWidth, dHeight, true, false, false);
+
+        if (isMac) {
+          context.bindFramebufferRaw(context.FRAMEBUFFER, null);
+        }
+        nativeWindow.swapBuffers(windowHandle);
+      }
+    };
+    const _composeLayers = () => {
+      const syncs = [];
+
+      for (let i = 0; i < contexts.length; i++) {
+        const context = contexts[i];
+        const isDirty = (!!context.isDirty && context.isDirty()) || context === vrPresentState.glContext;
+        if (isDirty) {
+          const windowHandle = context.getWindowHandle();
+
+          nativeWindow.setCurrentWindowContext(windowHandle);
+          if (isMac) {
+            context.flush();
+          }
+
+          if (context === vrPresentState.glContext) {
+            _composeXrContext(context, windowHandle);
+          } else {
+            _composeBasicContext(context, windowHandle);
+          }
+
+          if (isMac) {
+            const drawFramebuffer = context.getBoundFramebuffer(context.DRAW_FRAMEBUFFER);
+            if (drawFramebuffer) {
+              context.bindFramebuffer(context.DRAW_FRAMEBUFFER, drawFramebuffer);
+            }
+
+            const readFramebuffer = context.getBoundFramebuffer(context.READ_FRAMEBUFFER);
+            if (readFramebuffer) {
+              context.bindFramebuffer(context.READ_FRAMEBUFFER, readFramebuffer);
+            }
+          }
+
+          context.clearDirty();
+
+          if (context.finish) {
+            syncs.push(nativeWindow.getSync());
+          }
+        }
+      }
+
+      for (let i = 0; i < windows.length; i++) {
+        const window = windows[i];
+        if (window.phase === PHASES.RENDERED) {
+          window.phase = PHASES.NULL;
+        }
+      }
+
+      return Promise.resolve(syncs);
+    };
+    const _renderLocal = () => {
       if (rafCbs.length > 0) {
         _cacheLocalCbs(rafCbs);
-
-        // tickAnimationFrame.window = this;
-
+        
         const performanceNow = performance.now();
 
-        // hidden rafs
         for (let i = 0; i < localCbs.length; i++) {
           const rafCb = localCbs[i];
-          if (rafCb && rafCb[symbols.windowSymbol].document.hidden) {
+          if (rafCb) {
             try {
-              // console.log('tick raf', rafCb.stack);
               rafCb(performanceNow);
             } catch (e) {
               console.warn(e);
@@ -1343,201 +1313,239 @@ const _makeWindow = (options = {}, parent = null, top = null) => {
             }
           }
         }
-        // visible rafs
-        for (let i = 0; i < localCbs.length; i++) {
-          const rafCb = localCbs[i];
-          if (rafCb && !rafCb[symbols.windowSymbol].document.hidden) {
-            try {
-              // console.log('tick raf', rafCb.stack);
-              rafCb(performanceNow);
-            } catch (e) {
-              console.warn(e);
-            }
-            const index = rafCbs.indexOf(rafCb); // could have changed due to sorting
-            if (index !== -1) {
-              rafCbs[index] = null;
-            }
-          }
-        }
 
-        // tickAnimationFrame.window = null;
+        _clearLocalCbs(); // release garbage
       }
+    };
+    const _renderChildren = () => {
+      /* let timeout;
+      const timeoutPromise = new Promise((accept, reject) => {
+        timeout = setTimeout(() => {
+          accept();
+        }, 1000/60); // XXX make this timeout accurate
+      }); */
+      for (let i = 0; i < windows.length; i++) {
+        const window = windows[i];
+        if (window.phase === PHASES.NULL) {
+          window.promise = window.runAsync('tickAnimationFrame')
+            .then(syncs => {
+              if (vrPresentState.glContext) {
+                nativeWindow.setCurrentWindowContext(vrPresentState.glContext.getWindowHandle());
 
-      _clearLocalCbs(); // release garbage
+                for (let i = 0; i < syncs.length; i++) {
+                  const sync = syncs[i];
+                  nativeWindow.waitSync(sync);
+                  childSyncs.push(sync);
+                }
+              }
+
+              window.phase = PHASES.RENDERED;
+              window.promise = null;
+            });
+          window.phase = PHASES.RENDERING;
+        }
+      }
+      /* await Promise.race([
+        timeoutPromise,
+        Promise.all(windows.map(window => window.promise)),
+      ]);
+      clearTimeout(timeout); */
+      return Promise.all(windows.map(window => window.promise));
+    };
+
+    _bindXrFramebuffer();
+    _emitXrEvents();
+
+    for (let i = 0; i < childSyncs.length; i++) {
+      nativeWindow.deleteSync(childSyncs[i]);
     }
-    // tickAnimationFrame.window = null;
-    return tickAnimationFrame;
-  })();
-
+    childSyncs.length = 0;
+    const childrenPromise = _renderChildren();
+    _renderLocal();
+    await childrenPromise;
+    
+    return _composeLayers();
+  };
+  
   const _makeMrDisplays = () => {
-    const _bindMRDisplay = display => {
-      display.onrequestanimationframe = _makeRequestAnimationFrame(window);
-      display.oncancelanimationframe = window.cancelAnimationFrame;
-      display.onvrdisplaypresentchange = () => {
-        const e = new Event('vrdisplaypresentchange');
-        e.display = display;
-        window.dispatchEvent(e);
-      };
+    const _onrequestpresent = async () => {
+      if (!xrState.isPresenting[0]) {
+        const {hmdType} = await new Promise((accept, reject) => {
+          vrPresentState.responseAccept = accept;
+
+          xrState.vrRequest[1] = GlobalContext.id;
+          xrState.vrRequest[0] = 1; // requestPresent
+        });
+
+        vrPresentState.hmdType = hmdType;
+      }
+    };
+    const _onmakeswapchain = context => {
+      const windowHandle = context.getWindowHandle();
+      nativeWindow.setCurrentWindowContext(windowHandle);
+
+      const window = context.canvas.ownerDocument.defaultView;
+      const width = xrState.renderWidth[0]*2;
+      const height = xrState.renderHeight[0];
+      if (!window.document.hidden) {
+        const [fbo, msFbo, msTex, msDepthTex] = nativeWindow.createVrCompositorRenderTarget(context, width, height);
+        context.setDefaultFramebuffer(msFbo); // note: this is dynamically set depending on layer/antialias mode
+
+        vrPresentState.glContext = context;
+        vrPresentState.fbo = fbo;
+        vrPresentState.msFbo = msFbo;
+        vrPresentState.msTex = msTex;
+        vrPresentState.msDepthTex = msDepthTex;
+
+        {
+          let [fbo, tex, depthTex, _msFbo, _msTex, _msDepthTex] = nativeWindow.createRenderTarget(context, width, height);
+
+          context.canvas.framebuffer = {
+            type: 'compositor',
+            width,
+            height,
+            msFbo,
+            msTex,
+            msDepthTex,
+            fbo,
+            tex,
+            depthTex,
+          };
+        }
+
+        return {
+          msFbo,
+        };
+      } else {
+        const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeWindow.createRenderTarget(context, width, height);
+
+        context.setDefaultFramebuffer(msFbo);
+
+        context.framebuffer = {
+          type: 'layer',
+          msFbo,
+          msTex,
+          msDepthTex,
+          fbo,
+          tex,
+          depthTex,
+        };
+        window.windowEmit('framebuffer', context.framebuffer);
+        window.windowEmit('resize', {
+          width,
+          height,
+        });
+        
+        return {
+          msFbo,
+        };
+      }
+    };
+    const _onexitpresent = async () => {
+      if (xrState.isPresenting[0]) {
+        await new Promise((accept, reject) => {
+          vrPresentState.responseAccept = accept;
+
+          xrState.vrRequest[1] = GlobalContext.id;
+          xrState.vrRequest[0] = 2; // exitPresent
+        });
+
+        vrPresentState.hmdType = null;
+      }
     };
 
     const fakeVrDisplay = new FakeVRDisplay(window);
-    fakeVrDisplay.onrequestpresent = layers => {
-      if (!GlobalContext.fakePresentState.fakeVrDisplay) {
-        GlobalContext.fakePresentState.fakeVrDisplay = fakeVrDisplay;
-      }
-
-      const [{source: canvas}] = layers;
-      const {_context: context} = canvas;
-      return {
-        width: context.drawingBufferWidth,
-        height: context.drawingBufferHeight,
-        msFbo: null,
-      };
-    };
-    fakeVrDisplay.onexitpresent = () => {
-      GlobalContext.fakePresentState.fakeVrDisplay = null;
-    };
+    fakeVrDisplay.onrequestpresent = _onrequestpresent;
+    fakeVrDisplay.onmakeswapchain = _onmakeswapchain;
+    fakeVrDisplay.onexitpresent = _onexitpresent;
+    fakeVrDisplay.onrequestanimationframe = _makeRequestAnimationFrame(window);
+    fakeVrDisplay.oncancelanimationframe = window.cancelAnimationFrame;
     fakeVrDisplay.onlayers = layers => {
-      GlobalContext.fakePresentState.layers = layers;
+      vrPresentState.layers = layers;
     };
 
-    const openVRDisplay = new VRDisplay('OpenVR');
-    _bindMRDisplay(openVRDisplay);
-    openVRDisplay.onrequestpresent = layers => nativeOpenVR.requestPresent(layers);
-    openVRDisplay.onexitpresent = () => nativeOpenVR.exitPresent();
-    openVRDisplay.onlayers = layers => {
-      GlobalContext.vrPresentState.layers = layers;
+    const vrDisplay = new VRDisplay('OpenVR', window);
+    vrDisplay.onrequestanimationframe = _makeRequestAnimationFrame(window);
+    vrDisplay.oncancelanimationframe = window.cancelAnimationFrame;
+    vrDisplay.onvrdisplaypresentchange = () => {
+      const e = new Event('vrdisplaypresentchange');
+      e.display = vrDisplay;
+      window.dispatchEvent(e);
     };
-
-    const oculusVRDisplay = new VRDisplay('OculusVR');
-    _bindMRDisplay(oculusVRDisplay);
-    oculusVRDisplay.onrequestpresent = layers => nativeOculusVR.requestPresent(layers);
-    oculusVRDisplay.onexitpresent = () => nativeOculusVR.exitPresent();
-    oculusVRDisplay.onlayers = layers => {
-      GlobalContext.vrPresentState.layers = layers;
+    vrDisplay.onrequestpresent = _onrequestpresent;
+    vrDisplay.onmakeswapchain = _onmakeswapchain;
+    vrDisplay.onexitpresent = _onexitpresent;
+    vrDisplay.onlayers = layers => {
+      vrPresentState.layers = layers;
     };
-
-    const openVRDevice = new XR.XRDevice('OpenVR', window);
-    openVRDevice.onrequestpresent = layers => nativeOpenVR.requestPresent(layers);
-    openVRDevice.onexitpresent = () => nativeOpenVR.exitPresent();
-    openVRDevice.onrequestanimationframe = _makeRequestAnimationFrame(window);
-    openVRDevice.oncancelanimationframe = window.cancelAnimationFrame;
-    openVRDevice.requestSession = (requestSession => function() {
+    
+    const vrDevice = new XR.XRDevice('OpenVR', window);
+    vrDevice.onrequestpresent = _onrequestpresent;
+    vrDevice.onmakeswapchain = _onmakeswapchain;
+    vrDevice.onexitpresent = _onexitpresent;
+    vrDevice.onrequestanimationframe = _makeRequestAnimationFrame(window);
+    vrDevice.oncancelanimationframe = window.cancelAnimationFrame;
+    vrDevice.requestSession = (requestSession => function() {
       return requestSession.apply(this, arguments)
         .then(session => {
-          openVRDisplay.isPresenting = true;
+          vrDisplay.isPresenting = true;
           session.once('end', () => {
-            openVRDisplay.isPresenting = false;
+            vrDisplay.isPresenting = false;
           });
           return session;
         });
-    })(openVRDevice.requestSession);
-    openVRDevice.onlayers = layers => {
-      GlobalContext.vrPresentState.layers = layers;
-    };
-
-    const oculusVRDevice = new XR.XRDevice('OculusVR', window);
-    oculusVRDevice.onrequestpresent = layers => nativeOculusVR.requestPresent(layers);
-    oculusVRDevice.onexitpresent = () => nativeOculusVR.exitPresent();
-    oculusVRDevice.onrequestanimationframe = _makeRequestAnimationFrame(window);
-    oculusVRDevice.oncancelanimationframe = window.cancelAnimationFrame;
-    oculusVRDevice.requestSession = (requestSession => function() {
-      return requestSession.apply(this, arguments)
-        .then(session => {
-          oculusVRDisplay.isPresenting = true;
-          session.once('end', () => {
-            oculusVRDisplay.isPresenting = false;
-          });
-          return session;
-        });
-    })(oculusVRDevice.requestSession);
-    oculusVRDevice.onlayers = layers => {
-      GlobalContext.vrPresentState.layers = layers;
-    };
-
-    const oculusMobileVrDisplay = new VRDisplay('OculusMobileVR');
-    _bindMRDisplay(oculusMobileVrDisplay);
-    oculusMobileVrDisplay.onrequestpresent = layers => nativeOculusMobileVr.requestPresent(layers);
-    oculusMobileVrDisplay.onexitpresent = () => nativeOculusMobileVr.exitPresent();
-    oculusMobileVrDisplay.onlayers = layers => {
-      GlobalContext.vrPresentState.layers = layers;
-    };
-
-    const oculusMobileVrDevice = new XR.XRDevice('OculusMobileVR', window);
-    oculusMobileVrDevice.onrequestpresent = layers => nativeOculusMobileVr.requestPresent(layers);
-    oculusMobileVrDevice.onexitpresent = () => nativeOculusMobileVr.exitPresent();
-    oculusMobileVrDevice.onrequestanimationframe = _makeRequestAnimationFrame(window);
-    oculusMobileVrDevice.oncancelanimationframe = window.cancelAnimationFrame;
-    oculusMobileVrDevice.requestSession = (requestSession => function() {
-      return requestSession.apply(this, arguments)
-        .then(session => {
-          oculusMobileVrDisplay.isPresenting = true;
-          session.once('end', () => {
-            oculusMobileVrDisplay.isPresenting = false;
-          });
-          return session;
-        });
-    })(oculusMobileVrDevice.requestSession);
-    oculusMobileVrDevice.onlayers = layers => {
-      GlobalContext.vrPresentState.layers = layers;
-    };
-
-    const magicLeapARDisplay = new VRDisplay('AR');
-    _bindMRDisplay(magicLeapARDisplay);
-    magicLeapARDisplay.onrequestpresent = layers => nativeMl.requestPresent(layers);
-    magicLeapARDisplay.onexitpresent = () => nativeMl.exitPresent();
-    magicLeapARDisplay.onrequesthittest = _makeOnRequestHitTest(window);
-    magicLeapARDisplay.onlayers = layers => {
-      GlobalContext.mlPresentState.layers = layers;
-    };
-
-    const magicLeapARDevice = new XR.XRDevice('AR', window);
-    magicLeapARDevice.onrequestpresent = layers => nativeMl.requestPresent(layers);
-    magicLeapARDevice.onexitpresent = () => nativeMl.exitPresent();
-    magicLeapARDevice.onrequestanimationframe = _makeRequestAnimationFrame(window);
-    magicLeapARDevice.oncancelanimationframe = window.cancelAnimationFrame;
-    magicLeapARDevice.requestSession = (requestSession => function() {
-      return requestSession.apply(this, arguments)
-        .then(session => {
-          magicLeapARDisplay.isPresenting = true;
-          session.once('end', () => {
-            magicLeapARDisplay.isPresenting = false;
-          });
-          return session;
-        });
-    })(magicLeapARDevice.requestSession);
-    magicLeapARDevice.onrequesthittest = _makeOnRequestHitTest(window);
-    magicLeapARDevice.onlayers = layers => {
-      GlobalContext.mlPresentState.layers = layers;
+    })(vrDevice.requestSession);
+    vrDevice.onlayers = layers => {
+      vrPresentState.layers = layers;
     };
 
     return {
       fakeVrDisplay,
-      openVRDisplay,
-      oculusVRDisplay,
-      openVRDevice,
-      oculusVRDevice,
-      oculusMobileVrDisplay,
-      oculusMobileVrDevice,
-      magicLeapARDisplay,
-      magicLeapARDevice,
+      vrDisplay,
+      vrDevice,
     };
   };
   window[symbols.mrDisplaysSymbol] = _makeMrDisplays();
+  window.vrdisplayactivate = () => {
+    const displays = window.navigator.getVRDisplaysSync();
+    if (displays.length > 0 && (!window[symbols.optionsSymbol].args || ['all', 'webvr'].includes(window[symbols.optionsSymbol].args.xr)) && !displays[0].isPresenting) {
+      const e = new window.Event('vrdisplayactivate');
+      e.display = displays[0];
+      window.dispatchEvent(e);
+    }
+  };
 
-  GlobalContext.windows.push(window);
-  window.on('destroy', () => {
-    GlobalContext.windows.splice(GlobalContext.windows.indexOf(window), 1);
-  });
+  window.document = _parseDocument(options.htmlString, window);
+  window.document.hidden = options.hidden || false;
+  window.document.xrOffset = options.xrOffsetBuffer ? new XRRigidTransform(options.xrOffsetBuffer) : new XRRigidTransform();
+})(global);
 
-  return window;
+global.onrunasync = method => {
+  if (method === 'tickAnimationFrame') {
+    return global.tickAnimationFrame();
+  } else if (/^\{"method":"response"/.test(method)) {
+    if (vrPresentState.responseAccept) {
+      const res = JSON.parse(method);
+      
+      const {responseAccept} = vrPresentState;
+      vrPresentState.responseAccept = null;
+      responseAccept(res);
+      return Promise.resolve();
+    } else {
+      return Promise.reject(new Error(`unexpected window response`));
+    }
+  } else if (/^\{"method":"eval"/.test(method)) {
+    return Promise.resolve(eval(JSON.parse(method).scriptString));
+  } else {
+    return Promise.reject(new Error(`invalid window async method: ${method}`));
+  }
 };
-module.exports._makeWindow = _makeWindow;
-GlobalContext._makeWindow = _makeWindow;
-
-const _makeWindowWithDocument = (s, options, parent, top) => {
-  const window = _makeWindow(options, parent, top);
-  _parseDocument(s, window); // attaches window.document
-  return window;
+global.onexit = () => {
+  const localContexts = contexts.slice();
+  for (let i = 0; i < localContexts.length; i++) {
+    localContexts[i].destroy();
+  }
+  
+  AudioContext.Destroy();
 };
-module.exports._makeWindowWithDocument = _makeWindowWithDocument;
+// global.setImmediate = undefined; // need this for the TLS implementation

@@ -54,6 +54,13 @@ MLVec3f normalizeVector(const MLVec3f &v) {
   return divideVector(v, vectorLength(v));
 }
 
+float distanceTo(const MLVec3f &a, const MLVec3f &b) {
+  return vectorLength(subVectors(a, b));
+}
+
+float distanceToSq(const MLVec3f &a, const MLVec3f &b) {
+  return vectorLengthSq(subVectors(a, b));
+}
 
 MLVec3f applyVectorQuaternion(const MLVec3f &v, const MLQuaternionf &q) {
   const float x = v.x, y = v.y, z = v.z;

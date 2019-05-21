@@ -20,11 +20,11 @@ find.file(/\.node$/, dirname, files => {
         const relpath = match[1].slice(dirname.length);
         const binName = match[2];
         const npmName = (() => {
-          const match = relpath.match(/\/node_modules\/([^\/]+)/);
+          const match = relpath.match(/\/node_modules\/([^\/]+)\/build\/(?:Release|Debug)\/$/);
           return match && match[1];
         })();
         // ignore incompatible modules
-        if (!npmName || npmName.replace(/-/g, '_') === binName) {
+        if (!npmName || (npmName.replace(/-/g, '_') === binName || (npmName.replace(/-/g, '_') + '2') === binName)) {
           const registerName = `node_register_module_${binName}`;
           decls += `  void ${registerName}(Local<Object> exports, Local<Value> module, Local<Context> context);\n`;
           registers += `  dlibs["/package${relpath}${binName}.node"] = std::pair<void *, bool>((void *)&${registerName}, false);\n`;

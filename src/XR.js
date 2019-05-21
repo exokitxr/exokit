@@ -1,7 +1,9 @@
 const {EventEmitter} = require('events');
 const {Event, EventTarget} = require('./Event');
+const {getHMDType} = require('./VR');
 const GlobalContext = require('./GlobalContext');
 const THREE = require('../lib/three-min.js');
+const {defaultCanvasSize} = require('./constants');
 const symbols = require('./symbols');
 const {maxNumTrackers} = require('./constants');
 const {_elementGetter, _elementSetter} = require('./utils');
@@ -19,19 +21,17 @@ class XR extends EventEmitter {
 
     this._window = window;
   }
-  requestDevice() {
-    if (GlobalContext.fakeVrDisplayEnabled) {
-      return Promise.resolve(this._window[symbols.mrDisplaysSymbol].fakeVrDisplay);
-    } else if (GlobalContext.nativeOculusVR && GlobalContext.nativeOculusVR.Oculus_IsHmdPresent()) {
-      return Promise.resolve(this._window[symbols.mrDisplaysSymbol].oculusVRDevice);
-    } else if (GlobalContext.nativeOpenVR && GlobalContext.nativeOpenVR.VR_IsHmdPresent()) {
-      return Promise.resolve(this._window[symbols.mrDisplaysSymbol].openVRDevice);
-    } else if (GlobalContext.nativeOculusMobileVr && GlobalContext.nativeOculusMobileVr.OculusMobile_IsHmdPresent()) {
-      return Promise.resolve(this._window[symbols.mrDisplaysSymbol].oculusMobileVrDevice);
-    } else if (GlobalContext.nativeMl && GlobalContext.nativeMl.IsPresent()) {
-      return Promise.resolve(this._window[symbols.mrDisplaysSymbol].magicLeapARDevice);
+  async requestDevice() {
+    const hmdType = getHMDType();
+
+    if (hmdType) {
+      if (hmdType === 'fake') {
+        return this._window[symbols.mrDisplaysSymbol].fakeVrDisplay;
+      } else {
+        return this._window[symbols.mrDisplaysSymbol].vrDevice;
+      }
     } else {
-      return Promise.resolve(null);
+      return null;
     }
   }
   get onvrdevicechange() {
@@ -48,25 +48,31 @@ class XRDevice {
     this.name = name; // non-standard
     this.window = window; // non-standard
     this.session = null; // non-standard
+
+    this.onrequestpresent = null;
+    this.onmakeswapchain = null;
+    this.onexitpresent = null;
+    this.onrequestanimationframe = null;
     
     this._layers = [];
   }
   supportsSession() {
     return Promise.resolve(null);
   }
-  requestSession({exclusive = false, outputContext = null} = {}) {
+  async requestSession({exclusive = false, outputContext = null} = {}) {
     if (!this.session) {
       const session = new XRSession({
         device: this,
         exclusive,
         outputContext,
       });
+      await this.onrequestpresent();
       session.once('end', () => {
         this.session = null;
       });
       this.session = session;
     }
-    return Promise.resolve(this.session);
+    return this.session;
   }
   get layers() {
     return this._layers;
@@ -88,8 +94,6 @@ class XRSession extends EventTarget {
     this.device = device;
     this.exclusive = exclusive;
     this.outputContext = outputContext;
-
-    this.baseLayer = null;
 
     this._frame = new XRPresentationFrame(this);
     this._frameOfReference = new XRFrameOfReference();
@@ -114,6 +118,7 @@ class XRSession extends EventTarget {
     this._lastPresseds = [false, false];
     this._rafs = [];
   }
+  
   get depthNear() {
     return GlobalContext.xrState.depthNear[0];
   }
@@ -334,6 +339,9 @@ module.exports.XRSession = XRSession;
 
 class XRWebGLLayer {
   constructor(session, context, options = {}) {
+    this.session = session;
+    this.context = context;
+    
     const {
       antialias = true,
       depth = false,
@@ -342,37 +350,17 @@ class XRWebGLLayer {
       multiview = false,
       framebufferScaleFactor = 1,
     } = options;
-
-    this.context = context;
-
     this.antialias = antialias;
     this.depth = depth;
     this.stencil = stencil;
     this.alpha = alpha;
     this.multiview = multiview;
 
-    const presentSpec = session.device.onrequestpresent ?
-      session.device.onrequestpresent([{
-        source: context.canvas,
-      }])
-    :
-      {
-        width: context.drawingBufferWidth,
-        height: context.drawingBufferHeight,
-        msFbo: null,
-        msTex: 0,
-        msDepthTex: 0,
-        fbo: null,
-        tex: 0,
-        depthTex: 0,
-      };
-    const {width, height, msFbo} = presentSpec;
-
-    this.framebuffer = msFbo !== null ? {
+    const {msFbo} = this.session.device.onmakeswapchain(context);
+    
+    this.framebuffer = {
       id: msFbo,
-    } : null;
-    this.framebufferWidth = width;
-    this.framebufferHeight = height;
+    };
   }
   getViewport(view) {
     return view._viewport;
@@ -380,6 +368,21 @@ class XRWebGLLayer {
   requestViewportScaling(viewportScaleFactor) {
     throw new Error('not implemented'); // XXX
   }
+  
+  get framebuffer() {
+    return this.session._framebuffer;
+  }
+  set framebuffer(framebuffer) {}
+  
+  get framebufferWidth() {
+    return xrState.renderWidth[0]*2;
+  }
+  set framebufferWidth(framebufferWidth) {}
+  
+  get framebufferHeight() {
+    return xrState.renderHeight[0];
+  }
+  set framebufferHeight(framebufferHeight) {}
 }
 module.exports.XRWebGLLayer = XRWebGLLayer;
 
@@ -535,15 +538,52 @@ GlobalContext.XRInputSourceEvent = XRInputSourceEvent;
 
 class XRRigidTransform {
   constructor(position = {x: 0, y: 0, z: 0}, orientation = {x: 0, y: 0, z: 0, w: 1}, scale = {x: 1, y: 1, z: 1}) {
-    this.position = Float32Array.from([position.x, position.y, position.z]);
-    this.orientation = Float32Array.from([orientation.x, orientation.y, orientation.z, orientation.w]);
-    this.scale = Float32Array.from([scale.x, scale.y, scale.z]); // non-standard
-    this.matrix = localMatrix
-      .compose(localVector.fromArray(this.position), localQuaternion.fromArray(this.orientation), localVector2.fromArray(this.scale))
-      .toArray(new Float32Array(16));
-    this.matrixInverse = localMatrix
-      .getInverse(localMatrix)
-      .toArray(new Float32Array(16));
+    if (position instanceof SharedArrayBuffer) {
+      this.initialize(position);
+    } else {
+      this.initialize();
+
+      this.position[0] = position.x;
+      this.position[1] = position.y;
+      this.position[2] = position.z;
+
+      this.orientation[0] = orientation.x;
+      this.orientation[1] = orientation.y;
+      this.orientation[2] = orientation.z;
+      this.orientation[3] = orientation.w;
+
+      this.scale[0] = scale.x;
+      this.scale[1] = scale.y;
+      this.scale[2] = scale.z;
+
+      localMatrix
+        .compose(localVector.fromArray(this.position), localQuaternion.fromArray(this.orientation), localVector2.fromArray(this.scale))
+        .toArray(this.matrix);
+
+      localMatrix
+        .getInverse(localMatrix)
+        .toArray(this.matrixInverse);
+    }
+  }
+  
+  initialize(_buffer = new SharedArrayBuffer((3 + 4 + 3 + 16*2) * Float32Array.BYTES_PER_ELEMENT)) {
+    this._buffer = _buffer;
+    let index = 0;
+
+    this.position = new Float32Array(this._buffer, index, 3);
+    index += 3 * Float32Array.BYTES_PER_ELEMENT;
+
+    this.orientation = new Float32Array(this._buffer, index, 4);
+    index += 4 * Float32Array.BYTES_PER_ELEMENT;
+
+    this.scale = new Float32Array(this._buffer, index, 3);
+    index += 3 * Float32Array.BYTES_PER_ELEMENT;
+
+    this.matrix = new Float32Array(this._buffer, index, 16);
+    index += 16 * Float32Array.BYTES_PER_ELEMENT;
+
+    this.matrixInverse = new Float32Array(this._buffer, index, 16);
+    index += 16 * Float32Array.BYTES_PER_ELEMENT;
   }
 
   updateMatrix() {

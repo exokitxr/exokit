@@ -86,7 +86,7 @@ let servers = [];
 let serversLoading = false;
 let serverConnectedUrl = null;
 
-const DEFAULT_URL = 'http://lol.com';
+const DEFAULT_URL = 'https://aframe.io/';
 const DEFAULT_REGISTRY_URL = 'http://xrmp.exokit.org:9001';
 const DEFAULT_SKIN_URL = 'skin2.png';
 const RAY_COLOR = 0x44c2ff;
@@ -575,6 +575,7 @@ const _getFrontOfCamera = () => {
     localVector2.set(0, 0, -1.5)
       .applyQuaternion(localQuaternion)
   );
+  localVector2.set(1, 1, 1);
 
   return {
     position: localVector.clone(),
@@ -1023,8 +1024,8 @@ const _makeRig = () => {
           _updateText();
         } else if (code === 13) { // enter
           const u = (optionsMesh.d === 3 && urlMesh.urlState.text === DEFAULT_URL) ? 'realitytab.html?color=29b6f6' : urlMesh.urlState.text;
-          const {position, quaternion} = _getFrontOfCamera();
-          _openUrl(u, position, quaternion, undefined, optionsMesh.d);
+          const {position, quaternion, scale} = _getFrontOfCamera();
+          _openUrl(u, position, quaternion, scale, optionsMesh.d);
           _updateRigLists();
         } else if (
           code === 9 || // tab
@@ -2267,9 +2268,9 @@ function animate(time, frame) {
                           if (iframe.d === 3) {
                             window.browser.devTools.requestDevTools(iframe.contentWindow, document)
                               .then(devTools => {
-                                const {position, quaternion} = _getFrontOfCamera();
+                                const {position, quaternion, scale} = _getFrontOfCamera();
                                 // position.add(localVector.set(0, -0.3, 0).applyQuaternion(quaternion));
-                                _addTab(devTools.getIframe(), position, quaternion, undefined, 2);
+                                _addTab(devTools.getIframe(), position, quaternion, scale, 2);
                               })
                               .catch(err => {
                                 console.warn(err.stack);
@@ -2361,8 +2362,8 @@ function animate(time, frame) {
                         const link = localLinks[j];
                         const {url} = link;
 
-                        const {position, quaternion} = _getFrontOfCamera();
-                        _openUrl(url, position, quaternion, undefined, menuMesh.optionsMesh.d);
+                        const {position, quaternion, scale} = _getFrontOfCamera();
+                        _openUrl(url, position, quaternion, scale, menuMesh.optionsMesh.d);
 
                         menuMesh.optionsMesh.list = 'tabs';
                         menuMesh.optionsMesh.updateOptions();
@@ -2536,8 +2537,8 @@ function animate(time, frame) {
                   rig.menuMesh.urlMesh.handleKey(code, false);
                 } else {
                   const u = (optionsMesh.d === 3 && urlMesh.urlState.text === DEFAULT_URL) ? 'realitytab.html?color=29b6f6' : urlMesh.urlState.text;
-                  const {position, quaternion} = _getFrontOfCamera();
-                  _openUrl(u, position, quaternion, undefined, optionsMesh.d);
+                  const {position, quaternion, scale} = _getFrontOfCamera();
+                  _openUrl(u, position, quaternion, scale, optionsMesh.d);
                   _updateRigLists();
                 }
               } else if (focusedTab.iframe) {
@@ -2743,7 +2744,7 @@ const _bootFakeDisplay = async () => {
 
           if (window.browser && window.browser.magicleap) {
             window.browser.magicleap.RequestDepthPopulation(true);
-            renderer.autoClearDepth = false;
+            // renderer.autoClearDepth = false;
           }
 
           _openUrl('tutorial.html');
@@ -2778,6 +2779,16 @@ const _bootFakeDisplay = async () => {
         renderer.vr.enabled = true;
         renderer.vr.setDevice(display);
         renderer.vr.setAnimationLoop(animate);
+
+        if (window.browser && window.browser.magicleap) {
+          window.browser.magicleap.RequestDepthPopulation(true);
+          // renderer.autoClearDepth = false;
+        }
+
+        _openUrl('tutorial.html');
+        _updateRigLists();
+
+        console.log('loaded root in XR');
       } else {
         console.log('no vr displays');
         await _bootFakeDisplay();

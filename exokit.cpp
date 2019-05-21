@@ -244,7 +244,9 @@ void Init(Local<Object> exports) {
 }
 
 #if !defined(ANDROID) && !defined(LUMIN)
-NODE_MODULE(NODE_GYP_MODULE_NAME, exokit::Init)
+NODE_MODULE_INIT(/* exports, module, context */) {
+  exokit::Init(exports);
+}
 #else
 extern "C" {
   void node_register_module_exokit(Local<Object> exports, Local<Value> module, Local<Context> context) {

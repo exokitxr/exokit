@@ -6,6 +6,159 @@
 
 namespace glfw {
 
+thread_local NATIVEwindow *currentWindow = nullptr;
+std::mutex windowHandleMutex;
+NATIVEwindow *sharedWindow = nullptr;
+InjectionHandler mainThreadInjectionHandler;
+std::mutex injectionHandlerMapMutex;
+// int lastX = 0, lastY = 0; // XXX track this per-window
+#ifdef TARGET_OS_MAC
+std::thread::id mainThreadId;
+bool hasMainThreadId = false;
+#endif
+
+WindowState::WindowState() {}
+WindowState::~WindowState() {}
+
+void RunEventInWindowThread(uv_async_t *async) {
+  Nan::HandleScope scope;
+
+  EventHandler *eventHandler = (EventHandler *)async->data;
+
+  std::deque<std::function<void(std::function<void(int argc, Local<Value> *argv)>)>> localFns;
+  Local<Function> handlerFn;
+  {
+    std::lock_guard<std::mutex> lock(eventHandler->mutex);
+
+    localFns = std::move(eventHandler->fns);
+    eventHandler->fns.clear();
+
+    handlerFn = Nan::New(eventHandler->handlerFn);
+  }
+  for (auto iter = localFns.begin(); iter != localFns.end(); iter++) {
+    Nan::HandleScope scope;
+
+    (*iter)([&](int argc, Local<Value> *argv) -> void {
+      Local<Object> asyncObject = Nan::New<Object>();
+      AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "mlEvents");
+
+      asyncResource.MakeCallback(handlerFn, argc, argv);
+    });
+  }
+}
+
+EventHandler::EventHandler(uv_loop_t *loop, Local<Function> handlerFn) : async(new uv_async_t()), handlerFn(handlerFn) {
+  uv_async_init(loop, async.get(), RunEventInWindowThread);
+  async->data = this;
+}
+
+EventHandler::~EventHandler() {
+  uv_close((uv_handle_t *)async.release(), [](uv_handle_t *handle) {
+    delete handle;
+  });
+}
+
+InjectionHandler::InjectionHandler() {}
+
+void QueueEvent(NATIVEwindow *window, std::function<void(std::function<void(int, Local<Value> *)>)> fn) {
+  WindowState *windowState = (WindowState *)glfwGetWindowUserPointer(window);
+
+  if (windowState->handler) {
+    EventHandler *eventHandler = windowState->handler.get();
+
+    {
+      std::lock_guard<std::mutex> lock(eventHandler->mutex);
+
+      eventHandler->fns.push_back(fn);
+    }
+
+    uv_async_send(eventHandler->async.get());
+  }
+}
+
+bool glfwInitialized = false;
+void initializeGlfw() {
+  glewExperimental = GL_TRUE;
+
+  if (glfwInit() == GLFW_TRUE) {
+    atexit([]() {
+      glfwTerminate();
+    });
+
+    glfwDefaultWindowHints();
+
+    // we use OpenGL 2.1, GLSL 1.20. Comment this for now as this is for GLSL 1.50
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    glfwWindowHint(GLFW_RESIZABLE, 1);
+    glfwWindowHint(GLFW_VISIBLE, 1);
+    glfwWindowHint(GLFW_DECORATED, 1);
+    glfwWindowHint(GLFW_RED_BITS, 8);
+    glfwWindowHint(GLFW_GREEN_BITS, 8);
+    glfwWindowHint(GLFW_BLUE_BITS, 8);
+    glfwWindowHint(GLFW_DEPTH_BITS, 24);
+    glfwWindowHint(GLFW_REFRESH_RATE, 0);
+    glfwWindowHint(GLFW_CONTEXT_RELEASE_BEHAVIOR, GLFW_RELEASE_BEHAVIOR_NONE);
+
+    glfwSetErrorCallback([](int err, const char *errString) {
+      fprintf(stderr, "GLFW error: %d: %s", err, errString);
+    });
+  } else {
+    exerr << "Failed to initialize GLFW" << std::endl;
+    abort();
+  }
+}
+void handleInjections() {
+  std::lock_guard<std::mutex> lock(injectionHandlerMapMutex);
+
+  for (auto iter = mainThreadInjectionHandler.fns.begin(); iter != mainThreadInjectionHandler.fns.end(); iter++) {
+    std::function<void(InjectionHandler *)> &fn = *iter;
+    fn(&mainThreadInjectionHandler);
+  }
+  mainThreadInjectionHandler.fns.clear();
+}
+void QueueInjection(std::function<void(InjectionHandler *injectionHandler)> fn) {
+  if (!glfwInitialized) {
+#ifndef TARGET_OS_MAC
+    std::thread([&]() -> void {
+      initializeGlfw();
+
+      for (;;) {
+        glfwWaitEvents();
+
+        handleInjections();
+      }
+    }).detach();
+#else
+    {
+      std::lock_guard<std::mutex> lock(injectionHandlerMapMutex);
+
+      mainThreadInjectionHandler.fns.push_back([](InjectionHandler *injectionHandler) -> void {
+        initializeGlfw();
+      });
+    }
+#endif
+
+    glfwInitialized = true;
+  }
+
+  {
+    std::lock_guard<std::mutex> lock(injectionHandlerMapMutex);
+
+    mainThreadInjectionHandler.fns.push_back(fn);
+  }
+
+#ifndef TARGET_OS_MAC
+  glfwPostEmptyEvent();
+#else
+  if (std::this_thread::get_id() == mainThreadId) {
+    handleInjections();
+  }
+#endif
+}
+
 GLFWmonitor* _activeMonitor;
 GLFWmonitor* getMonitor() {
   if (_activeMonitor) {
@@ -16,73 +169,7 @@ GLFWmonitor* getMonitor() {
   }
 }
 
-/* NAN_METHOD(GetVersion) {
-  int major, minor, rev;
-  glfwGetVersion(&major,&minor,&rev);
-  Local<Object> result = Nan::New<Object>();
-  result->Set(JS_STR("major"),JS_INT(major));
-  result->Set(JS_STR("minor"),JS_INT(minor));
-  result->Set(JS_STR("rev"),JS_INT(rev));
-  info.GetReturnValue().Set(result);
-}
-
-NAN_METHOD(GetVersionString) {
-  const char *version = glfwGetVersionString();
-  info.GetReturnValue().Set(JS_STR(version));
-}
-
-// @Module: Time input
-
-NAN_METHOD(GetTime) {
-  info.GetReturnValue().Set(JS_NUM(glfwGetTime()));
-}
-
-NAN_METHOD(SetTime) {
-  double time = info[0]->NumberValue();
-  glfwSetTime(time);
-} */
-
-bool glfwInitialized = false;
-void initializeGlfw() {
-  if (!glfwInitialized) {
-    glewExperimental = GL_TRUE;
-
-    if (glfwInit() == GLFW_TRUE) {
-      atexit([]() {
-        glfwTerminate();
-      });
-
-      glfwDefaultWindowHints();
-
-      // we use OpenGL 2.1, GLSL 1.20. Comment this for now as this is for GLSL 1.50
-      glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-      glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-      glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-      glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-      glfwWindowHint(GLFW_RESIZABLE, 1);
-      glfwWindowHint(GLFW_VISIBLE, 1);
-      glfwWindowHint(GLFW_DECORATED, 1);
-      glfwWindowHint(GLFW_RED_BITS, 8);
-      glfwWindowHint(GLFW_GREEN_BITS, 8);
-      glfwWindowHint(GLFW_BLUE_BITS, 8);
-      glfwWindowHint(GLFW_DEPTH_BITS, 24);
-      glfwWindowHint(GLFW_REFRESH_RATE, 0);
-
-      glfwSetErrorCallback([](int err, const char *errString) {
-        fprintf(stderr, "%s", errString);
-      });
-
-      glfwInitialized = true;
-    } else {
-      exerr << "Failed to initialize GLFW" << std::endl;
-      abort();
-    }
-  }
-}
-
 NAN_METHOD(GetMonitors) {
-  initializeGlfw();
-  
   int monitor_count, mode_count, xpos, ypos, width, height;
   int i, j;
   GLFWmonitor **monitors = glfwGetMonitors(&monitor_count);
@@ -130,9 +217,7 @@ NAN_METHOD(GetMonitors) {
   info.GetReturnValue().Set(js_monitors);
 }
 
-NAN_METHOD(SetMonitor) {
-  initializeGlfw();
-  
+NAN_METHOD(SetMonitor) {  
   int index = TO_INT32(info[0]);
   int monitor_count;
   GLFWmonitor **monitors = glfwGetMonitors(&monitor_count);
@@ -140,12 +225,20 @@ NAN_METHOD(SetMonitor) {
 }
 
 void GetScreenSize(int *width, int *height) {
-  initializeGlfw();
-  
-  GLFWmonitor *monitor = glfwGetPrimaryMonitor();
-  const GLFWvidmode *videoMode = glfwGetVideoMode(monitor);
-  *width = videoMode->width;
-  *height = videoMode->height;
+  uv_sem_t sem;
+  uv_sem_init(&sem, 0);
+
+  QueueInjection([&](InjectionHandler *injectionHandler) -> void {
+    GLFWmonitor *monitor = glfwGetPrimaryMonitor();
+    const GLFWvidmode *videoMode = glfwGetVideoMode(monitor);
+    *width = videoMode->width;
+    *height = videoMode->height;
+
+    uv_sem_post(&sem);
+  });
+
+  uv_sem_wait(&sem);
+  uv_sem_destroy(&sem);
 }
 
 NAN_METHOD(GetScreenSize) {
@@ -158,141 +251,142 @@ NAN_METHOD(GetScreenSize) {
   info.GetReturnValue().Set(result);
 }
 
-/* @Module: Window handling */
-thread_local NATIVEwindow *currentWindow = nullptr;
-int lastX = 0, lastY = 0; // XXX track this per-window
-std::unique_ptr<Nan::Persistent<Function>> eventHandler;
-
-void NAN_INLINE(CallEmitter(int argc, Local<Value> argv[])) {
-  if (eventHandler && !(*eventHandler).IsEmpty()) {
-    Local<Function> eventHandlerFn = Nan::New(*eventHandler);
-    eventHandlerFn->Call(Isolate::GetCurrent()->GetCurrentContext(), Nan::Null(), argc, argv);
-  }
-}
-
 // Window callbacks handling
 void APIENTRY windowPosCB(NATIVEwindow *window, int xpos, int ypos) {
-  Nan::HandleScope scope;
+  QueueEvent(window, [=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
+    Local<Object> evt = Nan::New<Object>();
+    evt->Set(JS_STR("type"),JS_STR("window_pos"));
+    evt->Set(JS_STR("xpos"),JS_INT(xpos));
+    evt->Set(JS_STR("ypos"),JS_INT(ypos));
+    // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
-  Local<Object> evt = Nan::New<Object>();
-  evt->Set(JS_STR("type"),JS_STR("window_pos"));
-  evt->Set(JS_STR("xpos"),JS_INT(xpos));
-  evt->Set(JS_STR("ypos"),JS_INT(ypos));
-  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
-
-  Local<Value> argv[] = {
-    JS_STR("window_pos"), // event name
-    evt,
-  };
-  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
+    Local<Value> argv[] = {
+      JS_STR("window_pos"), // event name
+      evt,
+    };
+    eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
+  });
 }
 
 void APIENTRY windowSizeCB(NATIVEwindow *window, int w, int h) {
-  Nan::HandleScope scope;
+  QueueEvent(window, [=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
+    Local<Object> evt = Nan::New<Object>();
+    evt->Set(JS_STR("type"),JS_STR("resize"));
+    evt->Set(JS_STR("width"),JS_INT(w));
+    evt->Set(JS_STR("height"),JS_INT(h));
+    // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
-  Local<Object> evt = Nan::New<Object>();
-  evt->Set(JS_STR("type"),JS_STR("resize"));
-  evt->Set(JS_STR("width"),JS_INT(w));
-  evt->Set(JS_STR("height"),JS_INT(h));
-  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
-
-  Local<Value> argv[] = {
-    JS_STR("windowResize"), // event name
-    evt,
-  };
-  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
+    Local<Value> argv[] = {
+      JS_STR("windowResize"), // event name
+      evt,
+    };
+    eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
+  });
 }
 
 void APIENTRY windowFramebufferSizeCB(NATIVEwindow *window, int w, int h) {
-  Nan::HandleScope scope;
+  QueueEvent(window, [=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
+    Local<Object> evt = Nan::New<Object>();
+    evt->Set(JS_STR("type"),JS_STR("framebuffer_resize"));
+    evt->Set(JS_STR("width"),JS_INT(w));
+    evt->Set(JS_STR("height"),JS_INT(h));
+    // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
-  Local<Object> evt = Nan::New<Object>();
-  evt->Set(JS_STR("type"),JS_STR("framebuffer_resize"));
-  evt->Set(JS_STR("width"),JS_INT(w));
-  evt->Set(JS_STR("height"),JS_INT(h));
-  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
-
-  Local<Value> argv[] = {
-    JS_STR("framebufferResize"), // event name
-    evt,
-  };
-  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
+    Local<Value> argv[] = {
+      JS_STR("framebufferResize"), // event name
+      evt,
+    };
+    eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
+  });
 }
 
 void APIENTRY windowDropCB(NATIVEwindow *window, int count, const char **paths) {
-  Nan::HandleScope scope;
-
-  Local<Array> pathsArray = Nan::New<Array>(count);
+  std::vector<char *> localPaths(count);
   for (int i = 0; i < count; i++) {
-    pathsArray->Set(i, JS_STR(paths[i]));
+    const char *path = paths[i];
+    size_t size = strlen(path) + 1;
+    char *localPath = new char[size];
+    memcpy(localPath, path, size);
+    localPaths[i] = localPath;
   }
 
-  Local<Object> evt = Nan::New<Object>();
-  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
-  evt->Set(JS_STR("paths"), pathsArray);
+  QueueEvent(window, [localPaths{std::move(localPaths)}](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
+    Local<Array> pathsArray = Nan::New<Array>(localPaths.size());
+    for (int i = 0; i < localPaths.size(); i++) {
+      pathsArray->Set(i, JS_STR(localPaths[i]));
+    }
 
-  Local<Value> argv[] = {
-    JS_STR("drop"), // event name
-    evt,
-  };
-  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
+    Local<Object> evt = Nan::New<Object>();
+    evt->Set(JS_STR("paths"), pathsArray);
+    // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
+
+    Local<Value> argv[] = {
+      JS_STR("drop"), // event name
+      evt,
+    };
+    eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
+
+    for (int i = 0; i < localPaths.size(); i++) {
+      delete[] localPaths[i];
+    }
+  });
 }
 
 void APIENTRY windowCloseCB(NATIVEwindow *window) {
-  Nan::HandleScope scope;
+  QueueEvent(window, [=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
+    Local<Object> evt = Nan::New<Object>();
+    // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
-  Local<Object> evt = Nan::New<Object>();
-  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
-
-  Local<Value> argv[] = {
-    JS_STR("quit"), // event name
-    evt,
-  };
-  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
+    Local<Value> argv[] = {
+      JS_STR("quit"), // event name
+      evt,
+    };
+    eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
+  });
 }
 
 void APIENTRY windowRefreshCB(NATIVEwindow *window) {
-  Nan::HandleScope scope;
+  QueueEvent(window, [=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
+    Local<Object> evt = Nan::New<Object>();
+    evt->Set(JS_STR("type"),JS_STR("refresh"));
+    // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
-  Local<Object> evt = Nan::New<Object>();
-  evt->Set(JS_STR("type"),JS_STR("refresh"));
-  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
-
-  Local<Value> argv[] = {
-    JS_STR("refresh"), // event name
-    evt,
-  };
-  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
+    Local<Value> argv[] = {
+      JS_STR("refresh"), // event name
+      evt,
+    };
+    eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
+  });
 }
 
 void APIENTRY windowIconifyCB(NATIVEwindow *window, int iconified) {
-  Nan::HandleScope scope;
+  QueueEvent(window, [=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
+    Local<Object> evt = Nan::New<Object>();
+    evt->Set(JS_STR("type"),JS_STR("iconified"));
+    evt->Set(JS_STR("iconified"),JS_BOOL(iconified));
+    // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
-  Local<Object> evt = Nan::New<Object>();
-  evt->Set(JS_STR("type"),JS_STR("iconified"));
-  evt->Set(JS_STR("iconified"),JS_BOOL(iconified));
-  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
-
-  Local<Value> argv[] = {
-    JS_STR("iconified"), // event name
-    evt,
-  };
-  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
+    Local<Value> argv[] = {
+      JS_STR("iconified"), // event name
+      evt,
+    };
+    eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
+  });
 }
 
 void APIENTRY windowFocusCB(NATIVEwindow *window, int focused) {
-  Nan::HandleScope scope;
+  QueueEvent(window, [=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
+    Local<Object> evt = Nan::New<Object>();
+    evt->Set(JS_STR("type"),JS_STR("focused"));
+    evt->Set(JS_STR("focused"),JS_BOOL(focused));
+    // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
-  Local<Object> evt = Nan::New<Object>();
-  evt->Set(JS_STR("type"),JS_STR("focused"));
-  evt->Set(JS_STR("focused"),JS_BOOL(focused));
-  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
-
-  Local<Value> argv[] = {
-    JS_STR("focus"), // event name
-    evt,
-  };
-  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
+    Local<Value> argv[] = {
+      JS_STR("focus"), // event name
+      evt,
+    };
+    eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
+  });
 }
 
 static int jsKeyCode[]={
@@ -371,8 +465,6 @@ static int jsKeyCode[]={
 const char *actionNames = "keyup\0  keydown\0keypress";
 void APIENTRY keyCB(NATIVEwindow *window, int key, int scancode, int action, int mods) {
   if (key >= 0) { // media keys are -1
-    Nan::HandleScope scope;
-
     bool isPrintable = true;
     switch (key) {
       case GLFW_KEY_ESCAPE:
@@ -532,23 +624,24 @@ void APIENTRY keyCB(NATIVEwindow *window, int key, int scancode, int action, int
     }
 
     int which = key;
+    QueueEvent(window, [=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
+      Local<Object> evt = Nan::New<Object>();
+      evt->Set(JS_STR("type"), JS_STR(&actionNames[action << 3]));
+      evt->Set(JS_STR("ctrlKey"), JS_BOOL(mods & GLFW_MOD_CONTROL));
+      evt->Set(JS_STR("shiftKey"), JS_BOOL(mods & GLFW_MOD_SHIFT));
+      evt->Set(JS_STR("altKey"), JS_BOOL(mods & GLFW_MOD_ALT));
+      evt->Set(JS_STR("metaKey"), JS_BOOL(mods & GLFW_MOD_SUPER));
+      evt->Set(JS_STR("which"), JS_INT(which));
+      evt->Set(JS_STR("keyCode"), JS_INT(key));
+      evt->Set(JS_STR("charCode"), JS_INT(charCode));
+      // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
-    Local<Object> evt = Nan::New<Object>();
-    evt->Set(JS_STR("type"), JS_STR(&actionNames[action << 3]));
-    evt->Set(JS_STR("ctrlKey"), JS_BOOL(mods & GLFW_MOD_CONTROL));
-    evt->Set(JS_STR("shiftKey"), JS_BOOL(mods & GLFW_MOD_SHIFT));
-    evt->Set(JS_STR("altKey"), JS_BOOL(mods & GLFW_MOD_ALT));
-    evt->Set(JS_STR("metaKey"), JS_BOOL(mods & GLFW_MOD_SUPER));
-    evt->Set(JS_STR("which"), JS_INT(which));
-    evt->Set(JS_STR("keyCode"), JS_INT(key));
-    evt->Set(JS_STR("charCode"), JS_INT(charCode));
-    evt->Set(JS_STR("windowHandle"), pointerToArray(window));
-
-    Local<Value> argv[] = {
-      JS_STR(&actionNames[action << 3]), // event name
-      evt,
-    };
-    CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
+      Local<Value> argv[] = {
+        JS_STR(&actionNames[action << 3]), // event name
+        evt,
+      };
+      eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
+    });
 
     if (action == GLFW_PRESS && isPrintable) {
       keyCB(window, charCode, scancode, GLFW_REPEAT, mods);
@@ -562,8 +655,9 @@ void APIENTRY cursorPosCB(NATIVEwindow* window, double x, double y) {
   if(x<0 || x>=w) return;
   if(y<0 || y>=h) return;
 
-  int mode = glfwGetInputMode(window, GLFW_CURSOR);
   int movementX, movementY;
+
+  int mode = glfwGetInputMode(window, GLFW_CURSOR);
   if (mode == GLFW_CURSOR_DISABLED) {
     movementX = x - (w / 2);
     movementY = y - (h / 2);
@@ -574,345 +668,136 @@ void APIENTRY cursorPosCB(NATIVEwindow* window, double x, double y) {
     movementY = 0;
   }
 
-  lastX = x;
-  lastY = y;
+  QueueEvent(window, [=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
+    Local<Object> evt = Nan::New<Object>();
+    evt->Set(JS_STR("type"),JS_STR("mousemove"));
+    evt->Set(JS_STR("clientX"),JS_NUM(x));
+    evt->Set(JS_STR("clientY"),JS_NUM(y));
+    evt->Set(JS_STR("pageX"),JS_NUM(x));
+    evt->Set(JS_STR("pageY"),JS_NUM(y));
+    evt->Set(JS_STR("offsetX"),JS_NUM(x));
+    evt->Set(JS_STR("offsetY"),JS_NUM(y));
+    evt->Set(JS_STR("screenX"),JS_NUM(x));
+    evt->Set(JS_STR("screenY"),JS_NUM(y));
+    evt->Set(JS_STR("movementX"),JS_NUM(movementX));
+    evt->Set(JS_STR("movementY"),JS_NUM(movementY));
+    evt->Set(JS_STR("ctrlKey"),JS_BOOL(glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS));
+    evt->Set(JS_STR("shiftKey"),JS_BOOL(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS));
+    evt->Set(JS_STR("altKey"),JS_BOOL(glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_ALT) == GLFW_PRESS));
+    evt->Set(JS_STR("metaKey"),JS_BOOL(glfwGetKey(window, GLFW_KEY_LEFT_SUPER) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_SUPER) == GLFW_PRESS));
+    // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
-  Nan::HandleScope scope;
-
-  Local<Object> evt = Nan::New<Object>();
-  evt->Set(JS_STR("type"),JS_STR("mousemove"));
-  evt->Set(JS_STR("clientX"),JS_NUM(x));
-  evt->Set(JS_STR("clientY"),JS_NUM(y));
-  evt->Set(JS_STR("pageX"),JS_NUM(x));
-  evt->Set(JS_STR("pageY"),JS_NUM(y));
-  evt->Set(JS_STR("offsetX"),JS_NUM(x));
-  evt->Set(JS_STR("offsetY"),JS_NUM(y));
-  evt->Set(JS_STR("screenX"),JS_NUM(x));
-  evt->Set(JS_STR("screenY"),JS_NUM(y));
-  evt->Set(JS_STR("movementX"),JS_NUM(movementX));
-  evt->Set(JS_STR("movementY"),JS_NUM(movementY));
-  evt->Set(JS_STR("ctrlKey"),JS_BOOL(glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS));
-  evt->Set(JS_STR("shiftKey"),JS_BOOL(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS));
-  evt->Set(JS_STR("altKey"),JS_BOOL(glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_ALT) == GLFW_PRESS));
-  evt->Set(JS_STR("metaKey"),JS_BOOL(glfwGetKey(window, GLFW_KEY_LEFT_SUPER) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_SUPER) == GLFW_PRESS));
-  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
-
-  Local<Value> argv[] = {
-    JS_STR("mousemove"), // event name
-    evt,
-  };
-  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
+    Local<Value> argv[] = {
+      JS_STR("mousemove"), // event name
+      evt,
+    };
+    eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
+  });
 }
 
 void APIENTRY cursorEnterCB(NATIVEwindow* window, int entered) {
-  Nan::HandleScope scope;
+  QueueEvent(window, [=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
+    Local<Object> evt = Nan::New<Object>();
+    evt->Set(JS_STR("type"),JS_STR("mouseenter"));
+    evt->Set(JS_STR("entered"),JS_INT(entered));
+    // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
-  Local<Object> evt = Nan::New<Object>();
-  evt->Set(JS_STR("type"),JS_STR("mouseenter"));
-  evt->Set(JS_STR("entered"),JS_INT(entered));
-  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
-
-  Local<Value> argv[] = {
-    JS_STR("mouseenter"), // event name
-    evt,
-  };
-  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
+    Local<Value> argv[] = {
+      JS_STR("mouseenter"), // event name
+      evt,
+    };
+    eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
+  });
 }
 
 void APIENTRY mouseButtonCB(NATIVEwindow *window, int button, int action, int mods) {
-  Nan::HandleScope scope;
+  QueueEvent(window, [=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
+    double xpos, ypos;
+    glfwGetCursorPos(window, &xpos, &ypos);
+    
+    int localButton = button;
+    if (localButton == 2) {
+      localButton = 1;
+    } else if (localButton == 1) {
+      localButton = 2;
+    }
 
-  if (button == 2) {
-    button = 1;
-  } else if (button == 1) {
-    button = 2;
-  }
+    {
+      Local<Object> evt = Nan::New<Object>();
+      evt->Set(JS_STR("type"),JS_STR(action ? "mousedown" : "mouseup"));
+      evt->Set(JS_STR("button"),JS_INT(localButton));
+      evt->Set(JS_STR("which"),JS_INT(localButton + 1));
+      evt->Set(JS_STR("clientX"),JS_NUM(xpos));
+      evt->Set(JS_STR("clientY"),JS_NUM(ypos));
+      evt->Set(JS_STR("pageX"),JS_NUM(xpos));
+      evt->Set(JS_STR("pageY"),JS_NUM(ypos));
+      evt->Set(JS_STR("offsetX"),JS_NUM(xpos));
+      evt->Set(JS_STR("offsetY"),JS_NUM(ypos));
+      evt->Set(JS_STR("screenX"),JS_NUM(xpos));
+      evt->Set(JS_STR("screenY"),JS_NUM(ypos));
+      evt->Set(JS_STR("shiftKey"),JS_BOOL(mods & GLFW_MOD_SHIFT));
+      evt->Set(JS_STR("ctrlKey"),JS_BOOL(mods & GLFW_MOD_CONTROL));
+      evt->Set(JS_STR("altKey"),JS_BOOL(mods & GLFW_MOD_ALT));
+      evt->Set(JS_STR("metaKey"),JS_BOOL(mods & GLFW_MOD_SUPER));
+      // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
-  {
-    Local<Object> evt = Nan::New<Object>();
-    evt->Set(JS_STR("type"),JS_STR(action ? "mousedown" : "mouseup"));
-    evt->Set(JS_STR("button"),JS_INT(button));
-    evt->Set(JS_STR("which"),JS_INT(button + 1));
-    evt->Set(JS_STR("clientX"),JS_INT(lastX));
-    evt->Set(JS_STR("clientY"),JS_INT(lastY));
-    evt->Set(JS_STR("pageX"),JS_INT(lastX));
-    evt->Set(JS_STR("pageY"),JS_INT(lastY));
-    evt->Set(JS_STR("offsetX"),JS_INT(lastX));
-    evt->Set(JS_STR("offsetY"),JS_INT(lastY));
-    evt->Set(JS_STR("screenX"),JS_NUM(lastX));
-    evt->Set(JS_STR("screenY"),JS_NUM(lastY));
-    evt->Set(JS_STR("shiftKey"),JS_BOOL(mods & GLFW_MOD_SHIFT));
-    evt->Set(JS_STR("ctrlKey"),JS_BOOL(mods & GLFW_MOD_CONTROL));
-    evt->Set(JS_STR("altKey"),JS_BOOL(mods & GLFW_MOD_ALT));
-    evt->Set(JS_STR("metaKey"),JS_BOOL(mods & GLFW_MOD_SUPER));
-    evt->Set(JS_STR("windowHandle"), pointerToArray(window));
+      Local<Value> argv[] = {
+        JS_STR(action ? "mousedown" : "mouseup"), // event name
+        evt
+      };
+      eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
+    }
 
-    Local<Value> argv[] = {
-      JS_STR(action ? "mousedown" : "mouseup"), // event name
-      evt
-    };
-    CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
-  }
+    if (!action) {
+      Local<Object> evt = Nan::New<Object>();
+      evt->Set(JS_STR("type"),JS_STR("click"));
+      evt->Set(JS_STR("button"),JS_INT(localButton));
+      evt->Set(JS_STR("which"),JS_INT(localButton + 1));
+      evt->Set(JS_STR("clientX"),JS_NUM(xpos));
+      evt->Set(JS_STR("clientY"),JS_NUM(ypos));
+      evt->Set(JS_STR("pageX"),JS_NUM(xpos));
+      evt->Set(JS_STR("pageY"),JS_NUM(ypos));
+      evt->Set(JS_STR("offsetX"),JS_NUM(xpos));
+      evt->Set(JS_STR("offsetY"),JS_NUM(ypos));
+      evt->Set(JS_STR("screenX"),JS_NUM(xpos));
+      evt->Set(JS_STR("screenY"),JS_NUM(ypos));
+      evt->Set(JS_STR("shiftKey"),JS_BOOL(mods & GLFW_MOD_SHIFT));
+      evt->Set(JS_STR("ctrlKey"),JS_BOOL(mods & GLFW_MOD_CONTROL));
+      evt->Set(JS_STR("altKey"),JS_BOOL(mods & GLFW_MOD_ALT));
+      evt->Set(JS_STR("metaKey"),JS_BOOL(mods & GLFW_MOD_SUPER));
+      // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
-  if (!action) {
-    Local<Object> evt = Nan::New<Object>();
-    evt->Set(JS_STR("type"),JS_STR("click"));
-    evt->Set(JS_STR("button"),JS_INT(button));
-    evt->Set(JS_STR("which"),JS_INT(button + 1));
-    evt->Set(JS_STR("clientX"),JS_INT(lastX));
-    evt->Set(JS_STR("clientY"),JS_INT(lastY));
-    evt->Set(JS_STR("pageX"),JS_INT(lastX));
-    evt->Set(JS_STR("pageY"),JS_INT(lastY));
-    evt->Set(JS_STR("offsetX"),JS_INT(lastX));
-    evt->Set(JS_STR("offsetY"),JS_INT(lastY));
-    evt->Set(JS_STR("screenX"),JS_INT(lastX));
-    evt->Set(JS_STR("screenY"),JS_INT(lastY));
-    evt->Set(JS_STR("shiftKey"),JS_BOOL(mods & GLFW_MOD_SHIFT));
-    evt->Set(JS_STR("ctrlKey"),JS_BOOL(mods & GLFW_MOD_CONTROL));
-    evt->Set(JS_STR("altKey"),JS_BOOL(mods & GLFW_MOD_ALT));
-    evt->Set(JS_STR("metaKey"),JS_BOOL(mods & GLFW_MOD_SUPER));
-    evt->Set(JS_STR("windowHandle"), pointerToArray(window));
-
-    Local<Value> argv[] = {
-      JS_STR("click"), // event name
-      evt,
-    };
-    CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
-  }
+      Local<Value> argv[] = {
+        JS_STR("click"), // event name
+        evt,
+      };
+      eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
+    }
+  });
 }
 
 void APIENTRY scrollCB(NATIVEwindow *window, double xoffset, double yoffset) {
-  Nan::HandleScope scope;
+  QueueEvent(window, [=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
+    double xpos, ypos;
+    glfwGetCursorPos(window, &xpos, &ypos);
+    
+    Local<Object> evt = Nan::New<Object>();
+    evt->Set(JS_STR("type"),JS_STR("wheel"));
+    evt->Set(JS_STR("clientX"),JS_NUM(xpos));
+    evt->Set(JS_STR("clientY"),JS_NUM(ypos));
+    evt->Set(JS_STR("deltaX"),JS_NUM(-xoffset*120));
+    evt->Set(JS_STR("deltaY"),JS_NUM(-yoffset*120));
+    evt->Set(JS_STR("deltaZ"),JS_INT(0));
+    evt->Set(JS_STR("deltaMode"),JS_INT(0));
+    // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
-  Local<Object> evt = Nan::New<Object>();
-  evt->Set(JS_STR("type"),JS_STR("wheel"));
-  evt->Set(JS_STR("deltaX"),JS_NUM(-xoffset*120));
-  evt->Set(JS_STR("deltaY"),JS_NUM(-yoffset*120));
-  evt->Set(JS_STR("deltaZ"),JS_INT(0));
-  evt->Set(JS_STR("deltaMode"),JS_INT(0));
-  evt->Set(JS_STR("windowHandle"), pointerToArray(window));
-
-  Local<Value> argv[] = {
-    JS_STR("wheel"), // event name
-    evt,
-  };
-  CallEmitter(sizeof(argv)/sizeof(argv[0]), argv);
+    Local<Value> argv[] = {
+      JS_STR("wheel"), // event name
+      evt,
+    };
+    eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
+  });
 }
-
-/* NAN_METHOD(testJoystick) {
-  Nan::HandleScope scope;
-
-  int width = info[0]->Uint32Value();
-  int height = info[1]->Uint32Value();
-  float ratio = width / (float) height;
-
-  float translateX = info[2]->NumberValue();
-  float translateY = info[3]->NumberValue();
-  float translateZ = info[4]->NumberValue();
-
-  float rotateX = info[5]->NumberValue();
-  float rotateY = info[6]->NumberValue();
-  float rotateZ = info[7]->NumberValue();
-
-  float angle = info[8]->NumberValue();
-
-  glViewport(0, 0, width, height);
-  glClear(GL_COLOR_BUFFER_BIT);
-
-  glMatrixMode(GL_PROJECTION);
-  glLoadIdentity();
-  glOrtho(-ratio, ratio, -1.f, 1.f, 1.f, -1.f);
-  glMatrixMode(GL_MODELVIEW);
-
-  glLoadIdentity();
-  glRotatef(angle, rotateX, rotateY, rotateZ);
-  glTranslatef(translateX, translateY, translateZ);
-
-  glBegin(GL_TRIANGLES);
-  glColor3f(1.f, 0.f, 0.f);
-  glVertex3f(-0.6f, -0.4f, 0.f);
-  glColor3f(0.f, 1.f, 0.f);
-  glVertex3f(0.6f, -0.4f, 0.f);
-  glColor3f(0.f, 0.f, 1.f);
-  glVertex3f(0.f, 0.6f, 0.f);
-  glEnd();
-}
-
-NAN_METHOD(testScene) {
-  Nan::HandleScope scope;
-  int width = info[0]->Uint32Value();
-  int height = info[1]->Uint32Value();
-  float z = info.Length()>2 ? (float) info[2]->NumberValue() : 0;
-  float ratio = width / (float) height;
-
-  glViewport(0, 0, width, height);
-  glClear(GL_COLOR_BUFFER_BIT);
-
-  glMatrixMode(GL_PROJECTION);
-  glLoadIdentity();
-  glOrtho(-ratio, ratio, -1.f, 1.f, 1.f, -1.f);
-  glMatrixMode(GL_MODELVIEW);
-
-  glLoadIdentity();
-  glRotatef((float) glfwGetTime() * 50.f, 0.f, 0.f, 1.f);
-
-  glBegin(GL_TRIANGLES);
-  glColor3f(1.f, 0.f, 0.f);
-  glVertex3f(-0.6f+z, -0.4f, 0.f);
-  glColor3f(0.f, 1.f, 0.f);
-  glVertex3f(0.6f+z, -0.4f, 0.f);
-  glColor3f(0.f, 0.f, 1.f);
-  glVertex3f(0.f+z, 0.6f, 0.f);
-  glEnd();
-}
-
-NAN_METHOD(WindowHint) {
-  int target       = info[0]->Uint32Value();
-  int hint         = info[1]->Uint32Value();
-  glfwWindowHint(target, hint);
-}
-
-NAN_METHOD(DefaultWindowHints) {
-  glfwDefaultWindowHints();
-}
-
-NAN_METHOD(JoystickPresent) {
-  int joy = info[0]->Uint32Value();
-  bool isPresent = glfwJoystickPresent(joy);
-  info.GetReturnValue().Set(JS_BOOL(isPresent));
-}
-
-std::string intToString(int number) {
-  std::ostringstream buff;
-  buff << number;
-  return buff.str();
-}
-
-std::string floatToString(float number){
-    std::ostringstream buff;
-    buff<<number;
-    return buff.str();
-}
-
-std::string buttonToString(unsigned char c) {
-  int number = (int)c;
-  return intToString(number);
-}
-
-NAN_METHOD(GetJoystickAxes) {
-  int joy = info[0]->Uint32Value();
-  int count;
-  const float *axisValues = glfwGetJoystickAxes(joy, &count);
-  std::string response = "";
-  for (int i = 0; i < count; i++) {
-    response.append(floatToString(axisValues[i]));
-    response.append(","); //Separator
-  }
-
-  info.GetReturnValue().Set(JS_STR(response.c_str()));
-}
-
-NAN_METHOD(GetJoystickButtons) {
-  int joy = info[0]->Uint32Value();
-  int count = 0;
-  const unsigned char* response = glfwGetJoystickButtons(joy, &count);
-
-  std::string strResponse = "";
-  for (int i = 0; i < count; i++) {
-    strResponse.append(buttonToString(response[i]));
-    strResponse.append(",");
-  }
-
-  info.GetReturnValue().Set(JS_STR(strResponse.c_str()));
-}
-
-NAN_METHOD(GetJoystickName) {
-  int joy = info[0]->Uint32Value();
-  const char* response = glfwGetJoystickName(joy);
-  info.GetReturnValue().Set(JS_STR(response));
-}
-
-NAN_METHOD(glfw_CreateWindow) {
-  int width       = info[0]->Uint32Value();
-  int height      = info[1]->Uint32Value();
-  String::Utf8Value str(info[2]->ToString());
-  int monitor_idx = info[3]->Uint32Value();
-
-  NATIVEwindow* window = NULL;
-  GLFWmonitor **monitors = NULL, *monitor = NULL;
-  int monitor_count;
-  if(info.Length() >= 4 && monitor_idx >= 0){
-    monitors = glfwGetMonitors(&monitor_count);
-    if(monitor_idx >= monitor_count){
-      return Nan::ThrowError("Invalid monitor");
-    }
-    monitor = monitors[monitor_idx];
-  }
-
-  window = glfwCreateWindow(width, height, *str, monitor, NULL);
-  if(!window) {
-    // can't create window, throw error
-    return Nan::ThrowError("Can't create GLFW window");
-  }
-
-  glfwMakeContextCurrent(window);
-
-  // make sure cursor is always shown
-  glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-
-  GLenum err = glewInit();
-  if (err)
-  {
-    // Problem: glewInit failed, something is seriously wrong.
-    std::string msg="Can't init GLEW (glew error ";
-    msg+=(const char*) glewGetErrorString(err);
-    msg+=")";
-
-    fprintf(stderr, "%s", msg.c_str());
-    return Nan::ThrowError(msg.c_str());
-  }
-  // fprintf(stdout, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
-
-  // Set callback functions
-  // glfw_events.Reset( info.This()->Get(JS_STR("events"))->ToObject());
-
-  // window callbacks
-  glfwSetWindowPosCallback( window, windowPosCB );
-  glfwSetWindowSizeCallback( window, windowSizeCB );
-  glfwSetWindowCloseCallback( window, windowCloseCB );
-  glfwSetWindowRefreshCallback( window, windowRefreshCB );
-  glfwSetWindowFocusCallback( window, windowFocusCB );
-  glfwSetWindowIconifyCallback( window, windowIconifyCB );
-  glfwSetFramebufferSizeCallback( window, windowFramebufferSizeCB );
-  glfwSetDropCallback(window, windowDropCB);
-
-  // input callbacks
-  glfwSetKeyCallback( window, keyCB);
-  // TODO glfwSetCharCallback(window, TwEventCharGLFW);
-  glfwSetMouseButtonCallback( window, mouseButtonCB );
-  glfwSetCursorPosCallback( window, cursorPosCB );
-  glfwSetCursorEnterCallback( window, cursorEnterCB );
-  glfwSetScrollCallback( window, scrollCB );
-
-  info.GetReturnValue().Set(pointerToArray(window));
-} */
-
-/* NAN_METHOD(CreateFramebuffer) {
-  GLuint fbo;
-  glGenFramebuffers(1, &fbo);
-	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-
-  info.GetReturnValue().Set(JS_NUM(fbo));
-}
-
-NAN_METHOD(FramebufferTextureLayer) {
-  GLuint colorTex = info[0]->Uint32Value();
-  GLuint depthTex = info[1]->Uint32Value();
-  GLint layer = info[2]->Int32Value();
-
-  glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, colorTex, 0, layer);
-  glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthTex, 0, layer);
-} */
 
 NAN_METHOD(BlitFrameBuffer) {
   Local<Object> glObj = Local<Object>::Cast(info[0]);
@@ -929,14 +814,16 @@ NAN_METHOD(BlitFrameBuffer) {
   glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo1);
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo2);
 
-  glBlitFramebuffer(0, 0,
+  glBlitFramebuffer(
+    0, 0,
     sw, sh,
     0, 0,
     dw, dh,
     (color ? GL_COLOR_BUFFER_BIT : 0) |
     (depth ? GL_DEPTH_BUFFER_BIT : 0) |
     (stencil ? GL_STENCIL_BUFFER_BIT : 0),
-    (depth || stencil) ? GL_NEAREST : GL_LINEAR);
+    (depth || stencil) ? GL_NEAREST : GL_LINEAR
+  );
 
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
   if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
@@ -965,7 +852,7 @@ void SetCurrentWindowContext(NATIVEwindow *window) {
 void ReadPixels(WebGLRenderingContext *gl, unsigned int fbo, int x, int y, int width, int height, unsigned int format, unsigned int type, unsigned char *data) {
   glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
   glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
-  
+
   if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
     glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
   } else {
@@ -978,14 +865,39 @@ NAN_METHOD(SetCurrentWindowContext) {
   SetCurrentWindowContext(window);
 }
 
-/* NAN_METHOD(DestroyWindow) {
-  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  glfwDestroyWindow(window);
+NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool visible) {
+  glfwWindowHint(GLFW_VISIBLE, visible);
 
-  if (currentWindow == window) {
-    currentWindow = nullptr;
+  {
+    std::lock_guard<std::mutex> lock(windowHandleMutex);
+
+    if (!sharedWindow) {
+      sharedWindow = glfwCreateWindow(1, 1, "Exokit", nullptr, nullptr);
+      if (sharedWindow) {
+        glfwSetWindowUserPointer(sharedWindow, new WindowState());
+      } else {
+        exerr << "Can't create GLFW window" << std::endl;
+        abort();
+        return nullptr;
+      }
+    }
   }
-} */
+  NATIVEwindow *window = glfwCreateWindow(width, height, "Exokit", nullptr, sharedWindow);
+  if (window) {
+    glfwSetWindowUserPointer(window, new WindowState());
+    return window;
+  } else {
+    exerr << "Can't create GLFW window" << std::endl;
+    abort();
+    return nullptr;
+  }
+}
+void DestroyNativeWindow(NATIVEwindow *window) {
+  WindowState *windowState = (WindowState *)glfwGetWindowUserPointer(window);
+  delete windowState;
+
+  glfwDestroyWindow(window);
+}
 
 NAN_METHOD(SetWindowTitle) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
@@ -1021,6 +933,7 @@ NAN_METHOD(GetWindowPos) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   int xpos, ypos;
   glfwGetWindowPos(window, &xpos, &ypos);
+
   Local<Object> result = Nan::New<Object>();
   result->Set(JS_STR("xpos"),JS_INT(xpos));
   result->Set(JS_STR("ypos"),JS_INT(ypos));
@@ -1042,11 +955,23 @@ NAN_METHOD(GetFramebufferSize) {
 }
 
 double GetDevicePixelRatio() {
-  NATIVEwindow *window = CreateNativeWindow(100, 100, false, nullptr);
   int width, height;
-  glfwGetFramebufferSize(window, &width, &height);
-  glfwDestroyWindow(window);
-  return (double)width/100.0;
+
+  uv_sem_t sem;
+  uv_sem_init(&sem, 0);
+
+  QueueInjection([&](InjectionHandler *injectionHandler) -> void {
+    NATIVEwindow *window = CreateNativeWindow(100, 100, false);
+    glfwGetFramebufferSize(window, &width, &height);
+    DestroyNativeWindow(window);
+
+    uv_sem_post(&sem);
+  });
+
+  uv_sem_wait(&sem);
+  uv_sem_destroy(&sem);
+
+  return static_cast<double>(width)/100.0;
 }
 
 NAN_METHOD(GetDevicePixelRatio) {
@@ -1068,14 +993,17 @@ NAN_METHOD(RestoreWindow) {
   glfwRestoreWindow(window);
 }
 
-NAN_METHOD(Show) {
+NAN_METHOD(SetVisibility) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  glfwShowWindow(window);
-}
+  bool visible = TO_BOOL(info[1]);
 
-NAN_METHOD(Hide) {
-  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  glfwHideWindow(window);
+  QueueInjection([window, visible](InjectionHandler *injectionHandler) -> void {
+    if (visible) {
+      glfwShowWindow(window);
+    } else {
+      glfwHideWindow(window);
+    }
+  });
 }
 
 NAN_METHOD(IsVisible) {
@@ -1101,251 +1029,159 @@ const GLFWvidmode *getBestVidMode(NATIVEwindow *window, GLFWmonitor *monitor) {
 
 NAN_METHOD(SetFullscreen) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  GLFWmonitor *monitor = getMonitor();
+  bool enabled = TO_BOOL(info[1]);
 
-  const GLFWvidmode *vidMode = getBestVidMode(window, monitor);
-  if (vidMode != nullptr) {
-    glfwSetWindowMonitor(window, monitor, 0, 0, vidMode->width, vidMode->height, 0);
+  QueueInjection([window, enabled](InjectionHandler *injectionHandler) -> void {
+    GLFWmonitor *monitor = getMonitor();
 
-    info.GetReturnValue().Set(JS_BOOL(true));
-  } else {
-    info.GetReturnValue().Set(JS_BOOL(false));
-  }
+    if (enabled) {
+      const GLFWvidmode *vidMode = getBestVidMode(window, monitor);
+      if (vidMode != nullptr) {
+        glfwSetWindowMonitor(window, monitor, 0, 0, vidMode->width, vidMode->height, 0);
+      }
+    } else {
+      const GLFWvidmode *vidMode = getBestVidMode(window, monitor);
+      glfwSetWindowMonitor(window, nullptr, vidMode->width/2 - 1280/2, vidMode->height/2 - 1024/2, 1280, 1024, 0);
+    }
+  });
 }
 
-NAN_METHOD(ExitFullscreen) {
-  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  GLFWmonitor *monitor = getMonitor();
-
-  const GLFWvidmode *vidMode = getBestVidMode(window, monitor);
-  glfwSetWindowMonitor(window, nullptr, vidMode->width/2 - 1280/2, vidMode->height/2 - 1024/2, 1280, 1024, 0);
-}
-
-/* NAN_METHOD(WindowShouldClose) {
-  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  info.GetReturnValue().Set(JS_BOOL(NATIVEwindowShouldClose(window)));
-}
-
-NAN_METHOD(SetWindowShouldClose) {
-  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  int value=info[1]->Uint32Value();
-  glfwSetWindowShouldClose(window, value);
-}
-
-NAN_METHOD(GetWindowAttrib) {
-  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  int attrib=info[1]->Uint32Value();
-  info.GetReturnValue().Set(JS_INT(glfwGetWindowAttrib(window, attrib)));
-}
-
-NAN_METHOD(SetInputMode) {
-  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  int mode = info[1]->Int32Value();
-  int value = info[2]->Int32Value();
-  glfwSetInputMode(window, mode, value);
-}
-
-NAN_METHOD(WaitEvents) {
-  glfwWaitEvents();
-}
-
-// Input handling
-NAN_METHOD(GetKey) {
-  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  int key=info[1]->Uint32Value();
-  info.GetReturnValue().Set(JS_INT(glfwGetKey(window, key)));
-}
-
-NAN_METHOD(GetMouseButton) {
-  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  int button=info[1]->Uint32Value();
-  info.GetReturnValue().Set(JS_INT(glfwGetMouseButton(window, button)));
-}
-
-NAN_METHOD(GetCursorPos) {
-  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  double x,y;
-  glfwGetCursorPos(window, &x, &y);
-  Local<Object> result = Nan::New<Object>();
-  result->Set(JS_STR("x"),JS_NUM(x));
-  result->Set(JS_STR("y"),JS_NUM(y));
-  info.GetReturnValue().Set(result);
-}
-
-NAN_METHOD(SetCursorPos) {
-  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  int x=info[1]->NumberValue();
-  int y=info[2]->NumberValue();
-  glfwSetCursorPos(window, x, y);
-}
-
-// @Module Context handling
-NAN_METHOD(MakeContextCurrent) {
-  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  glfwMakeContextCurrent(window);
-}
-
-NAN_METHOD(GetCurrentContext) {
-  NATIVEwindow* window=glfwGetCurrentContext();
-  info.GetReturnValue().Set(JS_NUM((uint64_t) window));
-}
-
-NAN_METHOD(SwapInterval) {
-  int interval=info[0]->Int32Value();
-  glfwSwapInterval(interval);
-}
-
-// Extension support
-NAN_METHOD(ExtensionSupported) {
-  String::Utf8Value str(info[0]->ToString());
-  info.GetReturnValue().Set(JS_BOOL(glfwExtensionSupported(*str)==1));
-} */
-
-NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool visible, NATIVEwindow *sharedWindow) {
-  initializeGlfw();
-
-  glfwWindowHint(GLFW_VISIBLE, visible);
-  
-  NATIVEwindow *window = glfwCreateWindow(width, height, "Exokit", nullptr, sharedWindow);
-  if (!window) {
-    exerr << "Can't create GLFW window" << std::endl;
-    abort();
-  }
-  return window;
-}
-
-NAN_METHOD(Create3D) {
-  unsigned int width = TO_UINT32(info[0]);
-  unsigned int height = TO_UINT32(info[1]);
-  bool initialVisible = TO_BOOL(info[2]);
-  NATIVEwindow *sharedWindow = info[3]->IsArray() ? (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[3])) : nullptr;
-  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[4]));
-
-  NATIVEwindow *windowHandle = CreateNativeWindow(width, height, initialVisible, sharedWindow);
+NAN_METHOD(InitWindow3D) {
+  NATIVEwindow *windowHandle = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[1]));
 
   SetCurrentWindowContext(windowHandle);
-  
-  GLenum err = glewInit();
-  if (!err) {
-    GLuint framebuffers[2];
-    GLuint framebufferTextures[4];
-    if (sharedWindow != nullptr) {
-      SetCurrentWindowContext(sharedWindow);
 
-      glGenFramebuffers(sizeof(framebuffers)/sizeof(framebuffers[0]), framebuffers);
-      glGenTextures(sizeof(framebufferTextures)/sizeof(framebufferTextures[0]), framebufferTextures);
-      
-      SetCurrentWindowContext(windowHandle);
-    } else {
-      glGenFramebuffers(sizeof(framebuffers)/sizeof(framebuffers[0]), framebuffers);
-      glGenTextures(sizeof(framebufferTextures)/sizeof(framebufferTextures[0]), framebufferTextures);
-    }
-    
-    glfwSwapInterval(0);
-    
-    glfwSetInputMode(windowHandle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+  windowsystembase::InitializeLocalGlState(gl);
 
-    // window callbacks
-    glfwSetWindowPosCallback(windowHandle, windowPosCB);
-    glfwSetWindowSizeCallback(windowHandle, windowSizeCB);
-    glfwSetWindowCloseCallback(windowHandle, windowCloseCB);
-    glfwSetWindowRefreshCallback(windowHandle, windowRefreshCB);
-    glfwSetWindowFocusCallback(windowHandle, windowFocusCB);
-    glfwSetWindowIconifyCallback(windowHandle, windowIconifyCB);
-    glfwSetFramebufferSizeCallback(windowHandle, windowFramebufferSizeCB);
-    glfwSetDropCallback(windowHandle, windowDropCB);
-
-    // input callbacks
-    glfwSetKeyCallback(windowHandle, keyCB);
-    glfwSetMouseButtonCallback(windowHandle, mouseButtonCB);
-    glfwSetCursorPosCallback(windowHandle, cursorPosCB);
-    glfwSetCursorEnterCallback(windowHandle, cursorEnterCB);
-    glfwSetScrollCallback(windowHandle, scrollCB);
-    
-    windowsystembase::InitializeLocalGlState(gl);
-    
-    GLuint vao;
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
+  GLuint vao;
+  glGenVertexArrays(1, &vao);
+  glBindVertexArray(vao);
 
 #ifdef GL_VERTEX_PROGRAM_POINT_SIZE
-    glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
+  glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
 #endif
 
 #ifdef GL_PROGRAM_POINT_SIZE
-    glEnable(GL_PROGRAM_POINT_SIZE);
+  glEnable(GL_PROGRAM_POINT_SIZE);
 #endif
 
-    Local<Array> result = Nan::New<Array>(8);
-    result->Set(0, pointerToArray(windowHandle));
-    result->Set(1, JS_INT(framebuffers[0]));
-    result->Set(2, JS_INT(framebufferTextures[0]));
-    result->Set(3, JS_INT(framebufferTextures[1]));
-    result->Set(4, JS_INT(framebuffers[1]));
-    result->Set(5, JS_INT(framebufferTextures[2]));
-    result->Set(6, JS_INT(framebufferTextures[3]));
-    result->Set(7, JS_INT(vao));
-    info.GetReturnValue().Set(result);
-  } else {
-    /* Problem: glewInit failed, something is seriously wrong. */
-    std::string msg = "Can't init GLEW (glew error ";
-    msg += (const char *)glewGetErrorString(err);
-    msg += ")";
-    Nan::ThrowError(msg.c_str());
-  }
+  Local<Array> result = Nan::New<Array>(2);
+  result->Set(0, pointerToArray(windowHandle));
+  result->Set(1, JS_INT(vao));
+  info.GetReturnValue().Set(result);
 }
 
-NAN_METHOD(Create2D) {
-  unsigned int width = TO_UINT32(info[0]);
-  unsigned int height = TO_UINT32(info[1]);
-  NATIVEwindow *sharedWindow = info[2]->IsArray() ? (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[2])) : nullptr;
-
-  NATIVEwindow *windowHandle = CreateNativeWindow(width, height, false, sharedWindow);
+NAN_METHOD(InitWindow2D) {
+  NATIVEwindow *windowHandle = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
 
   SetCurrentWindowContext(windowHandle);
-  
-  GLenum err = glewInit();
-  if (!err) {
-    GLuint tex;
-    if (sharedWindow != nullptr) {
-      SetCurrentWindowContext(sharedWindow);
 
-      glGenTextures(1, &tex);
-      
-      SetCurrentWindowContext(windowHandle);
+  GLuint tex;
+  glGenTextures(1, &tex);
+
+  Local<Array> result = Nan::New<Array>(2);
+  result->Set(0, pointerToArray(windowHandle));
+  result->Set(1, JS_INT(tex));
+  info.GetReturnValue().Set(result);
+}
+
+NATIVEwindow *CreateWindowHandle(unsigned int width, unsigned int height, bool initialVisible) {
+  NATIVEwindow *windowHandle;
+
+  uv_sem_t sem;
+  uv_sem_init(&sem, 0);
+
+  QueueInjection([&](InjectionHandler *injectionHandler) -> void {
+    windowHandle = CreateNativeWindow(width, height, initialVisible);
+
+    SetCurrentWindowContext(windowHandle);
+
+    GLenum err = glewInit();
+    if (!err) {
+      // swap interval
+      glfwSwapInterval(0);
+
+      // input mode
+      // glfwSetInputMode(windowHandle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+
+      // window callbacks
+      glfwSetWindowPosCallback(windowHandle, windowPosCB);
+      glfwSetWindowSizeCallback(windowHandle, windowSizeCB);
+      glfwSetWindowCloseCallback(windowHandle, windowCloseCB);
+      glfwSetWindowRefreshCallback(windowHandle, windowRefreshCB);
+      glfwSetWindowFocusCallback(windowHandle, windowFocusCB);
+      glfwSetWindowIconifyCallback(windowHandle, windowIconifyCB);
+      glfwSetFramebufferSizeCallback(windowHandle, windowFramebufferSizeCB);
+      glfwSetDropCallback(windowHandle, windowDropCB);
+
+      // input callbacks
+      glfwSetKeyCallback(windowHandle, keyCB);
+      glfwSetMouseButtonCallback(windowHandle, mouseButtonCB);
+      glfwSetCursorPosCallback(windowHandle, cursorPosCB);
+      glfwSetCursorEnterCallback(windowHandle, cursorEnterCB);
+      glfwSetScrollCallback(windowHandle, scrollCB);
     } else {
-      glGenTextures(1, &tex);
+      /* Problem: glewInit failed, something is seriously wrong. */
+      exerr << "Can't init GLEW (glew error " << (const char *)glewGetErrorString(err) << ")" << std::endl;
+
+      DestroyNativeWindow(windowHandle);
+
+      windowHandle = nullptr;
     }
-    
-    glfwSwapInterval(0);
-    
-    Local<Array> result = Nan::New<Array>(2);
-    result->Set(0, pointerToArray(windowHandle));
-    result->Set(1, JS_INT(tex));
-    info.GetReturnValue().Set(result);
+
+    SetCurrentWindowContext(nullptr);
+
+    uv_sem_post(&sem);
+  });
+  uv_sem_wait(&sem);
+  uv_sem_destroy(&sem);
+  
+  return windowHandle;
+}  
+
+NAN_METHOD(CreateWindowHandle) {
+  unsigned int width = info[0]->IsNumber() ? TO_UINT32(info[0]) : 1;
+  unsigned int height = info[1]->IsNumber() ?  TO_UINT32(info[1]) : 1;
+  bool initialVisible = TO_BOOL(info[2]);
+  
+  NATIVEwindow *windowHandle = CreateWindowHandle(width, height, initialVisible);
+
+  if (windowHandle) {
+    info.GetReturnValue().Set(pointerToArray(windowHandle));
   } else {
-    /* Problem: glewInit failed, something is seriously wrong. */
-    std::string msg = "Can't init GLEW (glew error ";
-    msg += (const char *)glewGetErrorString(err);
-    msg += ")";
-    Nan::ThrowError(msg.c_str());
+    info.GetReturnValue().Set(Nan::Null());
   }
 }
 
-NAN_METHOD(Destroy) {
+NAN_METHOD(DestroyWindowHandle) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  glfwDestroyWindow(window);
+
+  uv_sem_t sem;
+  uv_sem_init(&sem, 0);
+  QueueInjection([&](InjectionHandler *injectionHandler) -> void {
+    DestroyNativeWindow(window);
+    
+    uv_sem_post(&sem);
+  });
+  uv_sem_wait(&sem);
+  uv_sem_destroy(&sem);
 }
 
 NAN_METHOD(SetEventHandler) {
-  if (!eventHandler) {
-    eventHandler.reset(new Nan::Persistent<Function>());
-  }
-  (*eventHandler).Reset(Local<Function>::Cast(info[0]));
-}
+  if (info[0]->IsArray() && info[1]->IsFunction()) {
+    Local<Array> windowHandle = Local<Array>::Cast(info[0]);
+    Local<Function> handlerFn = Local<Function>::Cast(info[1]);
 
-NAN_METHOD(PollEvents) {
-  glfwPollEvents();
+    NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(windowHandle);
+    WindowState *windowState = (WindowState *)glfwGetWindowUserPointer(window);
+
+    uv_loop_t *loop = windowsystembase::GetEventLoop();
+    EventHandler *handler = new EventHandler(loop, handlerFn);
+    windowState->handler.reset(handler);
+  } else {
+    Nan::ThrowError("SetEventHandler: invalid arguments");
+  }
 }
 
 NAN_METHOD(SwapBuffers) {
@@ -1363,27 +1199,31 @@ NAN_METHOD(GetRefreshRate) {
   } else {
     refreshRate = 60;
   }
-  
+
   info.GetReturnValue().Set(refreshRate);
 }
 
 NAN_METHOD(SetCursorMode) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  if (TO_BOOL(info[1])) {
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-  } else {
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+  bool enabled = TO_BOOL(info[1]);
 
-    int w, h;
-    glfwGetWindowSize(window, &w, &h);
+  QueueInjection([window, enabled](InjectionHandler *injectionHandler) -> void {
+    if (enabled) {
+      glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    } else {
+      glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-    int centerX = w/2;
-    int centerY = h/2;
-    glfwSetCursorPos(window, centerX, centerY);
+      int w, h;
+      glfwGetWindowSize(window, &w, &h);
 
-    lastX = centerX;
-    lastY = centerY;
-  }
+      int centerX = w/2;
+      int centerY = h/2;
+      glfwSetCursorPos(window, centerX, centerY);
+
+      /* lastX = centerX;
+      lastY = centerY; */
+    }
+  });
 }
 
 NAN_METHOD(SetCursorPosition) {
@@ -1403,16 +1243,23 @@ NAN_METHOD(GetClipboard) {
   }
 }
 
-
 NAN_METHOD(SetClipboard) {
   if (info[0]->IsString()) {
     NATIVEwindow *window = GetCurrentWindowContext();
     Nan::Utf8String utf8_value(info[0]);
-    glfwSetClipboardString(window, *utf8_value);   
+    glfwSetClipboardString(window, *utf8_value);
   } else {
     Nan::ThrowTypeError("Invalid arguments");
   }
 }
+
+#ifdef TARGET_OS_MAC
+NAN_METHOD(PollEvents) {
+  glfwPollEvents();
+
+  handleInjections();
+}
+#endif
 
 }
 
@@ -1777,24 +1624,31 @@ NAN_METHOD(SetClipboard) {
 } */
 
 Local<Object> makeWindow() {
+#ifdef TARGET_OS_MAC
+  if (!glfw::hasMainThreadId) {
+    glfw::mainThreadId = std::this_thread::get_id();
+    glfw::hasMainThreadId = true;
+  }
+#endif
+
   Isolate *isolate = Isolate::GetCurrent();
   v8::EscapableHandleScope scope(isolate);
 
   Local<Object> target = Object::New(isolate);
-  
+
   windowsystembase::Decorate(target);
 
-  Nan::SetMethod(target, "create3d", glfw::Create3D);
-  Nan::SetMethod(target, "create2d", glfw::Create2D);
-  Nan::SetMethod(target, "destroy", glfw::Destroy);
-  Nan::SetMethod(target, "show", glfw::Show);
-  Nan::SetMethod(target, "hide", glfw::Hide);
+  Nan::SetMethod(target, "initWindow3D", glfw::InitWindow3D);
+  Nan::SetMethod(target, "initWindow2D", glfw::InitWindow2D);
+
+  Nan::SetMethod(target, "createWindowHandle", glfw::CreateWindowHandle);
+  Nan::SetMethod(target, "destroyWindowHandle", glfw::DestroyWindowHandle);
+  Nan::SetMethod(target, "setVisibility", glfw::SetVisibility);
   Nan::SetMethod(target, "isVisible", glfw::IsVisible);
   Nan::SetMethod(target, "setFullscreen", glfw::SetFullscreen);
   Nan::SetMethod(target, "getMonitors", glfw::GetMonitors);
   Nan::SetMethod(target, "setMonitor", glfw::SetMonitor);
   Nan::SetMethod(target, "getScreenSize", glfw::GetScreenSize);
-  Nan::SetMethod(target, "exitFullscreen", glfw::ExitFullscreen);
   Nan::SetMethod(target, "setWindowTitle", glfw::SetWindowTitle);
   Nan::SetMethod(target, "getWindowSize", glfw::GetWindowSize);
   Nan::SetMethod(target, "setWindowSize", glfw::SetWindowSize);
@@ -1805,17 +1659,17 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "iconifyWindow", glfw::IconifyWindow);
   Nan::SetMethod(target, "restoreWindow", glfw::RestoreWindow);
   Nan::SetMethod(target, "setEventHandler", glfw::SetEventHandler);
-  Nan::SetMethod(target, "pollEvents", glfw::PollEvents);
   Nan::SetMethod(target, "swapBuffers", glfw::SwapBuffers);
   Nan::SetMethod(target, "getRefreshRate", glfw::GetRefreshRate);
   Nan::SetMethod(target, "setCursorMode", glfw::SetCursorMode);
   Nan::SetMethod(target, "setCursorPosition", glfw::SetCursorPosition);
   Nan::SetMethod(target, "getClipboard", glfw::GetClipboard);
   Nan::SetMethod(target, "setClipboard", glfw::SetClipboard);
-  // Nan::SetMethod(target, "createFramebuffer", glfw::CreateFramebuffer);
-  // Nan::SetMethod(target, "framebufferTextureLayer", glfw::FramebufferTextureLayer);
   Nan::SetMethod(target, "blitFrameBuffer", glfw::BlitFrameBuffer);
   Nan::SetMethod(target, "setCurrentWindowContext", glfw::SetCurrentWindowContext);
+#ifdef TARGET_OS_MAC
+  Nan::SetMethod(target, "pollEvents", glfw::PollEvents);
+#endif
 
   return scope.Escape(target);
 }

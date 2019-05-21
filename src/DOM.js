@@ -1,7 +1,11 @@
 const path = require('path');
 const fs = require('fs');
 const url = require('url');
+const vm = require('vm');
 const util = require('util');
+
+const {process} = global;
+
 const ClassList = require('window-classlist');
 const css = require('css');
 const he = require('he');
@@ -14,11 +18,11 @@ const htmlUnescape = require('unescape');
 
 const bindings = require('./native-bindings');
 const {Event, EventTarget, MessageEvent, MouseEvent, ErrorEvent} = require('./Event');
+const {_makeWindow} = require('./WindowVm');
 const GlobalContext = require('./GlobalContext');
 const symbols = require('./symbols');
 const {urls} = require('./urls');
-const utils = require('./utils');
-const {_elementGetter, _elementSetter} = utils;
+const {_elementGetter, _elementSetter, _makeNormalizeUrl} = require('./utils');
 const {XRRigidTransform} = require('./XR');
 
 he.encode.options.useNamedReferences = true;
@@ -1161,25 +1165,21 @@ class Element extends Node {
   }
 
   requestPointerLock() {
-    const topDocument = this.ownerDocument.defaultView.top.document;
-
-    if (topDocument[symbols.pointerLockElementSymbol] === null) {
-      topDocument[symbols.pointerLockElementSymbol] = this;
+    if (this.ownerDocument[symbols.pointerLockElementSymbol] === null) {
+      this.ownerDocument[symbols.pointerLockElementSymbol] = this;
 
       process.nextTick(() => {
-        topDocument._emit('pointerlockchange');
+        this.ownerDocument._emit('pointerlockchange');
       });
     }
   }
 
   requestFullscreen() {
-    const topDocument = this.ownerDocument.defaultView.top.document;
-
-    if (topDocument[symbols.fullscreenElementSymbol] === null) {
-      topDocument[symbols.fullscreenElementSymbol] = this;
+    if (this.ownerDocument[symbols.fullscreenElementSymbol] === null) {
+      this.ownerDocument[symbols.fullscreenElementSymbol] = this;
 
       process.nextTick(() => {
-        topDocument._emit('fullscreenchange');
+        this.ownerDocument._emit('fullscreenchange');
       });
     }
   }
@@ -1701,8 +1701,11 @@ class HTMLScriptElement extends HTMLLoadableElement {
           }
         })
         .then(s => {
-          utils._runJavascript(s, this.ownerDocument.defaultView, url);
-
+          vm.runInThisContext(s, {
+            filename: url,
+          });
+        })
+        .then(() => {
           this.readyState = 'complete';
 
           this.dispatchEvent(new Event('load', {target: this}));
@@ -1729,13 +1732,30 @@ class HTMLScriptElement extends HTMLLoadableElement {
     const window = this.ownerDocument.defaultView;
     
     return this.ownerDocument.resources.addResource((onprogress, cb) => {
-      utils._runJavascript(innerHTML, window, window.location.href, this.location && this.location.line !== null ? this.location.line - 1 : 0, this.location && this.location.col !== null ? this.location.col - 1 : 0);
+      (async () => {
+        vm.runInThisContext(innerHTML, {
+          filename: window.location.href,
+          lineOffset : this.location && this.location.line !== null ? this.location.line - 1 : 0,
+          columnOffset: this.location && this.location.col !== null ? this.location.col - 1 : 0,
+        });
+      })()
+        .then(() => {
+          this.readyState = 'complete';
+          
+          this.dispatchEvent(new Event('load', {target: this}));
 
-      this.readyState = 'complete';
-      
-      this.dispatchEvent(new Event('load', {target: this}));
+          cb();
+        })
+        .catch(err => {
+          this.readyState = 'complete';
 
-      cb();
+          const e = new ErrorEvent('error', {target: this});
+          e.message = err.message;
+          e.stack = err.stack;
+          this.dispatchEvent(e);
+          
+          cb(err);
+        });
     });
   }
 
@@ -1911,15 +1931,17 @@ class HTMLIFrameElement extends HTMLSrcableElement {
 
     this.contentWindow = null;
     this.contentDocument = null;
-    this.live = true;
-    
-    this.d = null;
+    // this.live = true;
+    this.epoch = 0;
+
     this.browser = null;
     this.onconsole = null;
     this.xrOffset = new XRRigidTransform();
 
     this.on('attribute', (name, value) => {
       if (name === 'src' && value) {
+        const localEpoch = ++this.epoch;
+
         this.readyState = 'loading';
         
         let url = value;
@@ -1928,7 +1950,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
           url = 'data:text/html,' + encodeURIComponent(`<!doctype html><html><head><script>${match[1]}</script></head></html>`);
         }
         const oldUrl = url;
-        url = utils._makeNormalizeUrl(this.ownerDocument.defaultView[symbols.optionsSymbol].baseUrl)(url);
+        url = _makeNormalizeUrl(this.ownerDocument.defaultView[symbols.optionsSymbol].baseUrl)(url);
 
         this.ownerDocument.resources.addResource((onprogress, cb) => {
           (async () => {
@@ -1952,7 +1974,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                       console.log(`${source}:${line}: ${message}`);
                     }
                   };
-                  
+
                   const loadedUrl = await new Promise((accept, reject) => {
                     this.browser.onloadend = _url => {
                       accept(_url);
@@ -1963,7 +1985,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                     
                     this.browser.load(url);
                   });
-                  
+
                   let onmessage = null;
                   const self = this;
                   this.contentWindow = {
@@ -1985,10 +2007,10 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                         }));
                       } : null;
                     },
-                    destroy() {
+                    /* destroy() {
                       self.browser.destroy();
                       self.browser = null;
-                    },
+                    }, */
                   };
                   this.contentDocument = {
                     _emit() {},
@@ -2007,36 +2029,47 @@ class HTMLIFrameElement extends HTMLSrcableElement {
               }
             } else {
               const res = await this.ownerDocument.defaultView.fetch(url);
+              if (this.epoch !== localEpoch) {
+                return;
+              }
               if (res.status >= 200 && res.status < 300) {
                 const htmlString = await res.text();
-                
-                if (this.live) {
-                  const parentWindow = this.ownerDocument.defaultView;
-                  const options = parentWindow[symbols.optionsSymbol];
-
-                  url = utils._makeNormalizeUrl(options.baseUrl)(url);
-                  const contentWindow = GlobalContext._makeWindow({
-                    url,
-                    baseUrl: url,
-                    args: options.args,
-                    dataPath: options.dataPath,
-                    replacements: options.replacements,
-                  }, parentWindow, parentWindow.top);
-                  const contentDocument = GlobalContext._parseDocument(htmlString, contentWindow);
-
-                  contentDocument.hidden = this.d === 3;
-
-                  contentDocument.xrOffset = this.xrOffset;
-
-                  contentWindow.document = contentDocument;
-
-                  this.contentWindow = contentWindow;
-                  this.contentDocument = contentDocument;
-
-                  this.readyState = 'complete';
-
-                  this.dispatchEvent(new Event('load', {target: this}));
+                if (this.epoch !== localEpoch) {
+                  return;
                 }
+
+                const parentWindow = this.ownerDocument.defaultView;
+                const options = parentWindow[symbols.optionsSymbol];
+
+                url = _makeNormalizeUrl(options.baseUrl)(url);
+                const parent = {};
+                const top = parentWindow === parentWindow.top ? parent : {};
+                const contentWindow = _makeWindow({
+                  url,
+                  baseUrl: url,
+                  args: options.args,
+                  dataPath: options.dataPath,
+                  replacements: options.replacements,
+                  parent,
+                  top,
+                  htmlString,
+                  hidden: this.d === 3,
+                  xrOffsetBuffer: this.xrOffset._buffer,
+                  onnavigate(href) {
+                    this.readyState = null;
+                    this.contentWindow = null;
+                    this.contentDocument = null;
+
+                    this.setAttribute('src', href);
+                  },
+                });
+
+                this.contentWindow = contentWindow;
+                this.contentDocument = contentWindow.document = {};
+
+                this.readyState = 'complete';
+
+                this.dispatchEvent(new Event('load', {target: this}));
 
                 cb();
               } else {
@@ -2066,14 +2099,6 @@ class HTMLIFrameElement extends HTMLSrcableElement {
           this.xrOffset.scale.set(v);
           this.xrOffset.updateMatrix();
         }
-      } else if (name === 'd') {
-        if (value === '2') {
-          this.d = 2;
-        } else if (value === '3') {
-          this.d = 3;
-        } else {
-          this.d = null;
-        }
       } else if (name === 'width') {
         if (this.browser) {
           this.browser.width = this.width;
@@ -2088,7 +2113,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
         }
       }
     });
-    this.on('destroy', () => {
+    /* this.on('destroy', () => {
       if (this.contentWindow) {
         this.contentWindow.destroy();
         this.contentWindow = null;
@@ -2098,7 +2123,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
       if (this.browser) {
         this.browser.destroy(); // XXX support this
       }
-    });
+    }); */
   }
   
   get width() {
@@ -2125,7 +2150,16 @@ class HTMLIFrameElement extends HTMLSrcableElement {
       this.setAttribute('devicePixelRatio', value);
     }
   }
-  
+
+  get d() {
+    return parseInt(this.getAttribute('d') || 1 + '', 10);
+  }
+  set d(value) {
+    if (typeof value === 'number' && isFinite(value)) {
+      this.setAttribute('d', value);
+    }
+  }
+
   get texture() {
     if (this.d === 2) {
       return this.browser && this.browser.texture;
@@ -2206,12 +2240,12 @@ class HTMLIFrameElement extends HTMLSrcableElement {
     this.browser && this.browser.runJs(jsString, scriptUrl, startLine);
   }
   
-  destroy() {
+  /* destroy() {
     if (this.live) {
       this._emit('destroy');
       this.live = false;
     }
-  }
+  } */
 }
 module.exports.HTMLIFrameElement = HTMLIFrameElement;
 
@@ -2248,11 +2282,11 @@ class HTMLCanvasElement extends HTMLElement {
   }
 
   get clientWidth() {
-    return this.width / this.ownerDocument.defaultView.devicePixelRatio;
+    return this.width;
   }
   set clientWidth(clientWidth) {}
   get clientHeight() {
-    return this.height / this.ownerDocument.defaultView.devicePixelRatio;
+    return this.height;
   }
   set clientHeight(clientHeight) {}
 
@@ -2270,7 +2304,7 @@ class HTMLCanvasElement extends HTMLElement {
   }
   set texture(texture) {}
 
-  getContext(contextType) {
+  getContext(contextType, attrs = {}) {
     if (contextType === '2d') {
       if (this._context && this._context.constructor && this._context.constructor.name !== 'CanvasRenderingContext2D') {
         this._context.destroy();
@@ -2289,13 +2323,13 @@ class HTMLCanvasElement extends HTMLElement {
 
         if (!window[symbols.optionsSymbol].args || window[symbols.optionsSymbol].args.webgl === '1') {
           if (contextType === 'webgl' || contextType === 'experimental-webgl' || contextType === 'xrpresent') {
-            this._context = new GlobalContext.WebGLRenderingContext(this);
+            this._context = new GlobalContext.WebGLRenderingContext(this, attrs);
           }
         } else {
           if (contextType === 'webgl' || contextType === 'experimental-webgl') {
-            this._context = new GlobalContext.WebGLRenderingContext(this);
+            this._context = new GlobalContext.WebGLRenderingContext(this, attrs);
           } else {
-            this._context = new GlobalContext.WebGL2RenderingContext(this);
+            this._context = new GlobalContext.WebGL2RenderingContext(this, attrs);
           }
         }
       }
@@ -2305,6 +2339,12 @@ class HTMLCanvasElement extends HTMLElement {
         this._context = null;
       }
     }
+
+    // hack: assume that getting a context means we might want to enter XR
+    setTimeout(() => {
+      window.vrdisplayactivate();
+    });
+
     return this._context;
   }
 

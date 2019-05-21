@@ -36,7 +36,7 @@ fi
 
 pushd ..
 export TARGET_ARCH="arm64" # for wrtc install prebuilt
-npm install --verbose --devdir="$(pwd)/.node-gyp" --arch=arm64 --target_arch=arm64 --no-optional
+npm install --verbose --devdir="$(pwd)/.node-gyp" --arch=arm64 --target_arch=arm64 --only=production --no-optional
 find -name '\.bin' | xargs rm -Rf
 popd
 

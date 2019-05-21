@@ -21,6 +21,7 @@
 #include <MediaStreamTrack.h>
 #include <MicrophoneMediaStream.h>
 #include <AudioDestinationGenericImpl.h>
+#include <windowsystem.h>
 
 using namespace std;
 using namespace v8;
@@ -28,6 +29,9 @@ using namespace node;
 
 namespace webaudio {
 
+class WebAudioAsync;
+
+WebAudioAsync *getWebAudioAsync();
 lab::AudioContext *getDefaultAudioContext(float sampleRate = lab::DefaultSampleRate);
 
 class AudioContext : public ObjectWrap {
@@ -52,6 +56,7 @@ public:
 
   static NAN_METHOD(New);
   static NAN_METHOD(Close);
+  static NAN_METHOD(Destroy);
   static NAN_METHOD(_DecodeAudioDataSync);
   static NAN_METHOD(CreateMediaElementSource);
   static NAN_METHOD(CreateMediaStreamSource);
@@ -88,12 +93,22 @@ public:
   friend class ScriptProcessorNode;
 };
 
-void QueueOnMainThread(lab::ContextRenderLock &r, function<void()> &&newThreadFn);
-void RunInMainThread(uv_async_t *handle);
+class WebAudioAsync {
+public:
+  WebAudioAsync();
+  ~WebAudioAsync();
 
-extern function<void()> threadFn;
-extern uv_async_t threadAsync;
-extern uv_sem_t threadSemaphore;
+  void QueueOnMainThread(lab::ContextRenderLock &r, function<void()> &&newThreadFn);
+  static void RunInMainThread(uv_async_t *handle);
+
+// protected:
+  function<void()> threadFn;
+  uv_async_t *threadAsync;
+  uv_sem_t threadSemaphore;
+};
+
+extern thread_local unique_ptr<lab::AudioContext> _defaultAudioContext;
+extern thread_local unique_ptr<WebAudioAsync> _webAudioAsync;
 
 }
 

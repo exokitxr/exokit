@@ -1150,7 +1150,8 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
 
   /* Nan::SetMethod(proto, "getFramebuffer", glSwitchCallWrap<GetFramebuffer>);
   Nan::SetMethod(proto, "setDefaultFramebuffer", glSwitchCallWrap<SetDefaultFramebuffer>); */
-  Nan::SetMethod(proto, "getFramebuffer", glCallWrap<GetFramebuffer>);
+  Nan::SetMethod(proto, "getBoundFramebuffer", glCallWrap<GetBoundFramebuffer>);
+  Nan::SetMethod(proto, "getDefaultFramebuffer", glCallWrap<GetDefaultFramebuffer>);
   Nan::SetMethod(proto, "setDefaultFramebuffer", glCallWrap<SetDefaultFramebuffer>);
 
   setGlConstants(proto);
@@ -1166,8 +1167,8 @@ WebGLRenderingContext::WebGLRenderingContext() :
   live(true),
   windowHandle(nullptr),
   defaultVao(0),
-  dirty(false),
   defaultFramebuffer(0),
+  dirty(false),
   flipY(false),
   premultiplyAlpha(true),
   packAlignment(4),
@@ -2397,7 +2398,7 @@ NAN_GETTER(WebGLRenderingContext::DrawingBufferHeightGetter) {
   info.GetReturnValue().Set(JS_INT(height));
 }
 
-NAN_METHOD(WebGLRenderingContext::GetFramebuffer) {
+NAN_METHOD(WebGLRenderingContext::GetBoundFramebuffer) {
   Local<Object> glObj = info.This();
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
 
@@ -2409,6 +2410,12 @@ NAN_METHOD(WebGLRenderingContext::GetFramebuffer) {
   } else {
     info.GetReturnValue().Set(Nan::Null());
   }
+}
+
+NAN_METHOD(WebGLRenderingContext::GetDefaultFramebuffer) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
+  info.GetReturnValue().Set(JS_INT(gl->defaultFramebuffer));
 }
 
 NAN_METHOD(WebGLRenderingContext::SetDefaultFramebuffer) {
@@ -2615,8 +2622,8 @@ NAN_METHOD(WebGLRenderingContext::FlipTextureData) {
 
   int num;
   char *pixels=(char*)getArrayData<BYTE>(info[0], &num);
-  int width = info[1]->Int32Value();
-  int height = info[2]->Int32Value();
+  int width = TO_INT32(info[1]);
+  int height = TO_INT32(info[2]);
 
   int elementSize = num / width / height;
   for (int y = 0; y < height; y++) {
@@ -2837,8 +2844,8 @@ NAN_METHOD(WebGLRenderingContext::TexImage2D) {
         height->TypeOf(isolate)->StrictEquals(numberString),
         border->IsNull(), // 0
         !border->IsNull() && border->TypeOf(isolate)->StrictEquals(objectString), // 1
-        !border->IsNull() && border->TypeOf(isolate)->StrictEquals(objectString) && border->ToObject()->Get(widthString)->TypeOf(isolate)->StrictEquals(numberString), // 0
-        !border->IsNull() && border->TypeOf(isolate)->StrictEquals(objectString) && border->ToObject()->Get(heightString)->TypeOf(isolate)->StrictEquals(numberString) // 0
+        !border->IsNull() && border->TypeOf(isolate)->StrictEquals(objectString) && JS_OBJ(border)->Get(widthString)->TypeOf(isolate)->StrictEquals(numberString), // 0
+        !border->IsNull() && border->TypeOf(isolate)->StrictEquals(objectString) && JS_OBJ(border)->Get(heightString)->TypeOf(isolate)->StrictEquals(numberString) // 0
       ); */
 
       Nan::ThrowError("Expected texImage2D(number target, number level, number internalformat, number format, number type, Image pixels)");

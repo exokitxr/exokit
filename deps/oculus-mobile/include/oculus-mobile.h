@@ -1,13 +1,15 @@
 #ifndef _OCULUS_MOBILE_H_
 #define _OCULUS_MOBILE_H_
 
+#include <unistd.h>
+#include <android/native_window_jni.h>
+#include <android_native_app_glue.h>
+
 #include <v8.h>
 #include <nan.h>
 
 #include <defines.h>
 
-#include <android/native_window_jni.h>
-#include <android_native_app_glue.h>
 #include <exout>
 
 #include "VrApi.h"

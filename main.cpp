@@ -124,43 +124,6 @@ void jniOnload(JavaVM *vm) {
   androidJniEnv = env;
   __android_log_print(ANDROID_LOG_INFO, "exokit", "Got JNI Env %lx", (unsigned long)androidJniEnv);
 
-  // parse args
-  // adb shell am start -n com.webmr.exokit/android.app.NativeActivity -e ARGS "'node --experimental-worker /package /package/examples/tutorial.html'"
-  /* {
-    std::vector<std::string> &args = androidArgs;
-
-    jobject activity = androidApp->activity->clazz;
-    jmethodID get_intent_method = env->GetMethodID(env->GetObjectClass(activity), "getIntent", "()Landroid/content/Intent;");
-    jobject intent = env->CallObjectMethod(activity, get_intent_method);
-    jmethodID get_string_extra_method = env->GetMethodID(env->GetObjectClass(intent), "getStringExtra", "(Ljava/lang/String;)Ljava/lang/String;");
-    jvalue get_string_extra_args;
-    get_string_extra_args.l = env->NewStringUTF("ARGS");
-    jstring extra_str = static_cast<jstring>(env->CallObjectMethodA(intent, get_string_extra_method, &get_string_extra_args));
-
-    std::string args_str;
-    if (extra_str) {
-      const char* extra_utf = env->GetStringUTFChars(extra_str, nullptr);
-      args_str = extra_utf;
-      env->ReleaseStringUTFChars(extra_str, extra_utf);
-      env->DeleteLocalRef(extra_str);
-    }
-
-    __android_log_print(ANDROID_LOG_INFO, "exokit", "got args 1 '%s'", args_str.c_str());
-
-    env->DeleteLocalRef(get_string_extra_args.l);
-    env->DeleteLocalRef(intent);
-
-    // split args_str
-    std::stringstream ss(args_str);
-    std::string arg;
-    while (std::getline(ss, arg, ' ')) {
-      if (!arg.empty()) {
-        __android_log_print(ANDROID_LOG_INFO, "exokit", "got args 2 %lx '%s'", args.size(), arg.c_str());
-
-        args.push_back(arg);
-      }
-    }
-  } */
   {
     jobject activity = androidApp->activity->clazz;
     jmethodID get_intent_method = env->GetMethodID(env->GetObjectClass(activity), "getIntent", "()Landroid/content/Intent;");
@@ -417,7 +380,6 @@ int main(int argc, char **argv) {
     }
 
     const char *nodeString = "node";
-    const char *experimentalWorkerString = "--experimental-worker";
 #ifndef ANDROID
     const char *dotString = ".";
 #else
@@ -430,10 +392,6 @@ int main(int argc, char **argv) {
     strncpy(nodeArg, nodeString, sizeof(argsString) - i);
     i += strlen(nodeString) + 1;
 
-    char *experimentalWorkerArg = argsString + i;
-    strncpy(experimentalWorkerArg, experimentalWorkerString, sizeof(argsString) - i);
-    i += strlen(experimentalWorkerString) + 1;
-
     char *dotArg = argsString + i;
     strncpy(dotArg, dotString, sizeof(argsString) - i);
     i += strlen(dotString) + 1;
@@ -442,7 +400,7 @@ int main(int argc, char **argv) {
     strncpy(jsArg, jsString, sizeof(argsString) - i);
     i += strlen(jsString) + 1;
 
-    char *argv[] = {nodeArg, experimentalWorkerArg, dotArg, jsArg};
+    char *argv[] = {nodeArg, dotArg, jsArg};
     size_t argc = sizeof(argv) / sizeof(argv[0]);
 
     result = node::Start(argc, argv);

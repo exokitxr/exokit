@@ -7,15 +7,19 @@
 #
 # Otherwise, you will get `ERROR: Failed to retrieve application ABI from Android.mk.`
 
-# Initialization.
+# NOTE: to add arguments, put this in $ANDROID_HOME/ndk-bundle/prebuilt/linux-x86_64/bin/ndk-gdb.py
+#
+# am_cmd.append("-e")
+# am_cmd.append("ARGS")
+# am_cmd.append("'node /package /package/examples/tutorial.html'")
 
 set -e
 
-# Preface.
 
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")"
 
-pushd ./android/app/src/main
+source ./version-android.sh
+
+pushd ../android/app/src/main
 "$ANDROID_HOME/ndk-bundle/ndk-gdb" --adb="$ANDROID_HOME/platform-tools/adb" --launch=android.app.NativeActivity
-# "$ANDROID_HOME/ndk-bundle/ndk-gdb" --adb="$ANDROID_HOME/platform-tools/adb" --launch=android.app.NativeActivity -x <(echo set environment ARGS "'node --experimental-worker /package /package/examples/tutorial.html'")
 popd

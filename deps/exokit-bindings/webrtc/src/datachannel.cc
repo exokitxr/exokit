@@ -23,9 +23,9 @@ using v8::Object;
 using v8::String;
 using v8::Value;
 
-Nan::Persistent<Function> DataChannel::constructor;
+thread_local Nan::Persistent<Function> DataChannel::constructor;
 #if NODE_MODULE_VERSION < 0x000C
-Nan::Persistent<Function> DataChannel::ArrayBufferConstructor;
+thread_local Nan::Persistent<Function> DataChannel::ArrayBufferConstructor;
 #endif
 
 DataChannelObserver::DataChannelObserver(std::shared_ptr<node_webrtc::PeerConnectionFactory> factory,
@@ -70,7 +70,7 @@ void DataChannelObserver::QueueEvent(DataChannel::AsyncEventType type, void* dat
 }
 
 DataChannel::DataChannel(node_webrtc::DataChannelObserver* observer)
-  : loop(uv_default_loop()),
+  : loop(windowsystembase::GetEventLoop()),
     _binaryType(DataChannel::ARRAY_BUFFER) {
   uv_mutex_init(&lock);
   uv_async_init(loop, &async, reinterpret_cast<uv_async_cb>(Run));
