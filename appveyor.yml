@@ -36,10 +36,6 @@ after_test:
       .\buildtools\iscc "$pwd\metadata\exokit.iss" "/dMyAppVersion=$version" /odist /qp
       mv dist\*.exe exokit-win-x64.exe
 
-artifacts:
-  - path: "exokit-win-x64.exe"
-    name: exokit-windows-installer
-
 deploy:
   - provider: GitHub
     description: 'Exokit installer'
