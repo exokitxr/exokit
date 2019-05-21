@@ -221,7 +221,7 @@ class Engine extends React.Component {
     onConsoleClick() {
       let studioConsole = document.getElementById('console');
       if(studioConsole.clientHeight === 0){
-        studioConsole.style.height = "500px";
+        studioConsole.style.height = "100px";
         this.postViewportMessage();
       } else {
         studioConsole.style.height = "0px";
