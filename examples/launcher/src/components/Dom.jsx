@@ -259,7 +259,6 @@ class DomDetail extends React.Component {
     return (
       <div className="dom-detail">
         <div className="dom-detail-button" onClick={() => this.cloneTab()}>Clone</div>
-        <div className="dom-detail-button">Edit</div>
         <div className="dom-detail-button" onClick={() => this.deleteTab()}>Delete</div>
          {el.attrs.map(attr => <DomAttribute name={attr.name} value={attr.value} keypath={el.keypath} epoch={this.props.epoch} key={attr.name} />)}
       </div>
