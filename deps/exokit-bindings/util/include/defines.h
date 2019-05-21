@@ -39,6 +39,7 @@ template<> struct V8TypedArrayTraits<Uint32Array> { typedef unsigned int value_t
 
 template <typename T>
 Local<T> createTypedArray(size_t size, const typename V8TypedArrayTraits<T>::value_type* data = NULL) {
+  Nan::EscapableHandleScope scope;
   size_t byteLength = size * sizeof(typename V8TypedArrayTraits<T>::value_type);
   Local<ArrayBuffer> buffer = ArrayBuffer::New(Isolate::GetCurrent(), byteLength);
   Local<T> result = T::New(buffer, 0, size);
@@ -47,7 +48,7 @@ Local<T> createTypedArray(size_t size, const typename V8TypedArrayTraits<T>::val
       result->Set(i, Nan::New(data[i]));
     }
   }
-  return result;
+  return scope.Escape(result);
 };
 
 #endif
