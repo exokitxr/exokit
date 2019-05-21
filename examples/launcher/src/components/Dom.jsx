@@ -192,7 +192,6 @@ class DomItem extends React.Component {
       dropdownOpen: !this.state.dropdownOpen,
     });
 
-    e.stopPropagation();
   }
 
   cloneTab() {
