@@ -40,8 +40,6 @@ class Dom extends React.Component {
           attrs: [{
             name: 'lol',
             value: 'zol',
-            name: 'woot',
-            value: 'toot',
           }],
           childNodes: [],
         },
@@ -99,7 +97,6 @@ class Dom extends React.Component {
     return (
       <div className="Dom">
         <DomList root={this.state.root} selectEl={this.state.selectEl} onClick={el => this.onClick(el)} />
-        {this.state.selectEl ? <DomDetail el={this.state.selectEl} epoch={this.state.epoch} /> : null}
       </div>
     );
   }
@@ -145,6 +142,7 @@ class DomItem extends React.Component {
 
     this.state = {
       open: true,
+      dropdownOpen: false,
     };
   }
 
@@ -189,6 +187,43 @@ class DomItem extends React.Component {
     e.stopPropagation();
   }
 
+  toggleDropdownOpen(e) {
+    this.setState({
+      dropdownOpen: !this.state.dropdownOpen,
+    });
+
+    e.stopPropagation();
+  }
+
+  cloneTab() {
+    const {el} = this.props;
+    let url;
+
+    el.attrs.map(attr => (attr.name === "src") ? url = attr.value : null);
+
+    window.postMessage({
+      method: 'open',
+      url,
+      d: 3,
+    });
+
+    this.toggleDropdownOpen(el);
+  }
+
+  deleteTab() {
+    const {el} = this.props;
+
+    window.postMessage({
+      method: 'edit',
+      keypath: el.keypath,
+      edit: {
+        type: 'remove',
+      },
+    });
+
+    this.toggleDropdownOpen(el);
+  }
+
   render() {
     const {el, level} = this.props;
 
@@ -196,10 +231,16 @@ class DomItem extends React.Component {
       return (
         <li className={this.getClassnames()}>
           <div className="dom-item-label" style={this.getStyle()} onClick={() => this.props.onClick(el)} onMouseEnter={() => this.props.onMouseEnter(el)} onMouseLeave={() => this.props.onMouseLeave(el)} ref={this.domElRef} tabIndex={-1}>
-            <div className="dom-item-arrow" onClick={e => this.toggleOpen(e)}>...</div>
+            <div className="dom-item-arrow" onClick={e => this.toggleDropdownOpen(e)}>...</div>
             <div className="dom-item-name"> {_el2Text(el)}</div>
           </div>
-          </li>
+          <div className="dom-item-dropmenu">{this.state.dropdownOpen ?
+            <div className="dom-detail">
+              <div className="dom-detail-button" onClick={() => this.cloneTab()}>Clone</div>
+              <div className="dom-detail-button" onClick={() => this.deleteTab()}>Delete</div>
+            </div>
+             : null}</div>
+        </li>
         );
     } else if (el.nodeType === Node.ELEMENT_NODE) {
       return (
@@ -229,17 +270,29 @@ class DomDetail extends React.Component {
   /* constructor(props) {
     super(props);
   } */
+  toggleOpen() {
+    const {el} = this.props;
+
+    this.setState({
+      open: !this.state.open,
+    });
+
+    el.stopPropagation();
+  }
+
   cloneTab() {
     const {el} = this.props;
     let url;
 
-    el.attrs.map(attr => (attr.name == "src") ? url = attr.value : null);
+    el.attrs.map(attr => (attr.name === "src") ? url = attr.value : null);
 
     window.postMessage({
       method: 'open',
       url,
       d: 3,
     });
+
+    this.toggleOpen();
   }
 
   deleteTab() {
@@ -252,6 +305,8 @@ class DomDetail extends React.Component {
         type: 'remove',
       },
     });
+
+    this.toggleOpen();
   }
   render() {
     const {el} = this.props;
@@ -260,7 +315,6 @@ class DomDetail extends React.Component {
       <div className="dom-detail">
         <div className="dom-detail-button" onClick={() => this.cloneTab()}>Clone</div>
         <div className="dom-detail-button" onClick={() => this.deleteTab()}>Delete</div>
-         {el.attrs.map(attr => <DomAttribute name={attr.name} value={attr.value} keypath={el.keypath} epoch={this.props.epoch} key={attr.name} />)}
       </div>
     );
   }
