@@ -192,6 +192,16 @@ class Engine extends React.Component {
       this.blur();
     }
 
+    postViewportMessage() {
+      const engineRender = document.getElementById('engine-render');
+      const bcr = engineRender.getBoundingClientRect();
+      const viewport = [bcr.x/window.innerWidth, bcr.y/window.innerHeight, bcr.width/window.innerWidth, bcr.height/window.innerHeight];
+      window.postMessage({
+        method: 'viewport',
+        viewport,
+      });
+    };
+
     onFakeXrClick() {
       window.postMessage({
         method: 'click',
@@ -206,6 +216,17 @@ class Engine extends React.Component {
         method: 'click',
         target: 'xr',
       });
+    }
+
+    onConsoleClick() {
+      let studioConsole = document.getElementById('console');
+      if(studioConsole.clientHeight === 0){
+        studioConsole.style.height = "500px";
+        this.postViewportMessage();
+      } else {
+        studioConsole.style.height = "0px";
+        this.postViewportMessage();
+      }
     }
 
     blur() {
@@ -310,6 +331,10 @@ class Engine extends React.Component {
               <i class="fal fa-plus-hexagon"/>
             </div>
             <div className="buttons">
+              <div className="button" onClick={() => this.onConsoleClick()}>
+                <i class="fas fa-terminal"/>
+                <div className="label">Console</div>
+              </div>
               <div className="button" onClick={() => this.onXrClick()}>
                 <i class="fas fa-head-vr"/>
                 <div className="label">Enter XR</div>
@@ -324,11 +349,21 @@ class Engine extends React.Component {
           <div className="engine-split">
             <div className="engine-left">
               <div className="engine-render" id="engine-render" onClick={() => this.onEngineRenderClick()} />
-              <Console/>
+              <Resizable
+                minHeight="100"
+                maxHeight="300"
+                onResize={(e, direction, ref, d) => {
+                  this.postViewportMessage();
+                }}>
+                <Console/>
+              </Resizable>
             </div>
             <Resizable
               minWidth="100"
-              maxWidth="300">
+              maxWidth="300"
+              onResize={(e, direction, ref, d) => {
+                this.postViewportMessage();
+              }}>
             <div className="engine-right">
               <Dom/>
             </div>
