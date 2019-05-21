@@ -265,6 +265,59 @@ class DomItem extends React.Component {
   }
 }
 
+class DomDetail extends React.Component {
+  /* constructor(props) {
+    super(props);
+  } */
+  toggleOpen() {
+    const {el} = this.props;
+
+    this.setState({
+      open: !this.state.open,
+    });
+
+    el.stopPropagation();
+  }
+
+  cloneTab() {
+    const {el} = this.props;
+    let url;
+
+    el.attrs.map(attr => (attr.name === "src") ? url = attr.value : null);
+
+    window.postMessage({
+      method: 'open',
+      url,
+      d: 3,
+    });
+
+    this.toggleOpen();
+  }
+
+  deleteTab() {
+    const {el} = this.props;
+
+    window.postMessage({
+      method: 'edit',
+      keypath: el.keypath,
+      edit: {
+        type: 'remove',
+      },
+    });
+
+    this.toggleOpen();
+  }
+  render() {
+    const {el} = this.props;
+
+    return (
+      <div className="dom-detail">
+        <div className="dom-detail-button" onClick={() => this.cloneTab()}>Clone</div>
+        <div className="dom-detail-button" onClick={() => this.deleteTab()}>Delete</div>
+      </div>
+    );
+  }
+}
 
 class DomAttribute extends React.Component {
   constructor(props) {
