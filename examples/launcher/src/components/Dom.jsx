@@ -229,14 +229,39 @@ class DomDetail extends React.Component {
   /* constructor(props) {
     super(props);
   } */
+  cloneTab() {
+    const {el} = this.props;
+    let url;
 
+    el.attrs.map(attr => (attr.name == "src") ? url = attr.value : null);
+
+    window.postMessage({
+      method: 'open',
+      url,
+      d: 3,
+    });
+  }
+
+  deleteTab() {
+    const {el} = this.props;
+
+    window.postMessage({
+      method: 'edit',
+      keypath: el.keypath,
+      edit: {
+        type: 'remove',
+      },
+    });
+  }
   render() {
     const {el} = this.props;
 
     return (
       <div className="dom-detail">
-        <div className="dom-detail-name">{el.tagName.toLowerCase()}</div>
-        {el.attrs.map(attr => <DomAttribute name={attr.name} value={attr.value} keypath={el.keypath} epoch={this.props.epoch} key={attr.name} />)}
+        <div className="dom-detail-button" onClick={() => this.cloneTab()}>Clone</div>
+        <div className="dom-detail-button">Edit</div>
+        <div className="dom-detail-button" onClick={() => this.deleteTab()}>Delete</div>
+         {el.attrs.map(attr => <DomAttribute name={attr.name} value={attr.value} keypath={el.keypath} epoch={this.props.epoch} key={attr.name} />)}
       </div>
     );
   }
