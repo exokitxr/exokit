@@ -1521,11 +1521,6 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
   window.document.xrOffset = options.xrOffsetBuffer ? new XRRigidTransform(options.xrOffsetBuffer) : new XRRigidTransform();
 })(global);
 
-if (!options.require) {
-  global.require = undefined;
-}
-global.process = undefined;
-
 let requestKeys = 0;
 const queue = {};
 global.queueRequest = fn => {

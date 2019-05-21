@@ -18,8 +18,8 @@ An example of how to use these flags:
 |`-v`|`--version`|Print version and exit|
 |`-h`|`--home`|Loads realitytabs.html home (default)|
 |`-t <site url>`|`--tab`|Load a URL as a reality tab|
-|`-w`|`--webgl <1|2>`|Choose which version of WebGL to expose; defaults to 2|
-|`-x <all|webxr|webvr>`|`--xr`|Choose which version of WebVR/XR to expose; defaults to all|
+|`-w`|`--webgl <1\|2>`|Choose which version of WebGL to expose; defaults to 2|
+|`-x <all\|webxr\|webvr>`|`--xr`|Choose which version of WebVR/XR to expose; defaults to all|
 |`-p`|`--perf`|Log frame timing to console|
 |`-s <WxH>`|`--size`|Set window size to W by H|
 |`-f`|`--frame`|Log GL method calls and arguments to console|
