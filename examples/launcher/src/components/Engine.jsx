@@ -1,4 +1,5 @@
 import React from 'react';
+import Resizable from 're-resizable';
 import Dom from './Dom';
 import Console from './Console';
 import '../css/engine.css';
@@ -325,9 +326,13 @@ class Engine extends React.Component {
               <div className="engine-render" id="engine-render" onClick={() => this.onEngineRenderClick()} />
               <Console/>
             </div>
+            <Resizable
+              minWidth="100"
+              maxWidth="300">
             <div className="engine-right">
               <Dom/>
             </div>
+            </Resizable>
           </div>
         </div>
       );
