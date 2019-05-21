@@ -160,3 +160,7 @@ if (workerData.args) {
 if (workerData.initModule) {
   require(workerData.initModule);
 }
+if (!workerData.args.require) {
+  global.require = undefined;
+}
+global.process = undefined;
