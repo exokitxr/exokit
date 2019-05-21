@@ -824,7 +824,7 @@ const _startTopRenderLoop = () => {
 
       let controllersArrayIndex = 0;
       const _loadGamepad = i => {
-        const xrGamepad = xrState.gamepads[0];
+        const xrGamepad = xrState.gamepads[i];
 
         xrGamepad.connected[0] = controllersArray[controllersArrayIndex];
 
