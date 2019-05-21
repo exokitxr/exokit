@@ -92,7 +92,7 @@ To install NDK directly, run:
 
 ### Build APK
 
-Confirm that `$ANDROID_HOME` points to Android/SDK directory
+Confirm that `$ANDROID_HOME` points to Android/Sdk directory
 
 Make the NDK standalone toolchain:
 ```sh
