@@ -72,13 +72,17 @@
 .Dom > .dom-detail {
   display: flex;
   flex-direction: column;
-  height: 150px;
+  height: 185px;
   background-color: #444;
   border-top: 2px solid #111;
   overflow-y: auto;
 }
 .Dom > .dom-detail > .dom-detail-name {
   font-family: monospace;
+}
+.Dom > .dom-detail > .dom-detail-button {
+  font-family: monospace;
+  text-align: center;
 }
 .Dom > .dom-detail > .dom-attribute {
   display: flex;
