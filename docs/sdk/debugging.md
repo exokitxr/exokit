@@ -29,7 +29,7 @@ node --inspect .
 After the above you should be able to use `chrome://inspect` in the Chrome browser to connect to the `node` running Exokit Engine. You can use this to:
 
 1. Inspect values from the browser
-1. Set deugging breakpoints
+1. Set debugging breakpoints
 1. Capture heap snapshots
 1. Capture CPU profiles of live sites
 
