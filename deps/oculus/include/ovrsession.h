@@ -60,8 +60,8 @@ private:
   }
 
   void ResetSwapChain();
-  void EnsureFbos();
-  void AttachFbos();
+  // void EnsureFbos();
+  // void AttachFbos();
   void DestroySwapChain();
   void DestroySession();
   void ResetSession();
@@ -73,8 +73,6 @@ private:
   bool swapChainValid;
   ovrPosef eyeRenderPoses[2];
   int swapChainMetrics[2];
-  int fboMetrics[2];
-  GLuint fbo;
   int frameIndex;
   double sensorSampleTime;
   bool hmdMounted;

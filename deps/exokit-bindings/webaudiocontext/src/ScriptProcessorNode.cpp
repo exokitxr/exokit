@@ -170,7 +170,7 @@ void ScriptProcessorNode::ProcessInAudioThread(lab::ContextRenderLock& r, vector
   bufferIndex += framesToProcess;
 
   if (bufferIndex >= bufferSize) {
-    WebAudioAsync *webaudioAsync = _webAudioAsync.get();
+    WebAudioAsync *webaudioAsync = getWebAudioAsync();
     webaudioAsync->QueueOnMainThread(r, std::bind(ProcessInMainThread, this));
     bufferIndex -= bufferSize;
   }

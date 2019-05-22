@@ -15,17 +15,17 @@ git clone https://github.com/exokitxr/exokit.git
 ```
 ### Windows requirements
 
-Requirements: Node.js 11.6.0, Python 2, Visual Studio 2015 or 2017
+Requirements: Node.js 12.2.0, Python 2, Visual Studio 2015 or 2017
 
-Alternative requirements: Node.js 11.6.0, as administrator: npm install -g windows-build-tools
+Alternative requirements: Node.js 12.2.0, as administrator: npm install -g windows-build-tools
 
 ### macOS requirements
 
-Requirements: Node.js 11.6.0, XCode
+Requirements: Node.js 12.2.0, XCode
 
 ### Linux requirements
 
-Requirements: Node.js 11.6.0
+Requirements: Node.js 12.2.0
 
 Linux additionally requires that you install some local dependencies. For `Debian`/`Ubuntu` they are:
 ```sh
@@ -35,8 +35,8 @@ build-essential wget python libglfw3-dev libglew-dev libfreetype6-dev libfontcon
 
 ## Install and build
 
-Make sure to be using Node `v11.6.0`. We recommend using [nvm](https://github.com/nvm-sh/nvm) or [nvm-windows](https://github.com/coreybutler/nvm-windows) for managing Node versions.
-After Node `v11.6.0` is installed, all of the Exokit dependencies and native code can be build with `npm install`:
+Make sure to be using Node `v12.2.0`. We recommend using [nvm](https://github.com/nvm-sh/nvm) or [nvm-windows](https://github.com/coreybutler/nvm-windows) for managing Node versions.
+After Node `v12.2.0` is installed, all of the Exokit dependencies and native code can be build with `npm install`:
 
 ```sh
 cd exokit

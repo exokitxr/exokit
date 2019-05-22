@@ -124,6 +124,7 @@ THREE.TransformControls = function ( camera, domElement, viewport ) {
 		domElement.removeEventListener( "touchmove", onPointerHover );
 		domElement.removeEventListener( "touchmove", onPointerMove );
 		document.removeEventListener( "mouseup", onPointerUp );
+		document.removeEventListener( "mousemove", onPointerMove, false );
 		domElement.removeEventListener( "touchend", onPointerUp );
 		domElement.removeEventListener( "touchcancel", onPointerUp );
 		domElement.removeEventListener( "touchleave", onPointerUp );
