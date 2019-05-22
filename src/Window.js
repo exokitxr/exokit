@@ -1387,6 +1387,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
         });
 
         vrPresentState.hmdType = hmdType;
+        GlobalContext.clearGamepads();
       }
     };
     const _onmakeswapchain = context => {
@@ -1460,6 +1461,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
         });
 
         vrPresentState.hmdType = null;
+        GlobalContext.clearGamepads();
       }
     };
 

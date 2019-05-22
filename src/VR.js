@@ -676,6 +676,10 @@ function getGamepads(window) {
   }
 };
 GlobalContext.getGamepads = getGamepads;
+function clearGamepads() {
+  gamepads = null;
+}
+GlobalContext.clearGamepads = clearGamepads;
 
 module.exports = {
   VRDisplay,
