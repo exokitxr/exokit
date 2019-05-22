@@ -2,7 +2,7 @@ package com.webmr.exokit;
 
 import android.app.Activity;
 import android.content.Context;
-import android.widget.RelativeLayout.LayoutParams;
+import android.widget.RelativeLayout;
 import android.webkit.WebView;
 import android.graphics.Canvas;
 import android.view.Surface;
@@ -18,7 +18,7 @@ public class ExokitWebView extends WebView
     public static ExokitWebView make(Activity activity, Context context) {
       ExokitWebView webView = new ExokitWebView(context);
 
-      activity.addContentView(webView, new LayoutParams(0, 0));
+      activity.addContentView(webView, new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT));
 
       return webView;
     }
