@@ -198,7 +198,7 @@ class DomItem extends React.Component {
     const {el} = this.props;
     let url;
 
-    el.attrs.map(attr => (attr.name === "src") ? url = attr.value : null);
+    el.attrs.find(attr => (attr.name === "src") ? url = attr.value : null);
 
     window.postMessage({
       method: 'open',
