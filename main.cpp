@@ -140,9 +140,9 @@ void jniOnload(JavaVM *vm) {
   {
     jclass exokitWebViewClass = env->FindClass("com/webmr/ExokitWebView");
     // jmethodID constructor = env->GetMethodID(exokitWebViewClass, "<init>", "(Landroid/content/Context;)V");
-    // jObject exokitWebView = env->NewObject(exokitWebViewClass, constructor, context);
+    // jobject exokitWebView = env->NewObject(exokitWebViewClass, constructor, context);
     jmethodID makeFnId = env->GetStaticMethodID(exokitWebViewClass, "make", "(Landroid/app/Activity;Landroid/content/Context;)Lcom/webmr/ExokitWebView;");
-    jObject exokitWebView = env->CallStaticObjectMethod(exokitWebViewClass, makeFnId, androidApp->activity->clazz, context);
+    jobject exokitWebView = env->CallStaticObjectMethod(exokitWebViewClass, makeFnId, androidApp->activity->clazz, context);
   }
 
   androidJniEnv = env;
