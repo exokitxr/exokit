@@ -463,14 +463,23 @@ class DataTransferItem {
   }
 }
 
-class Worker {
+class Worker extends EventTarget {
   constructor(src) {
-    this.worker = new WorkerVm({
+    super();
+
+    const worker = new WorkerVm({
       initModule: path.join(__dirname, 'Worker.js'),
       args: {
         src,
       },
     });
+    worker.on('message', m => {
+      this.emit('messge', m);
+    });
+    worker.on('error', err => {
+      this.emit('error', err);
+    });
+    this.worker = worker;
   }
 
   postMessage(message, transferList) {
@@ -482,16 +491,16 @@ class Worker {
   }
 
   get onmessage() {
-    return this.worker.onmessage;
+    return this.listeners('message')[0];
   }
   set onmessage(onmessage) {
-    this.worker.onmessage = onmessage;
+    this.on('message', onmessage);
   }
   get onerror() {
-    return this.worker.onerror;
+    return this.listeners('error')[0];
   }
   set onerror(onerror) {
-    this.worker.onerror = onerror;
+    this.on('error', onerror);
   }
 }
 
