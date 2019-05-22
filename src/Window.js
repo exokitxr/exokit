@@ -474,7 +474,10 @@ class Worker extends EventTarget {
       },
     });
     worker.on('message', m => {
-      this.emit('message', m);
+      const e = new MessageEvent('message', {
+        data: m.message,
+      });
+      this.emit('message', e);
     });
     worker.on('error', err => {
       this.emit('error', err);
