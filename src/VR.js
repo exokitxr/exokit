@@ -632,12 +632,12 @@ const createVRDisplay = () => new FakeVRDisplay();
 const controllerIDs = {
   fake: 'OpenVR Gamepad',
   openvr: 'OpenVR Gamepad',
-  oculusMobile: 'Oculus Go',
+  // oculusMobile: 'Oculus Go',
   openvrTracker: 'Tracker',
-  oculusGoLeft: 'Oculus Touch (Left)',
-  oculusGoRight: 'Oculus Touch (Right)',
-  oculusQuestLeft: 'Oculus Touch (Left)',
-  oculusQuestRight: 'Oculus Touch (Right)',
+  oculusLeft: 'Oculus Touch (Left)',
+  oculusRight: 'Oculus Touch (Right)',
+  oculusMobileLeft: 'Oculus Touch (Left)',
+  oculusMobileRight: 'Oculus Touch (Right)',
 };
 
 function getControllerID(hmdType, hand) {
