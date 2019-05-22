@@ -137,6 +137,14 @@ void jniOnload(JavaVM *vm) {
   initAssetManager(am);
   __android_log_print(ANDROID_LOG_INFO, "exokit", "Got Java Asset Manager 2 %lx %lx", (unsigned long)am, (unsigned long)initAssetManager);
 
+  {
+    jclass exokitWebViewClass = env->FindClass("com/webmr/ExokitWebView");
+    // jmethodID constructor = env->GetMethodID(exokitWebViewClass, "<init>", "(Landroid/content/Context;)V");
+    // jObject exokitWebView = env->NewObject(exokitWebViewClass, constructor, context);
+    jmethodID makeFnId = env->GetStaticMethodID(exokitWebViewClass, "make", "(Landroid/app/Activity;Landroid/content/Context;)Lcom/webmr/ExokitWebView;");
+    jObject exokitWebView = env->CallStaticObjectMethod(exokitWebViewClass, makeFnId, androidApp->activity->clazz, context);
+  }
+
   androidJniEnv = env;
   __android_log_print(ANDROID_LOG_INFO, "exokit", "Got JNI Env %lx", (unsigned long)androidJniEnv);
 
