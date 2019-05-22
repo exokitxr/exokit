@@ -265,10 +265,11 @@ class DomItem extends React.Component {
   }
 }
 
+/*
 class DomDetail extends React.Component {
-  /* constructor(props) {
+   constructor(props) {
     super(props);
-  } */
+  }
 
   render() {
     const {el} = this.props;
@@ -356,5 +357,6 @@ class DomAttribute extends React.Component {
     );
   }
 }
+*/
 
 export default Dom;
