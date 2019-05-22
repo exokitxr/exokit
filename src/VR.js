@@ -350,8 +350,8 @@ class FakeVRDisplay extends VRDisplay {
     this.position = new THREE.Vector3();
     this.quaternion = new THREE.Quaternion();
     this.gamepads = [
-      new Gamepad('left', 0),
-      new Gamepad('right', 1),
+      new Gamepad('left', 0, 'fake'),
+      new Gamepad('right', 1, 'fake'),
     ];
     for (let i = 0; i < this.gamepads.length; i++) {
       const gamepad = this.gamepads[i];
@@ -632,12 +632,12 @@ const createVRDisplay = () => new FakeVRDisplay();
 const controllerIDs = {
   fake: 'OpenVR Gamepad',
   openvr: 'OpenVR Gamepad',
-  oculusMobile: 'Oculus Go',
+  // oculusMobile: 'Oculus Go',
   openvrTracker: 'Tracker',
-  oculusGoLeft: 'Oculus Touch (Left)',
-  oculusGoRight: 'Oculus Touch (Right)',
-  oculusQuestLeft: 'Oculus Touch (Left)',
-  oculusQuestRight: 'Oculus Touch (Right)',
+  oculusLeft: 'Oculus Touch (Left)',
+  oculusRight: 'Oculus Touch (Right)',
+  oculusMobileLeft: 'Oculus Touch (Left)',
+  oculusMobileRight: 'Oculus Touch (Right)',
 };
 
 function getControllerID(hmdType, hand) {
