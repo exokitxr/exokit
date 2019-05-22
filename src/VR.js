@@ -350,8 +350,8 @@ class FakeVRDisplay extends VRDisplay {
     this.position = new THREE.Vector3();
     this.quaternion = new THREE.Quaternion();
     this.gamepads = [
-      new Gamepad('left', 0),
-      new Gamepad('right', 1),
+      new Gamepad('left', 0, 'fake'),
+      new Gamepad('right', 1, 'fake'),
     ];
     for (let i = 0; i < this.gamepads.length; i++) {
       const gamepad = this.gamepads[i];
