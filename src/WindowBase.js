@@ -4,6 +4,7 @@ const fs = require('fs');
 const vm = require('vm');
 const util = require('util');
 const {Worker, workerData, parentPort} = require('worker_threads');
+const {MessageEvent} = require('./Event');
 const {process} = global;
 
 // global initialization
@@ -138,7 +139,10 @@ parentPort.on('message', m => {
     }
     case 'postMessage': {
       try {
-        global.emit('message', m.message);
+        const e = new MessageEvent('messge', {
+          data: m.message,
+        });
+        global.emit('message', e);
       } catch(err) {
         console.warn(err.stack);
       }
@@ -147,10 +151,13 @@ parentPort.on('message', m => {
     default: throw new Error(`invalid method: ${JSON.stringify(m.method)}`);
   }
 });
-parentPort.on('close', () => {
-  window.onexit && window.onexit();
+
+function close() {
+  global.onexit && global.onexit();
   process.exit(); // thread exit
-});
+};
+global.close = close;
+parentPort.on('close', close);
 
 // run init module
 
