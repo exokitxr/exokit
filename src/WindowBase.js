@@ -157,9 +157,18 @@ parentPort.on('close', () => {
 if (workerData.args) {
   global.args = workerData.args;
 }
+
+process.on('uncaughtException', err => {
+  console.warn(err.stack);
+});
+process.on('unhandledRejection', err => {
+  console.warn(err.stack);
+});
+
 if (workerData.initModule) {
   require(workerData.initModule);
 }
+
 if (!workerData.args.require) {
   global.require = undefined;
 }
