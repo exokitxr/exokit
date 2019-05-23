@@ -1,5 +1,13 @@
 #include "bindings.h"
 
+Local<Object> makeConsole() {
+  Isolate *isolate = Isolate::GetCurrent();
+
+  Nan::EscapableHandleScope scope;
+
+  return scope.Escape(console::Initialize(isolate));
+}
+
 std::pair<Local<Object>, Local<FunctionTemplate>> makeGl() {
   return WebGLRenderingContext::Initialize(Isolate::GetCurrent());
 }
