@@ -4,6 +4,16 @@ import Dom from './Dom';
 import Console from './Console';
 import '../css/engine.css';
 
+const postViewportMessage = () => {
+  const engineRender = document.getElementById('engine-render');
+  const bcr = engineRender.getBoundingClientRect();
+  const viewport = [bcr.x/window.innerWidth, bcr.y/window.innerHeight, bcr.width/window.innerWidth, bcr.height/window.innerHeight];
+  window.postMessage({
+    method: 'viewport',
+    viewport,
+  });
+};
+
 class Engine extends React.Component {
     constructor(props) {
       super(props);
@@ -21,18 +31,8 @@ class Engine extends React.Component {
     }
 
     componentDidMount() {
-      const engineRender = document.getElementById('engine-render');
-
-      const _postViewportMessage = () => {
-        const bcr = engineRender.getBoundingClientRect();
-        const viewport = [bcr.x/window.innerWidth, bcr.y/window.innerHeight, bcr.width/window.innerWidth, bcr.height/window.innerHeight];
-        window.postMessage({
-          method: 'viewport',
-          viewport,
-        });
-      };
-      _postViewportMessage();
-      window.addEventListener('resize', _postViewportMessage);
+      postViewportMessage();
+      window.addEventListener('resize', postViewportMessage);
 
       /* window.addEventListener('keydown', e => {
         console.log('iframe keydown ' + e.keyCode);
@@ -192,16 +192,6 @@ class Engine extends React.Component {
       this.blur();
     }
 
-    postViewportMessage() {
-      const engineRender = document.getElementById('engine-render');
-      const bcr = engineRender.getBoundingClientRect();
-      const viewport = [bcr.x/window.innerWidth, bcr.y/window.innerHeight, bcr.width/window.innerWidth, bcr.height/window.innerHeight];
-      window.postMessage({
-        method: 'viewport',
-        viewport,
-      });
-    };
-
     onFakeXrClick() {
       window.postMessage({
         method: 'click',
@@ -222,10 +212,10 @@ class Engine extends React.Component {
       let studioConsole = document.getElementById('console');
       if(studioConsole.clientHeight === 0){
         studioConsole.style.height = "100px";
-        this.postViewportMessage();
+        postViewportMessage();
       } else {
         studioConsole.style.height = "0px";
-        this.postViewportMessage();
+        postViewportMessage();
       }
     }
 
@@ -353,7 +343,7 @@ class Engine extends React.Component {
                 minHeight="100"
                 maxHeight="300"
                 onResize={(e, direction, ref, d) => {
-                  this.postViewportMessage();
+                  postViewportMessage();
                 }}>
                 <Console/>
               </Resizable>
@@ -362,7 +352,7 @@ class Engine extends React.Component {
               minWidth="100"
               maxWidth="300"
               onResize={(e, direction, ref, d) => {
-                this.postViewportMessage();
+                postViewportMessage();
               }}>
             <div className="engine-right">
               <Dom/>
