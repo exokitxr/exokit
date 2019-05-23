@@ -4,7 +4,7 @@ import Dom from './Dom';
 import Console from './Console';
 import '../css/engine.css';
 
-const postViewportMessage = () => {
+const _postViewportMessage = () => {
   const engineRender = document.getElementById('engine-render');
   const bcr = engineRender.getBoundingClientRect();
   const viewport = [bcr.x/window.innerWidth, bcr.y/window.innerHeight, bcr.width/window.innerWidth, bcr.height/window.innerHeight];
@@ -31,8 +31,8 @@ class Engine extends React.Component {
     }
 
     componentDidMount() {
-      postViewportMessage();
-      window.addEventListener('resize', postViewportMessage);
+      _postViewportMessage();
+      window.addEventListener('resize', _postViewportMessage);
 
       /* window.addEventListener('keydown', e => {
         console.log('iframe keydown ' + e.keyCode);
@@ -212,10 +212,10 @@ class Engine extends React.Component {
       let studioConsole = document.getElementById('console');
       if(studioConsole.clientHeight === 0){
         studioConsole.style.height = "100px";
-        postViewportMessage();
+        _postViewportMessage();
       } else {
         studioConsole.style.height = "0px";
-        postViewportMessage();
+        _postViewportMessage();
       }
     }
 
@@ -343,7 +343,7 @@ class Engine extends React.Component {
                 minHeight="100"
                 maxHeight="300"
                 onResize={(e, direction, ref, d) => {
-                  postViewportMessage();
+                  _postViewportMessage();
                 }}>
                 <Console/>
               </Resizable>
@@ -352,7 +352,7 @@ class Engine extends React.Component {
               minWidth="100"
               maxWidth="300"
               onResize={(e, direction, ref, d) => {
-                postViewportMessage();
+                _postViewportMessage();
               }}>
             <div className="engine-right">
               <Dom/>
