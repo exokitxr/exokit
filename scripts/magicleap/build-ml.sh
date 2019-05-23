@@ -34,7 +34,7 @@ fi
 
 ./magicleap-js/hack-toolchain.js
 
-pushd ..
+pushd ../../
 export TARGET_ARCH="arm64" # for wrtc install prebuilt
 npm install --verbose --devdir="$(pwd)/.node-gyp" --arch=arm64 --target_arch=arm64 --no-optional
 find -name '\.bin' | xargs rm -Rf
@@ -42,7 +42,7 @@ popd
 
 # npm install libification
 
-pushd ..
+pushd ../../
 rm -Rf build/libexokit
 mkdir -p build/libexokit
 find build/Release/obj.target node_modules -name '*.o' | xargs "$AR" crs build/libexokit/libexokit.a

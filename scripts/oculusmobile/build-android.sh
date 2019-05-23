@@ -45,7 +45,7 @@ export npm_config_arch=aarch64
 export OS="android"
 export TARGET_ARCH="aarch64"  # For webrtc install prebuilt.
 
-pushd ..
+pushd ../../
 
 # build native modules
 npm install --verbose --devdir="$(pwd)/.node-gyp" --arch=aarch64 --target_arch=aarch64 --no-optional
