@@ -230,6 +230,9 @@ void InitExports(Local<Object> exports) {
 #endif
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativePlatform"), JS_STR(NATIVE_PLATFORM));
 
+  Local<Value> console = makeConsole();
+  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeConsole"), console);
+
   /* uintptr_t initFunctionAddress = (uintptr_t)InitExports;
   Local<Array> initFunctionAddressArray = Nan::New<Array>(2);
   initFunctionAddressArray->Set(0, Nan::New<Integer>((uint32_t)(initFunctionAddress >> 32)));
