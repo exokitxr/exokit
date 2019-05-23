@@ -567,7 +567,7 @@ const _startTopRenderLoop = () => {
       xrGamepad.orientation.set(controllerQuaternionArray4);
 
       // Input
-      topVrPresentState.vrContext.GetControllersInputState(0, localGamepadArray);
+      topVrPresentState.vrContext.GetControllersInputState(i, localGamepadArray);
 
       xrGamepad.connected[0] = localGamepadArray[0];
 
@@ -594,7 +594,7 @@ const _startTopRenderLoop = () => {
       xrGamepad.buttons[2].value[0] = localGamepadArray[6]; // grip
     };
     _loadGamepad(0, leftControllerPositionArray3, leftControllerQuaternionArray4);
-    _loadGamepad(1, leftControllerPositionArray3, leftControllerQuaternionArray4);
+    _loadGamepad(1, rightControllerPositionArray3, rightControllerQuaternionArray4);
   };
   const _waitGetPosesOpenvr = async () => {
     // wait for frame

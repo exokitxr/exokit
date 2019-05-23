@@ -14,7 +14,7 @@ This guide explains how to package your XR site with the Exokit Engine as an APK
 In the Exokit [`main.cpp`](https://github.com/exokitxr/exokit/blob/f10dadf0013de0a35a5e72046140a0345987ab80/main.cpp#L416) is where you will find the default site that the Exokit APK will load into. Change the `jsString` to your site URL or file path.
 
 ## OPTION 1- Docker
-The upside of docker is that it requires minimal environment setup. The downside is that is will do _every_ instruction _everytime_ it is ran.
+The upside of docker is that it requires minimal environment setup. The downside is that it will do _every_ instruction _everytime_ it is run.
 
 Building an APK with the Dockerfile is as simple as:
 
@@ -33,10 +33,10 @@ Ubuntu Windows Subsystem for Linux (WSL)
 
 ### Install Android sdkmanager
 
-Instructions for getting the android sdk manager, adb, ndk-bundle, etc:
+Instructions for getting the Android SDK manager, adb, ndk-bundle, etc:
 
 
-To install it on a Debian based system simply do
+To install it on a Debian-based system, simply do:
 ```sh
 # Install latest JDK
 sudo apt install default-jdk
@@ -57,7 +57,7 @@ mkdir android-sdk
 mv tools android-sdk/tools
 ```
 
-Then add the Android SDK to your PATH, open ~/.bashrc in editor and add the following lines into the file
+Then add the Android SDK to your PATH: open ~/.bashrc in editor and add the following lines into the file:
 ```
 # Export the Android SDK path
 export ANDROID_HOME=$HOME/android-sdk
@@ -67,24 +67,26 @@ export PATH=$PATH:$ANDROID_HOME/platform-tools
 # Fixes sdkmanager error with java versions higher than java 8
 export JAVA_OPTS='-XX:+IgnoreUnrecognizedVMOptions --add-modules java.se.ee'
 ```
-Run
+
+Run:
 
 `source ~/.bashrc`
 
-Show all available sdk packages
+Show all available SDK packages:
 
 `sdkmanager --list`
 
-Accept all sdkmanager licenses
+Accept all sdkmanager licenses:
+
 `yes | $ANDROID_HOME/tools/bin/sdkmanager --licenses`
 
-Identify latest android platform (here it's 28) and run
+Identify latest android platform (here it's 28) and run:
 
 `sdkmanager "platform-tools" "platforms;android-28"`
 
-Now you have adb, fastboot and the latest sdk tools installed
+Now you have adb, fastboot and the latest sdk tools installed.
 
-to install NDK directly run
+To install NDK directly, run:
 
 `sdkmanager "ndk-bundle"`
 
@@ -92,20 +94,20 @@ to install NDK directly run
 
 Confirm that `$ANDROID_HOME` points to Android/Sdk directory
 
-Make the NDK standalone toolchain
+Make the NDK standalone toolchain:
 ```sh
 cd exokit
-./scripts/make-toolchain-android.sh
+./scripts/oculusmobile/make-toolchain-android.sh
 ```
 
-Build the APK
+Build the APK:
 ```sh
 # Run this inside Ubuntu WSL
-./scripts/build-android.sh
+./scripts/oculusmobile/build-android.sh
 ```
 
-If you want to now install and run into your plugged in device using adb
+If you want to now install and run in your plugged-in device using adb:
 ```sh
-./scripts/install-android.sh
-./scripts/run-android.sh
+./scripts/oculusmobile/install-android.sh
+./scripts/oculusmobile/run-android.sh
 ```

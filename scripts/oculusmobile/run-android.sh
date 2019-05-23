@@ -11,7 +11,7 @@ cd "$(dirname "$0")"
 
 source ./version-android.sh
 
-pushd ../android
+pushd ../../android
 "$ANDROID_HOME/platform-tools/adb" shell am force-stop com.webmr.exokit
 "$ANDROID_HOME/platform-tools/adb" logcat -c
 "$ANDROID_HOME/platform-tools/adb" shell am start -n com.webmr.exokit/android.app.NativeActivity

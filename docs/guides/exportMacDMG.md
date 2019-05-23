@@ -59,5 +59,5 @@ cp metadata/Info.plist /tmp/Exokit.app/Contents
 
 Run build script
 ```sh
-./scripts/exokit-codesign-macos.sh
+./scripts/macos/exokit-codesign-macos.sh
 ```

@@ -1018,8 +1018,12 @@ const _makeGlobalGamepads = () => ({
 const controllerIDs = {
   fake: 'OpenVR Gamepad',
   openvr: 'OpenVR Gamepad',
+  openvrTracker: 'Tracker',
+  oculusLeft: 'Oculus Touch (Left)',
+  oculusRight: 'Oculus Touch (Right)',
   // oculusMobile: 'Oculus Go',
-  // openvrTracker: 'Tracker',
+  oculusMobileLeft: 'Oculus Touch (Left)',
+  oculusMobileRight: 'Oculus Touch (Right)',
   oculusGoLeft: 'Oculus Touch (Left)',
   oculusGoRight: 'Oculus Touch (Right)',
   oculusQuestLeft: 'Oculus Touch (Left)',
@@ -1062,6 +1066,10 @@ function getGamepads() {
   }
 };
 GlobalContext.getGamepads = getGamepads;
+function clearGamepads() {
+  gamepads = null;
+}
+GlobalContext.clearGamepads = clearGamepads;
 
 module.exports = {
   VRDisplay,

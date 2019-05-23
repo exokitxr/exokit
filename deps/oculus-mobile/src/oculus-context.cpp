@@ -437,9 +437,13 @@ NAN_METHOD(OculusMobileContext::Submit) {
     layer.Textures[eye].ColorSwapChain = oculusMobileContext->colorSwapChain;
     layer.Textures[eye].SwapChainIndex = oculusMobileContext->swapChainIndex;
     layer.Textures[eye].TexCoordsFromTanAngles = ovrMatrix4f_TanAngleMatrixFromProjection(&oculusMobileContext->tracking.Eye[eye].ProjectionMatrix);
+
     layer.Textures[eye].TexCoordsFromTanAngles.M[0][0] *= 0.5f;
-    layer.Textures[eye].TexCoordsFromTanAngles.M[0][2] += eye == 0 ? 0.25f : -0.25f;
-    layer.Textures[eye].TextureRect.x = eye == 0 ? 0.0f : 0.5f;
+    layer.Textures[eye].TexCoordsFromTanAngles.M[0][2] *= 0.5f;
+    if (eye == 1) {
+      layer.Textures[eye].TexCoordsFromTanAngles.M[0][2] -= 0.5f;
+      layer.Textures[eye].TextureRect.x = 0.5f;
+    }
     layer.Textures[eye].TextureRect.width = 0.5f;
 	}
   layer.Header.Flags |= VRAPI_FRAME_LAYER_FLAG_CHROMATIC_ABERRATION_CORRECTION;

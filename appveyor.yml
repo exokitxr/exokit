@@ -38,6 +38,7 @@ after_test:
       # bash scripts/testRun.sh
       set version "$env:APPVEYOR_REPO_TAG_NAME"
       if ([string]::IsNullOrEmpty("$version")) { set version "$env:APPVEYOR_REPO_COMMIT".Substring(0, 8) }
+      if ([string]::IsNullOrEmpty("$version")) { set version "$env:APPVEYOR_PULL_REQUEST_HEAD_COMMIT ".Substring(0, 8) }
       mkdir dist
       .\buildtools\iscc "$pwd\metadata\exokit.iss" "/dMyAppVersion=$version" /odist /qp
       mv dist\*.exe exokit-win-x64.exe

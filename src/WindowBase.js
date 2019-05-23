@@ -1,12 +1,31 @@
+const {Console} = require('console');
 const {EventEmitter} = require('events');
+const stream = require('stream');
 const path = require('path');
 const fs = require('fs');
 const vm = require('vm');
 const util = require('util');
 const {Worker, workerData, parentPort} = require('worker_threads');
+const {MessageEvent} = require('./Event');
+const {
+  nativeConsole,
+} = require('./native-bindings');
 const {process} = global;
 
 // global initialization
+
+const consoleStream = new stream.Writable();
+consoleStream._write = (chunk, encoding, callback) => {
+  nativeConsole.Log(chunk);
+  callback();
+};
+consoleStream._writev = (chunks, callback) => {
+  for (let i = 0; i < chunks.length; i++) {
+    nativeConsole.Log(chunks[i]);
+  }
+  callback();
+};
+global.console = new Console(consoleStream);
 
 for (const k in EventEmitter.prototype) {
   global[k] = EventEmitter.prototype[k];
@@ -138,7 +157,10 @@ parentPort.on('message', m => {
     }
     case 'postMessage': {
       try {
-        global.emit('message', m.message);
+        const e = new MessageEvent('messge', {
+          data: m.message,
+        });
+        global.emit('message', e);
       } catch(err) {
         console.warn(err.stack);
       }
@@ -147,19 +169,31 @@ parentPort.on('message', m => {
     default: throw new Error(`invalid method: ${JSON.stringify(m.method)}`);
   }
 });
-parentPort.on('close', () => {
-  window.onexit && window.onexit();
+
+function close() {
+  global.onexit && global.onexit();
   process.exit(); // thread exit
-});
+};
+global.close = close;
+parentPort.on('close', close);
 
 // run init module
 
 if (workerData.args) {
   global.args = workerData.args;
 }
+
+process.on('uncaughtException', err => {
+  console.warn(err.stack);
+});
+process.on('unhandledRejection', err => {
+  console.warn(err.stack);
+});
+
 if (workerData.initModule) {
   require(workerData.initModule);
 }
+
 if (!workerData.args.require) {
   global.require = undefined;
 }

@@ -3,6 +3,7 @@
 
 #include <v8.h>
 #include <node.h>
+#include <console.h>
 #include <image-context.h>
 #include <imageData-context.h>
 #include <imageBitmap-context.h>
@@ -25,6 +26,7 @@
 #include <magicleap.h>
 #endif
 
+Local<Object> makeConsole();
 std::pair<Local<Object>, Local<FunctionTemplate>> makeGl();
 std::pair<Local<Object>, Local<FunctionTemplate>> makeGl2(Local<FunctionTemplate> baseCtor);
 Local<Object> makeImage();
