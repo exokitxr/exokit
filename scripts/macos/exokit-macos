@@ -14,4 +14,4 @@ if [ -x "$DIR/node/bin/node" ]; then
 fi
 
 cd "$DIR/.."
-exec "$NODE_BIN" "--experimental-worker" . "${@:--h -l}"
+exec "$NODE_BIN" . "${@:--h -l}"

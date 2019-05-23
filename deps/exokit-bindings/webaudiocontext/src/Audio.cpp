@@ -4,11 +4,14 @@
 
 namespace webaudio {
 
-Audio::Audio() : audioNode(new lab::FinishableSourceNode(
-  [this](lab::ContextRenderLock &r){
-    QueueOnMainThread(r, std::bind(ProcessInMainThread, this));
-  }
-)) {}
+Audio::Audio() {
+  WebAudioAsync *webaudioAsync = getWebAudioAsync();
+  audioNode.reset(new lab::FinishableSourceNode(
+    [this, webaudioAsync](lab::ContextRenderLock &r){
+      webaudioAsync->QueueOnMainThread(r, std::bind(ProcessInMainThread, this));
+    }
+  ));
+}
 
 Audio::~Audio() {}
 

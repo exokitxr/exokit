@@ -4,56 +4,63 @@ const exokit = require('../../../src/index');
 describe('setTimeout', () => {
   var window;
 
-  beforeEach(cb => {
-    exokit.load('data:text/html,<html></html>')
-      .then(o => {
-        window = o.window;
-        window.navigator.getVRDisplaysSync = () => [];
-        cb();
-      });
+  beforeEach(async () => {
+    window = await exokit.load('data:text/html,<html></html>');
+    
+    return await window.evalAsync(`
+      const assert = require('assert');
+      window.assert = assert;
+      1;
+    `);
   });
 
-  afterEach(() => {
-    window.destroy();
+  afterEach(async () => {
+    return await window.destroy();
   });
 
-  it('timeout 0', cb => {
-    let timedout = false;
-    window.setTimeout(() => {
-      timedout = true;
+  it('timeout 0', async () => {
+    return await window.evalAsync(`new Promise((accept, reject) => {
+      let timedout = false;
+      window.setTimeout(() => {
+        timedout = true;
 
-      cb();
-    }, 0);
+        accept();
+      }, 0);
 
-    assert.equal(timedout, false);
+      assert.equal(timedout, false);
+    })`);
   });
 
-  it('timeout 10', cb => {
-    let timedout = false;
-    window.setTimeout(() => {
-      timedout = true;
+  it('timeout 10', async () => {
+    return await window.evalAsync(`new Promise((accept, reject) => {
+      let timedout = false;
+      window.setTimeout(() => {
+        timedout = true;
 
-      cb();
-    }, 10);
+        accept();
+      }, 10);
 
-    assert.equal(timedout, false);
+      assert.equal(timedout, false);
+    })`);
   });
 
-  it('clear timeout', cb => {
-    let timedout = false;
-    const timeout = window.setTimeout(() => {
-      timedout = true;
-    }, 0);
+  it('clear timeout', async () => {
+    return await window.evalAsync(`new Promise((accept, reject) => {
+      let timedout = false;
+      const timeout = window.setTimeout(() => {
+        timedout = true;
+      }, 0);
 
-    assert.equal(typeof timeout, 'number');
-    assert.equal(timedout, false);
-
-    window.clearTimeout(timeout);
-
-    setTimeout(() => {
+      assert.equal(typeof timeout, 'number');
       assert.equal(timedout, false);
 
-      cb();
-    }, 100);
+      window.clearTimeout(timeout);
+
+      setTimeout(() => {
+        assert.equal(timedout, false);
+
+        accept();
+      }, 100);
+    })`);
   });
 });

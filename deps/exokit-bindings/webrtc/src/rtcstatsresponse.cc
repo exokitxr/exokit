@@ -21,7 +21,7 @@ using v8::Local;
 using v8::Object;
 using v8::Value;
 
-Nan::Persistent<Function> RTCStatsResponse::constructor;
+thread_local Nan::Persistent<Function> RTCStatsResponse::constructor;
 
 NAN_METHOD(RTCStatsResponse::New) {
   TRACE_CALL;

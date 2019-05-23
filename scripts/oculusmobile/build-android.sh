@@ -1,9 +1,9 @@
 #!/bin/bash
 
 NODE_VERSION=`node -v`
-if [ $NODE_VERSION != "v11.6.0" ]
+if [ $NODE_VERSION != "v11.15.0" ]
 then
-  echo "[ERROR] Node version needs to be v11.6.0."
+  echo "[ERROR] Node version needs to be v11.15.0."
   exit 1
 fi
 
@@ -75,4 +75,3 @@ mkdir -p android/app/src/main/arm64-v8a
 rsync -a --copy-links android/app/build/intermediates/cmake/debug/obj/arm64-v8a/libnative-main.so android/app/src/main/arm64-v8a/libnative-main.so
 
 popd
-

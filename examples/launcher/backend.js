@@ -11,7 +11,7 @@ if (typeof require !== 'undefined') {
   function launch(flags, url){
       console.log('launching...')
       console.log('flags', flags)
-      let flagsArray = ['--experimental-worker', '.', url];
+      let flagsArray = ['.', url];
       let flagsString = '';
       if(flags.length > 1){
           flagsString += '-';

@@ -50,13 +50,13 @@ matrix:
   - os: osx
     osx_image: xcode10.1
     node_js:
-    - "11.6.0"
+    - "12.2.0"
     install:
-    - npm install -g appdmg
-    - curl "https://nodejs.org/dist/v11.6.0/node-v11.6.0-darwin-x64.tar.gz" >node.tar.gz
+    - npm install -g appdmg-exokit
+    - curl "https://nodejs.org/dist/v12.2.0/node-v12.2.0-darwin-x64.tar.gz" >node.tar.gz
     - tar -zxf node.tar.gz
     - rm node.tar.gz
-    - mv node-v11.6.0-darwin-x64 node
+    - mv node-v12.2.0-darwin-x64 node
     - export PATH="$(pwd)/node/bin:$PATH"
     - unset NVM_NODEJS_ORG_MIRROR
     - "./node/bin/npm install --no-optional"

@@ -2,6 +2,13 @@ const {EventEmitter} = require('events');
 const {Event} = require('./Event');
 const symbols = require('./symbols');
 const THREE = require('../lib/three-min.js');
+const {
+  nativeWindow,
+  nativeOculusVR,
+  nativeOpenVR,
+  nativeOculusMobileVr,
+  nativeMl,
+} = require('./native-bindings.js');
 const {defaultEyeSeparation, maxNumTrackers} = require('./constants.js');
 const GlobalContext = require('./GlobalContext');
 
@@ -14,8 +21,8 @@ const localViewMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0
 
 class VRPose {
   constructor() {
-    this.position = GlobalContext.xrState.position;
-    this.orientation = GlobalContext.xrState.orientation;
+    this.position = new Float32Array(3);
+    this.orientation = new Float32Array(4);
   }
 
   /* set(position, orientation) {
@@ -34,31 +41,13 @@ class VRPose {
 }
 class VRFrameData {
   constructor() {
-    this.leftProjectionMatrix = GlobalContext.xrState.leftProjectionMatrix;
-    /* this.leftProjectionMatrix.set(Float32Array.from([
-      1.0000000000000002, 0, 0, 0,
-      0, 1.0000000000000002, 0, 0,
-      0, 0, -1.00010000500025, -1,
-      0, 0, -0.200010000500025, 0,
-    ])); */
-    // c = new THREE.PerspectiveCamera(); c.fov = 90; c.updateProjectionMatrix(); c.projectionMatrix.elements
-    this.leftViewMatrix = GlobalContext.xrState.leftViewMatrix;
-    // this.leftViewMatrix.set(Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]));
-    // new THREE.Matrix4().toArray()
-
-    this.rightProjectionMatrix = GlobalContext.xrState.rightProjectionMatrix;
-    this.rightViewMatrix = GlobalContext.xrState.rightViewMatrix;
+    this.leftProjectionMatrix = new Float32Array(16);
+    this.leftViewMatrix = new Float32Array(16);
+    this.rightProjectionMatrix = new Float32Array(16);
+    this.rightViewMatrix = new Float32Array(16);
 
     this.pose = new VRPose();
   }
-
-  /* copy(frameData) {
-    this.leftProjectionMatrix.set(frameData.leftProjectionMatrix);
-    this.leftViewMatrix.set(frameData.leftViewMatrix);
-    this.rightProjectionMatrix.set(frameData.rightProjectionMatrix);
-    this.rightViewMatrix.set(frameData.rightViewMatrix);
-    this.pose.copy(frameData.pose);
-  } */
 }
 class GamepadButton {
   constructor(_value, _pressed, _touched) {
@@ -186,10 +175,11 @@ class VRStageParameters {
 }
 
 class VRDisplay extends EventEmitter {
-  constructor(displayName) {
+  constructor(displayName, window) {
     super();
 
     this.displayName = displayName;
+    this.window = window;
 
     this.isPresenting = false;
     this.capabilities = {
@@ -201,6 +191,7 @@ class VRDisplay extends EventEmitter {
     this.stageParameters = new VRStageParameters();
 
     this.onrequestpresent = null;
+    this.onmakeswapchain = null;
     this.onexitpresent = null;
     this.onrequestanimationframe = null;
     this.onvrdisplaypresentchange = null;
@@ -211,12 +202,45 @@ class VRDisplay extends EventEmitter {
   }
 
   getFrameData(frameData) {
+    const {xrOffset} = this.window.document;
+    if (xrOffset) {
+      localMatrix2.compose(
+        localVector.fromArray(xrOffset.position),
+        localQuaternion.fromArray(xrOffset.orientation),
+        localVector2.fromArray(xrOffset.scale)
+      )
+      // left
+      localMatrix
+        .fromArray(GlobalContext.xrState.leftViewMatrix)
+        .multiply(
+          localMatrix2
+        )
+        .toArray(frameData.leftViewMatrix);
+      // right
+      localMatrix
+        .fromArray(GlobalContext.xrState.rightViewMatrix)
+        .multiply(
+          localMatrix2
+        )
+        .toArray(frameData.rightViewMatrix);
+      // pose
+      localMatrix
+        .compose(localVector.fromArray(GlobalContext.xrState.position), localQuaternion.fromArray(GlobalContext.xrState.orientation), localVector2.set(1, 1, 1))
+        .multiply(
+          localMatrix2
+        )
+        .decompose(localVector, localQuaternion, localVector2);
+      localVector.toArray(frameData.pose.position);
+      localQuaternion.toArray(frameData.pose.orientation);
+    } else {
+      frameData.leftViewMatrix.set(GlobalContext.xrState.leftViewMatrix);
+      frameData.rightViewMatrix.set(GlobalContext.xrState.rightViewMatrix);
+      frameData.pose.position.set(GlobalContext.xrState.position);
+      frameData.pose.orientation.set(GlobalContext.xrState.orientation);
+    }
+
     frameData.leftProjectionMatrix.set(GlobalContext.xrState.leftProjectionMatrix);
-    frameData.leftViewMatrix.set(GlobalContext.xrState.leftViewMatrix);
-    frameData.rightViewMatrix.set(GlobalContext.xrState.rightViewMatrix);
     frameData.rightProjectionMatrix.set(GlobalContext.xrState.rightProjectionMatrix);
-    frameData.pose.position.set(GlobalContext.xrState.position);
-    frameData.pose.orientation.set(GlobalContext.xrState.orientation);
   }
 
   getLayers() {
@@ -245,36 +269,35 @@ class VRDisplay extends EventEmitter {
     };
   }
 
-  requestPresent(layers) {
-    return Promise.resolve().then(() => {
-      if (this.onrequestpresent) {
-        this.onrequestpresent(layers);
-      }
+  async requestPresent(layers) {
+    await this.onrequestpresent();
+    
+    const [{source: canvas}] = layers;
+    const context = canvas._context || canvas.getContext('webgl');
+    this.onmakeswapchain(context);
 
-      if (this.onvrdisplaypresentchange && !this.isPresenting) {
-        this.isPresenting = true;
-        this.onvrdisplaypresentchange();
-      } else {
-        this.isPresenting = true;
-      }
-    });
+    if (this.onvrdisplaypresentchange && !this.isPresenting) {
+      this.isPresenting = true;
+      this.onvrdisplaypresentchange();
+    } else {
+      this.isPresenting = true;
+    }
   }
 
-  exitPresent() {
-    return (this.onexitpresent ? this.onexitpresent() : Promise.resolve())
-      .then(() => {
-        for (let i = 0; i < this._rafs.length; i++) {
-          this.cancelAnimationFrame(this._rafs[i]);
-        }
-        this._rafs.length = 0;
+  async exitPresent() {
+    for (let i = 0; i < this._rafs.length; i++) {
+      this.cancelAnimationFrame(this._rafs[i]);
+    }
+    this._rafs.length = 0;
+    
+    await this.onexitpresent();
 
-        if (this.onvrdisplaypresentchange && this.isPresenting) {
-          this.isPresenting = false;
-          this.onvrdisplaypresentchange();
-        } else {
-          this.isPresenting = false;
-        }
-      });
+    if (this.onvrdisplaypresentchange && this.isPresenting) {
+      this.isPresenting = false;
+      this.onvrdisplaypresentchange();
+    } else {
+      this.isPresenting = false;
+    }
   }
 
   requestAnimationFrame(fn) {
@@ -327,8 +350,8 @@ class FakeVRDisplay extends VRDisplay {
     this.position = new THREE.Vector3();
     this.quaternion = new THREE.Quaternion();
     this.gamepads = [
-      new Gamepad('left', 0),
-      new Gamepad('right', 1),
+      new Gamepad('left', 0, 'fake'),
+      new Gamepad('right', 1, 'fake'),
     ];
     for (let i = 0; i < this.gamepads.length; i++) {
       const gamepad = this.gamepads[i];
@@ -338,8 +361,6 @@ class FakeVRDisplay extends VRDisplay {
       };
       gamepad.pose._localPointerMatrix = new Float32Array(16);
     }
-    this.isPresenting = false;
-    this.stageParameters = new VRStageParameters();
 
     this.onrequestanimationframe = fn => window.requestAnimationFrame(fn);
     this.onvrdisplaypresentchange = () => {
@@ -372,52 +393,32 @@ class FakeVRDisplay extends VRDisplay {
   /* setSize(width, height) {
     GlobalContext.xrState.renderWidth[0] = width;
     GlobalContext.xrState.renderHeight[0] = height;
-  } *?
+  } */
 
   /* setProjection(projectionMatrix) {
     GlobalContext.xrState.leftProjectionMatrix.set(projectionMatrix);
     GlobalContext.xrState.rightProjectionMatrix.set(projectionMatrix);
   } */
 
-  requestPresent(layers) {
-    return Promise.resolve().then(() => {
-      GlobalContext.xrState.renderWidth[0] = this.window.innerWidth / 2;
-      GlobalContext.xrState.renderHeight[0] = this.window.innerHeight;
-
-      if (this.onrequestpresent) {
-        this.onrequestpresent(layers);
-      }
-
-      if (this.onvrdisplaypresentchange && !this.isPresenting) {
-        this.isPresenting = true;
-        this.onvrdisplaypresentchange();
-      } else {
-        this.isPresenting = true;
-      }
-    });
-  }
-
-  exitPresent() {
-    return Promise.resolve().then(() => {
-      if (this.onvrdisplaypresentchange && this.isPresenting) {
-        this.isPresenting = false;
-        this.onvrdisplaypresentchange();
-      } else {
-        this.isPresenting = false;
-      }
-    });
-  }
-
-  requestSession({exclusive = true} = {}) {
+  async requestSession({exclusive = true} = {}) {
     const self = this;
 
-    GlobalContext.xrState.renderWidth[0] = this.window.innerWidth / 2;
-    GlobalContext.xrState.renderHeight[0] = this.window.innerHeight;
+    await this.onrequestpresent();
+    
+    const {xrState} = GlobalContext;
 
     const session = {
       addEventListener(e, fn) {
         if (e === 'end') {
           self._onends.push(fn);
+        }
+      },
+      removeEventListener(e, fn) {
+        if (e === 'end') {
+          const index = self._onends.indexOf(fn);
+          if (index !== -1) {
+            self._onends.splice(index, 1);
+          }
         }
       },
       device: self,
@@ -431,19 +432,22 @@ class FakeVRDisplay extends VRDisplay {
         return Promise.resolve({});
       },
       requestAnimationFrame(fn) {
-        return this.device.onrequestanimationframe(timestamp => {
+        return self.requestAnimationFrame(timestamp => {
           fn(timestamp, this._frame);
         });
       },
-      end() {
-        for (let i = 0; i < self._onends.length; i++) {
-          self._onends[i]();
+      cancelAnimationFrame: fn => self.cancelAnimationFrame(fn),
+      async end() {
+        await self.exitPresent();
+
+        xrState.fakeVrDisplayEnabled[0] = 1;
+
+        const onends = self._onends.slice();
+        for (let i = 0; i < onends.length; i++) {
+          onends[i]();
         }
-        return self.exitPresent();
       },
     };
-
-    const {xrState} = GlobalContext;
     const _frame = {
       session,
       views: [{
@@ -516,7 +520,7 @@ class FakeVRDisplay extends VRDisplay {
     };
     _frame._pose = _pose;
 
-    return Promise.resolve(session);
+    return session;
   }
 
   supportsSession() {
@@ -607,42 +611,47 @@ class FakeVRDisplay extends VRDisplay {
   }
 }
 
+const getHMDType = () => {
+  if (GlobalContext.xrState.fakeVrDisplayEnabled[0]) {
+    return 'fake';
+  } else if (nativeOculusVR && nativeOculusVR.Oculus_IsHmdPresent()) {
+    return 'oculus';
+  } else if (nativeOpenVR && nativeOpenVR.VR_IsHmdPresent()) {
+    return 'openvr';
+  } else if (nativeOculusMobileVr && nativeOculusMobileVr.OculusMobile_IsHmdPresent()) {
+    return 'oculusMobile';
+  } else if (nativeMl && nativeMl.IsPresent()) {
+    return 'magicleap';
+  } else {
+    return null;
+  }
+};
+
 const createVRDisplay = () => new FakeVRDisplay();
 
 const controllerIDs = {
-  OculusVRLeft: 'Oculus Touch (Left)',
-  OculusVRRight: 'Oculus Touch (Right)',
-  OculusQuestLeft: 'Oculus Touch (Left)',
-  OculusQuestRight: 'Oculus Touch (Right)',
-  OculusGo: 'Oculus Go',
-  GearVR: 'Gear VR',
-  OpenVR: 'OpenVR Gamepad',
-  OpenVRTrackerID: 'Tracker'
+  fake: 'OpenVR Gamepad',
+  openvr: 'OpenVR Gamepad',
+  // oculusMobile: 'Oculus Go',
+  openvrTracker: 'Tracker',
+  oculusLeft: 'Oculus Touch (Left)',
+  oculusRight: 'Oculus Touch (Right)',
+  oculusMobileLeft: 'Oculus Touch (Left)',
+  oculusMobileRight: 'Oculus Touch (Right)',
 };
 
-function getControllerID(vrDisplay, hand) {
-  if (vrDisplay.id === 'OpenVR' ||
-      vrDisplay.id === 'GearVR' ||
-      vrDisplay.id === 'OculusGo') {
-    return controllerIDs[vrDisplay.id];
-  }
-  return controllerIDs[vrDisplay.id + hand.charAt(0).toUpperCase() + hand.slice(1)];
+function getControllerID(hmdType, hand) {
+  return controllerIDs[hmdType] || controllerIDs[hmdType + hand.charAt(0).toUpperCase() + hand.slice(1)];
 }
 
 let gamepads = null;
 function getGamepads(window) {
-  const {oculusVRDisplay, openVRDisplay, oculusMobileVrDisplay, magicLeapARDisplay} = window[symbols.mrDisplaysSymbol];
-  const presentingDisplay =
-    (GlobalContext.fakeVrDisplayEnabled && GlobalContext.fakePresentState.fakeVrDisplay) ||
-    (oculusVRDisplay.isPresenting && oculusVRDisplay) ||
-    (openVRDisplay.isPresenting && openVRDisplay) ||
-    (oculusMobileVrDisplay.isPresenting && oculusMobileVrDisplay) ||
-    (magicLeapARDisplay.isPresenting && magicLeapARDisplay);
-
-  if (presentingDisplay) {
+  if (GlobalContext.xrState.isPresenting[0]) {
     if (!gamepads) {
+      const hmdType = getHMDType();
+
       let numGamepads = 2;
-      if (presentingDisplay === openVRDisplay) {
+      if (hmdType === 'openvr') {
         numGamepads += maxNumTrackers;
       }
       gamepads = Array(numGamepads);
@@ -650,13 +659,13 @@ function getGamepads(window) {
         let hand, id;
         if (i === 0) {
           hand = 'left';
-          id = getControllerID(presentingDisplay, hand);
+          id = getControllerID(hmdType, hand);
         } else if (i === 1) {
           hand = 'right';
-          id = getControllerID(presentingDisplay, hand);
+          id = getControllerID(hmdType, hand);
         } else {
           hand = null;
-          id = controllerIDs.OpenVRTrackerID;
+          id = controllerIDs['openvrTracker'];
         }
         gamepads[i] = new Gamepad(hand, i, id);
       }
@@ -667,6 +676,10 @@ function getGamepads(window) {
   }
 };
 GlobalContext.getGamepads = getGamepads;
+function clearGamepads() {
+  gamepads = null;
+}
+GlobalContext.clearGamepads = clearGamepads;
 
 module.exports = {
   VRDisplay,
@@ -676,6 +689,7 @@ module.exports = {
   VRStageParameters,
   Gamepad,
   GamepadButton,
+  getHMDType,
   createVRDisplay,
   getGamepads
 };

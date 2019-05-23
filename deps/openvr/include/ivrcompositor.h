@@ -5,6 +5,7 @@
 #include <v8.h>
 
 #include <webgl.h>
+#include <windowsystem.h>
 
 // Forward declaration of OpenVR class.
 // We only need the pointer here, so this is cleaner than importing the header.
@@ -43,7 +44,7 @@ private:
   static NAN_METHOD(New);
 
   static NAN_METHOD(RequestGetPoses);
-  static NAN_METHOD(WaitGetPoses);
+  // static NAN_METHOD(WaitGetPoses);
   static NAN_METHOD(Submit);
 
   /// Create a singleton reference to a constructor function.

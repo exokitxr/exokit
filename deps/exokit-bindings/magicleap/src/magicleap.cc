@@ -15,7 +15,6 @@ namespace ml {
 
 const char application_name[] = "com.exokit.app";
 constexpr int CAMERA_SIZE[] = {960, 540};
-constexpr float meshingRange = 3.0f;
 constexpr float planeRange = 10.0f;
 
 application_context_t application_context;
@@ -26,36 +25,38 @@ MLInputKeyboardCallbacks keyboardCallbacks;
 MLCameraDeviceStatusCallbacks cameraDeviceStatusCallbacks;
 MLCameraCaptureCallbacks cameraCaptureCallbacks;
 
-Nan::Persistent<Function> eventsCb;
+/* Nan::Persistent<Function> eventsCb;
 std::vector<Event> events;
 uv_async_t eventsAsync;
 
 Nan::Persistent<Function> keyboardEventsCb;
 std::vector<KeyboardEvent> keyboardEvents;
-uv_async_t keyboardEventsAsync;
+uv_async_t keyboardEventsAsync; */
 
-uv_sem_t reqSem;
-uv_sem_t resSem;
-uv_async_t resAsync;
-std::mutex reqMutex;
-std::mutex resMutex;
-std::deque<std::function<bool()>> reqCbs;
-std::deque<std::function<void()>> resCbs;
-std::thread frameThread;
+EventHandler *eventHandler = nullptr;
+std::mutex eventHandlerMutex;
 
-Nan::Persistent<Function> mlMesherConstructor;
-Nan::Persistent<Function> mlPlaneTrackerConstructor;
-Nan::Persistent<Function> mlHandTrackerConstructor;
-Nan::Persistent<Function> mlEyeTrackerConstructor;
-Nan::Persistent<Function> mlImageTrackerConstructor;
+EventHandler::EventHandler(uv_async_t *async, Local<Function> handlerFn) : async(async), handlerFn(handlerFn) {}
 
-std::list<MLPoll *> polls;
+void QueueEvent(std::function<void(std::function<void(int, Local<Value> *)>)> fn) {
+  {
+    std::lock_guard<std::mutex> lock(eventHandlerMutex);
 
-std::thread cameraRequestThread;
-std::mutex cameraRequestMutex;
-std::condition_variable  cameraRequestConditionVariable;
-// std::mutex cameraRequestsMutex;
-// std::mutex cameraResponseMutex;
+    eventHandler->fns.push_back(fn);
+  }
+  
+  uv_async_send(eventHandler->async);
+}
+
+void QueueCallback(uv_loop_t *loop, std::function<void()> fn) {
+  MLCallback *mlCallback = new MLCallback(loop, fn);
+
+  uv_async_send(mlCallback->async.get());
+}
+
+// std::list<MLPoll *> polls;
+
+/* std::condition_variable  cameraRequestConditionVariable;
 std::vector<CameraRequest *> cameraRequests;
 uv_async_t cameraAsync;
 bool cameraConvertPending = false;
@@ -63,7 +64,7 @@ uint8_t cameraRequestRgb[CAMERA_SIZE[0] * CAMERA_SIZE[1] * 3];
 uint8_t *cameraRequestJpeg;
 size_t cameraRequestSize;
 uv_sem_t cameraConvertSem;
-uv_async_t cameraConvertAsync;
+uv_async_t cameraConvertAsync; */
 
 MLHandle imageTrackerHandle;
 MLImageTrackerSettings imageTrackerSettings;
@@ -150,31 +151,6 @@ std::string id2String(const uint64_t &id) {
   char idbuf[16 + 1];
   sprintf(idbuf, "%016llx", id);
   return std::string(idbuf);
-}
-
-MLPoseRes::MLPoseRes(Local<Function> cb) : cb(cb) {}
-
-MLPoseRes::~MLPoseRes() {}
-
-void RunResInMainThread(uv_async_t *handle) {
-  Nan::HandleScope scope;
-
-  for (;;) {
-    std::function<void()> resCb;
-    {
-      std::lock_guard<std::mutex> lock(resMutex);
-
-      if (resCbs.size() > 0) {
-        resCb = resCbs.front();
-        resCbs.pop_front();
-      }
-    }
-    if (resCb) {
-      resCb();
-    } else {
-      break;
-    }
-  }
 }
 
 /* void makePlanesQueryer(MLHandle &planesHandle) {
@@ -304,43 +280,81 @@ static void onNewInitArg(void* application_context) {
   // ((struct application_context_t*)application_context)->dummy_value = DummyValue::RUNNING;
   ML_LOG(Info, "%s: On new init arg called %x.", application_name, args);
 
-  events.push_back(Event::NEW_INIT_ARG);
-  uv_async_send(&eventsAsync);
+  QueueEvent([=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
+    Local<Object> obj = Nan::New<Object>();
+    obj->Set(JS_STR("type"), JS_STR("newInitArg"));
+    
+    Local<Value> argv[] = {
+      obj,
+    };
+    eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
+  });
 }
 
 static void onStop(void* application_context) {
   // ((struct application_context_t*)application_context)->dummy_value = DummyValue::STOPPED;
   ML_LOG(Info, "%s: On stop called.", application_name);
-  events.push_back(Event::STOP);
-  uv_async_send(&eventsAsync);
+
+  QueueEvent([=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
+    Local<Object> obj = Nan::New<Object>();
+    obj->Set(JS_STR("type"), JS_STR("stop"));
+
+    Local<Value> argv[] = {
+      obj,
+    };
+    eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
+  });
 }
 
 static void onPause(void* application_context) {
   // ((struct application_context_t*)application_context)->dummy_value = DummyValue::PAUSED;
   ML_LOG(Info, "%s: On pause called.", application_name);
-  events.push_back(Event::PAUSE);
-  uv_async_send(&eventsAsync);
+  
+  QueueEvent([=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
+    Local<Object> obj = Nan::New<Object>();
+    obj->Set(JS_STR("type"), JS_STR("pause"));
+    
+    Local<Value> argv[] = {
+      obj,
+    };
+    eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
+  });
 }
 
 static void onResume(void* application_context) {
   // ((struct application_context_t*)application_context)->dummy_value = DummyValue::RUNNING;
   ML_LOG(Info, "%s: On resume called.", application_name);
-  events.push_back(Event::RESUME);
-  uv_async_send(&eventsAsync);
+  
+  QueueEvent([=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
+    Local<Object> obj = Nan::New<Object>();
+    obj->Set(JS_STR("type"), JS_STR("resume"));
+    
+    Local<Value> argv[] = {
+      obj,
+    };
+    eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
+  });
 }
 
 static void onUnloadResources(void* application_context) {
   // ((struct application_context_t*)application_context)->dummy_value = DummyValue::STOPPED;
   ML_LOG(Info, "%s: On unload resources called.", application_name);
-  events.push_back(Event::UNLOAD_RESOURCES);
-  uv_async_send(&eventsAsync);
+  
+  QueueEvent([=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
+    Local<Object> obj = Nan::New<Object>();
+    obj->Set(JS_STR("type"), JS_STR("unloadResources"));
+    
+    Local<Value> argv[] = {
+      obj,
+    };
+    eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
+  });
 }
 
 MLMat4f getWindowTransformMatrix(Local<Object> windowObj, bool inverse = true) {
   Local<Object> localDocumentObj = Local<Object>::Cast(windowObj->Get(JS_STR("document")));
   Local<Value> xrOffsetValue = localDocumentObj->Get(JS_STR("xrOffset"));
 
-  MLMat4f result;
   if (xrOffsetValue->IsObject()) {
     Local<Object> xrOffsetObj = Local<Object>::Cast(xrOffsetValue);
     Local<Float32Array> positionFloat32Array = Local<Float32Array>::Cast(xrOffsetObj->Get(JS_STR("position")));
@@ -368,7 +382,7 @@ MLMat4f getWindowTransformMatrix(Local<Object> windowObj, bool inverse = true) {
 
 // MLRaycaster
 
-MLRaycaster::MLRaycaster(Local<Object> windowObj, MLHandle requestHandle, Local<Function> cb) : windowObj(windowObj), requestHandle(requestHandle), cb(cb) {}
+MLRaycaster::MLRaycaster(Local<Object> windowObj, MLHandle requestHandle, uv_loop_t *loop, Local<Function> cb) : windowObj(windowObj), requestHandle(requestHandle), loop(loop), cb(cb) {}
 
 MLRaycaster::~MLRaycaster() {}
 
@@ -377,20 +391,20 @@ bool MLRaycaster::Update() {
   MLResult result = MLRaycastGetResult(raycastTracker, this->requestHandle, &raycastResult);
   if (result == MLResult_Ok) {
     if (raycastResult.state == MLRaycastResultState_HitObserved) {
-      const MLVec3f &position = raycastResult.hitpoint;
-      const MLVec3f &normal = raycastResult.normal;
-      const MLQuaternionf &quaternion = getQuaternionFromUnitVectors(MLVec3f{0, 1, 0}, normal);
-      const MLVec3f &scale = {1, 1, 1};
-      MLMat4f hitMatrix = composeMatrix(position, quaternion, scale);
+      const MLVec3f position = raycastResult.hitpoint;
+      const MLQuaternionf quaternion = getQuaternionFromUnitVectors(MLVec3f{0, 1, 0}, raycastResult.normal);
+      const MLVec3f scale = {1, 1, 1};
 
-      Local<Object> localWindowObj = Nan::New(this->windowObj);
-      MLMat4f transformMatrix = getWindowTransformMatrix(localWindowObj);
-      if (!isIdentityMatrix(transformMatrix)) {
-        hitMatrix = multiplyMatrices(transformMatrix, hitMatrix);
-      }
-
-      polls.push_back(new MLPoll(localWindowObj, [this, hitMatrix]() -> void {
+      QueueCallback(loop, [this, position, quaternion, scale]() -> void {
         if (!this->cb.IsEmpty()) {
+          MLMat4f hitMatrix = composeMatrix(position, quaternion, scale);
+
+          Local<Object> localWindowObj = Nan::New(this->windowObj);
+          MLMat4f transformMatrix = getWindowTransformMatrix(localWindowObj);
+          if (!isIdentityMatrix(transformMatrix)) {
+            hitMatrix = multiplyMatrices(transformMatrix, hitMatrix);
+          }
+
           Local<Object> asyncObject = Nan::New<Object>();
           AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLRaycaster::Update");
 
@@ -406,13 +420,13 @@ bool MLRaycaster::Update() {
           };
           asyncResource.MakeCallback(cb, sizeof(argv)/sizeof(argv[0]), argv);
         }
-        
-        delete this;
-      }));
-    } else {
-      Local<Object> localWindowObj = Nan::New(this->windowObj);
 
-      polls.push_back(new MLPoll(localWindowObj, [this]() -> void {
+        delete this;
+      });
+    } else {
+      // Local<Object> localWindowObj = Nan::New(this->windowObj);
+
+      QueueCallback(loop, [this]() -> void {
         if (!this->cb.IsEmpty()) {
           Local<Object> asyncObject = Nan::New<Object>();
           AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLRaycaster::Update");
@@ -426,7 +440,7 @@ bool MLRaycaster::Update() {
         }
         
         delete this;
-      }));
+      });
     }
     
     return true;
@@ -435,9 +449,9 @@ bool MLRaycaster::Update() {
   } else {
     ML_LOG(Error, "%s: Raycast request failed! %x", application_name, result);
     
-    Local<Object> localWindowObj = Nan::New(this->windowObj);
+    // Local<Object> localWindowObj = Nan::New(this->windowObj);
 
-    polls.push_back(new MLPoll(localWindowObj, [this]() -> void {
+    QueueCallback(loop, [this]() -> void {
       if (!this->cb.IsEmpty()) {
         Local<Object> asyncObject = Nan::New<Object>();
         AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLRaycaster::Update");
@@ -451,33 +465,58 @@ bool MLRaycaster::Update() {
       }
       
       delete this;
-    }));
+    });
 
     return true;
   }
 }
 
-// MLPoll
+// MLCallback
+
+MLCallback::MLCallback(uv_loop_t *loop, std::function<void()> fn) : async(new uv_async_t()), fn(fn) {
+  async->data = this;
+  uv_async_init(loop, async.get(), RunInAsyncThread);
+}
+
+MLCallback::~MLCallback() {
+  uv_close((uv_handle_t *)async.release(), [](uv_handle_t *handle) {
+    delete handle;
+  });
+}
+
+void MLCallback::RunInAsyncThread(uv_async_t *handle) {
+  Nan::HandleScope scope;
+
+  MLCallback *mlCallback = (MLCallback *)handle->data;
+  mlCallback->fn();
+
+  delete mlCallback;
+}
+
+/* // MLPoll
 
 MLPoll::MLPoll(Local<Object> windowObj, std::function<void()> cb) : windowObj(windowObj), cb(cb) {}
 
-MLPoll::~MLPoll() {}
+MLPoll::~MLPoll() {} */
 
 // MeshBuffer
 
-MeshBuffer::MeshBuffer(GLuint positionBuffer, GLuint normalBuffer, GLuint indexBuffer) :
-  positionBuffer(positionBuffer),
-  normalBuffer(normalBuffer),
-  indexBuffer(indexBuffer),
+MeshBuffer::MeshBuffer() :
   positions(nullptr),
   numPositions(0),
   normals(nullptr),
   indices(nullptr),
-  numIndices(0),
-  isNew(true),
-  isUnchanged(false)
+  numIndices(0)
   {}
-MeshBuffer::MeshBuffer(const MeshBuffer &meshBuffer) {
+MeshBuffer::MeshBuffer(MLTransform transform, float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices) :
+  transform(transform),
+  positions(positions),
+  numPositions(numPositions),
+  normals(normals),
+  indices(indices),
+  numIndices(numIndices)
+  {}
+/* MeshBuffer::MeshBuffer(const MeshBuffer &meshBuffer) {
   positionBuffer = meshBuffer.positionBuffer;
   normalBuffer = meshBuffer.normalBuffer;
   indexBuffer = meshBuffer.indexBuffer;
@@ -486,38 +525,57 @@ MeshBuffer::MeshBuffer(const MeshBuffer &meshBuffer) {
   normals = meshBuffer.normals;
   indices = meshBuffer.indices;
   numIndices = meshBuffer.numIndices;
-  isNew = meshBuffer.isNew;
-  isUnchanged = meshBuffer.isUnchanged;
+} */
+
+float getMaxRange() {
+  float range = 1.0f;
+  for (auto iter = meshers.begin(); iter != meshers.end(); iter++) {
+    MLMesher *mesher = *iter;
+    range = std::max(range, mesher->range);
+  }
 }
-MeshBuffer::MeshBuffer() : positionBuffer(0), normalBuffer(0), indexBuffer(0), positions(nullptr), numPositions(0), normals(nullptr), indices(nullptr), numIndices(0), isNew(true), isUnchanged(false) {}
 
-void MeshBuffer::setBuffers(float *positions, uint32_t numPositions, float *normals, uint16_t *indices, uint16_t numIndices, bool isNew, bool isUnchanged) {
-  glBindBuffer(GL_ARRAY_BUFFER, positionBuffer);
-  glBufferData(GL_ARRAY_BUFFER, numPositions * sizeof(positions[0]), positions, GL_DYNAMIC_DRAW);
-
-  glBindBuffer(GL_ARRAY_BUFFER, normalBuffer);
-  glBufferData(GL_ARRAY_BUFFER, numPositions * sizeof(normals[0]), normals, GL_DYNAMIC_DRAW);
-
-  glBindBuffer(GL_ARRAY_BUFFER, indexBuffer);
-  glBufferData(GL_ARRAY_BUFFER, numIndices * sizeof(indices[0]), indices, GL_DYNAMIC_DRAW);
-
-  this->positions = positions;
-  this->numPositions = numPositions;
-  this->normals = normals;
-  this->indices = indices;
-  this->numIndices = numIndices;
-  this->isNew = isNew;
-  this->isUnchanged = isUnchanged;
+MLMeshingLOD getMaxLod() {
+  MLMeshingLOD lod = MLMeshingLOD_Minimum;
+  for (auto iter = meshers.begin(); iter != meshers.end(); iter++) {
+    MLMesher *mesher = *iter;
+    lod = std::max(lod, mesher->lod);
+  }
 }
 
 // MLMesher
 
-MLMesher::MLMesher(Local<Object> windowObj) : windowObj(windowObj) {}
+MLMesher::MLMesher(Local<Object> windowObj, uv_loop_t *loop, float range, MLMeshingLOD lod) : windowObj(windowObj), loop(loop), range(range), lod(lod) {}
 
 MLMesher::~MLMesher() {}
 
 NAN_METHOD(MLMesher::New) {
-  MLMesher *mlMesher = new MLMesher(Local<Object>::Cast(info[0]));
+  Local<Object> windowObj = Local<Object>::Cast(info[0]);
+  int lodValue = TO_INT32(info[1]);
+  float range = TO_FLOAT(info[2]);
+  uv_loop_t *loop = windowsystembase::GetEventLoop();
+  
+  MLMeshingLOD lod;
+  switch (lodValue) {
+    case 1: {
+      lod = MLMeshingLOD_Minimum;
+      break;
+    }
+    case 2: {
+      lod = MLMeshingLOD_Medium;
+      break;
+    }
+    case 3: {
+      lod = MLMeshingLOD_Maximum;
+      break;
+    }
+    default: {
+      lod = MLMeshingLOD_Minimum;
+      break;
+    }
+  }
+  
+  MLMesher *mlMesher = new MLMesher(windowObj, loop, range, lod);
   Local<Object> mlMesherObj = info.This();
   mlMesher->Wrap(mlMesherObj);
 
@@ -575,20 +633,14 @@ void MLMesher::Update() {
   types.reserve(dataCount);
   std::vector<std::string> ids;
   ids.reserve(dataCount);
-  std::vector<int> positionBuffers;
-  positionBuffers.reserve(dataCount);
   std::vector<float *> positionArrays;
   positionArrays.reserve(dataCount);
   std::vector<int> positionCounts;
   positionCounts.reserve(dataCount);
-  std::vector<int> normalBuffers;
-  normalBuffers.reserve(dataCount);
   std::vector<float *> normalArrays;
   normalArrays.reserve(dataCount);
   std::vector<int> normalCounts;
   normalCounts.reserve(dataCount);
-  std::vector<int> indexBuffers;
-  indexBuffers.reserve(dataCount);
   std::vector<uint16_t *> indexArrays;
   indexArrays.reserve(dataCount);
   std::vector<int> counts;
@@ -606,22 +658,19 @@ void MLMesher::Update() {
         const MeshBuffer &meshBuffer = iter->second;
 
         MLUpdateType type;
-        if (meshBuffer.isNew) {
+        if (meshRequestNewMap[id]) {
           type = MLUpdateType::NEW;
-        } else if (meshBuffer.isUnchanged) {
+        } else if (meshRequestUnchangedMap[id]) {
           type = MLUpdateType::UNCHANGED;
         } else {
           type = MLUpdateType::UPDATE;
         }
         types.push_back(type);
         ids.push_back(std::move(id));
-        positionBuffers.push_back(meshBuffer.positionBuffer);
         positionArrays.push_back(meshBuffer.positions);
         positionCounts.push_back(meshBuffer.numPositions);
-        normalBuffers.push_back(meshBuffer.normalBuffer);
         normalArrays.push_back(meshBuffer.normals);
         normalCounts.push_back(meshBuffer.numPositions);
-        indexBuffers.push_back(meshBuffer.indexBuffer);
         indexArrays.push_back(meshBuffer.indices);
         counts.push_back(meshBuffer.numIndices);
         
@@ -632,13 +681,10 @@ void MLMesher::Update() {
     } else {
       types.push_back(MLUpdateType::REMOVE);
       ids.push_back(std::move(id));
-      positionBuffers.push_back(0);
       positionArrays.push_back(nullptr);
       positionCounts.push_back(0);
-      normalBuffers.push_back(0);
       normalArrays.push_back(nullptr);
       normalCounts.push_back(0);
-      indexBuffers.push_back(0);
       indexArrays.push_back(nullptr);
       counts.push_back(0);
       
@@ -646,20 +692,17 @@ void MLMesher::Update() {
     }
   }
 
-  Local<Object> localWindowObj = Nan::New(this->windowObj);
+  // Local<Object> localWindowObj = Nan::New(this->windowObj);
 
-  polls.push_back(new MLPoll(localWindowObj, [
+  QueueCallback(loop, [
     this,
     transformMatrix,
     types{std::move(types)},
     ids{std::move(ids)},
-    positionBuffers{std::move(positionBuffers)},
     positionArrays{std::move(positionArrays)},
     positionCounts{std::move(positionCounts)},
-    normalBuffers{std::move(normalBuffers)},
     normalArrays{std::move(normalArrays)},
     normalCounts{std::move(normalCounts)},
-    indexBuffers{std::move(indexBuffers)},
     indexArrays{std::move(indexArrays)},
     counts{std::move(counts)},
     numResults
@@ -705,23 +748,14 @@ void MLMesher::Update() {
           Local<Float32Array> transformMatrixArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), (void *)transformMatrix.matrix_colmajor, 16 * sizeof(float)), 0, 16);
           obj->Set(JS_STR("transformMatrix"), transformMatrixArray);
 
-          Local<Object> positionBuffer = Nan::New<Object>();
-          positionBuffer->Set(JS_STR("id"), JS_INT(positionBuffers[i]));
-          obj->Set(JS_STR("positionBuffer"), positionBuffer);
           Local<Float32Array> positionArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), positionArrays[i], positionCounts[i] * sizeof(float)), 0, positionCounts[i]);
           obj->Set(JS_STR("positionArray"), positionArray);
           obj->Set(JS_STR("positionCount"), JS_INT(positionCounts[i]));
 
-          Local<Object> normalBuffer = Nan::New<Object>();
-          normalBuffer->Set(JS_STR("id"), JS_INT(normalBuffers[i]));
-          obj->Set(JS_STR("normalBuffer"), normalBuffer);
           Local<Float32Array> normalArray = Float32Array::New(ArrayBuffer::New(Isolate::GetCurrent(), normalArrays[i], normalCounts[i] * sizeof(float)), 0, normalCounts[i]);
           obj->Set(JS_STR("normalArray"), normalArray);
           obj->Set(JS_STR("normalCount"), JS_INT(positionCounts[i]));
 
-          Local<Object> indexBuffer = Nan::New<Object>();
-          indexBuffer->Set(JS_STR("id"), JS_INT(indexBuffers[i]));
-          obj->Set(JS_STR("indexBuffer"), indexBuffer);
           Local<Uint16Array> indexArray = Uint16Array::New(ArrayBuffer::New(Isolate::GetCurrent(), indexArrays[i], counts[i] * sizeof(uint16_t)), 0, counts[i]);
           obj->Set(JS_STR("indexArray"), indexArray);
           obj->Set(JS_STR("count"), JS_INT(counts[i]));
@@ -740,7 +774,7 @@ void MLMesher::Update() {
       };
       asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
     }
-  }));
+  });
 }
 
 NAN_METHOD(MLMesher::Destroy) {
@@ -758,12 +792,13 @@ NAN_METHOD(MLMesher::Destroy) {
 
 // MLPlaneTracker
 
-MLPlaneTracker::MLPlaneTracker(Local<Object> windowObj) : windowObj(windowObj) {}
+MLPlaneTracker::MLPlaneTracker(Local<Object> windowObj, uv_loop_t *loop) : windowObj(windowObj), loop(loop) {}
 
 MLPlaneTracker::~MLPlaneTracker() {}
 
 NAN_METHOD(MLPlaneTracker::New) {
-  MLPlaneTracker *mlPlaneTracker = new MLPlaneTracker(Local<Object>::Cast(info[0]));
+  uv_loop_t *loop = windowsystembase::GetEventLoop();
+  MLPlaneTracker *mlPlaneTracker = new MLPlaneTracker(Local<Object>::Cast(info[0]), loop);
   Local<Object> mlPlaneTrackerObj = info.This();
   mlPlaneTracker->Wrap(mlPlaneTrackerObj);
 
@@ -852,9 +887,9 @@ void MLPlaneTracker::Update() {
     heights.push_back(height);
   }
 
-  Local<Object> localWindowObj = Nan::New(this->windowObj);
+  // Local<Object> localWindowObj = Nan::New(this->windowObj);
 
-  polls.push_back(new MLPoll(localWindowObj, [
+  QueueCallback(loop, [
     this,
     numPlanes,
     ids{std::move(ids)},
@@ -903,7 +938,7 @@ void MLPlaneTracker::Update() {
       };
       asyncResource.MakeCallback(cb, sizeof(argv)/sizeof(argv[0]), argv);
     }
-  }));
+  });
 }
 
 NAN_METHOD(MLPlaneTracker::Destroy) {
@@ -921,12 +956,13 @@ NAN_METHOD(MLPlaneTracker::Destroy) {
 
 // MLHandTracker
 
-MLHandTracker::MLHandTracker(Local<Object> windowObj) : windowObj(windowObj) {}
+MLHandTracker::MLHandTracker(Local<Object> windowObj, uv_loop_t *loop) : windowObj(windowObj), loop(loop) {}
 
 MLHandTracker::~MLHandTracker() {}
 
 NAN_METHOD(MLHandTracker::New) {
-  MLHandTracker *mlHandTracker = new MLHandTracker(Local<Object>::Cast(info[0]));
+  uv_loop_t *loop = windowsystembase::GetEventLoop();
+  MLHandTracker *mlHandTracker = new MLHandTracker(Local<Object>::Cast(info[0]), loop);
   Local<Object> mlHandTrackerObj = info.This();
   mlHandTracker->Wrap(mlHandTrackerObj);
 
@@ -1106,9 +1142,9 @@ void MLHandTracker::Update() {
     lastKeyposeRight = handData.right_hand_state.keypose;
   }
 
-  Local<Object> localWindowObj = Nan::New(this->windowObj);
+  // Local<Object> localWindowObj = Nan::New(this->windowObj);
 
-  polls.push_back(new MLPoll(localWindowObj, [
+  QueueCallback(loop, [
     this,
     transformMatrix,
     leftHandBoneValid,
@@ -1425,7 +1461,7 @@ void MLHandTracker::Update() {
       };
       asyncResource.MakeCallback(cb, sizeof(argv)/sizeof(argv[0]), argv);
     }
-  }));
+  });
 }
 
 NAN_METHOD(MLHandTracker::Destroy) {
@@ -1592,441 +1628,6 @@ NAN_METHOD(MLEyeTracker::Destroy) {
 }
 
 // keyboard callbacks
-
-void onChar(uint32_t char_utf32, void *data) {
-  keyboardEvents.push_back(KeyboardEvent(KeyboardEventType::CHAR, char_utf32));
-  uv_async_send(&keyboardEventsAsync);
-}
-void onKeyDown(MLKeyCode key_code, uint32_t modifier_mask, void *data) {
-  keyboardEvents.push_back(KeyboardEvent(KeyboardEventType::KEY_DOWN, key_code, modifier_mask));
-  uv_async_send(&keyboardEventsAsync);
-}
-void onKeyUp(MLKeyCode key_code, uint32_t modifier_mask, void *data) {
-  keyboardEvents.push_back(KeyboardEvent(KeyboardEventType::KEY_UP, key_code, modifier_mask));
-  uv_async_send(&keyboardEventsAsync);
-}
-
-// KeyboardEvent
-
-KeyboardEvent::KeyboardEvent(KeyboardEventType type, uint32_t char_utf32) : type(type), char_utf32(char_utf32), key_code(MLKEYCODE_UNKNOWN), modifier_mask(0) {}
-KeyboardEvent::KeyboardEvent(KeyboardEventType type, MLKeyCode key_code, uint32_t modifier_mask) : type(type), char_utf32(0), key_code(key_code), modifier_mask(modifier_mask) {}
-
-// camera device status callbacks
-
-void cameraOnDeviceAvailable(void *data) {
-  // XXX
-}
-void cameraOnDeviceUnavailable(void *data) {
-  // XXX
-}
-void cameraOnDeviceOpened(void *data) {
-  // XXX
-}
-void cameraOnDeviceClosed(void *data) {
-  // XXX
-}
-void cameraOnDeviceDisconnected(void *data) {
-  // XXX
-}
-void cameraOnDeviceError(MLCameraError error, void *data) {
-  // XXX
-}
-void cameraOnPreviewBufferAvailable(MLHandle output, void *data) {
-  uv_async_send(&cameraAsync);
-}
-
-// camera capture callbacks
-
-void cameraOnCaptureStarted(const MLCameraResultExtras *extra, void *data) {
-  // XXX
-}
-void cameraOnCaptureFailed(const MLCameraResultExtras *extra, void *data) {
-  // XXX
-}
-void cameraOnCaptureBufferLost(const MLCameraResultExtras *extra, void *data) {
-  // XXX
-}
-void cameraOnCaptureProgressed(MLHandle metadata_handle, const MLCameraResultExtras *extra, void *data) {
-  // XXX
-}
-void cameraOnCaptureCompleted(MLHandle metadata_handle, const MLCameraResultExtras *extra, void *data) {
-  // XXX
-}
-void cameraOnImageBufferAvailable(const MLCameraOutput *output, void *data) {
-  /* if (!cameraResponsePending) {
-    {
-      std::unique_lock<std::mutex> lock(cameraRequestsMutex);
-      std::for_each(cameraRequests.begin(), cameraRequests.end(), [&](CameraRequest *c) {
-        c->Set(output);
-      });
-    }
-    cameraResponsePending = true;
-  } */
-}
-
-// CameraRequest
-
-CameraRequest::CameraRequest(Local<Function> cbFn) : cbFn(cbFn) {}
-
-void CameraRequest::Set(int width, int height, uint8_t *data, size_t size) {
-  this->width = width;
-  this->height = height;
-  // this->stride = stride;
-
-  Local<ArrayBuffer> arrayBuffer;
-  if (size > 0) {
-    // exout << "got jpeg " << size << std::endl;
-
-    arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), size);
-    memcpy(arrayBuffer->GetContents().Data(), data, size);
-  } else {
-    // exout << "failed to get jpeg " << size << std::endl;
-
-    arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), 4);
-  }
-  this->data.Reset(arrayBuffer);
-}
-
-void CameraRequest::Update() {
-  Local<Object> asyncObject = Nan::New<Object>();
-  AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "cameraRequest");
-
-  Local<Function> cbFn = Nan::New(this->cbFn);
-
-  Local<Object> obj = Nan::New<Object>();
-  obj->Set(JS_STR("data"), Nan::New(data));
-  data.Reset();
-  obj->Set(JS_STR("width"), JS_INT(width));
-  obj->Set(JS_STR("height"), JS_INT(height));
-  // obj->Set(JS_STR("bpp"), JS_INT(bpp));
-  // obj->Set(JS_STR("stride"), JS_INT(stride));
-
-  Local<Value> argv[] = {
-    obj,
-  };
-  asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
-}
-
-// MLImageTracker
-
-bool imageTrackingEnabled = false;
-size_t numImageTrackers = 0;
-
-MLImageTracker::MLImageTracker(Local<Object> windowObj, MLHandle trackerHandle, float size) : windowObj(windowObj), trackerHandle(trackerHandle), size(size), valid(false) {}
-
-MLImageTracker::~MLImageTracker() {}
-
-NAN_METHOD(MLImageTracker::New) {
-  if (!imageTrackingEnabled) {
-    imageTrackerSettings.enable_image_tracking = true;
-    imageTrackerSettings.max_simultaneous_targets = 2;
-
-    MLResult result = MLImageTrackerCreate(&imageTrackerSettings, &imageTrackerHandle);
-
-    if (result == MLResult_Ok) {
-      imageTrackingEnabled = true;
-    } else {
-      ML_LOG(Error, "%s: Failed to connect camera: %x", application_name, result);
-      Nan::ThrowError("failed to connect camera");
-    }
-  }
-
-  Local<Object> windowObj = Local<Object>::Cast(info[0]);
-  Local<Object> imageObj = Local<Object>::Cast(info[1]);
-  Local<Number> dimensionNumber = Local<Number>::Cast(info[2]);
-
-  MLHandle trackerHandle;
-  MLImageTrackerTargetSettings trackerSettings;
-  trackerSettings.is_enabled = true;
-  trackerSettings.is_stationary = true;
-  float longerDimension = TO_FLOAT(dimensionNumber);
-  trackerSettings.longer_dimension = longerDimension;
-  char name[64];
-  sprintf(name, "tracker%u", numImageTrackers++);
-  trackerSettings.name = name;
-
-  Image *image = ObjectWrap::Unwrap<Image>(imageObj);
-  Local<Uint8ClampedArray> dataArray = Local<Uint8ClampedArray>::Cast(imageObj->Get(JS_STR("data")));
-  Local<ArrayBuffer> dataArrayBuffer = dataArray->Buffer();
-
-  uint32_t width = image->GetWidth();
-  uint32_t height = image->GetHeight();
-  MLResult result = MLImageTrackerAddTargetFromArray(
-    imageTrackerHandle,
-    &trackerSettings,
-    (uint8_t *)dataArrayBuffer->GetContents().Data() + dataArray->ByteOffset(),
-    width,
-    height,
-    MLImageTrackerImageFormat_RGBA,
-    &trackerHandle
-  );
-
-  if (result == MLResult_Ok) {
-    MLImageTracker *mlImageTracker = new MLImageTracker(windowObj, trackerHandle, longerDimension);
-    Local<Object> mlImageTrackerObj = info.This();
-    mlImageTracker->Wrap(mlImageTrackerObj);
-
-    Nan::SetAccessor(mlImageTrackerObj, JS_STR("ontrack"), OnTrackGetter, OnTrackSetter);
-
-    info.GetReturnValue().Set(mlImageTrackerObj);
-
-    imageTrackers.push_back(mlImageTracker);
-  } else {
-    Nan::ThrowError("MLImageTracker::New: failed to create tracker");
-  }
-}
-
-Local<Function> MLImageTracker::Initialize(Isolate *isolate) {
-  Nan::EscapableHandleScope scope;
-
-  // constructor
-  Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(New);
-  ctor->InstanceTemplate()->SetInternalFieldCount(1);
-  ctor->SetClassName(JS_STR("MLImageTracker"));
-
-  // prototype
-  Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
-  Nan::SetMethod(proto, "destroy", Destroy);
-
-  Local<Function> ctorFn = Nan::GetFunction(ctor).ToLocalChecked();
-
-  return scope.Escape(ctorFn);
-}
-
-NAN_GETTER(MLImageTracker::OnTrackGetter) {
-  // Nan::HandleScope scope;
-  MLImageTracker *mlImageTracker = ObjectWrap::Unwrap<MLImageTracker>(info.This());
-
-  Local<Function> cb = Nan::New(mlImageTracker->cb);
-  info.GetReturnValue().Set(cb);
-}
-
-NAN_SETTER(MLImageTracker::OnTrackSetter) {
-  // Nan::HandleScope scope;
-  MLImageTracker *mlImageTracker = ObjectWrap::Unwrap<MLImageTracker>(info.This());
-
-  if (value->IsFunction()) {
-    Local<Function> localCb = Local<Function>::Cast(value);
-    mlImageTracker->cb.Reset(localCb);
-  } else {
-    Nan::ThrowError("MLImageTracker::OnTrackSetter: invalid arguments");
-  }
-}
-
-void MLImageTracker::Update(MLSnapshot *snapshot) {
-  MLImageTrackerTargetResult trackerTargetResult;
-  MLResult result = MLImageTrackerGetTargetResult(
-    imageTrackerHandle,
-    trackerHandle,
-    &trackerTargetResult
-  );
-  if (result == MLResult_Ok) {
-    const bool &lastValid = valid;
-    MLImageTrackerTargetStatus &status = trackerTargetResult.status;
-    const bool newValid = (status == MLImageTrackerTargetStatus_Tracked || status == MLImageTrackerTargetStatus_Unreliable);
-
-    if (newValid) {
-      MLImageTrackerTargetStaticData trackerTargetStaticData;
-      MLResult result = MLImageTrackerGetTargetStaticData(
-        imageTrackerHandle,
-        trackerHandle,
-        &trackerTargetStaticData
-      );
-      if (result == MLResult_Ok) {
-        MLTransform transform;
-        MLResult result = MLSnapshotGetTransform(snapshot, &trackerTargetStaticData.coord_frame_target, &transform);
-
-        if (result == MLResult_Ok) {
-          MLVec3f &position = transform.position;
-          MLQuaternionf &rotation = transform.rotation;
-          MLVec3f scale = {1, 1, 1};
-
-          MLMat4f transformMatrix = getWindowTransformMatrix(Nan::New(this->windowObj));
-          if (!isIdentityMatrix(transformMatrix)) {
-            MLMat4f transform = multiplyMatrices(transformMatrix, composeMatrix(position, rotation, scale));
-            decomposeMatrix(transform, position, rotation, scale);
-          }
-
-          Local<Object> localWindowObj = Nan::New(this->windowObj);
-
-          polls.push_back(new MLPoll(localWindowObj, [this, position, rotation]() -> void {
-            if (!this->cb.IsEmpty()) {
-              Local<Object> asyncObject = Nan::New<Object>();
-              AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLImageTracker::Update");
-
-              Local<Function> cbFn = Nan::New(this->cb);
-              Local<Object> objVal = Nan::New<Object>();
-
-              Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), (3+4)*sizeof(float));
-              char *arrayBufferData = (char *)arrayBuffer->GetContents().Data();
-              size_t index = 0;
-
-              memcpy(arrayBufferData + index, position.values, sizeof(position.values));
-              objVal->Set(JS_STR("position"), Float32Array::New(arrayBuffer, index, sizeof(position.values)/sizeof(position.values[0])));
-              index += sizeof(position.values);
-
-              memcpy(arrayBufferData + index, rotation.values, sizeof(rotation.values));
-              objVal->Set(JS_STR("rotation"), Float32Array::New(arrayBuffer, index, sizeof(rotation.values)/sizeof(rotation.values[0])));
-              index += sizeof(rotation.values);
-
-              objVal->Set(JS_STR("size"), JS_NUM(this->size));
-
-              Local<Value> argv[] = {
-                objVal,
-              };
-
-              asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
-            }
-          }));
-
-          valid = newValid;
-        } else {
-          ML_LOG(Error, "%s: ML failed to get eye fixation transform!", application_name);
-        }
-      } else {
-        ML_LOG(Error, "%s: Image tracker get static data failed! %x", application_name, result);
-      }
-    } else {
-      if (lastValid) {
-        Local<Object> localWindowObj = Nan::New(this->windowObj);
-
-        polls.push_back(new MLPoll(localWindowObj, [this]() -> void {
-          if (!this->cb.IsEmpty()) {
-            Local<Object> asyncObject = Nan::New<Object>();
-            AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLImageTracker::Update");
-
-            Local<Function> cbFn = Nan::New(cb);
-            Local<Value> objVal = Nan::Null();
-            Local<Value> argv[] = {
-              objVal,
-            };
-
-            asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
-          }
-        }));
-      }
-
-      valid = newValid;
-    }
-  } else {
-    ML_LOG(Error, "%s: ML failed to get image tracker target result!", application_name);
-  }
-}
-
-NAN_METHOD(MLImageTracker::Destroy) {
-  MLImageTracker *mlImageTracker = ObjectWrap::Unwrap<MLImageTracker>(info.This());
-
-  imageTrackers.erase(std::remove_if(imageTrackers.begin(), imageTrackers.end(), [&](MLImageTracker *i) -> bool {
-    if (i == mlImageTracker) {
-      MLResult result = MLImageTrackerRemoveTarget(imageTrackerHandle, i->trackerHandle);
-      if (result != MLResult_Ok) {
-        ML_LOG(Error, "%s: ML failed to remove image tracker target!", application_name);
-      }
-      
-      delete i;
-      return true;
-    } else {
-      return false;
-    }
-  }));
-}
-
-// MLContext
-
-MLContext::MLContext() : window(nullptr), position{0, 0, 0}, rotation{0, 0, 0, 1}, cameraInTexture(0), contentTexture(0), cameraOutTexture(0), cameraFbo(0) {}
-
-MLContext::~MLContext() {}
-
-Local<Object> MLContext::Initialize(Isolate *isolate) {
-  Nan::EscapableHandleScope scope;
-
-  // constructor
-  Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(New);
-  ctor->InstanceTemplate()->SetInternalFieldCount(1);
-
-  // prototype
-  Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
-  Nan::SetMethod(proto, "Present", Present);
-  Nan::SetMethod(proto, "Exit", Exit);
-  // Nan::SetMethod(proto, "WaitGetPoses", WaitGetPoses);
-  Nan::SetMethod(proto, "GetSize", GetSize);
-  Nan::SetMethod(proto, "SetContentTexture", SetContentTexture);
-  Nan::SetMethod(proto, "RequestGetPoses", RequestGetPoses);
-  Nan::SetMethod(proto, "PrepareFrame", PrepareFrame);
-  Nan::SetMethod(proto, "SubmitFrame", SubmitFrame);
-
-  Local<Function> ctorFn = Nan::GetFunction(ctor).ToLocalChecked();
-
-  Nan::SetMethod(ctorFn, "InitLifecycle", InitLifecycle);
-  Nan::SetMethod(ctorFn, "DeinitLifecycle", DeinitLifecycle);
-  Nan::SetMethod(ctorFn, "IsPresent", IsPresent);
-  Nan::SetMethod(ctorFn, "IsSimulated", IsSimulated);
-  Nan::SetMethod(ctorFn, "RequestHitTest", RequestHitTest);
-  Nan::SetMethod(ctorFn, "RequestMeshing", RequestMeshing);
-  Nan::SetMethod(ctorFn, "RequestPlaneTracking", RequestPlaneTracking);
-  Nan::SetMethod(ctorFn, "RequestHandTracking", RequestHandTracking);
-  Nan::SetMethod(ctorFn, "RequestEyeTracking", RequestEyeTracking);
-  Nan::SetMethod(ctorFn, "RequestImageTracking", RequestImageTracking);
-  Nan::SetMethod(ctorFn, "RequestDepthPopulation", RequestDepthPopulation);
-  Nan::SetMethod(ctorFn, "RequestCamera", RequestCamera);
-  Nan::SetMethod(ctorFn, "CancelCamera", CancelCamera);
-  Nan::SetMethod(ctorFn, "Update", Update);
-  Nan::SetMethod(ctorFn, "Poll", Poll);
-
-  return scope.Escape(ctorFn);
-}
-
-NAN_METHOD(MLContext::New) {
-  Local<Object> mlContextObj = info.This();
-  MLContext *mlContext = new MLContext();
-  mlContext->Wrap(mlContextObj);
-
-  info.GetReturnValue().Set(mlContextObj);
-}
-
-void RunEventsInMainThread(uv_async_t *handle) {
-  Nan::HandleScope scope;
-
-  for (const auto &event : events) {
-    Local<Object> asyncObject = Nan::New<Object>();
-    AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "mlEvents");
-
-    Local<Value> arg;
-    switch (event) {
-      case Event::NEW_INIT_ARG: {
-        arg = JS_STR("newInitArg");
-        break;
-      }
-      case Event::STOP: {
-        arg = JS_STR("stop");
-        break;
-      }
-      case Event::PAUSE: {
-        arg = JS_STR("pause");
-        break;
-      }
-      case Event::RESUME: {
-        arg = JS_STR("resume");
-        break;
-      }
-      case Event::UNLOAD_RESOURCES: {
-        arg = JS_STR("unloadResources");
-        break;
-      }
-      default: {
-        arg = Nan::Null();
-        break;
-      }
-    }
-
-    Local<Function> eventsCbFn = Nan::New(eventsCb);
-    Local<Value> argv[] = {
-      arg,
-    };
-    asyncResource.MakeCallback(eventsCbFn, sizeof(argv)/sizeof(argv[0]), argv);
-  }
-  events.clear();
-}
 
 inline uint32_t mlKeycodeToKeycode(MLKeyCode mlKeycode) {
   switch (mlKeycode) {
@@ -2315,60 +1916,469 @@ inline uint32_t mlKeycodeToKeycode(MLKeyCode mlKeycode) {
   }
 }
 
-void RunKeyboardEventsInMainThread(uv_async_t *handle) {
-  Nan::HandleScope scope;
+void setKeyEvent(Local<Object> obj, uint32_t charCode, MLKeyCode mlKeyCode, uint32_t modifier_mask) {
+  uint32_t keyCode = mlKeycodeToKeycode(mlKeyCode);
+  obj->Set(JS_STR("charCode"), JS_INT(charCode));
+  obj->Set(JS_STR("keyCode"), JS_INT(keyCode));
+  obj->Set(JS_STR("which"), JS_INT(keyCode));
+  obj->Set(JS_STR("shiftKey"), JS_BOOL(modifier_mask & MLKEYMODIFIER_SHIFT));
+  obj->Set(JS_STR("altKey"), JS_BOOL(modifier_mask & MLKEYMODIFIER_ALT));
+  obj->Set(JS_STR("ctrlKey"), JS_BOOL(modifier_mask & MLKEYMODIFIER_CTRL));
+  obj->Set(JS_STR("metaKey"), JS_BOOL(modifier_mask & MLKEYMODIFIER_META));
+  // obj->Set(JS_STR("sym"), JS_BOOL(modifier_mask & MLKEYMODIFIER_SYM));
+  // obj->Set(JS_STR("function"), JS_BOOL(modifier_mask & MLKEYMODIFIER_FUNCTION));
+  // obj->Set(JS_STR("capsLock"), JS_BOOL(modifier_mask & MLKEYMODIFIER_CAPS_LOCK));
+  // obj->Set(JS_STR("numLock"), JS_BOOL(modifier_mask & MLKEYMODIFIER_NUM_LOCK));
+  // obj->Set(JS_STR("scrollLock"), JS_BOOL(modifier_mask & MLKEYMODIFIER_SCROLL_LOCK));
+}
 
-  for (const auto &keyboardEvent : keyboardEvents) {
-    Local<Object> asyncObject = Nan::New<Object>();
-    AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "keyboardEvents");
-
+void onChar(uint32_t char_utf32, void *data) {
+  QueueEvent([=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
     Local<Object> obj = Nan::New<Object>();
-
-    Local<Value> typeArg;
-    switch (keyboardEvent.type) {
-      case KeyboardEventType::CHAR: {
-        typeArg = JS_STR("keypress");
-        break;
-      }
-      case KeyboardEventType::KEY_DOWN: {
-        typeArg = JS_STR("keydown");
-        break;
-      }
-      case KeyboardEventType::KEY_UP: {
-        typeArg = JS_STR("keyup");
-        break;
-      }
-      default: {
-        typeArg = Nan::Null();
-        break;
-      }
-    }
-    obj->Set(JS_STR("type"), typeArg);
-    uint32_t charCode = (uint32_t)keyboardEvent.char_utf32;
-    uint32_t keyCode = mlKeycodeToKeycode(keyboardEvent.key_code);
-    obj->Set(JS_STR("charCode"), JS_INT(charCode));
-    obj->Set(JS_STR("keyCode"), JS_INT(keyCode));
-    obj->Set(JS_STR("which"), JS_INT(keyCode));
-    obj->Set(JS_STR("shiftKey"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_SHIFT));
-    obj->Set(JS_STR("altKey"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_ALT));
-    obj->Set(JS_STR("ctrlKey"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_CTRL));
-    obj->Set(JS_STR("metaKey"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_META));
-    // obj->Set(JS_STR("sym"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_SYM));
-    // obj->Set(JS_STR("function"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_FUNCTION));
-    // obj->Set(JS_STR("capsLock"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_CAPS_LOCK));
-    // obj->Set(JS_STR("numLock"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_NUM_LOCK));
-    // obj->Set(JS_STR("scrollLock"), JS_BOOL(keyboardEvent.modifier_mask & MLKEYMODIFIER_SCROLL_LOCK));
-
-    Local<Function> keyboardEventsCbFn = Nan::New(keyboardEventsCb);
+    obj->Set(JS_STR("type"), JS_STR("keypress"));
+    setKeyEvent(obj, char_utf32, MLKEYCODE_UNKNOWN, 0);
+    
     Local<Value> argv[] = {
       obj,
     };
-    asyncResource.MakeCallback(keyboardEventsCbFn, sizeof(argv)/sizeof(argv[0]), argv);
-  }
-  keyboardEvents.clear();
+    eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
+  });
+}
+void onKeyDown(MLKeyCode key_code, uint32_t modifier_mask, void *data) {
+  QueueEvent([=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
+    Local<Object> obj = Nan::New<Object>();
+    obj->Set(JS_STR("type"), JS_STR("keydown"));
+    setKeyEvent(obj, 0, key_code, modifier_mask);
+    
+    Local<Value> argv[] = {
+      obj,
+    };
+    eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
+  });
+}
+void onKeyUp(MLKeyCode key_code, uint32_t modifier_mask, void *data) {
+  QueueEvent([=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
+    Local<Object> obj = Nan::New<Object>();
+    obj->Set(JS_STR("type"), JS_STR("keyup"));
+    setKeyEvent(obj, 0, key_code, modifier_mask);
+    
+    Local<Value> argv[] = {
+      obj,
+    };
+    eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
+  });
 }
 
-void RunCameraInMainThread(uv_async_t *handle) {
+// KeyboardEvent
+
+/* KeyboardEvent::KeyboardEvent(KeyboardEventType type, uint32_t char_utf32) : type(type), char_utf32(char_utf32), key_code(MLKEYCODE_UNKNOWN), modifier_mask(0) {}
+KeyboardEvent::KeyboardEvent(KeyboardEventType type, MLKeyCode key_code, uint32_t modifier_mask) : type(type), char_utf32(0), key_code(key_code), modifier_mask(modifier_mask) {} */
+
+// camera device status callbacks
+
+void cameraOnDeviceAvailable(void *data) {
+  // XXX
+}
+void cameraOnDeviceUnavailable(void *data) {
+  // XXX
+}
+void cameraOnDeviceOpened(void *data) {
+  // XXX
+}
+void cameraOnDeviceClosed(void *data) {
+  // XXX
+}
+void cameraOnDeviceDisconnected(void *data) {
+  // XXX
+}
+void cameraOnDeviceError(MLCameraError error, void *data) {
+  // XXX
+}
+void cameraOnPreviewBufferAvailable(MLHandle output, void *data) {
+  // uv_async_send(&cameraAsync);
+}
+
+// camera capture callbacks
+
+void cameraOnCaptureStarted(const MLCameraResultExtras *extra, void *data) {
+  // XXX
+}
+void cameraOnCaptureFailed(const MLCameraResultExtras *extra, void *data) {
+  // XXX
+}
+void cameraOnCaptureBufferLost(const MLCameraResultExtras *extra, void *data) {
+  // XXX
+}
+void cameraOnCaptureProgressed(MLHandle metadata_handle, const MLCameraResultExtras *extra, void *data) {
+  // XXX
+}
+void cameraOnCaptureCompleted(MLHandle metadata_handle, const MLCameraResultExtras *extra, void *data) {
+  // XXX
+}
+void cameraOnImageBufferAvailable(const MLCameraOutput *output, void *data) {
+  /* if (!cameraResponsePending) {
+    {
+      std::unique_lock<std::mutex> lock(cameraRequestsMutex);
+      std::for_each(cameraRequests.begin(), cameraRequests.end(), [&](CameraRequest *c) {
+        c->Set(output);
+      });
+    }
+    cameraResponsePending = true;
+  } */
+}
+
+// CameraRequest
+
+CameraRequest::CameraRequest(uv_loop_t *loop, Local<Function> cbFn) : loop(loop), cbFn(cbFn) {}
+
+void CameraRequest::Set(int width, int height, uint8_t *data, size_t size) {
+  this->width = width;
+  this->height = height;
+  // this->stride = stride;
+
+  Local<ArrayBuffer> arrayBuffer;
+  if (size > 0) {
+    // exout << "got jpeg " << size << std::endl;
+
+    arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), size);
+    memcpy(arrayBuffer->GetContents().Data(), data, size);
+  } else {
+    // exout << "failed to get jpeg " << size << std::endl;
+
+    arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), 4);
+  }
+  this->data.Reset(arrayBuffer);
+}
+
+void CameraRequest::Update() {
+  QueueCallback(loop, [this]() -> void {
+    Local<Object> asyncObject = Nan::New<Object>();
+    AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "CameraRequest::Update");
+
+    Local<Function> cbFn = Nan::New(this->cbFn);
+
+    Local<Object> obj = Nan::New<Object>();
+    obj->Set(JS_STR("data"), Nan::New(data));
+    data.Reset();
+    obj->Set(JS_STR("width"), JS_INT(width));
+    obj->Set(JS_STR("height"), JS_INT(height));
+    // obj->Set(JS_STR("bpp"), JS_INT(bpp));
+    // obj->Set(JS_STR("stride"), JS_INT(stride));
+
+    Local<Value> argv[] = {
+      obj,
+    };
+    asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
+  });
+}
+
+// MLImageTracker
+
+bool imageTrackingEnabled = false;
+size_t numImageTrackers = 0;
+
+MLImageTracker::MLImageTracker(Local<Object> windowObj, MLHandle trackerHandle, float size) : windowObj(windowObj), trackerHandle(trackerHandle), size(size), valid(false) {}
+
+MLImageTracker::~MLImageTracker() {}
+
+NAN_METHOD(MLImageTracker::New) {
+  if (!imageTrackingEnabled) {
+    imageTrackerSettings.enable_image_tracking = true;
+    imageTrackerSettings.max_simultaneous_targets = 2;
+
+    MLResult result = MLImageTrackerCreate(&imageTrackerSettings, &imageTrackerHandle);
+
+    if (result == MLResult_Ok) {
+      imageTrackingEnabled = true;
+    } else {
+      ML_LOG(Error, "%s: Failed to connect camera: %x", application_name, result);
+      Nan::ThrowError("failed to connect camera");
+    }
+  }
+
+  Local<Object> windowObj = Local<Object>::Cast(info[0]);
+  Local<Object> imageObj = Local<Object>::Cast(info[1]);
+  Local<Number> dimensionNumber = Local<Number>::Cast(info[2]);
+
+  MLHandle trackerHandle;
+  MLImageTrackerTargetSettings trackerSettings;
+  trackerSettings.is_enabled = true;
+  trackerSettings.is_stationary = true;
+  float longerDimension = TO_FLOAT(dimensionNumber);
+  trackerSettings.longer_dimension = longerDimension;
+  char name[64];
+  sprintf(name, "tracker%u", numImageTrackers++);
+  trackerSettings.name = name;
+
+  Image *image = ObjectWrap::Unwrap<Image>(imageObj);
+  Local<Uint8ClampedArray> dataArray = Local<Uint8ClampedArray>::Cast(imageObj->Get(JS_STR("data")));
+  Local<ArrayBuffer> dataArrayBuffer = dataArray->Buffer();
+
+  uint32_t width = image->GetWidth();
+  uint32_t height = image->GetHeight();
+  MLResult result = MLImageTrackerAddTargetFromArray(
+    imageTrackerHandle,
+    &trackerSettings,
+    (uint8_t *)dataArrayBuffer->GetContents().Data() + dataArray->ByteOffset(),
+    width,
+    height,
+    MLImageTrackerImageFormat_RGBA,
+    &trackerHandle
+  );
+
+  if (result == MLResult_Ok) {
+    MLImageTracker *mlImageTracker = new MLImageTracker(windowObj, trackerHandle, longerDimension);
+    Local<Object> mlImageTrackerObj = info.This();
+    mlImageTracker->Wrap(mlImageTrackerObj);
+
+    Nan::SetAccessor(mlImageTrackerObj, JS_STR("ontrack"), OnTrackGetter, OnTrackSetter);
+
+    info.GetReturnValue().Set(mlImageTrackerObj);
+
+    imageTrackers.push_back(mlImageTracker);
+  } else {
+    Nan::ThrowError("MLImageTracker::New: failed to create tracker");
+  }
+}
+
+Local<Function> MLImageTracker::Initialize(Isolate *isolate) {
+  Nan::EscapableHandleScope scope;
+
+  // constructor
+  Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(New);
+  ctor->InstanceTemplate()->SetInternalFieldCount(1);
+  ctor->SetClassName(JS_STR("MLImageTracker"));
+
+  // prototype
+  Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
+  Nan::SetMethod(proto, "destroy", Destroy);
+
+  Local<Function> ctorFn = Nan::GetFunction(ctor).ToLocalChecked();
+
+  return scope.Escape(ctorFn);
+}
+
+NAN_GETTER(MLImageTracker::OnTrackGetter) {
+  // Nan::HandleScope scope;
+  MLImageTracker *mlImageTracker = ObjectWrap::Unwrap<MLImageTracker>(info.This());
+
+  Local<Function> cb = Nan::New(mlImageTracker->cb);
+  info.GetReturnValue().Set(cb);
+}
+
+NAN_SETTER(MLImageTracker::OnTrackSetter) {
+  // Nan::HandleScope scope;
+  MLImageTracker *mlImageTracker = ObjectWrap::Unwrap<MLImageTracker>(info.This());
+
+  if (value->IsFunction()) {
+    uv_loop_t *loop = windowsystembase::GetEventLoop();
+    mlImageTracker->loop = loop;
+
+    Local<Function> localCb = Local<Function>::Cast(value);
+    mlImageTracker->cb.Reset(localCb);
+  } else {
+    Nan::ThrowError("MLImageTracker::OnTrackSetter: invalid arguments");
+  }
+}
+
+void MLImageTracker::Update(MLSnapshot *snapshot) {
+  MLImageTrackerTargetResult trackerTargetResult;
+  MLResult result = MLImageTrackerGetTargetResult(
+    imageTrackerHandle,
+    trackerHandle,
+    &trackerTargetResult
+  );
+  if (result == MLResult_Ok) {
+    const bool &lastValid = valid;
+    MLImageTrackerTargetStatus &status = trackerTargetResult.status;
+    const bool newValid = (status == MLImageTrackerTargetStatus_Tracked || status == MLImageTrackerTargetStatus_Unreliable);
+
+    if (newValid) {
+      MLImageTrackerTargetStaticData trackerTargetStaticData;
+      MLResult result = MLImageTrackerGetTargetStaticData(
+        imageTrackerHandle,
+        trackerHandle,
+        &trackerTargetStaticData
+      );
+      if (result == MLResult_Ok) {
+        MLTransform transform;
+        MLResult result = MLSnapshotGetTransform(snapshot, &trackerTargetStaticData.coord_frame_target, &transform);
+
+        if (result == MLResult_Ok) {
+          MLVec3f &position = transform.position;
+          MLQuaternionf &rotation = transform.rotation;
+          MLVec3f scale = {1, 1, 1};
+
+          MLMat4f transformMatrix = getWindowTransformMatrix(Nan::New(this->windowObj));
+          if (!isIdentityMatrix(transformMatrix)) {
+            MLMat4f transform = multiplyMatrices(transformMatrix, composeMatrix(position, rotation, scale));
+            decomposeMatrix(transform, position, rotation, scale);
+          }
+
+          // Local<Object> localWindowObj = Nan::New(this->windowObj);
+
+          QueueCallback(loop, [this, position, rotation]() -> void {
+            if (!this->cb.IsEmpty()) {
+              Local<Object> asyncObject = Nan::New<Object>();
+              AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLImageTracker::Update");
+
+              Local<Function> cbFn = Nan::New(this->cb);
+              Local<Object> objVal = Nan::New<Object>();
+
+              Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), (3+4)*sizeof(float));
+              char *arrayBufferData = (char *)arrayBuffer->GetContents().Data();
+              size_t index = 0;
+
+              memcpy(arrayBufferData + index, position.values, sizeof(position.values));
+              objVal->Set(JS_STR("position"), Float32Array::New(arrayBuffer, index, sizeof(position.values)/sizeof(position.values[0])));
+              index += sizeof(position.values);
+
+              memcpy(arrayBufferData + index, rotation.values, sizeof(rotation.values));
+              objVal->Set(JS_STR("rotation"), Float32Array::New(arrayBuffer, index, sizeof(rotation.values)/sizeof(rotation.values[0])));
+              index += sizeof(rotation.values);
+
+              objVal->Set(JS_STR("size"), JS_NUM(this->size));
+
+              Local<Value> argv[] = {
+                objVal,
+              };
+
+              asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
+            }
+          });
+
+          valid = newValid;
+        } else {
+          ML_LOG(Error, "%s: ML failed to get eye fixation transform!", application_name);
+        }
+      } else {
+        ML_LOG(Error, "%s: Image tracker get static data failed! %x", application_name, result);
+      }
+    } else {
+      if (lastValid) {
+        // Local<Object> localWindowObj = Nan::New(this->windowObj);
+
+        QueueCallback(loop, [this]() -> void {
+          if (!this->cb.IsEmpty()) {
+            Local<Object> asyncObject = Nan::New<Object>();
+            AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLImageTracker::Update");
+
+            Local<Function> cbFn = Nan::New(cb);
+            Local<Value> objVal = Nan::Null();
+            Local<Value> argv[] = {
+              objVal,
+            };
+
+            asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
+          }
+        });
+      }
+
+      valid = newValid;
+    }
+  } else {
+    ML_LOG(Error, "%s: ML failed to get image tracker target result!", application_name);
+  }
+}
+
+NAN_METHOD(MLImageTracker::Destroy) {
+  MLImageTracker *mlImageTracker = ObjectWrap::Unwrap<MLImageTracker>(info.This());
+
+  imageTrackers.erase(std::remove_if(imageTrackers.begin(), imageTrackers.end(), [&](MLImageTracker *i) -> bool {
+    if (i == mlImageTracker) {
+      MLResult result = MLImageTrackerRemoveTarget(imageTrackerHandle, i->trackerHandle);
+      if (result != MLResult_Ok) {
+        ML_LOG(Error, "%s: ML failed to remove image tracker target!", application_name);
+      }
+      
+      delete i;
+      return true;
+    } else {
+      return false;
+    }
+  }));
+}
+
+// MLContext
+
+MLContext::MLContext() : window(nullptr), position{0, 0, 0}, rotation{0, 0, 0, 1}, cameraInTexture(0), /*contentTexture(0),*/ cameraOutTexture(0), cameraFbo(0) {}
+
+MLContext::~MLContext() {}
+
+Handle<Object> MLContext::Initialize(Isolate *isolate) {
+  Nan::EscapableHandleScope scope;
+
+  // constructor
+  Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(New);
+  ctor->InstanceTemplate()->SetInternalFieldCount(1);
+
+  // prototype
+  Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
+  Nan::SetMethod(proto, "Present", Present);
+  Nan::SetMethod(proto, "Exit", Exit);
+  // Nan::SetMethod(proto, "WaitGetPoses", WaitGetPoses);
+  Nan::SetMethod(proto, "GetSize", GetSize);
+  // Nan::SetMethod(proto, "SetContentTexture", SetContentTexture);
+  Nan::SetMethod(proto, "WaitGetPoses", WaitGetPoses);
+  // Nan::SetMethod(proto, "PrepareFrame", PrepareFrame);
+  Nan::SetMethod(proto, "SubmitFrame", SubmitFrame);
+
+  Local<Function> ctorFn = Nan::GetFunction(ctor).ToLocalChecked();
+
+  Nan::SetMethod(ctorFn, "InitLifecycle", InitLifecycle);
+  Nan::SetMethod(ctorFn, "DeinitLifecycle", DeinitLifecycle);
+  Nan::SetMethod(ctorFn, "SetEventHandler", SetEventHandler);
+  Nan::SetMethod(ctorFn, "IsPresent", IsPresent);
+  Nan::SetMethod(ctorFn, "IsSimulated", IsSimulated);
+  Nan::SetMethod(ctorFn, "RequestHitTest", RequestHitTest);
+  Nan::SetMethod(ctorFn, "RequestMeshing", RequestMeshing);
+  Nan::SetMethod(ctorFn, "RequestPlaneTracking", RequestPlaneTracking);
+  Nan::SetMethod(ctorFn, "RequestHandTracking", RequestHandTracking);
+  Nan::SetMethod(ctorFn, "RequestEyeTracking", RequestEyeTracking);
+  Nan::SetMethod(ctorFn, "RequestImageTracking", RequestImageTracking);
+  Nan::SetMethod(ctorFn, "RequestDepthPopulation", RequestDepthPopulation);
+  // Nan::SetMethod(ctorFn, "RequestCamera", RequestCamera);
+  // Nan::SetMethod(ctorFn, "CancelCamera", CancelCamera);
+  Nan::SetMethod(ctorFn, "Update", Update);
+  // Nan::SetMethod(ctorFn, "Poll", Poll);
+
+  return scope.Escape(ctorFn);
+}
+
+NAN_METHOD(MLContext::New) {
+  Local<Object> mlContextObj = info.This();
+  MLContext *mlContext = new MLContext();
+  mlContext->Wrap(mlContextObj);
+
+  info.GetReturnValue().Set(mlContextObj);
+}
+
+void RunEventsInMainThread(uv_async_t *async) {
+  Nan::HandleScope scope;
+
+  std::deque<std::function<void(std::function<void(int argc, Local<Value> *argv)>)>> localFns;
+  Local<Function> handlerFn;
+  {
+    std::lock_guard<std::mutex> lock(eventHandlerMutex);
+
+    localFns = std::move(eventHandler->fns);
+    eventHandler->fns.clear();
+    
+    handlerFn = Nan::New(eventHandler->handlerFn);
+  } 
+  for (auto iter = localFns.begin(); iter != localFns.end(); iter++) {
+    Nan::HandleScope scope;
+
+    (*iter)([&](int argc, Local<Value> *argv) -> void {
+      Local<Object> asyncObject = Nan::New<Object>();
+      AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "mlEvents");
+      
+      asyncResource.MakeCallback(handlerFn, argc, argv);
+    });
+  }
+}
+
+/* void RunCameraInMainThread(uv_async_t *handle) {
   Nan::HandleScope scope;
 
   if (!cameraConvertPending) {
@@ -2480,7 +2490,7 @@ void RunCameraConvertInMainThread(uv_async_t *handle) {
   }
 
   cameraConvertPending = false;
-}
+} */
 
 const char *meshVsh = "\
 #version 330\n\
@@ -2503,7 +2513,7 @@ void main() {\n\
   fragColor = vec4(1.0);\n\
 }\n\
 ";
-const char *cameraVsh = "\
+/* const char *cameraVsh = "\
 #version 330\n\
 \n\
 in vec2 point;\n\
@@ -2546,171 +2556,97 @@ void main() {\n\
     fragColor = vec4(cameraIn.rgb, 1.0);\n\
   }\n\
 }\n\
-";
+"; */
 NAN_METHOD(MLContext::InitLifecycle) {
-  if (info[0]->IsFunction() && info[1]->IsFunction()) {
-    eventsCb.Reset(Local<Function>::Cast(info[0]));
-    keyboardEventsCb.Reset(Local<Function>::Cast(info[1]));
+  /* uv_loop_t *loop = windowsystembase::GetEventLoop();
+  uv_async_init(loop, &cameraAsync, RunCameraInMainThread);
+  uv_async_init(loop, &cameraConvertAsync, RunCameraConvertInMainThread);
+  uv_sem_init(&cameraConvertSem, 0); */
 
-    uv_sem_init(&reqSem, 0);
-    uv_sem_init(&resSem, 0);
-    uv_async_init(uv_default_loop(), &resAsync, RunResInMainThread);
-    frameThread = std::thread([]() -> void {
-      uv_sem_wait(&reqSem);
+  lifecycle_callbacks.on_new_initarg = onNewInitArg;
+  lifecycle_callbacks.on_stop = onStop;
+  lifecycle_callbacks.on_pause = onPause;
+  lifecycle_callbacks.on_resume = onResume;
+  lifecycle_callbacks.on_unload_resources = onUnloadResources;
+  lifecycle_status = MLLifecycleInit(&lifecycle_callbacks, (void *)(&application_context));
+  if (lifecycle_status != MLResult_Ok) {
+    Nan::ThrowError("MLContext::InitLifecycle failed to initialize lifecycle");
+    return;
+  }
 
-      windowsystem::SetCurrentWindowContext(application_context.mlContext->graphicsClientWindow);
-      MLGraphicsOptions graphics_options = {MLGraphicsFlags_Default, MLSurfaceFormat_RGBA8UNorm, MLSurfaceFormat_D32Float};
-      MLHandle opengl_context = reinterpret_cast<MLHandle>(windowsystem::GetGLContext(application_context.mlContext->graphicsClientWindow));
-      {
-        MLResult result = MLGraphicsCreateClientGL(&graphics_options, opengl_context, &application_context.mlContext->graphics_client);
-        if (result != MLResult_Ok) {
-          ML_LOG(Error, "%s: Failed to create graphics clent: %x", application_name, result);
-          return;
-        }
-      }
-      {
-        MLResult result = MLGraphicsGetRenderTargets(application_context.mlContext->graphics_client, &application_context.mlContext->render_targets_info);
-        if (result != MLResult_Ok) {
-          ML_LOG(Error, "%s: Failed to get graphics render targets: %x", application_name, result);
-          return;
-        }
-      }
-      
-      uv_sem_post(&resSem);
-      
-      glGenFramebuffers(1, &application_context.mlContext->src_framebuffer_id);
-      glGenFramebuffers(1, &application_context.mlContext->dst_framebuffer_id);
-
-      for (;;) {
-        uv_sem_wait(&reqSem);
-
-        std::function<bool()> reqCb;
-        {
-          std::lock_guard<std::mutex> lock(reqMutex);
-
-          if (reqCbs.size() > 0) {
-            reqCb = reqCbs.front();
-            reqCbs.pop_front();
-          }
-        }
-        if (reqCb) {
-          bool frameOk = reqCb();
-
-          if (frameOk) {
-            uv_sem_wait(&reqSem);
-            
-            std::function<bool()> reqCb;
-            {
-              std::lock_guard<std::mutex> lock(reqMutex);
-
-              if (reqCbs.size() > 0) {
-                reqCb = reqCbs.front();
-                reqCbs.pop_front();
-              }
-            }
-            if (reqCb) {
-              reqCb();
-            } else {
-              break;
-            }
-
-            MLResult result = MLGraphicsEndFrame(application_context.mlContext->graphics_client, application_context.mlContext->frame_handle);
-            if (result != MLResult_Ok) {
-              ML_LOG(Error, "MLGraphicsEndFrame complained: %d", result);
-            }
-          }
-        } else {
-          break;
-        }
-      }
-      
-      glDeleteFramebuffers(1, &application_context.mlContext->src_framebuffer_id);
-      glDeleteFramebuffers(1, &application_context.mlContext->dst_framebuffer_id);
-    });
-
-    uv_async_init(uv_default_loop(), &eventsAsync, RunEventsInMainThread);
-    uv_async_init(uv_default_loop(), &keyboardEventsAsync, RunKeyboardEventsInMainThread);
-    uv_async_init(uv_default_loop(), &cameraAsync, RunCameraInMainThread);
-    uv_async_init(uv_default_loop(), &cameraConvertAsync, RunCameraConvertInMainThread);
-    uv_sem_init(&cameraConvertSem, 0);
-
-    mlMesherConstructor.Reset(MLMesher::Initialize(Isolate::GetCurrent()));
-    mlPlaneTrackerConstructor.Reset(MLPlaneTracker::Initialize(Isolate::GetCurrent()));
-    mlHandTrackerConstructor.Reset(MLHandTracker::Initialize(Isolate::GetCurrent()));
-    mlEyeTrackerConstructor.Reset(MLEyeTracker::Initialize(Isolate::GetCurrent()));
-    mlImageTrackerConstructor.Reset(MLImageTracker::Initialize(Isolate::GetCurrent()));
-
-    lifecycle_callbacks.on_new_initarg = onNewInitArg;
-    lifecycle_callbacks.on_stop = onStop;
-    lifecycle_callbacks.on_pause = onPause;
-    lifecycle_callbacks.on_resume = onResume;
-    lifecycle_callbacks.on_unload_resources = onUnloadResources;
-    lifecycle_status = MLLifecycleInit(&lifecycle_callbacks, (void *)(&application_context));
-    if (lifecycle_status != MLResult_Ok) {
-      Nan::ThrowError("MLContext::InitLifecycle failed to initialize lifecycle");
+  {
+    cameraDeviceStatusCallbacks.on_device_available = cameraOnDeviceAvailable;
+    cameraDeviceStatusCallbacks.on_device_unavailable = cameraOnDeviceUnavailable;
+    cameraDeviceStatusCallbacks.on_device_opened = cameraOnDeviceOpened;
+    cameraDeviceStatusCallbacks.on_device_closed = cameraOnDeviceClosed;
+    cameraDeviceStatusCallbacks.on_device_disconnected = cameraOnDeviceDisconnected;
+    cameraDeviceStatusCallbacks.on_device_error = cameraOnDeviceError;
+    cameraDeviceStatusCallbacks.on_preview_buffer_available = cameraOnPreviewBufferAvailable;
+    MLResult result = MLCameraSetDeviceStatusCallbacks(&cameraDeviceStatusCallbacks, nullptr);
+    if (result != MLResult_Ok) {
+      ML_LOG(Error, "%s: failed to set camera device status callbacks %x", application_name, result);
+      Nan::ThrowError("MLContext::InitLifecycle failed to set camera device status callbacks");
       return;
     }
-
-    {
-      cameraDeviceStatusCallbacks.on_device_available = cameraOnDeviceAvailable;
-      cameraDeviceStatusCallbacks.on_device_unavailable = cameraOnDeviceUnavailable;
-      cameraDeviceStatusCallbacks.on_device_opened = cameraOnDeviceOpened;
-      cameraDeviceStatusCallbacks.on_device_closed = cameraOnDeviceClosed;
-      cameraDeviceStatusCallbacks.on_device_disconnected = cameraOnDeviceDisconnected;
-      cameraDeviceStatusCallbacks.on_device_error = cameraOnDeviceError;
-      cameraDeviceStatusCallbacks.on_preview_buffer_available = cameraOnPreviewBufferAvailable;
-      MLResult result = MLCameraSetDeviceStatusCallbacks(&cameraDeviceStatusCallbacks, nullptr);
-      if (result != MLResult_Ok) {
-        ML_LOG(Error, "%s: failed to set camera device status callbacks %x", application_name, result);
-        Nan::ThrowError("MLContext::InitLifecycle failed to set camera device status callbacks");
-        return;
-      }
-    }
-
-    {
-      cameraCaptureCallbacks.on_capture_started = cameraOnCaptureStarted;
-      cameraCaptureCallbacks.on_capture_failed = cameraOnCaptureFailed;
-      cameraCaptureCallbacks.on_capture_buffer_lost = cameraOnCaptureBufferLost;
-      cameraCaptureCallbacks.on_capture_progressed = cameraOnCaptureProgressed;
-      cameraCaptureCallbacks.on_capture_completed = cameraOnCaptureCompleted;
-      cameraCaptureCallbacks.on_image_buffer_available = cameraOnImageBufferAvailable;
-      MLResult result = MLCameraSetCaptureCallbacks(&cameraCaptureCallbacks, nullptr);
-      if (result != MLResult_Ok) {
-        ML_LOG(Error, "%s: failed to set camera device status callbacks %x", application_name, result);
-        Nan::ThrowError("MLContext::InitLifecycle failed to set camera device status callbacks");
-        return;
-      }
-    }
-
-    // HACK: prevent exit hang
-    std::atexit([]() {
-      quick_exit(0);
-    });
-
-    application_context.dummy_value = DummyValue::STOPPED;
-  } else {
-    Nan::ThrowError("invalid arguments");
   }
+
+  {
+    cameraCaptureCallbacks.on_capture_started = cameraOnCaptureStarted;
+    cameraCaptureCallbacks.on_capture_failed = cameraOnCaptureFailed;
+    cameraCaptureCallbacks.on_capture_buffer_lost = cameraOnCaptureBufferLost;
+    cameraCaptureCallbacks.on_capture_progressed = cameraOnCaptureProgressed;
+    cameraCaptureCallbacks.on_capture_completed = cameraOnCaptureCompleted;
+    cameraCaptureCallbacks.on_image_buffer_available = cameraOnImageBufferAvailable;
+    MLResult result = MLCameraSetCaptureCallbacks(&cameraCaptureCallbacks, nullptr);
+    if (result != MLResult_Ok) {
+      ML_LOG(Error, "%s: failed to set camera device status callbacks %x", application_name, result);
+      Nan::ThrowError("MLContext::InitLifecycle failed to set camera device status callbacks");
+      return;
+    }
+  }
+
+  // HACK: prevent exit hang
+  std::atexit([]() {
+    quick_exit(0);
+  });
+
+  application_context.dummy_value = DummyValue::STOPPED;
 }
 
 NAN_METHOD(MLContext::DeinitLifecycle) {
   application_context.dummy_value = DummyValue::STOPPED;
 }
 
+NAN_METHOD(MLContext::SetEventHandler) {
+  if (info[0]->IsFunction()) {
+    Local<Function> handlerFn = Local<Function>::Cast(info[0]);
+
+    {
+      std::lock_guard<std::mutex> lock(eventHandlerMutex);
+      
+      uv_async_t *async = new uv_async_t();
+      uv_loop_t *loop = windowsystembase::GetEventLoop();
+      uv_async_init(loop, async, RunEventsInMainThread);
+
+      eventHandler = new EventHandler(async, handlerFn);
+    }
+  } else {
+    Nan::ThrowError("invalid arguments");
+  }
+}
+
 NAN_METHOD(MLContext::Present) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[1]));
 
   if (lifecycle_status != MLResult_Ok) {
     ML_LOG(Error, "%s: ML Present called before lifecycle initialized.", application_name);
     info.GetReturnValue().Set(Nan::Null());
     return;
   }
-  
+
   application_context.mlContext = mlContext;
   application_context.window = window;
-  application_context.gl = gl;
    
   // initialize perception system
   
@@ -2725,14 +2661,27 @@ NAN_METHOD(MLContext::Present) {
     info.GetReturnValue().Set(Nan::Null());
     return;
   }
-  
+
   // initialize graphics subsystem
+  MLGraphicsOptions graphics_options = {MLGraphicsFlags_Default, MLSurfaceFormat_RGBA8UNorm, MLSurfaceFormat_D32Float};
+  MLHandle opengl_context = reinterpret_cast<MLHandle>(windowsystem::GetGLContext(window));
+  {
+    MLResult result = MLGraphicsCreateClientGL(&graphics_options, opengl_context, &application_context.mlContext->graphics_client);
+    if (result != MLResult_Ok) {
+      ML_LOG(Error, "%s: Failed to create graphics clent: %x", application_name, result);
+      return;
+    }
+  }
+  {
+    MLResult result = MLGraphicsGetRenderTargets(application_context.mlContext->graphics_client, &application_context.mlContext->render_targets_info);
+    if (result != MLResult_Ok) {
+      ML_LOG(Error, "%s: Failed to get graphics render targets: %x", application_name, result);
+      return;
+    }
+  }
   
-  mlContext->graphicsClientWindow = windowsystem::CreateNativeWindow(0, 0, false, window);
-  // mlContext->graphicsClientWindow = window;
-  uv_sem_post(&reqSem);
-  uv_sem_wait(&resSem);
-  
+  glGenFramebuffers(1, &application_context.mlContext->dst_framebuffer_id);
+
   // Now that graphics is connected, the app is ready to go
   if (MLLifecycleSetReadyIndication() != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to indicate lifecycle ready.", application_name);
@@ -2742,9 +2691,11 @@ NAN_METHOD(MLContext::Present) {
   
   // initialize local graphics stack
 
-  unsigned int halfWidth = mlContext->render_targets_info.buffers[0].color.width;
+  // windowsystem::SetCurrentWindowContext(window);
+
+  /* unsigned int halfWidth = mlContext->render_targets_info.buffers[0].color.width;
   unsigned int width = halfWidth * 2;
-  unsigned int height = mlContext->render_targets_info.buffers[0].color.height;
+  unsigned int height = mlContext->render_targets_info.buffers[0].color.height; */
 
   /* GLuint fbo;
   GLuint colorTex;
@@ -2831,7 +2782,7 @@ NAN_METHOD(MLContext::Present) {
     glDeleteShader(mlContext->meshFragment);
   }
 
-  {
+  /* {
     // camera shader
 
     glGenVertexArrays(1, &mlContext->cameraVao);
@@ -2973,7 +2924,7 @@ NAN_METHOD(MLContext::Present) {
     } else {
       glBindTexture(GL_TEXTURE_2D, 0);
     }
-  }
+  } */
 
   // initialize subsystems
 
@@ -3077,6 +3028,8 @@ NAN_METHOD(MLContext::Present) {
 
   mlContext->TickFloor();
 
+  uv_loop_t *loop = windowsystembase::GetEventLoop();
+
   // HACK: force the app to be "running"
   application_context.dummy_value = DummyValue::RUNNING;
 
@@ -3098,6 +3051,9 @@ NAN_METHOD(MLContext::Exit) {
   ML_LOG(Info, "%s: MLContext exit start", application_name);
 
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
+
+  windowsystem::SetCurrentWindowContext(application_context.window);
+  glDeleteFramebuffers(1, &application_context.mlContext->dst_framebuffer_id);
 
   if (MLGraphicsDestroyClient(&mlContext->graphics_client) != MLResult_Ok) {
     ML_LOG(Error, "%s: Failed to create graphics clent.", application_name);
@@ -3343,8 +3299,8 @@ NAN_METHOD(MLContext::Exit) {
   }
 } */
 
-NAN_METHOD(MLContext::RequestGetPoses) {  
-  if (info[0]->IsFloat32Array() && info[1]->IsFloat32Array() && info[2]->IsFloat32Array() && info[3]->IsFunction()) {
+NAN_METHOD(MLContext::WaitGetPoses) {  
+  if (info[0]->IsFloat32Array() && info[1]->IsFloat32Array() && info[2]->IsFloat32Array()) {
     MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
     Local<Float32Array> transformFloat32Array = Local<Float32Array>::Cast(info[0]);
     Local<Float32Array> projectionFloat32Array = Local<Float32Array>::Cast(info[1]);
@@ -3354,144 +3310,114 @@ NAN_METHOD(MLContext::RequestGetPoses) {
     float *transformArray = (float *)((char *)transformFloat32Array->Buffer()->GetContents().Data() + transformFloat32Array->ByteOffset());
     float *projectionArray = (float *)((char *)projectionFloat32Array->Buffer()->GetContents().Data() + projectionFloat32Array->ByteOffset());
     float *controllersArray = (float *)((char *)controllersFloat32Array->Buffer()->GetContents().Data() + controllersFloat32Array->ByteOffset());
-    MLPoseRes *mlPoseRes = new MLPoseRes(cbFn);
 
-    {
-      std::lock_guard<std::mutex> lock(reqMutex);
-      
-      reqCbs.push_back([mlContext, transformArray, projectionArray, controllersArray, mlPoseRes]() -> bool {
-        // windowsystem::SetCurrentWindowContext(gl->windowHandle);
-        
-        MLGraphicsFrameParams frame_params;
-        MLResult result = MLGraphicsInitFrameParams(&frame_params);
-        if (result != MLResult_Ok) {
-          ML_LOG(Error, "MLGraphicsInitFrameParams complained: %d", result);
-        }
-        frame_params.surface_scale = 1.0f;
-        frame_params.projection_type = MLGraphicsProjectionType_Default;
-        frame_params.near_clip = 0.1f;
-        frame_params.far_clip = 100.0f;
-        frame_params.focus_distance = 1.0f;
+    // windowsystem::SetCurrentWindowContext(gl->windowHandle);
+    
+    MLGraphicsFrameParams frame_params;
+    MLResult result = MLGraphicsInitFrameParams(&frame_params);
+    if (result != MLResult_Ok) {
+      ML_LOG(Error, "MLGraphicsInitFrameParams complained: %d", result);
+    }
+    frame_params.surface_scale = 1.0f;
+    frame_params.projection_type = MLGraphicsProjectionType_Default;
+    frame_params.near_clip = 0.1f;
+    frame_params.far_clip = 100.0f;
+    frame_params.focus_distance = 1.0f;
 
-        result = MLGraphicsBeginFrame(mlContext->graphics_client, &frame_params, &mlContext->frame_handle, &mlContext->virtual_camera_array);
+    result = MLGraphicsBeginFrame(mlContext->graphics_client, &frame_params, &mlContext->frame_handle, &mlContext->virtual_camera_array);
 
-        bool frameOk = (result == MLResult_Ok);
-        if (frameOk) {
-          GLuint fbo;
-          glGenFramebuffers(1, &fbo);
-          glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
-          for (int i = 0; i < 2; i++) {
-            glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, mlContext->virtual_camera_array.color_id, 0, i);
-            if (i == 0) {
-              glClearColor(1.0, 0.0, 0.0, 1.0);
-            } else {
-              glClearColor(0.0, 0.0, 1.0, 1.0);
-            }
-            glClear(GL_COLOR_BUFFER_BIT);
-          }
-          glDeleteFramebuffers(1, &fbo);
-          
-          mlContext->TickFloor();
-
-          // transform
-          for (int i = 0; i < 2; i++) {
-            const MLGraphicsVirtualCameraInfo &cameraInfo = mlContext->virtual_camera_array.virtual_cameras[i];
-            const MLTransform &transform = cameraInfo.transform;
-            const MLVec3f &position = OffsetFloor(transform.position);
-            transformArray[i*7 + 0] = position.x;
-            transformArray[i*7 + 1] = position.y;
-            transformArray[i*7 + 2] = position.z;
-            transformArray[i*7 + 3] = transform.rotation.x;
-            transformArray[i*7 + 4] = transform.rotation.y;
-            transformArray[i*7 + 5] = transform.rotation.z;
-            transformArray[i*7 + 6] = transform.rotation.w;
-
-            const MLMat4f &projection = cameraInfo.projection;
-            for (int j = 0; j < 16; j++) {
-              projectionArray[i*16 + j] = projection.matrix_colmajor[j];
-            }
-          }
-          
-          // position
-          {
-            // std::unique_lock<std::mutex> lock(mlContext->positionMutex);
-
-            const MLTransform &leftCameraTransform = mlContext->virtual_camera_array.virtual_cameras[0].transform;
-            mlContext->position = OffsetFloor(leftCameraTransform.position);
-            mlContext->rotation = leftCameraTransform.rotation;
-          }
-          
-          // controllers
-          MLInputControllerState controllerStates[MLInput_MaxControllers];
-          result = MLInputGetControllerState(mlContext->inputTracker, controllerStates);
-          if (result == MLResult_Ok) {
-            for (int i = 0; i < 2 && i < MLInput_MaxControllers; i++) {
-              const MLInputControllerState &controllerState = controllerStates[i];
-              bool is_connected = controllerState.is_connected;
-              const MLVec3f &position = OffsetFloor(controllerState.position);
-              const MLQuaternionf &orientation = controllerState.orientation;
-              const float trigger = controllerState.trigger_normalized;
-              const float bumper = controllerState.button_state[MLInputControllerButton_Bumper] ? 1.0f : 0.0f;
-              const float home = controllerState.button_state[MLInputControllerButton_HomeTap] ? 1.0f : 0.0f;
-              const bool isTouchActive = controllerState.is_touch_active[0];
-              const MLVec3f &touchPosAndForce = controllerState.touch_pos_and_force[0];
-              const float touchForceZ = isTouchActive ? (touchPosAndForce.z > 0.5f ? 1.0f : 0.5f) : 0.0f;
-
-              int index;
-              controllersArray[index = i * CONTROLLER_ENTRY_SIZE] = is_connected ? 1 : 0;
-              controllersArray[++index] = position.x;
-              controllersArray[++index] = position.y;
-              controllersArray[++index] = position.z;
-              controllersArray[++index] = orientation.x;
-              controllersArray[++index] = orientation.y;
-              controllersArray[++index] = orientation.z;
-              controllersArray[++index] = orientation.w;
-              controllersArray[++index] = trigger;
-              controllersArray[++index] = bumper;
-              controllersArray[++index] = home;
-              controllersArray[++index] = touchPosAndForce.x;
-              controllersArray[++index] = touchPosAndForce.y;
-              controllersArray[++index] = touchForceZ;
-            }
-          } else {
-            ML_LOG(Error, "MLInputGetControllerState failed: %s", application_name);
-          }
+    bool frameOk = (result == MLResult_Ok);
+    if (frameOk) {
+      /* GLuint fbo;
+      glGenFramebuffers(1, &fbo);
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+      for (int i = 0; i < 2; i++) {
+        glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, mlContext->virtual_camera_array.color_id, 0, i);
+        if (i == 0) {
+          glClearColor(1.0, 0.0, 0.0, 1.0);
         } else {
-          ML_LOG(Error, "MLGraphicsBeginFrame complained: %d", result);
+          glClearColor(0.0, 0.0, 1.0, 1.0);
         }
+        glClear(GL_COLOR_BUFFER_BIT);
+      }
+      glDeleteFramebuffers(1, &fbo); */
+      
+      mlContext->TickFloor();
 
-        {
-          std::lock_guard<std::mutex> lock(resMutex);
-          
-          resCbs.push_back([frameOk, mlPoseRes]() -> void {
-            {
-              Local<Object> asyncObject = Nan::New<Object>();
-              AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "MLContext::RequestGetPoses");
-              
-              Local<Function> cb = Nan::New(mlPoseRes->cb);
-              Local<Value> argv[] = {
-                JS_BOOL(frameOk),
-              };
-              asyncResource.MakeCallback(cb, sizeof(argv)/sizeof(argv[0]), argv);
-            }
-            
-            delete mlPoseRes;
-          });
+      // transform
+      for (int i = 0; i < 2; i++) {
+        const MLGraphicsVirtualCameraInfo &cameraInfo = mlContext->virtual_camera_array.virtual_cameras[i];
+        const MLTransform &transform = cameraInfo.transform;
+        const MLVec3f &position = OffsetFloor(transform.position);
+        transformArray[i*7 + 0] = position.x;
+        transformArray[i*7 + 1] = position.y;
+        transformArray[i*7 + 2] = position.z;
+        transformArray[i*7 + 3] = transform.rotation.x;
+        transformArray[i*7 + 4] = transform.rotation.y;
+        transformArray[i*7 + 5] = transform.rotation.z;
+        transformArray[i*7 + 6] = transform.rotation.w;
+
+        const MLMat4f &projection = cameraInfo.projection;
+        for (int j = 0; j < 16; j++) {
+          projectionArray[i*16 + j] = projection.matrix_colmajor[j];
         }
-        
-        uv_async_send(&resAsync);
-        
-        return frameOk;
-      });
+      }
+      
+      // position
+      {
+        // std::unique_lock<std::mutex> lock(mlContext->positionMutex);
+
+        const MLTransform &leftCameraTransform = mlContext->virtual_camera_array.virtual_cameras[0].transform;
+        mlContext->position = OffsetFloor(leftCameraTransform.position);
+        mlContext->rotation = leftCameraTransform.rotation;
+      }
+      
+      // controllers
+      MLInputControllerState controllerStates[MLInput_MaxControllers];
+      result = MLInputGetControllerState(mlContext->inputTracker, controllerStates);
+      if (result == MLResult_Ok) {
+        for (int i = 0; i < 2 && i < MLInput_MaxControllers; i++) {
+          const MLInputControllerState &controllerState = controllerStates[i];
+          bool is_connected = controllerState.is_connected;
+          const MLVec3f &position = OffsetFloor(controllerState.position);
+          const MLQuaternionf &orientation = controllerState.orientation;
+          const float trigger = controllerState.trigger_normalized;
+          const float bumper = controllerState.button_state[MLInputControllerButton_Bumper] ? 1.0f : 0.0f;
+          const float home = controllerState.button_state[MLInputControllerButton_HomeTap] ? 1.0f : 0.0f;
+          const bool isTouchActive = controllerState.is_touch_active[0];
+          const MLVec3f &touchPosAndForce = controllerState.touch_pos_and_force[0];
+          const float touchForceZ = isTouchActive ? (touchPosAndForce.z > 0.5f ? 1.0f : 0.5f) : 0.0f;
+
+          int index;
+          controllersArray[index = i * CONTROLLER_ENTRY_SIZE] = is_connected ? 1 : 0;
+          controllersArray[++index] = position.x;
+          controllersArray[++index] = position.y;
+          controllersArray[++index] = position.z;
+          controllersArray[++index] = orientation.x;
+          controllersArray[++index] = orientation.y;
+          controllersArray[++index] = orientation.z;
+          controllersArray[++index] = orientation.w;
+          controllersArray[++index] = trigger;
+          controllersArray[++index] = bumper;
+          controllersArray[++index] = home;
+          controllersArray[++index] = touchPosAndForce.x;
+          controllersArray[++index] = touchPosAndForce.y;
+          controllersArray[++index] = touchForceZ;
+        }
+      } else {
+        ML_LOG(Error, "MLInputGetControllerState failed: %s", application_name);
+      }
+    } else {
+      ML_LOG(Error, "MLGraphicsBeginFrame complained: %d", result);
     }
     
-    uv_sem_post(&reqSem);
+    info.GetReturnValue().Set(JS_BOOL(frameOk));
   } else {
-    Nan::ThrowError("MLContext::RequestGetPoses: invalid arguments");
+    Nan::ThrowError("MLContext::WaitGetPoses: invalid arguments");
   }
 }
 
-NAN_METHOD(MLContext::PrepareFrame) {
+/* NAN_METHOD(MLContext::PrepareFrame) {
   if (info[0]->IsObject() && info[1]->IsNumber() && info[2]->IsNumber() && info[3]->IsNumber()) {
     if (depthEnabled) {
       MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
@@ -3575,59 +3501,47 @@ NAN_METHOD(MLContext::PrepareFrame) {
   } else {
     Nan::ThrowError("MLContext::PrepareFrame: invalid arguments");
   }
-}
+} */
 
 NAN_METHOD(MLContext::SubmitFrame) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
 
   if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber()) {
     // WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
-    GLuint colorTex = TO_UINT32(info[0]);
+    GLuint fbo = TO_UINT32(info[0]);
     unsigned int width = TO_UINT32(info[1]);
     unsigned int height = TO_UINT32(info[2]);
 
-    GLsync sync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+    const MLRectf &viewport = application_context.mlContext->virtual_camera_array.viewport;
+    
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, application_context.mlContext->dst_framebuffer_id);
 
-    {
-      std::lock_guard<std::mutex> lock(reqMutex);
+    for (int i = 0; i < 2; i++) {
+      glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, application_context.mlContext->virtual_camera_array.color_id, 0, i);
+      // glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, application_context.mlContext->virtual_camera_array.depth_id, 0, i);
+
+      glBlitFramebuffer(i == 0 ? 0 : width/2, 0,
+        i == 0 ? width/2 : width, height,
+        viewport.x, viewport.y,
+        viewport.w, viewport.h,
+        GL_COLOR_BUFFER_BIT,
+        GL_LINEAR);
       
-      reqCbs.push_back([colorTex, width, height, sync]() -> bool {
-        const MLRectf &viewport = application_context.mlContext->virtual_camera_array.viewport;
-        
-        glWaitSync(sync, 0, GL_TIMEOUT_IGNORED);
-        glDeleteSync(sync);
-        
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, application_context.mlContext->src_framebuffer_id);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, application_context.mlContext->dst_framebuffer_id);
-        
-        glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
-
-        for (int i = 0; i < 2; i++) {
-          glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, application_context.mlContext->virtual_camera_array.color_id, 0, i);
-          // glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, application_context.mlContext->virtual_camera_array.depth_id, 0, i);
-
-          glBlitFramebuffer(i == 0 ? 0 : width/2, 0,
-            i == 0 ? width/2 : width, height,
-            viewport.x, viewport.y,
-            viewport.w, viewport.h,
-            GL_COLOR_BUFFER_BIT,
-            GL_LINEAR);
-          
-          MLGraphicsVirtualCameraInfo &camera = application_context.mlContext->virtual_camera_array.virtual_cameras[i];
-          MLResult result = MLGraphicsSignalSyncObjectGL(application_context.mlContext->graphics_client, camera.sync_object);
-          if (result != MLResult_Ok) {
-            ML_LOG(Error, "MLGraphicsSignalSyncObjectGL complained: %d", result);
-          }
-        }
-        
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        
-        return true;
-      });
+      MLGraphicsVirtualCameraInfo &camera = application_context.mlContext->virtual_camera_array.virtual_cameras[i];
+      MLResult result = MLGraphicsSignalSyncObjectGL(application_context.mlContext->graphics_client, camera.sync_object);
+      if (result != MLResult_Ok) {
+        ML_LOG(Error, "MLGraphicsSignalSyncObjectGL complained: %d", result);
+      }
     }
-    
-    uv_sem_post(&reqSem);
-    
+
+    MLResult result = MLGraphicsEndFrame(application_context.mlContext->graphics_client, application_context.mlContext->frame_handle);
+    if (result != MLResult_Ok) {
+      ML_LOG(Error, "MLGraphicsEndFrame complained: %d", result);
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
     /* if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
       glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
     } else {
@@ -3663,20 +3577,25 @@ NAN_METHOD(MLContext::GetSize) {
   info.GetReturnValue().Set(result);
 }
 
-NAN_METHOD(MLContext::SetContentTexture) {
+/* NAN_METHOD(MLContext::SetContentTexture) {
   if (info[0]->IsNumber()) {
     MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(info.This());
     mlContext->contentTexture = TO_UINT32(info[0]);
   } else {
     Nan::ThrowError("MLContext::SetContentTexture: invalid arguments");
   }
-}
+} */
 
 NAN_METHOD(MLContext::RequestMeshing) {
-  if (info[0]->IsObject()) {
-    Local<Function> mlMesherCons = Nan::New(mlMesherConstructor);
+  if (info[0]->IsObject() && info[1]->IsNumber()) {
+    MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(Local<Object>::Cast(info.This()));
+    if (mlContext->mlMesherConstructor.IsEmpty()) {
+      mlContext->mlMesherConstructor.Reset(MLMesher::Initialize(Isolate::GetCurrent()));
+    }
+    Local<Function> mlMesherCons = Nan::New(mlContext->mlMesherConstructor);
     Local<Value> argv[] = {
       info[0],
+      info[1],
     };
     Local<Object> mlMesherObj = mlMesherCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(argv)/sizeof(argv[0]), argv).ToLocalChecked();
     info.GetReturnValue().Set(mlMesherObj);
@@ -3687,7 +3606,11 @@ NAN_METHOD(MLContext::RequestMeshing) {
 
 NAN_METHOD(MLContext::RequestPlaneTracking) {
   if (info[0]->IsObject()) {
-    Local<Function> mlPlaneTrackerCons = Nan::New(mlPlaneTrackerConstructor);
+    MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(Local<Object>::Cast(info.This()));
+    if (mlContext->mlPlaneTrackerConstructor.IsEmpty()) {
+      mlContext->mlPlaneTrackerConstructor.Reset(MLPlaneTracker::Initialize(Isolate::GetCurrent()));
+    }
+    Local<Function> mlPlaneTrackerCons = Nan::New(mlContext->mlPlaneTrackerConstructor);
     Local<Value> argv[] = {
       info[0],
     };
@@ -3732,7 +3655,8 @@ NAN_METHOD(MLContext::RequestHitTest) {
     MLHandle requestHandle;
     MLResult result = MLRaycastRequest(raycastTracker, &raycastQuery, &requestHandle);
     if (result == MLResult_Ok) {
-      MLRaycaster *raycaster = new MLRaycaster(windowObj, requestHandle, cb);
+      uv_loop_t *loop = windowsystembase::GetEventLoop();
+      MLRaycaster *raycaster = new MLRaycaster(windowObj, requestHandle, loop, cb);
       raycasters.push_back(raycaster);
     } else {
       ML_LOG(Error, "%s: Failed to request raycast: %x %x", application_name, result);
@@ -3745,7 +3669,11 @@ NAN_METHOD(MLContext::RequestHitTest) {
 
 NAN_METHOD(MLContext::RequestHandTracking) {
   if (info[0]->IsObject()) {
-    Local<Function> mlHandTrackerCons = Nan::New(mlHandTrackerConstructor);
+    MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(Local<Object>::Cast(info.This()));
+    if (mlContext->mlHandTrackerConstructor.IsEmpty()) {
+      mlContext->mlHandTrackerConstructor.Reset(MLHandTracker::Initialize(Isolate::GetCurrent()));
+    }
+    Local<Function> mlHandTrackerCons = Nan::New(mlContext->mlHandTrackerConstructor);
     Local<Value> argv[] = {
       info[0],
     };
@@ -3758,7 +3686,11 @@ NAN_METHOD(MLContext::RequestHandTracking) {
 
 NAN_METHOD(MLContext::RequestEyeTracking) {
   if (info[0]->IsObject()) {
-    Local<Function> mlEyeTrackerCons = Nan::New(mlEyeTrackerConstructor);
+    MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(Local<Object>::Cast(info.This()));
+    if (mlContext->mlEyeTrackerConstructor.IsEmpty()) {
+      mlContext->mlEyeTrackerConstructor.Reset(MLEyeTracker::Initialize(Isolate::GetCurrent()));
+    }
+    Local<Function> mlEyeTrackerCons = Nan::New(mlContext->mlEyeTrackerConstructor);
     Local<Value> argv[] = {
       info[0],
     };
@@ -3779,7 +3711,11 @@ NAN_METHOD(MLContext::RequestImageTracking) {
       imageObj->Get(JS_STR("image"))->IsObject() &&
       JS_OBJ(imageObj->Get(JS_STR("image")))->Get(JS_STR("data"))->IsUint8ClampedArray()
     ) {
-      Local<Function> mlImageTrackerCons = Nan::New(mlImageTrackerConstructor);
+      MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(Local<Object>::Cast(info.This()));
+      if (mlContext->mlImageTrackerConstructor.IsEmpty()) {
+        mlContext->mlImageTrackerConstructor.Reset(MLImageTracker::Initialize(Isolate::GetCurrent()));
+      }
+      Local<Function> mlImageTrackerCons = Nan::New(mlContext->mlImageTrackerConstructor);
       Local<Value> argv[] = {
         windowObj,
         imageObj->Get(JS_STR("image")),
@@ -3801,7 +3737,7 @@ NAN_METHOD(MLContext::RequestDepthPopulation) {
   }
 }
 
-bool cameraConnected = false;
+/* bool cameraConnected = false;
 NAN_METHOD(MLContext::RequestCamera) {
   if (info[0]->IsFunction()) {
     if (!cameraConnected) {
@@ -3830,7 +3766,8 @@ NAN_METHOD(MLContext::RequestCamera) {
     {
       // std::unique_lock<std::mutex> lock(cameraRequestsMutex);
 
-      CameraRequest *cameraRequest = new CameraRequest(cbFn);
+      uv_loop_t *loop = windowsystembase::GetEventLoop();
+      CameraRequest *cameraRequest = new CameraRequest(loop, cbFn);
       cameraRequests.push_back(cameraRequest);
     }
   } else {
@@ -3859,7 +3796,7 @@ NAN_METHOD(MLContext::CancelCamera) {
   } else {
     Nan::ThrowError("MLContext::CancelCamera: invalid arguments");
   }
-}
+} */
 
 void setFingerValue(const MLWristState &wristState, MLSnapshot *snapshot, float data[4][1 + 3]);
 void setFingerValue(const MLThumbState &thumbState, MLSnapshot *snapshot, float data[4][1 + 3]);
@@ -3929,14 +3866,12 @@ void setFingerValue(float data[1 + 3]) {
 
 NAN_METHOD(MLContext::Update) {
   MLContext *mlContext = ObjectWrap::Unwrap<MLContext>(Local<Object>::Cast(info[0]));
-  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[1]));
-  
-  windowsystem::SetCurrentWindowContext(gl->windowHandle);
 
   MLSnapshot *snapshot = nullptr;
 
   // requests
 
+  // XXX
   if (raycasters.size() > 0) {
     raycasters.erase(std::remove_if(raycasters.begin(), raycasters.end(), [&](MLRaycaster *r) -> bool {
       if (r->Update()) {
@@ -4019,6 +3954,8 @@ NAN_METHOD(MLContext::Update) {
   }
 
   if ((meshers.size() > 0 || depthEnabled) && !meshInfoRequestPending && !meshRequestsPending) {
+    float range = getMaxRange();
+
     {
       // std::unique_lock<std::mutex> lock(mlContext->positionMutex);
 
@@ -4026,9 +3963,9 @@ NAN_METHOD(MLContext::Update) {
       // meshExtents.rotation =  mlContext->rotation;
       meshExtents.rotation = {0, 0, 0, 1};
     }
-    meshExtents.extents.x = meshingRange;
-    meshExtents.extents.y = meshingRange;
-    meshExtents.extents.z = meshingRange;
+    meshExtents.extents.x = range;
+    meshExtents.extents.y = range;
+    meshExtents.extents.z = range;
 
     MLResult result = MLMeshingRequestMeshInfo(meshTracker, &meshExtents, &meshInfoRequestHandle);
     if (result == MLResult_Ok) {
@@ -4063,13 +4000,13 @@ NAN_METHOD(MLContext::Update) {
     }
   }
 
-  {
+  /* {
     // std::unique_lock<std::mutex> lock(cameraRequestsMutex);
 
     if (cameraRequests.size() > 0) {
       cameraRequestConditionVariable.notify_one();
     }
-  }
+  } */
 
   // responses
 
@@ -4077,6 +4014,8 @@ NAN_METHOD(MLContext::Update) {
     MLResult result = MLMeshingGetMeshInfoResult(meshTracker, meshInfoRequestHandle, &meshInfo);
     if (result == MLResult_Ok) {
       uint32_t dataCount = meshInfo.data_count;
+
+      MLMeshingLOD lod = getMaxLod();
 
       meshRequestNewMap.clear();
       meshRequestRemovedMap.clear();
@@ -4086,9 +4025,7 @@ NAN_METHOD(MLContext::Update) {
         const MLMeshingMeshState &state = meshBlockInfo.state;
         MLMeshingBlockRequest &meshBlockRequest = meshBlockRequests[i];
         meshBlockRequest.id = meshBlockInfo.id;
-        // meshBlockRequest.level = MLMeshingLOD_Minimum;
-        meshBlockRequest.level = MLMeshingLOD_Medium;
-        // meshBlockRequest.level = MLMeshingLOD_Maximum;
+        meshBlockRequest.level = lod;
 
         const std::string &id = id2String(meshBlockInfo.id);
         meshRequestNewMap[id] = (state == MLMeshingMeshState_New);
@@ -4140,42 +4077,35 @@ NAN_METHOD(MLContext::Update) {
       MLMeshingBlockMesh *blockMeshes = mesh.data;
       uint32_t dataCount = mesh.data_count;
 
+      // add new mesh buffers
       for (uint32_t i = 0; i < dataCount; i++) {
         MLMeshingBlockMesh &blockMesh = blockMeshes[i];
         const std::string &id = id2String(blockMesh.id);
 
         if (!meshRequestRemovedMap[id]) {
-          MeshBuffer *meshBuffer;
-          auto iter = meshBuffers.find(id);
-          if (iter != meshBuffers.end()) {
-            meshBuffer = &iter->second;
-          } else {
-            GLuint buffers[3];
-            glGenBuffers(sizeof(buffers)/sizeof(buffers[0]), buffers);
-            meshBuffers[id] = MeshBuffer(buffers[0], buffers[1], buffers[2]);
-            meshBuffer = &meshBuffers[id];
-          }
+          MLTransform transform;
+          MLSnapshotGetTransform(snapshot, &blockMesh.id, &transform);
 
-          meshBuffer->setBuffers((float *)(&blockMesh.vertex->values), blockMesh.vertex_count * 3, (float *)(&blockMesh.normal->values), blockMesh.index, blockMesh.index_count, meshRequestNewMap[id], meshRequestUnchangedMap[id]);
+          meshBuffers[id] = MeshBuffer(transform, (float *)(&blockMesh.vertex->values), blockMesh.vertex_count * 3, (float *)(&blockMesh.normal->values), blockMesh.index, blockMesh.index_count);
         } else {
-          auto iter = meshBuffers.find(id);
-          if (iter != meshBuffers.end()) {
-            MeshBuffer *meshBuffer = &iter->second;
-            GLuint buffers[3] = {
-              meshBuffer->positionBuffer,
-              meshBuffer->normalBuffer,
-              meshBuffer->indexBuffer,
-            };
-            glDeleteBuffers(sizeof(buffers)/sizeof(buffers[0]), buffers);
-            meshBuffers.erase(iter);
-          }
+          meshBuffers.erase(id);
         }
       }
 
-      if (gl->HasBufferBinding(GL_ARRAY_BUFFER)) {
-        glBindBuffer(GL_ARRAY_BUFFER, gl->GetBufferBinding(GL_ARRAY_BUFFER));
-      } else {
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
+      // remove outranged mesh buffers
+      float range = getMaxRange();
+      std::vector<std::string> removedIds;
+      for (auto iter = meshBuffers.begin(); iter != meshBuffers.end(); iter++) {
+        const std::string &id = iter->first;
+        MeshBuffer &meshBuffer = iter->second;
+        float distance = distanceTo(mlContext->position, meshBuffer.transform.position);
+        if (distance > range) {
+          meshRequestRemovedMap[id] = true;
+          removedIds.push_back(id);
+        }
+      }
+      for (auto iter = removedIds.begin(); iter != removedIds.end(); iter++) {
+        meshBuffers.erase(*iter);
       }
 
       std::for_each(meshers.begin(), meshers.end(), [&](MLMesher *m) {
@@ -4220,13 +4150,13 @@ NAN_METHOD(MLContext::Update) {
   }
 }
 
-NAN_METHOD(MLContext::Poll) {
+/* NAN_METHOD(MLContext::Poll) {
   std::for_each(polls.begin(), polls.end(), [&](MLPoll *poll) {
     poll->cb();
     delete poll;
   });
   polls.clear();
-}
+} */
 
 void MLContext::TickFloor() {
   if (floorRequestPending) {

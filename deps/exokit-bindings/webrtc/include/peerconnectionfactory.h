@@ -60,13 +60,13 @@ class PeerConnectionFactory
   //
   static void Init(v8::Local<v8::Object> exports);
   static void Dispose();
-  static Nan::Persistent<v8::Function> constructor;
+  static thread_local Nan::Persistent<v8::Function> constructor;
   static NAN_METHOD(New);
 
  private:
-  static std::shared_ptr<PeerConnectionFactory> _default;
-  static uv_mutex_t _lock;
-  static int _references;
+  static thread_local std::shared_ptr<PeerConnectionFactory> _default;
+  static thread_local uv_mutex_t _lock;
+  static thread_local int _references;
 
   rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> _factory;
   

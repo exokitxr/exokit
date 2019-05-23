@@ -4,6 +4,46 @@
 
 namespace windowsystembase {
 
+std::vector<float> multiplyMatrices(const std::vector<float> &a, const std::vector<float> &b) {
+  std::vector<float> result(16);
+  
+  const float *ae = a.data();
+  const float *be = b.data();
+  float *te = result.data();
+
+  float a11 = ae[ 0 ], a12 = ae[ 4 ], a13 = ae[ 8 ], a14 = ae[ 12 ];
+  float a21 = ae[ 1 ], a22 = ae[ 5 ], a23 = ae[ 9 ], a24 = ae[ 13 ];
+  float a31 = ae[ 2 ], a32 = ae[ 6 ], a33 = ae[ 10 ], a34 = ae[ 14 ];
+  float a41 = ae[ 3 ], a42 = ae[ 7 ], a43 = ae[ 11 ], a44 = ae[ 15 ];
+
+  float b11 = be[ 0 ], b12 = be[ 4 ], b13 = be[ 8 ], b14 = be[ 12 ];
+  float b21 = be[ 1 ], b22 = be[ 5 ], b23 = be[ 9 ], b24 = be[ 13 ];
+  float b31 = be[ 2 ], b32 = be[ 6 ], b33 = be[ 10 ], b34 = be[ 14 ];
+  float b41 = be[ 3 ], b42 = be[ 7 ], b43 = be[ 11 ], b44 = be[ 15 ];
+
+  te[ 0 ] = a11 * b11 + a12 * b21 + a13 * b31 + a14 * b41;
+  te[ 4 ] = a11 * b12 + a12 * b22 + a13 * b32 + a14 * b42;
+  te[ 8 ] = a11 * b13 + a12 * b23 + a13 * b33 + a14 * b43;
+  te[ 12 ] = a11 * b14 + a12 * b24 + a13 * b34 + a14 * b44;
+
+  te[ 1 ] = a21 * b11 + a22 * b21 + a23 * b31 + a24 * b41;
+  te[ 5 ] = a21 * b12 + a22 * b22 + a23 * b32 + a24 * b42;
+  te[ 9 ] = a21 * b13 + a22 * b23 + a23 * b33 + a24 * b43;
+  te[ 13 ] = a21 * b14 + a22 * b24 + a23 * b34 + a24 * b44;
+
+  te[ 2 ] = a31 * b11 + a32 * b21 + a33 * b31 + a34 * b41;
+  te[ 6 ] = a31 * b12 + a32 * b22 + a33 * b32 + a34 * b42;
+  te[ 10 ] = a31 * b13 + a32 * b23 + a33 * b33 + a34 * b43;
+  te[ 14 ] = a31 * b14 + a32 * b24 + a33 * b34 + a34 * b44;
+
+  te[ 3 ] = a41 * b11 + a42 * b21 + a43 * b31 + a44 * b41;
+  te[ 7 ] = a41 * b12 + a42 * b22 + a43 * b32 + a44 * b42;
+  te[ 11 ] = a41 * b13 + a42 * b23 + a43 * b33 + a44 * b43;
+  te[ 15 ] = a41 * b14 + a42 * b24 + a43 * b34 + a44 * b44;
+  
+  return result;
+}
+
 const char *composeVsh = ""
 #ifdef ANDROID
 "#version 300 es\n"
@@ -29,25 +69,12 @@ const char *composeFsh = ""
 "\n\
 in vec2 vUv;\n\
 out vec4 fragColor;\n\
-int texSamples = 4;\n\
-uniform sampler2DMS msTex;\n\
-uniform sampler2DMS msDepthTex;\n\
-uniform vec2 texSize;\n\
-\n\
-vec4 textureMultisample(sampler2DMS sampler, vec2 uv) {\n\
-  ivec2 iUv = ivec2(uv * texSize);\n\
-\n\
-  vec4 color = vec4(0.0);\n\
-  for (int i = 0; i < texSamples; i++) {\n\
-    color += texelFetch(sampler, iUv, i);\n\
-  }\n\
-  color /= float(texSamples);\n\
-  return color;\n\
-}\n\
+uniform sampler2D tex;\n\
+uniform sampler2D depthTex;\n\
 \n\
 void main() {\n\
-  fragColor = textureMultisample(msTex, vUv);\n\
-  gl_FragDepth = textureMultisample(msDepthTex, vUv).r;\n\
+  fragColor = texture(tex, vUv);\n\
+  gl_FragDepth = texture(depthTex, vUv).r;\n\
 }\n\
 ";
 
@@ -90,9 +117,11 @@ void InitializeLocalGlState(WebGLRenderingContext *gl) {
   {
     ComposeSpec *composeSpec = new ComposeSpec();
 
-    glGenVertexArrays(1, & composeSpec->composeVao);
+    // blit fbos
+    glGenFramebuffers(2, composeSpec->blitFbos);
 
     // vertex array
+    glGenVertexArrays(1, &composeSpec->composeVao);
     glBindVertexArray(composeSpec->composeVao);
 
     // vertex shader
@@ -149,19 +178,14 @@ void InitializeLocalGlState(WebGLRenderingContext *gl) {
       exout << "ML compose program failed to get attrib location for 'uv'" << std::endl;
       return;
     }
-    composeSpec->msTexLocation = glGetUniformLocation(composeSpec->composeProgram, "msTex");
-    if (composeSpec->msTexLocation == -1) {
-      exout << "ML compose program failed to get uniform location for 'msTex'" << std::endl;
+    composeSpec->texLocation = glGetUniformLocation(composeSpec->composeProgram, "tex");
+    if (composeSpec->texLocation == -1) {
+      exout << "ML compose program failed to get uniform location for 'tex'" << std::endl;
       return;
     }
-    composeSpec->msDepthTexLocation = glGetUniformLocation(composeSpec->composeProgram, "msDepthTex");
-    if (composeSpec->msDepthTexLocation == -1) {
-      exout << "ML compose program failed to get uniform location for 'msDepthTex'" << std::endl;
-      return;
-    }
-    composeSpec->texSizeLocation = glGetUniformLocation(composeSpec->composeProgram, "texSize");
-    if (composeSpec->texSizeLocation == -1) {
-      exout << "ML compose program failed to get uniform location for 'texSize'" << std::endl;
+    composeSpec->depthTexLocation = glGetUniformLocation(composeSpec->composeProgram, "depthTex");
+    if (composeSpec->depthTexLocation == -1) {
+      exout << "ML compose program failed to get uniform location for 'depthTex'" << std::endl;
       return;
     }
 
@@ -330,7 +354,7 @@ void InitializeLocalGlState(WebGLRenderingContext *gl) {
 
 constexpr GLint MAX_TEXTURE_SIZE = 4096;
 constexpr GLint NUM_SAMPLES = 4;
-bool CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint sharedColorTex, GLuint sharedDepthStencilTex, GLuint sharedMsColorTex, GLuint sharedMsDepthStencilTex, GLuint *pfbo, GLuint *pcolorTex, GLuint *pdepthStencilTex, GLuint *pmsFbo, GLuint *pmsColorTex, GLuint *pmsDepthStencilTex) {
+void CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint *pfbo, GLuint *pcolorTex, GLuint *pdepthStencilTex, GLuint *pmsFbo, GLuint *pmsColorTex, GLuint *pmsDepthStencilTex) {
   GLuint &fbo = *pfbo;
   GLuint &colorTex = *pcolorTex;
   GLuint &depthStencilTex = *pdepthStencilTex;
@@ -338,73 +362,53 @@ bool CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint
   GLuint &msColorTex = *pmsColorTex;
   GLuint &msDepthStencilTex = *pmsDepthStencilTex;
 
-  // NOTE: we create statically sized multisample textures because we cannot resize them later
+  // NOTE: we create statically sized multisampled textures because we cannot resize them later
   {
     glGenFramebuffers(1, &msFbo);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, msFbo);
 
-    if (!sharedMsDepthStencilTex) {
-      glGenTextures(1, &msDepthStencilTex);
-    } else {
-      msDepthStencilTex = sharedMsDepthStencilTex;
-    }
+    glGenTextures(1, &msDepthStencilTex);
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex);
     glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
 #if !defined(ANDROID) && !defined(LUMIN)
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, NUM_SAMPLES, GL_DEPTH24_STENCIL8, MAX_TEXTURE_SIZE, MAX_TEXTURE_SIZE, true);
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, NUM_SAMPLES, GL_DEPTH24_STENCIL8, width, height, true);
 #else
-    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, NUM_SAMPLES, GL_DEPTH24_STENCIL8, MAX_TEXTURE_SIZE, MAX_TEXTURE_SIZE, true);
+    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, NUM_SAMPLES, GL_DEPTH24_STENCIL8, width, height, true);
 #endif
-    // glFramebufferTexture2DMultisampleEXT(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, msDepthStencilTex, 0, NUM_SAMPLES);
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex, 0);
 
-    if (!sharedMsColorTex) {
-      glGenTextures(1, &msColorTex);
-    } else {
-      msColorTex = sharedMsColorTex;
-    }
+    glGenTextures(1, &msColorTex);
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msColorTex);
     glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
 #if !defined(ANDROID) && !defined(LUMIN)
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, NUM_SAMPLES, GL_RGBA8, MAX_TEXTURE_SIZE, MAX_TEXTURE_SIZE, true);
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, NUM_SAMPLES, GL_RGBA8, width, height, true);
 #else
-    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, NUM_SAMPLES, GL_RGBA8, MAX_TEXTURE_SIZE, MAX_TEXTURE_SIZE, true);
+    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, NUM_SAMPLES, GL_RGBA8, width, height, true);
 #endif
-    // glFramebufferTexture2DMultisampleEXT(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, msColorTex, 0, NUM_SAMPLES);
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, msColorTex, 0);
 
-    glClear(GL_DEPTH_BUFFER_BIT); // initialize to far depth
+    // glClear(GL_DEPTH_BUFFER_BIT); // initialize to far depth
   }
   {
     glGenFramebuffers(1, &fbo);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
 
-    if (!sharedDepthStencilTex) {
-      glGenTextures(1, &depthStencilTex);
-    } else {
-      depthStencilTex = sharedDepthStencilTex;
-    }
+    glGenTextures(1, &depthStencilTex);
     glBindTexture(GL_TEXTURE_2D, depthStencilTex);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width, height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthStencilTex, 0);
 
-    if (!sharedColorTex) {
-      glGenTextures(1, &colorTex);
-    } else {
-      colorTex = sharedColorTex;
-    }
+    glGenTextures(1, &colorTex);
     glBindTexture(GL_TEXTURE_2D, colorTex);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
-
-    glClear(GL_DEPTH_BUFFER_BIT); // initialize to far depth
+    
+    // glClear(GL_DEPTH_BUFFER_BIT); // initialize to far depth
   }
-
-  bool framebufferOk = (glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 
   if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
@@ -426,18 +430,12 @@ bool CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint
   } else {
     glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
   }
-
-  return framebufferOk;
 }
 
 NAN_METHOD(CreateRenderTarget) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
   int width = TO_INT32(info[1]);
   int height = TO_INT32(info[2]);
-  GLuint sharedColorTex = TO_UINT32(info[3]);
-  GLuint sharedDepthStencilTex = TO_UINT32(info[4]);
-  GLuint sharedMsColorTex = TO_UINT32(info[5]);
-  GLuint sharedMsDepthStencilTex = TO_UINT32(info[6]);
 
   GLuint fbo;
   GLuint colorTex;
@@ -445,21 +443,16 @@ NAN_METHOD(CreateRenderTarget) {
   GLuint msFbo;
   GLuint msColorTex;
   GLuint msDepthStencilTex;
-  bool ok = CreateRenderTarget(gl, width, height, sharedColorTex, sharedDepthStencilTex, sharedMsColorTex, sharedMsDepthStencilTex, &fbo, &colorTex, &depthStencilTex, &msFbo, &msColorTex, &msDepthStencilTex);
 
-  Local<Value> result;
-  if (ok) {
-    Local<Array> array = Array::New(Isolate::GetCurrent(), 6);
-    array->Set(0, JS_INT(fbo));
-    array->Set(1, JS_INT(colorTex));
-    array->Set(2, JS_INT(depthStencilTex));
-    array->Set(3, JS_INT(msFbo));
-    array->Set(4, JS_INT(msColorTex));
-    array->Set(5, JS_INT(msDepthStencilTex));
-    result = array;
-  } else {
-    result = Null(Isolate::GetCurrent());
-  }
+  CreateRenderTarget(gl, width, height, &fbo, &colorTex, &depthStencilTex, &msFbo, &msColorTex, &msDepthStencilTex);
+
+  Local<Array> result = Array::New(Isolate::GetCurrent(), 6);
+  result->Set(0, JS_INT(fbo));
+  result->Set(1, JS_INT(colorTex));
+  result->Set(2, JS_INT(depthStencilTex));
+  result->Set(3, JS_INT(msFbo));
+  result->Set(4, JS_INT(msColorTex));
+  result->Set(5, JS_INT(msDepthStencilTex));
   info.GetReturnValue().Set(result);
 }
 
@@ -474,19 +467,34 @@ NAN_METHOD(ResizeRenderTarget) {
   GLuint msColorTex = TO_UINT32(info[7]);
   GLuint msDepthStencilTex = TO_UINT32(info[8]);
 
-  /* {
+  {
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, msFbo);
 
+    glDeleteTextures(1, &msDepthStencilTex);
+    glGenTextures(1, &msDepthStencilTex);
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex);
     glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
-    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, NUM_SAMPLES, GL_DEPTH24_STENCIL8, MAX_TEXTURE_SIZE, MAX_TEXTURE_SIZE, true);
+#if !defined(ANDROID) && !defined(LUMIN)
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, NUM_SAMPLES, GL_DEPTH24_STENCIL8, width, height, true);
+#else
+    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, NUM_SAMPLES, GL_DEPTH24_STENCIL8, width, height, true);
+#endif
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex, 0);
 
+    glDeleteTextures(1, &msColorTex);
+    glGenTextures(1, &msColorTex);
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msColorTex);
     glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
-    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, NUM_SAMPLES, GL_RGBA8, MAX_TEXTURE_SIZE, MAX_TEXTURE_SIZE, true);
+#if !defined(ANDROID) && !defined(LUMIN)
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, NUM_SAMPLES, GL_RGBA8, width, height, true);
+#else
+    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, NUM_SAMPLES, GL_RGBA8, width, height, true);
+#endif
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, msColorTex, 0);
-  } */
+
+    // glClear(GL_DEPTH_BUFFER_BIT); // initialize to far depth
+  }
+
   {
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
 
@@ -521,6 +529,15 @@ NAN_METHOD(ResizeRenderTarget) {
   } else {
     glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
   }
+  
+  Local<Array> result = Array::New(Isolate::GetCurrent(), 6);
+  result->Set(0, JS_INT(fbo));
+  result->Set(1, JS_INT(colorTex));
+  result->Set(2, JS_INT(depthStencilTex));
+  result->Set(3, JS_INT(msFbo));
+  result->Set(4, JS_INT(msColorTex));
+  result->Set(5, JS_INT(msDepthStencilTex));
+  info.GetReturnValue().Set(result);
 }
 
 NAN_METHOD(DestroyRenderTarget) {
@@ -537,23 +554,255 @@ NAN_METHOD(DestroyRenderTarget) {
   }
 }
 
+void CreateVrTopRenderTarget(int width, int height, GLuint *pfbo, GLuint *pcolorTex, GLuint *pdepthStencilTex) {
+  GLuint &fbo = *pfbo;
+  GLuint &colorTex = *pcolorTex;
+  GLuint &depthStencilTex = *pdepthStencilTex;
+
+  glGenFramebuffers(1, &fbo);
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+
+  glGenTextures(1, &colorTex);
+  glBindTexture(GL_TEXTURE_2D, colorTex);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+  glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
+
+  glGenTextures(1, &depthStencilTex);
+  glBindTexture(GL_TEXTURE_2D, depthStencilTex);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width, height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
+  glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthStencilTex, 0);
+
+  // glClear(GL_DEPTH_BUFFER_BIT); // initialize to far depth
+
+  glFinish();
+}
+
+NAN_METHOD(CreateVrTopRenderTarget) {
+  int width = TO_INT32(info[0]);
+  int height = TO_INT32(info[1]);
+
+  GLuint fbo;
+  GLuint colorTex;
+  GLuint depthStencilTex;
+
+  CreateVrTopRenderTarget(width, height, &fbo, &colorTex, &depthStencilTex);
+
+  Local<Array> result = Array::New(Isolate::GetCurrent(), 3);
+  result->Set(0, JS_INT(fbo));
+  result->Set(1, JS_INT(colorTex));
+  result->Set(2, JS_INT(depthStencilTex));
+  info.GetReturnValue().Set(result);
+}
+
+void CreateVrCompositorRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint *pFbo, GLuint *pmsFbo, GLuint *pmsColorTex, GLuint *pmsDepthStencilTex) {
+  GLuint &fbo = *pFbo;
+  GLuint &msFbo = *pmsFbo;
+  GLuint &msColorTex = *pmsColorTex;
+  GLuint &msDepthStencilTex = *pmsDepthStencilTex;
+
+  // NOTE: we create statically sized multisampled textures because we cannot resize them later
+  {
+    glGenFramebuffers(1, &msFbo);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, msFbo);
+
+    glGenTextures(1, &msColorTex);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msColorTex);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
+#if !defined(ANDROID) && !defined(LUMIN)
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, NUM_SAMPLES, GL_RGBA8, width, height, true);
+#else
+    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, NUM_SAMPLES, GL_RGBA8, width, height, true);
+#endif
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, msColorTex, 0);
+
+    glGenTextures(1, &msDepthStencilTex);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
+#if !defined(ANDROID) && !defined(LUMIN)
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, NUM_SAMPLES, GL_DEPTH24_STENCIL8, width, height, true);
+#else
+    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, NUM_SAMPLES, GL_DEPTH24_STENCIL8, width, height, true);
+#endif
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex, 0);
+
+    // glClear(GL_DEPTH_BUFFER_BIT); // initialize to far depth
+  }
+  {
+    glGenFramebuffers(1, &fbo);
+  }
+
+  if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
+  } else {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
+  }
+  if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D)) {
+    glBindTexture(GL_TEXTURE_2D, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D));
+  } else {
+    glBindTexture(GL_TEXTURE_2D, 0);
+  }
+  if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_2D_MULTISAMPLE)) {
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_2D_MULTISAMPLE));
+  } else {
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+  }
+  if (gl->HasTextureBinding(gl->activeTexture, GL_TEXTURE_CUBE_MAP)) {
+    glBindTexture(GL_TEXTURE_CUBE_MAP, gl->GetTextureBinding(gl->activeTexture, GL_TEXTURE_CUBE_MAP));
+  } else {
+    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+  }
+}
+
+NAN_METHOD(CreateVrCompositorRenderTarget) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
+  int width = TO_INT32(info[1]);
+  int height = TO_INT32(info[2]);
+
+  GLuint fbo;
+  GLuint msFbo;
+  GLuint msColorTex;
+  GLuint msDepthStencilTex;
+
+  CreateVrCompositorRenderTarget(gl, width, height, &fbo, &msFbo, &msColorTex, &msDepthStencilTex);
+
+  Local<Array> result = Array::New(Isolate::GetCurrent(), 4);
+  result->Set(0, JS_INT(fbo));
+  result->Set(1, JS_INT(msFbo));
+  result->Set(2, JS_INT(msColorTex));
+  result->Set(3, JS_INT(msDepthStencilTex));
+  info.GetReturnValue().Set(result);
+}
+
+NAN_METHOD(BindVrChildFbo) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
+  GLuint fbo = TO_UINT32(info[1]);
+  GLuint colorTex = TO_UINT32(info[2]);
+  GLuint depthStencilTex = TO_UINT32(info[3]);
+
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+  glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
+  glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthStencilTex, 0);
+
+  if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
+  } else {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
+  }
+}
+
+/* NAN_METHOD(CopyRenderTarget) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
+  int width = TO_INT32(info[1]);
+  int height = TO_INT32(info[2]);
+  // GLuint srcFbo = TO_UINT32(info[3]);
+  GLuint srcMsColorTex = TO_UINT32(info[4]);
+  GLuint srcMsDepthStencilTex = TO_UINT32(info[5]);
+  // GLuint dstFbo = TO_UINT32(info[6]);
+  GLuint dstMsColorTex = TO_UINT32(info[7]);
+  GLuint dstMsDepthStencilTex = TO_UINT32(info[8]);
+
+  {
+    GLuint fbos[2];
+    glGenFramebuffers(2, fbos);
+
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, fbos[0]);
+    glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, srcMsColorTex, 0);
+    glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, srcMsDepthStencilTex, 0);
+
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbos[1]);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, dstMsColorTex, 0);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, dstMsDepthStencilTex, 0);
+
+    glBlitFramebuffer(
+      0, 0,
+      width, height,
+      0, 0,
+      width, height,
+      GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT,
+      GL_NEAREST
+    );
+
+    glDeleteFramebuffers(2, fbos);
+  }
+
+  if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->GetFramebufferBinding(GL_READ_FRAMEBUFFER));
+  } else {
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->defaultFramebuffer);
+  }
+  if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
+  } else {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
+  }
+} */
+
+NAN_METHOD(GetSync) {
+  GLsync sync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+  glFlush();
+  info.GetReturnValue().Set(pointerToArray((void *)sync));
+}
+
+NAN_METHOD(WaitSync) {
+  // if (info[0]->IsArray()) {
+    Local<Array> syncArray = Local<Array>::Cast(info[0]);
+    GLsync sync = (GLsync)arrayToPointer(syncArray);
+    glWaitSync(sync, 0, GL_TIMEOUT_IGNORED);
+    // glDeleteSync(sync);
+  /* } else {
+    Nan::ThrowError("WaitSync: invalid arguments");
+  } */
+}
+
+NAN_METHOD(DeleteSync) {
+  // if (info[0]->IsArray()) {
+    Local<Array> syncArray = Local<Array>::Cast(info[0]);
+    GLsync sync = (GLsync)arrayToPointer(syncArray);
+    glDeleteSync(sync);
+  /* } else {
+    Nan::ThrowError("DeleteSync: invalid arguments");
+  } */
+}
+
+void BlitLayer(ComposeSpec *composeSpec, PlaneSpec *planeSpec, const LayerSpec &layer) {
+  if (layer.type == LayerType::IFRAME_3D || layer.type == LayerType::RAW_CANVAS) {
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, composeSpec->blitFbos[0]);
+    glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, layer.msTex, 0);
+    glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, layer.msDepthTex, 0);
+
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, composeSpec->blitFbos[1]);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, layer.tex, 0);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, layer.depthTex, 0);
+
+    glBlitFramebuffer(
+      0, 0,
+      layer.width, layer.height,
+      0, 0,
+      layer.width, layer.height,
+      GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT,
+      GL_NEAREST
+    );
+  }
+}
+
 void ComposeLayer(ComposeSpec *composeSpec, PlaneSpec *planeSpec, const LayerSpec &layer) {
-  if (layer.viewports[0] == nullptr) {
+  if (layer.type == LayerType::IFRAME_3D || layer.type == LayerType::IFRAME_3D_REPROJECT || layer.type == LayerType::RAW_CANVAS) {
     glBindVertexArray(composeSpec->composeVao);
     glUseProgram(composeSpec->composeProgram);
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, layer.msTex);
-    glUniform1i(composeSpec->msTexLocation, 0);
+    glBindTexture(GL_TEXTURE_2D, layer.tex);
+    glUniform1i(composeSpec->texLocation, 0);
 
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, layer.msDepthTex);
-    glUniform1i(composeSpec->msDepthTexLocation, 1);
-
-    glUniform2f(composeSpec->texSizeLocation, layer.width, layer.height);
+    glBindTexture(GL_TEXTURE_2D, layer.depthTex);
+    glUniform1i(composeSpec->depthTexLocation, 1);
 
     glViewport(0, 0, layer.width, layer.height);
-    // glScissor(0, 0, width, height);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
   } else {
     glBindVertexArray(planeSpec->planeVao);
@@ -568,7 +817,6 @@ void ComposeLayer(ComposeSpec *composeSpec, PlaneSpec *planeSpec, const LayerSpe
       glUniformMatrix4fv(planeSpec->projectionMatrixLocation, 1, false, layer.projection[0]);
 
       glViewport(layer.viewports[0][0], layer.viewports[0][1], layer.viewports[0][2], layer.viewports[0][3]);
-      // glScissor(0, 0, width, height);
       glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
     }
     {
@@ -576,7 +824,6 @@ void ComposeLayer(ComposeSpec *composeSpec, PlaneSpec *planeSpec, const LayerSpe
       glUniformMatrix4fv(planeSpec->projectionMatrixLocation, 1, false, layer.projection[1]);
 
       glViewport(layer.viewports[1][0], layer.viewports[1][1], layer.viewports[1][2], layer.viewports[1][3]);
-      // glScissor(0, 0, width, height);
       glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
     }
   }
@@ -586,64 +833,14 @@ void ComposeLayers(WebGLRenderingContext *gl, GLuint fbo, const std::vector<Laye
   ComposeSpec *composeSpec = (ComposeSpec *)(gl->keys[GlKey::GL_KEY_COMPOSE]);
   PlaneSpec *planeSpec = (PlaneSpec *)(gl->keys[GlKey::GL_KEY_PLANE]);
 
+  for (size_t i = 0; i < layers.size(); i++) {
+    BlitLayer(composeSpec, planeSpec, layers[i]);
+  }
+
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
-
   glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
-
-  /* // blit
   for (size_t i = 0; i < layers.size(); i++) {
-    const LayerSpec &layer = layers[i];
-
-    if (layer.blit) {
-      glBindFramebuffer(GL_READ_FRAMEBUFFER, composeSpec->composeReadFbo);
-      glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, layer.msColorTex, 0);
-      glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, layer.msDepthTex, 0);
-
-      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, composeSpec->composeWriteFbo);
-      glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, layer.colorTex, 0);
-      glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, layer.depthTex, 0);
-
-      glBlitFramebuffer(
-        0, 0,
-        layer.width, layer.height,
-        0, 0,
-        layer.width, layer.height,
-        GL_COLOR_BUFFER_BIT,
-        GL_LINEAR);
-
-      glBlitFramebuffer(
-        0, 0,
-        layer.width, layer.height,
-        0, 0,
-        layer.width, layer.height,
-        GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT,
-        GL_NEAREST);
-
-      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
-    }
-  }
-
-  // render unblitted
-  for (size_t i = 0; i < layers.size(); i++) {
-    const LayerSpec &layer = layers[i];
-
-    if (!layer.blit) {
-      ComposeLayer(composeSpec, layer);
-    }
-  }
-
-  // render blitted
-  for (size_t i = 0; i < layers.size(); i++) {
-    const LayerSpec &layer = layers[i];
-
-    if (layer.blit) {
-      ComposeLayer(composeSpec, layer);
-    }
-  } */
-
-  for (size_t i = 0; i < layers.size(); i++) {
-    const LayerSpec &layer = layers[i];
-    ComposeLayer(composeSpec, planeSpec, layer);
+    ComposeLayer(composeSpec, planeSpec, layers[i]);
   }
 
   if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {
@@ -687,10 +884,11 @@ void ComposeLayers(WebGLRenderingContext *gl, GLuint fbo, const std::vector<Laye
 }
 
 NAN_METHOD(ComposeLayers) {
-  if (info[0]->IsObject() && info[1]->IsNumber() && info[2]->IsArray()) {
+  if (info[0]->IsObject() && info[1]->IsNumber() && info[2]->IsArray() && info[3]->IsObject()) {
     WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
     GLuint fbo = TO_UINT32(info[1]);
     Local<Array> array = Local<Array>::Cast(info[2]);
+    Local<Object> xrStateObj = Local<Array>::Cast(info[3]);
 
     std::vector<LayerSpec> layers;
     layers.reserve(8);
@@ -703,10 +901,17 @@ NAN_METHOD(ComposeLayers) {
         LayerType layerType = LayerType::NONE;
         if (JS_OBJ(elementObj->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLIFrameElement"))) {
           if (
+            elementObj->Get(JS_STR("contentWindow"))->IsObject() &&
             elementObj->Get(JS_STR("contentDocument"))->IsObject() &&
             JS_OBJ(elementObj->Get(JS_STR("contentDocument")))->Get(JS_STR("framebuffer"))->IsObject()
           ) {
-            layerType = LayerType::IFRAME_3D;
+            // layerType = LayerType::IFRAME_3D;
+            Local<Object> contentWindowObj = JS_OBJ(elementObj->Get(JS_STR("contentWindow")));
+            if (TO_UINT32(contentWindowObj->Get(JS_STR("phase"))) == 2) { // PHASES.RENDERED
+              layerType = LayerType::IFRAME_3D;
+            } else {
+              layerType = LayerType::IFRAME_3D_REPROJECT;
+            }
           } else if (elementObj->Get(JS_STR("browser"))->IsObject()) {
             layerType = LayerType::IFRAME_2D;
           }
@@ -718,15 +923,17 @@ NAN_METHOD(ComposeLayers) {
 
         switch (layerType) {
           case LayerType::IFRAME_3D: {
+            Local<Object> windowObj = Local<Object>::Cast(elementObj->Get(JS_STR("contentWindow")));
+            int width = TO_INT32(windowObj->Get(JS_STR("width")));
+            int height = TO_INT32(windowObj->Get(JS_STR("height")));
             Local<Object> framebufferObj = Local<Object>::Cast(JS_OBJ(elementObj->Get(JS_STR("contentDocument")))->Get(JS_STR("framebuffer")));
-            GLuint tex = TO_UINT32(framebufferObj->Get(JS_STR("tex")));
-            GLuint depthTex = TO_UINT32(framebufferObj->Get(JS_STR("depthTex")));
             GLuint msTex = TO_UINT32(framebufferObj->Get(JS_STR("msTex")));
             GLuint msDepthTex = TO_UINT32(framebufferObj->Get(JS_STR("msDepthTex")));
-            int width = TO_INT32(JS_OBJ(framebufferObj->Get(JS_STR("canvas")))->Get(JS_STR("width")));
-            int height = TO_INT32(JS_OBJ(framebufferObj->Get(JS_STR("canvas")))->Get(JS_STR("height")));
+            GLuint tex = TO_UINT32(framebufferObj->Get(JS_STR("tex")));
+            GLuint depthTex = TO_UINT32(framebufferObj->Get(JS_STR("depthTex")));
 
             layers.push_back(LayerSpec{
+              LayerType::IFRAME_3D,
               width,
               height,
               msTex,
@@ -739,28 +946,78 @@ NAN_METHOD(ComposeLayers) {
             });
             break;
           }
-          case LayerType::IFRAME_2D: {
-            Local<Object> browserObj = Local<Object>::Cast(elementObj->Get(JS_STR("browser")));
-            GLuint tex = TO_UINT32(Local<Object>::Cast(browserObj->Get(JS_STR("texture")))->Get(JS_STR("id")));
-            Local<Array> viewportsArray = Local<Array>::Cast(browserObj->Get(JS_STR("viewports")));
-            Local<Float32Array> viewportsFloat32Arrays[] = {
-              Local<Float32Array>::Cast(viewportsArray->Get(0)),
-              Local<Float32Array>::Cast(viewportsArray->Get(1)),
-            };
-            Local<Array> modelViewArray = Local<Array>::Cast(browserObj->Get(JS_STR("modelView")));
-            Local<Float32Array> modelViewFloat32Arrays[] = {
-              Local<Float32Array>::Cast(modelViewArray->Get(0)),
-              Local<Float32Array>::Cast(modelViewArray->Get(1)),
-            };
-            Local<Array> projectionArray = Local<Array>::Cast(browserObj->Get(JS_STR("projection")));
-            Local<Float32Array> projectionFloat32Arrays[] = {
-              Local<Float32Array>::Cast(projectionArray->Get(0)),
-              Local<Float32Array>::Cast(projectionArray->Get(1)),
-            };
-            int width = TO_INT32(browserObj->Get(JS_STR("width")));
-            int height = TO_INT32(browserObj->Get(JS_STR("height")));
+          case LayerType::IFRAME_3D_REPROJECT: {
+            Local<Object> windowObj = Local<Object>::Cast(elementObj->Get(JS_STR("contentWindow")));
+            int width = TO_INT32(windowObj->Get(JS_STR("width")));
+            int height = TO_INT32(windowObj->Get(JS_STR("height")));
+            Local<Object> framebufferObj = Local<Object>::Cast(JS_OBJ(elementObj->Get(JS_STR("contentDocument")))->Get(JS_STR("framebuffer")));
+            GLuint tex = TO_UINT32(framebufferObj->Get(JS_STR("tex")));
+            GLuint depthTex = TO_UINT32(framebufferObj->Get(JS_STR("depthTex")));
 
             layers.push_back(LayerSpec{
+              LayerType::IFRAME_3D_REPROJECT,
+              width,
+              height,
+              0,
+              0,
+              tex,
+              depthTex,
+              {nullptr,nullptr},
+              {nullptr,nullptr},
+              {nullptr,nullptr}
+            });
+            break;
+          }
+          case LayerType::IFRAME_2D: {
+            Local<Object> browserObj = Local<Object>::Cast(elementObj->Get(JS_STR("browser")));
+            int width = TO_INT32(browserObj->Get(JS_STR("width")));
+            int height = TO_INT32(browserObj->Get(JS_STR("height")));
+            GLuint tex = TO_UINT32(Local<Object>::Cast(browserObj->Get(JS_STR("texture")))->Get(JS_STR("id")));
+
+            Local<Float32Array> renderWidthFloat32Array = Local<Float32Array>::Cast(xrStateObj->Get(JS_STR("renderWidth")));
+            const float renderWidth = TO_FLOAT(renderWidthFloat32Array->Get(0));
+            Local<Float32Array> renderHeightFloat32Array = Local<Float32Array>::Cast(xrStateObj->Get(JS_STR("renderHeight")));
+            const float renderHeight = TO_FLOAT(renderHeightFloat32Array->Get(0));
+            float leftViewport[] = {
+              0,
+              0,
+              renderWidth,
+              renderHeight,
+            };
+            float rightViewport[] = {
+              renderWidth,
+              0,
+              renderWidth,
+              renderHeight,
+            };
+
+            Local<Float32Array> leftViewMatrixFloat32Array = Local<Float32Array>::Cast(xrStateObj->Get(JS_STR("leftViewMatrix")));
+            std::vector<float> leftViewMatrix(16);
+            memcpy(leftViewMatrix.data(), (float *)((char *)leftViewMatrixFloat32Array->Buffer()->GetContents().Data() + leftViewMatrixFloat32Array->ByteOffset()), leftViewMatrix.size() * sizeof(leftViewMatrix[0]));
+
+            Local<Float32Array> rightViewMatrixFloat32Array = Local<Float32Array>::Cast(xrStateObj->Get(JS_STR("rightViewMatrix")));
+            std::vector<float> rightViewMatrix(16);
+            memcpy(rightViewMatrix.data(), (float *)((char *)rightViewMatrixFloat32Array->Buffer()->GetContents().Data() + rightViewMatrixFloat32Array->ByteOffset()), rightViewMatrix.size() * sizeof(rightViewMatrix[0]));
+
+            Local<Value> xrOffsetValue = elementObj->Get(JS_STR("xrOffset"));
+            if (TO_BOOL(xrOffsetValue)) {
+              Local<Object> xrOffsetObj = Local<Object>::Cast(xrOffsetValue);
+              Local<Float32Array> xrOffsetMatrixFloat32Array = Local<Float32Array>::Cast(xrOffsetObj->Get(JS_STR("matrix")));
+
+              std::vector<float> xrOffsetMatrix(16);
+              memcpy(xrOffsetMatrix.data(), (float *)((char *)xrOffsetMatrixFloat32Array->Buffer()->GetContents().Data() + xrOffsetMatrixFloat32Array->ByteOffset()), xrOffsetMatrix.size() * sizeof(xrOffsetMatrix[0]));
+
+              leftViewMatrix = multiplyMatrices(leftViewMatrix, xrOffsetMatrix);
+              rightViewMatrix = multiplyMatrices(rightViewMatrix, xrOffsetMatrix);
+            }
+
+            Local<Float32Array> leftProjectionMatrixFloat32Array = Local<Float32Array>::Cast(xrStateObj->Get(JS_STR("leftProjectionMatrix")));
+            float *leftProjectionMatrix = (float *)((char *)leftProjectionMatrixFloat32Array->Buffer()->GetContents().Data() + leftProjectionMatrixFloat32Array->ByteOffset());
+            Local<Float32Array> rightProjectionMatrixFloat32Array = Local<Float32Array>::Cast(xrStateObj->Get(JS_STR("rightProjectionMatrix")));
+            float *rightProjectionMatrix = (float *)((char *)rightProjectionMatrixFloat32Array->Buffer()->GetContents().Data() + rightProjectionMatrixFloat32Array->ByteOffset());
+
+            layers.push_back(LayerSpec{
+              LayerType::IFRAME_2D,
               width,
               height,
               0,
@@ -768,16 +1025,16 @@ NAN_METHOD(ComposeLayers) {
               tex,
               0,
               { // viewports
-                (float *)((char *)(viewportsFloat32Arrays[0]->Buffer()->GetContents().Data()) + viewportsFloat32Arrays[0]->ByteOffset()),
-                (float *)((char *)(viewportsFloat32Arrays[1]->Buffer()->GetContents().Data()) + viewportsFloat32Arrays[1]->ByteOffset())
+                leftViewport,
+                rightViewport,
               },
               { // modelView
-                (float *)((char *)(modelViewFloat32Arrays[0]->Buffer()->GetContents().Data()) + modelViewFloat32Arrays[0]->ByteOffset()),
-                (float *)((char *)(modelViewFloat32Arrays[1]->Buffer()->GetContents().Data()) + modelViewFloat32Arrays[1]->ByteOffset())
+                leftViewMatrix.data(),
+                rightViewMatrix.data(),
               },
               { // projection
-                (float *)((char *)(projectionFloat32Arrays[0]->Buffer()->GetContents().Data()) + projectionFloat32Arrays[0]->ByteOffset()),
-                (float *)((char *)(projectionFloat32Arrays[1]->Buffer()->GetContents().Data()) + projectionFloat32Arrays[1]->ByteOffset())
+                leftProjectionMatrix,
+                rightProjectionMatrix,
               }
             });
             break;
@@ -788,10 +1045,11 @@ NAN_METHOD(ComposeLayers) {
             GLuint depthTex = TO_UINT32(framebufferObj->Get(JS_STR("depthTex")));
             GLuint msTex = TO_UINT32(framebufferObj->Get(JS_STR("msTex")));
             GLuint msDepthTex = TO_UINT32(framebufferObj->Get(JS_STR("msDepthTex")));
-            int width = TO_INT32(elementObj->Get(JS_STR("width")));
-            int height = TO_INT32(elementObj->Get(JS_STR("height")));
+            int width = TO_INT32(framebufferObj->Get(JS_STR("width")));
+            int height = TO_INT32(framebufferObj->Get(JS_STR("height")));
 
             layers.push_back(LayerSpec{
+              LayerType::RAW_CANVAS,
               width,
               height,
               msTex,
@@ -805,7 +1063,7 @@ NAN_METHOD(ComposeLayers) {
             break;
           }
           default: {
-            // nothing
+            // layer cannot be composed
             break;
           }
         }
@@ -822,28 +1080,25 @@ NAN_METHOD(ComposeLayers) {
   }
 }
 
-thread_local uv_loop_t *eventLoop;
-NAN_METHOD(GetEventLoop) {
-  info.GetReturnValue().Set(pointerToArray(eventLoop));
+uv_loop_t *GetEventLoop() {
+  return node::GetCurrentEventLoop(Isolate::GetCurrent());
 }
-NAN_METHOD(SetEventLoop) {
-  if (info[0]->IsArray()) {
-    Local<Array> loopArray = Local<Array>::Cast(info[0]);
-    uv_loop_t *loop = (uv_loop_t *)arrayToPointer(loopArray);
-    eventLoop = loop;
-  } else {
-    Nan::ThrowError("WindowSystem::SetEventLoop: invalid arguments");
-  }
+NAN_METHOD(GetEventLoop) {
+  info.GetReturnValue().Set(pointerToArray(GetEventLoop()));
 }
 
 void Decorate(Local<Object> target) {
   Nan::SetMethod(target, "createRenderTarget", CreateRenderTarget);
   Nan::SetMethod(target, "resizeRenderTarget", ResizeRenderTarget);
   Nan::SetMethod(target, "destroyRenderTarget", DestroyRenderTarget);
-  // Nan::SetMethod(target, "renderPlane", RenderPlane);
+  Nan::SetMethod(target, "createVrTopRenderTarget", CreateVrTopRenderTarget);
+  Nan::SetMethod(target, "createVrCompositorRenderTarget", CreateVrCompositorRenderTarget);
+  Nan::SetMethod(target, "bindVrChildFbo", BindVrChildFbo);
+  Nan::SetMethod(target, "getSync", GetSync);
+  Nan::SetMethod(target, "waitSync", WaitSync);
+  Nan::SetMethod(target, "deleteSync", DeleteSync);
   Nan::SetMethod(target, "composeLayers", ComposeLayers);
   Nan::SetMethod(target, "getEventLoop", GetEventLoop);
-  Nan::SetMethod(target, "setEventLoop", SetEventLoop);
 }
 
 }
