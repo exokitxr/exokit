@@ -53,7 +53,7 @@ npm install --verbose --devdir="$(pwd)/.node-gyp" --arch=aarch64 --target_arch=a
 # archive native module dlibs
 mkdir -p build/libexokit
 find build/Release/obj.target node_modules -name '*.o' | xargs "$AR" crs build/libexokit/libexokit.a
-../gen-dlibs-h.js "$(pwd)" >build/libexokit/dlibs.h
+./scripts/gen-dlibs-h.js "$(pwd)" >build/libexokit/dlibs.h
 
 # copy assets for packaging
 mkdir -p ./android/app/assets
