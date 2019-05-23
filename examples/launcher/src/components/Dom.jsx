@@ -8,6 +8,15 @@ const _decorateKeypaths = (el, keypath = []) => {
   }
 };
 const _el2Text = el => {
+  let result = '<' + el.tagName.toLowerCase();
+  for (let i = 0; i < el.attrs.length; i++) {
+    const attr = el.attrs[i];
+    result += ' ' + attr.name + '=' + JSON.stringify(attr.value);
+  }
+  result += '>';
+  return result;
+};
+const _el3Text = el => {
   let result = '';
   if (el.tagName === 'IFRAME') {
     for (let i = 0; i < el.attrs.length; i++) {
@@ -231,7 +240,7 @@ class DomItem extends React.Component {
         <li className={this.getClassnames()}>
           <div className="dom-item-label" style={this.getStyle()} onClick={() => this.props.onClick(el)} onMouseEnter={() => this.props.onMouseEnter(el)} onMouseLeave={() => this.props.onMouseLeave(el)} ref={this.domElRef} tabIndex={-1}>
             <div className="dom-item-arrow" onClick={e => this.toggleDropdownOpen(e)}>...</div>
-            <div className="dom-item-name"> {_el2Text(el)}</div>
+            <div className="dom-item-name"> {_el3Text(el)}</div>
           </div>
           <div className="dom-item-dropmenu">{this.state.dropdownOpen ?
             <div className="dom-detail">
