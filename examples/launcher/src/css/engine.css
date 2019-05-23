@@ -6,7 +6,7 @@
 }
 
 #Engine .menu {
-  background-color: #333;
+  background-color: #232526;
 }
 #Engine .menu .menu-item {
   display: flex;
@@ -19,10 +19,10 @@
   user-select: none;
 }
 #Engine .menu .menu-item:hover {
-  background-color: #444;
+  background-color: #333;
 }
 #Engine .menu .menu-item.open {
-  background-color: #666;
+  background-color: #333
 }
 
 #Engine .menu .menu-item .menu-item-popup {
@@ -30,7 +30,7 @@
   position: absolute;
   top: 22px;
   left: 0;
-  background-color: #333;
+  background-color: #232526;
   flex-direction: column;
 }
 #Engine .menu .menu-item .menu-item-popup.open {
@@ -44,7 +44,7 @@
   cursor: pointer;
 }
 #Engine .menu .menu-item .menu-item-popup .menu-item-popup-item:hover {
-  background-color: #444;
+  background-color: #333;
 }
 #Engine .menu .menu-item .menu-item-popup .menu-item-popup-item > i {
   font-size: 20px;
@@ -58,7 +58,7 @@
   border-bottom: 2px solid #222;
 }
 #Engine .menu .menu-item .menu-item-popup .menu-item-popup-tabs .menu-item-popup-tab.selected {
-  background-color: #444;
+  background-color: #333;
   border-bottom-color: #9ccc65;
 }
 #Engine .menu .menu-item .menu-item-popup .menu-item-popup-items {
@@ -108,7 +108,7 @@
   display: flex;
   height: 30px;
   padding: 0 10px;
-  background-color: #333;
+  background-color: #232526;
   font-family: monospace;
   font-size: 13px;
   align-items: center;
@@ -116,7 +116,7 @@
   user-select: none;
 }
 #Engine .menu .url-item:hover {
-  background-color: #444;
+  background-color: #333;
 }
 #Engine .menu .buttons {
   display: flex;
@@ -126,13 +126,13 @@
   display: flex;
   align-items: center;
   padding: 0 10px;
-  background-color: #333;
+  background-color: #232526;
   font-size: 13px;
   cursor: pointer;
   user-select: none;
 }
 #Engine .menu .button:hover {
-  background-color: #444;
+  background-color: #333;
 }
 #Engine .menu .button > i {
   padding-right: 7px;
@@ -196,9 +196,9 @@
 }
 #Engine .engine-right {
   display: flex;
-  width: 200px;
-  background-color: #222;
+  width: 100%;
   border-left: 2px solid #111;
+  background-color: #232526;
 }
 #Engine .engine-render {
   flex: 1;
