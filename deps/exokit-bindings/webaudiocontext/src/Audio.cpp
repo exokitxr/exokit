@@ -4,7 +4,7 @@
 
 namespace webaudio {
 
-Audio::Audio() : loaded(false), connected(false), audioContext(nullptr) {
+Audio::Audio() : audioContext(nullptr) {
   WebAudioAsync *webaudioAsync = getWebAudioAsync();
   audioNode.reset(new lab::FinishableSourceNode(
     [this, webaudioAsync](lab::ContextRenderLock &r){
