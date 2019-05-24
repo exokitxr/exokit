@@ -2722,13 +2722,15 @@ class HTMLAudioElement extends HTMLMediaElement {
                   return Promise.reject(new Error(`audio src got invalid status code (url: ${JSON.stringify(src)}, code: ${res.status})`));
                 }
               })
-              .then(arrayBuffer => {
-                try {
-                  this.audio.load(arrayBuffer);
-                } catch(err) {
-                  throw new Error(`failed to decode audio: ${err.message} (url: ${JSON.stringify(src)}, size: ${arrayBuffer.byteLength})`);
-                }
-              })
+              .then(arrayBuffer => new Promise((accept, reject) => {
+                this.audio.load(arrayBuffer, err => {
+                  if (!err) {
+                    accept();
+                  } else {
+                    reject(new Error(`failed to decode audio: ${err.message} (url: ${JSON.stringify(src)}, size: ${arrayBuffer.byteLength})`));
+                  }
+                });
+              }))
               .then(() => {
                 this.readyState = HTMLMediaElement.HAVE_ENOUGH_DATA;
 
