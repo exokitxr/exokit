@@ -14,6 +14,8 @@ using namespace node;
 
 namespace webaudio {
 
+class AudioContext;
+
 class Audio : public ObjectWrap {
 public:
   static Local<Object> Initialize(Isolate *isolate);
@@ -21,7 +23,7 @@ public:
   void Play();
   void Pause();
   void Load(uint8_t *bufferValue, size_t bufferLength, Local<Function> cbFn);
-  void Reparent();
+  void Reparent(AudioContext *audioContext);
 
 protected:
   static NAN_METHOD(New);
@@ -43,6 +45,7 @@ protected:
   Nan::Persistent<Function> onended;
   bool loaded;
   bool connected;
+  lab::AudioContext *audioContext;
   Nan::Persistent<Function> cbFn;
   shared_ptr<lab::AudioBus> audioBus;
   std::string error;

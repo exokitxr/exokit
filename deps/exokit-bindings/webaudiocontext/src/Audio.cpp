@@ -4,7 +4,7 @@
 
 namespace webaudio {
 
-Audio::Audio() : loaded(false), connected(false) {
+Audio::Audio() : loaded(false), connected(false), audioContext(nullptr) {
   WebAudioAsync *webaudioAsync = getWebAudioAsync();
   audioNode.reset(new lab::FinishableSourceNode(
     [this, webaudioAsync](lab::ContextRenderLock &r){
@@ -73,17 +73,18 @@ void Audio::Load(uint8_t *bufferValue, size_t bufferLength, Local<Function> cbFn
 void Audio::ProcessLoadInMainThread(Audio *audio) {
   Nan::HandleScope scope;
   
-  if (!audio->connected) {
-    lab::AudioContext *defaultAudioContext = getDefaultAudioContext();
-    {
-      lab::ContextRenderLock lock(defaultAudioContext, "Audio::ProcessLoadInMainThread");
-      audio->audioNode->setBus(lock, audio->audioBus);
-    }
-
-    // defaultAudioContext->connect(defaultAudioContext->destination(), audio->audioNode, 0, 0); // default connection
-    
-    audio->connected = true;
+  lab::AudioContext *localAudioContext = audio->audioContext;
+  if (localAudioContext == nullptr) {
+    localAudioContext = getDefaultAudioContext();
   }
+  {
+    lab::ContextRenderLock lock(localAudioContext, "Audio::ProcessLoadInMainThread");
+    audio->audioNode->setBus(lock, audio->audioBus);
+  }
+
+  // localAudioContext->connect(localAudioContext->destination(), audio->audioNode, 0, 0); // default connection
+  // audio->connected = true;
+
   audio->loaded = true;
 
   Local<Object> asyncObject = Nan::New<Object>();
@@ -110,13 +111,15 @@ void Audio::Pause() {
 }
 
 // for when we reparent to MediaElementSourceNode
-void Audio::Reparent() {
-  if (connected) {
+void Audio::Reparent(AudioContext *audioContext) {
+  /* if (connected) {
     // lab::AudioContext *defaultAudioContext = getDefaultAudioContext();
     // defaultAudioContext->disconnect(nullptr, audioNode);
   } else {
     connected = true;
-  }
+  } */
+  
+  this->audioContext = audioContext->audioContext.get();
 }
 
 NAN_METHOD(Audio::Load) {
