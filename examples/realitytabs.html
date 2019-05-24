@@ -1691,12 +1691,14 @@ window.addEventListener('click', () => {
 });
 window.addEventListener('mousedown', e => {
   if (window.document.pointerLockElement) {
-    fakeDisplay.gamepads[1].buttons[1].pressed = true;
+    var gamepads = navigator.getGamepads();
+    gamepads[1].buttons[1].pressed = true;
   }
 });
 window.addEventListener('mouseup', e => {
   if (window.document.pointerLockElement) {
-    fakeDisplay.gamepads[1].buttons[1].pressed = false;
+    var gamepads = navigator.getGamepads();
+    gamepads[1].buttons[1].pressed = false;
   }
 });
 window.addEventListener('mousemove', e => {
@@ -1748,6 +1750,7 @@ const intersectionSpecs = [
 ];
 window.addEventListener('keydown', e => {
   if (window.document.pointerLockElement) {
+    var gamepads = navigator.getGamepads();
     switch (e.which) {
       case 87: { // W
         keys.up = true;
@@ -1778,7 +1781,7 @@ window.addEventListener('keydown', e => {
         break;
       }
       case 69: { // E
-        fakeDisplay.gamepads[1].buttons[2].pressed = true;
+        gamepads[1].buttons[2].pressed = true;
         break;
       }
       case 32: { // space
@@ -1806,6 +1809,7 @@ window.addEventListener('keydown', e => {
 });
 window.addEventListener('keyup', e => {
   if (window.document.pointerLockElement) {
+    var gamepads = navigator.getGamepads();
     switch (e.which) {
       case 87: { // W
         keys.up = false;
@@ -1824,7 +1828,7 @@ window.addEventListener('keyup', e => {
         break;
       }
       case 69: { // E
-        fakeDisplay.gamepads[1].buttons[2].pressed = false;
+        gamepads[1].buttons[2].pressed = false;
         break;
       }
       case 32: { // space
