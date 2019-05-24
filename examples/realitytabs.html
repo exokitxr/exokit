@@ -1691,13 +1691,13 @@ window.addEventListener('click', () => {
 });
 window.addEventListener('mousedown', e => {
   if (window.document.pointerLockElement) {
-    var gamepads = navigator.getGamepads();
+    const gamepads = navigator.getGamepads();
     gamepads[1].buttons[1].pressed = true;
   }
 });
 window.addEventListener('mouseup', e => {
   if (window.document.pointerLockElement) {
-    var gamepads = navigator.getGamepads();
+    const gamepads = navigator.getGamepads();
     gamepads[1].buttons[1].pressed = false;
   }
 });
@@ -1750,7 +1750,7 @@ const intersectionSpecs = [
 ];
 window.addEventListener('keydown', e => {
   if (window.document.pointerLockElement) {
-    var gamepads = navigator.getGamepads();
+    const gamepads = navigator.getGamepads();
     switch (e.which) {
       case 87: { // W
         keys.up = true;
@@ -1809,7 +1809,7 @@ window.addEventListener('keydown', e => {
 });
 window.addEventListener('keyup', e => {
   if (window.document.pointerLockElement) {
-    var gamepads = navigator.getGamepads();
+    const gamepads = navigator.getGamepads();
     switch (e.which) {
       case 87: { // W
         keys.up = false;
