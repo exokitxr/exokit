@@ -402,31 +402,18 @@ if (bindings.nativeAudio) {
   bindings.nativeAudio.AudioContext = (OldAudioContext => class AudioContext extends OldAudioContext {
     decodeAudioData(arrayBuffer, successCallback, errorCallback) {
       return new Promise((resolve, reject) => {
-        try {
-          let audioBuffer = this._decodeAudioDataSync(arrayBuffer);
-          if (successCallback) {
-            process.nextTick(() => {
-              try {
-                successCallback(audioBuffer);
-              } catch(err) {
-                console.warn(err);
-              }
-            });
+        const audioBuffer = this.createEmptyBuffer();
+        audioBuffer.load(arrayBuffer, err => {
+          if (!err) {
+            resolve(audioBuffer);
+          } else {
+            reject(new Error(err));
           }
-          resolve(audioBuffer);
-        } catch(err) {
-          console.warn(err);
-          if (errorCallback) {
-            process.nextTick(() => {
-              try {
-                errorCallback(err);
-              } catch(err) {
-                console.warn(err);
-              }
-            });
-          }
-          reject(err);
-        }
+        });
+      }).then(audioBuffer => {
+        successCallback && successCallback(audioBuffer);
+      }).catch(err => {
+        errorCallback && errorCallback(err);
       });
     }
   })(bindings.nativeAudio.AudioContext);
