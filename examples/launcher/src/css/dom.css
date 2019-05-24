@@ -22,9 +22,13 @@
   cursor: pointer;
   user-select: none;
 }
-.Dom > .dom-list .dom-item.open > .dom-item-label .dom-item-arrow {
+.Dom > .dom-list .dom-item.dropdownOpen > .dom-item-label .dom-item-arrow {
   color: #888;
-  transform: rotatez(90deg);
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+.Dom > .dom-list .dom-item.dropdownOpen > .dom-item-label {
+  background-color: #333;
 }
 .Dom > .dom-list .dom-item.open > .dom-item-children {
   display: flex;
@@ -41,15 +45,24 @@
 .Dom > .dom-list .dom-item.select > .dom-item-label,
 .Dom > .dom-list .dom-item.select > .dom-item-text
 {
-  background-color: #42a5f5;
+  background-color: #333;
+}
+.Dom > .dom-list .dom-item.select > .dom-item-label .dom-item-arrow {
+  color: #888;
 }
 
+.Dom > .dom-list .dom-item.hover > .dom-item-label .dom-item-arrow {
+  color: #888;
+}
 .Dom > .dom-list .dom-item > .dom-item-label .dom-item-arrow {
   color: #444;
-  transform: none;
+  transform: rotatez(90deg);
+  padding-top: 5px;
+  padding-bottom: 5px;
 }
 
 .Dom > .dom-list .dom-item > .dom-item-label .dom-item-name {
+  padding-top: 5px;
   padding-left: 3px;
   white-space: nowrap;
 }
@@ -66,16 +79,23 @@
 
 /* dom detail */
 
-.Dom > .dom-detail {
+.dom-detail {
   display: flex;
   flex-direction: column;
-  height: 150px;
-  background-color: #444;
-  border-top: 2px solid #111;
+  height: 40px;
+  width: 55px;
+  background-color: #333;
   overflow-y: auto;
+  padding-left: 10px;
+  display: table-cell;
+  vertical-align: middle;
 }
 .Dom > .dom-detail > .dom-detail-name {
   font-family: monospace;
+}
+.Dom > .dom-detail > .dom-detail-button {
+  font-family: monospace;
+  text-align: center;
 }
 .Dom > .dom-detail > .dom-attribute {
   display: flex;

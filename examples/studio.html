@@ -710,7 +710,7 @@ const _closeTab = tab => {
 };
 const _closeAllTabs = () => { // XXX trigger this when switching servers
   for (let i = 0; i < tabs.length; i++) {
-    const {iframe} = tab;
+    const {iframe} = tabs[i];
     if (iframe.destroy) {
       iframe.destroy();
     }

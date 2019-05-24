@@ -2,9 +2,17 @@ import React from 'react';
 import '../css/console.css';
 
 class Console extends React.Component {
-  /* constructor(props) {
+  constructor(props) {
     super(props);
-  } */
+
+    this.state = {
+      open: this.props.open,
+    };
+  }
+
+  postViewportMessage() {
+    this.props.postViewportMessage();
+  }
 
   componentDidMount() {
     const consoleWrap = document.getElementById('console');
@@ -21,9 +29,32 @@ class Console extends React.Component {
       }
     });
   }
-  
+
   shouldComponentUpdate() {
-    return false;
+    return true;
+  }
+
+  componentDidUpdate(prevProps, prevState) {
+    if (this.state.open !== prevState.open) {
+      this.setState({
+        open: prevState.open,
+      });
+      this.postViewportMessage();
+    }
+  }
+
+  getClassnames() {
+    const classNames = ['Console'];
+    if (this.state.open) {
+      classNames.push('open');
+    }
+    return classNames.join(' ');
+  }
+
+  static getDerivedStateFromProps(nextProps, prevState) {
+    return {
+      open: nextProps.open,
+    };
   }
 
   onKeyDown(e) {
@@ -31,7 +62,7 @@ class Console extends React.Component {
       const consoleInput = document.getElementById('console-input');
       const value = consoleInput.value;
       consoleInput.value = '';
-      
+
       window.postMessage({
         method: 'eval',
         jsString: value,
@@ -41,7 +72,7 @@ class Console extends React.Component {
 
   render() {
     return (
-      <div className="Console" id="console">
+      <div className={this.getClassnames()} id="console">
         <div className="console-output" id="console-output" />
         <input type="text" className="console-input" id="console-input" onKeyDown={e => this.onKeyDown(e)} />
       </div>

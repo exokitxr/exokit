@@ -1,7 +1,18 @@
 import React from 'react';
+import Resizable from 're-resizable';
 import Dom from './Dom';
 import Console from './Console';
 import '../css/engine.css';
+
+const _postViewportMessage = () => {
+  const engineRender = document.getElementById('engine-render');
+  const bcr = engineRender.getBoundingClientRect();
+  const viewport = [bcr.x/window.innerWidth, bcr.y/window.innerHeight, bcr.width/window.innerWidth, bcr.height/window.innerHeight];
+  window.postMessage({
+    method: 'viewport',
+    viewport,
+  });
+};
 
 class Engine extends React.Component {
     constructor(props) {
@@ -10,6 +21,7 @@ class Engine extends React.Component {
       this.setFlag = this.setFlag.bind(this);
       this.handleURLChange = this.handleURLChange.bind(this);
       this.state = {
+        consoleOpen: false,
         flags: [],
         item: null,
         settings: null,
@@ -20,16 +32,6 @@ class Engine extends React.Component {
     }
 
     componentDidMount() {
-      const engineRender = document.getElementById('engine-render');
-
-      const _postViewportMessage = () => {
-        const bcr = engineRender.getBoundingClientRect();
-        const viewport = [bcr.x/window.innerWidth, bcr.y/window.innerHeight, bcr.width/window.innerWidth, bcr.height/window.innerHeight];
-        window.postMessage({
-          method: 'viewport',
-          viewport,
-        });
-      };
       _postViewportMessage();
       window.addEventListener('resize', _postViewportMessage);
 
@@ -50,6 +52,10 @@ class Engine extends React.Component {
         flags: this.state.flags,
         url: this.state.url
       });
+    }
+
+    postViewportMessage(){
+      _postViewportMessage();
     }
 
     handleURLChange(e){
@@ -182,19 +188,6 @@ class Engine extends React.Component {
       this.blur();
     }
 
-    loadWorld() {
-      const urlInput = document.getElementById('url-input');
-      const url = urlInput.value;
-
-      window.postMessage({
-        method: 'open',
-        url,
-        d: null,
-      });
-
-      this.blur();
-    }
-
     addTemplate(template) {
       window.postMessage({
         method: 'add',
@@ -217,6 +210,12 @@ class Engine extends React.Component {
       window.postMessage({
         method: 'click',
         target: 'xr',
+      });
+    }
+
+    toggleConsoleOpen(e) {
+      this.setState({
+        consoleOpen: !this.state.consoleOpen,
       });
     }
 
@@ -261,7 +260,6 @@ class Engine extends React.Component {
               <div className={this.urlPopupClassNames()}>
                 <div className="url-item" onMouseDown={e => e.preventDefault()} onClick={() => this.open3dTab()}>3D Reality Tab</div>
                 <div className="url-item" onMouseDown={e => e.preventDefault()} onClick={() => this.open2dTab()}>2D Reality Tab</div>
-                <div className="url-item" onMouseDown={e => e.preventDefault()} onClick={() => this.loadWorld()}>Reload</div>
               </div>
               <input type="text" className="url-input" id="url-input" value={this.state.url} onChange={e => this.onUrlChange(e)} onFocus={() => this.focusUrlInput()} onBlur={() => this.blurUrlInput()}/>
             </div>
@@ -323,6 +321,10 @@ class Engine extends React.Component {
               <i class="fal fa-plus-hexagon"/>
             </div>
             <div className="buttons">
+              <div className="button" onClick={e => this.toggleConsoleOpen(e)}>
+                <i class="fas fa-terminal"/>
+                <div className="label">Console</div>
+              </div>
               <div className="button" onClick={() => this.onXrClick()}>
                 <i class="fas fa-head-vr"/>
                 <div className="label">Enter XR</div>
@@ -337,11 +339,25 @@ class Engine extends React.Component {
           <div className="engine-split">
             <div className="engine-left">
               <div className="engine-render" id="engine-render" onClick={() => this.onEngineRenderClick()} />
-              <Console/>
+              <Resizable
+                minHeight="100"
+                maxHeight="300"
+                onResize={(e, direction, ref, d) => {
+                  _postViewportMessage();
+                }}>
+                <Console open={this.state.consoleOpen} postViewportMessage={this.postViewportMessage} />
+              </Resizable>
             </div>
+            <Resizable
+              minWidth="100"
+              maxWidth="300"
+              onResize={(e, direction, ref, d) => {
+                _postViewportMessage();
+              }}>
             <div className="engine-right">
               <Dom/>
             </div>
+            </Resizable>
           </div>
         </div>
       );

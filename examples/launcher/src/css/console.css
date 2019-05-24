@@ -1,12 +1,14 @@
 .Console {
   position: relative;
-  height: 100px;
-  background-color: #333;
+  height: 0px;
   border-top: 2px solid #222;
   font-family: monospace;
   font-size: 11px;
   white-space: pre-wrap;
   overflow-y: auto;
+}
+.Console.open {
+  height: 100px;
 }
 
 .Console .console-output {
