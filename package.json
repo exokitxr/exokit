@@ -59,7 +59,7 @@
     "mkdirp": "^0.5.1",
     "murmurhash-js": "^1.0.0",
     "nan": "^2.14.0",
-    "native-audio-deps": "0.0.63",
+    "native-audio-deps": "0.0.64",
     "native-browser-deps": "0.0.16",
     "native-browser-deps-linux": "0.0.8",
     "native-browser-deps-macos": "0.0.1",
