@@ -106,6 +106,7 @@ class Dom extends React.Component {
     return (
       <div className="Dom">
         <DomList root={this.state.root} selectEl={this.state.selectEl} onClick={el => this.onClick(el)} />
+         {/*this.state.selectEl ? <DomDetail el={this.state.selectEl} epoch={this.state.epoch} /> : null*/}
       </div>
     );
   }
