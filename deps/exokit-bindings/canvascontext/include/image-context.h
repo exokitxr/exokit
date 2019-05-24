@@ -36,7 +36,7 @@ protected:
   static NAN_GETTER(WidthGetter);
   static NAN_GETTER(HeightGetter);
   static NAN_GETTER(DataGetter);
-  static NAN_METHOD(LoadMethod);
+  static NAN_METHOD(Load);
 
   Image();
   ~Image();
