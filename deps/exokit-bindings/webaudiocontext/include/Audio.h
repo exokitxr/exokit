@@ -23,7 +23,7 @@ public:
   void Play();
   void Pause();
   void Load(uint8_t *bufferValue, size_t bufferLength, Local<Function> cbFn);
-  void Reparent(AudioContext *audioContext);
+  void Reparent(AudioContext *newAudioContext);
 
 protected:
   static NAN_METHOD(New);
@@ -43,8 +43,7 @@ protected:
   static void ProcessInMainThread(Audio *self);
 
   Nan::Persistent<Function> onended;
-  bool loaded;
-  bool connected;
+
   lab::AudioContext *audioContext;
   Nan::Persistent<Function> cbFn;
   shared_ptr<lab::AudioBus> audioBus;

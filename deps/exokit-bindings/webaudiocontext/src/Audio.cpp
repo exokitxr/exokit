@@ -72,20 +72,21 @@ void Audio::Load(uint8_t *bufferValue, size_t bufferLength, Local<Function> cbFn
 
 void Audio::ProcessLoadInMainThread(Audio *audio) {
   Nan::HandleScope scope;
-  
+
   lab::AudioContext *localAudioContext = audio->audioContext;
-  if (localAudioContext == nullptr) {
+  if (!localAudioContext) {
     localAudioContext = getDefaultAudioContext();
   }
   {
     lab::ContextRenderLock lock(localAudioContext, "Audio::ProcessLoadInMainThread");
+
     audio->audioNode->setBus(lock, audio->audioBus);
+
+    /* if (!audio->audioContext) {
+      audio->audioContext = getDefaultAudioContext();
+      audio->audioContext->connect(audio->audioContext->destination(), audio->audioNode, 0, 0);
+    } */
   }
-
-  // localAudioContext->connect(localAudioContext->destination(), audio->audioNode, 0, 0); // default connection
-  // audio->connected = true;
-
-  audio->loaded = true;
 
   Local<Object> asyncObject = Nan::New<Object>();
   AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "Audio::ProcessLoadInMainThread");
@@ -111,15 +112,13 @@ void Audio::Pause() {
 }
 
 // for when we reparent to MediaElementSourceNode
-void Audio::Reparent(AudioContext *audioContext) {
-  /* if (connected) {
-    // lab::AudioContext *defaultAudioContext = getDefaultAudioContext();
-    // defaultAudioContext->disconnect(nullptr, audioNode);
-  } else {
-    connected = true;
-  } */
+void Audio::Reparent(AudioContext *newAudioContext) {
+  if (audioContext) {
+    audioContext->disconnect(nullptr, audioNode);
+    lab::ContextRenderLock lock(audioContext, "Audio::Reparent"); // commit the change
+  }
   
-  this->audioContext = audioContext->audioContext.get();
+  audioContext = newAudioContext->audioContext.get();
 }
 
 NAN_METHOD(Audio::Load) {
