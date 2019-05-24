@@ -21,6 +21,7 @@ class Engine extends React.Component {
       this.setFlag = this.setFlag.bind(this);
       this.handleURLChange = this.handleURLChange.bind(this);
       this.state = {
+        consoleOpen: false,
         flags: [],
         item: null,
         settings: null,
@@ -208,15 +209,10 @@ class Engine extends React.Component {
       });
     }
 
-    onConsoleClick() {
-      let studioConsole = document.getElementById('console');
-      if(studioConsole.clientHeight === 0){
-        studioConsole.style.height = "100px";
-        _postViewportMessage();
-      } else {
-        studioConsole.style.height = "0px";
-        _postViewportMessage();
-      }
+    toggleConsoleOpen(e) {
+      this.setState({
+        consoleOpen: !this.state.consoleOpen,
+      });
     }
 
     blur() {
@@ -321,7 +317,7 @@ class Engine extends React.Component {
               <i class="fal fa-plus-hexagon"/>
             </div>
             <div className="buttons">
-              <div className="button" onClick={() => this.onConsoleClick()}>
+              <div className="button" onClick={e => this.toggleConsoleOpen(e)}>
                 <i class="fas fa-terminal"/>
                 <div className="label">Console</div>
               </div>
@@ -345,7 +341,7 @@ class Engine extends React.Component {
                 onResize={(e, direction, ref, d) => {
                   _postViewportMessage();
                 }}>
-                <Console/>
+                <Console open={this.state.consoleOpen} />
               </Resizable>
             </div>
             <Resizable
