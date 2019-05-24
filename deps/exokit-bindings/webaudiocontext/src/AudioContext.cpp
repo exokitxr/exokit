@@ -52,7 +52,6 @@ Local<Object> AudioContext::Initialize(Isolate *isolate, Local<Value> audioListe
 
   // prototype
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
-  Nan::SetMethod(proto, "_decodeAudioDataSync", _DecodeAudioDataSync);
   Nan::SetMethod(proto, "createMediaElementSource", CreateMediaElementSource);
   Nan::SetMethod(proto, "createMediaStreamSource", CreateMediaStreamSource);
   Nan::SetMethod(proto, "createMediaStreamDestination", CreateMediaStreamDestination);
@@ -165,43 +164,6 @@ Local<Object> AudioContext::CreateOscillator(Local<Function> oscillatorNodeConst
   return oscillatorNodeObj;
 }
 
-Local<Value> AudioContext::_DecodeAudioDataSync(Local<Function> audioBufferConstructor, Local<ArrayBuffer> srcArrayBuffer) {
-  size_t bufferLength = srcArrayBuffer->ByteLength();
-  vector<uint8_t> buffer(bufferLength);
-  memcpy(buffer.data(), srcArrayBuffer->GetContents().Data(), bufferLength);
-
-  string error;
-  shared_ptr<lab::AudioBus> audioBus(lab::MakeBusFromMemory(buffer, false, &error));
-  if (audioBus) {
-    size_t numChannels = audioBus->numberOfChannels();
-    Local<Array> sourcesArray = Nan::New<Array>(numChannels);
-    size_t numFrames = audioBus->channel(0)->length();
-
-    for (size_t i = 0; i < numChannels; i++) {
-      lab::AudioChannel *audioChannel = audioBus->channel(i);
-      const float *source = audioChannel->data();
-
-      Local<ArrayBuffer> sourceArrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), numFrames * sizeof(float));
-      memcpy(sourceArrayBuffer->GetContents().Data(), source, sourceArrayBuffer->ByteLength());
-      Local<Float32Array> sourceFloat32Array = Float32Array::New(sourceArrayBuffer, 0, numFrames);
-      sourcesArray->Set(i, sourceFloat32Array);
-    }
-    Local<Value> argv[] = {
-      JS_INT((uint32_t)numChannels),
-      JS_INT((uint32_t)numFrames),
-      JS_INT((uint32_t)audioContext->sampleRate()),
-      sourcesArray,
-    };
-    Local<Object> audioBuffer = audioBufferConstructor->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(argv)/sizeof(argv[0]), argv).ToLocalChecked();
-
-    return audioBuffer;
-  } else {
-    Nan::ThrowError(error.c_str());
-
-    return Nan::Null();
-  }
-}
-
 Local<Object> AudioContext::CreateBuffer(Local<Function> audioBufferConstructor, uint32_t numOfChannels, uint32_t length, uint32_t sampleRate) {
   Local<Value> argv[] = {
     JS_INT(numOfChannels),
@@ -276,24 +238,6 @@ NAN_METHOD(AudioContext::New) {
   audioContextObj->Set(JS_STR("listener"), audioListenerObj);
 
   info.GetReturnValue().Set(audioContextObj);
-}
-
-NAN_METHOD(AudioContext::_DecodeAudioDataSync) {
-  // Nan::HandleScope scope;
-
-  if (info[0]->IsArrayBuffer()) {
-    Local<Object> audioContextObj = info.This();
-    AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(audioContextObj);
-
-    Local<ArrayBuffer> srcArrayBuffer = Local<ArrayBuffer>::Cast(info[0]);
-
-    Local<Function> audioBufferConstructor = Local<Function>::Cast(JS_OBJ(audioContextObj->Get(JS_STR("constructor")))->Get(JS_STR("AudioBuffer")));
-    Local<Value> audioBufferObj = audioContext->_DecodeAudioDataSync(audioBufferConstructor, srcArrayBuffer);
-
-    info.GetReturnValue().Set(audioBufferObj);
-  } else {
-    Nan::ThrowError("AudioContext::_DecodeAudioDataSync: invalid arguments");
-  }
 }
 
 NAN_METHOD(AudioContext::CreateMediaElementSource) {

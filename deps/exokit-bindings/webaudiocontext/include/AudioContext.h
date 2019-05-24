@@ -42,7 +42,6 @@ public:
   Local<Object> CreateMediaStreamSource(Local<Function> audioSourceNodeConstructor, Local<Object> mediaStream, Local<Object> audioContextObj);
   void CreateMediaStreamDestination();
   void CreateMediaStreamTrackSource();
-  Local<Value> _DecodeAudioDataSync(Local<Function> audioBufferConstructor, Local<ArrayBuffer> srcArrayBuffer);
   Local<Object> CreateGain(Local<Function> gainNodeConstructor, Local<Object> audioContextObj);
   Local<Object> CreateAnalyser(Local<Function> analyserNodeConstructor, Local<Object> audioContextObj);
   Local<Object> CreatePanner(Local<Function> pannerNodeConstructor, Local<Object> audioContextObj);
@@ -57,7 +56,6 @@ public:
   static NAN_METHOD(New);
   static NAN_METHOD(Close);
   static NAN_METHOD(Destroy);
-  static NAN_METHOD(_DecodeAudioDataSync);
   static NAN_METHOD(CreateMediaElementSource);
   static NAN_METHOD(CreateMediaStreamSource);
   static NAN_METHOD(CreateMediaStreamDestination);
