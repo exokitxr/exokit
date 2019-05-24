@@ -273,7 +273,7 @@ class VRDisplay extends EventEmitter {
 
   async requestPresent(layers) {
     await this.onrequestpresent();
-    
+
     const [{source: canvas}] = layers;
     const context = canvas._context || canvas.getContext('webgl');
     this.onmakeswapchain(context);
@@ -291,7 +291,7 @@ class VRDisplay extends EventEmitter {
       this.cancelAnimationFrame(this._rafs[i]);
     }
     this._rafs.length = 0;
-    
+
     await this.onexitpresent();
 
     if (this.onvrdisplaypresentchange && this.isPresenting) {
@@ -631,7 +631,7 @@ class FakeVRDisplay extends VRDisplay {
                 .getInverse(localMatrix2)
               );
           }
-          
+
           localMatrix.toArray(offsetMatrix);
 
           return offsetMatrix;
@@ -669,7 +669,7 @@ class FakeVRDisplay extends VRDisplay {
                 .getInverse(localMatrix2)
               );
           }
-          
+
           localMatrix.toArray(offsetMatrix);
 
           return offsetMatrix;
@@ -1038,7 +1038,7 @@ function getGamepads() {
     if (!globalGamepads) {
       globalGamepads = _makeGlobalGamepads();
     }
-    
+
     // XXX map oculusGo/oculusQuest
     // XXX can do these decorations at XR entry time
     globalGamepads.main[0].id = getControllerID(hmdType, 'left');
@@ -1052,14 +1052,14 @@ function getGamepads() {
       }
       gamepads.push.apply(gamepads, globalGamepads.tracker);
     }
-    
+
     if (GlobalContext.xrState.handTracking[0]) {
       gamepads.push.apply(gamepads, globalGamepads.hand);
     }
     if (GlobalContext.xrState.eyeTracking[0]) {
       gamepads.push(globalGamepads.eye);
     }
-    
+
     return gamepads;
   } else {
     return [];
