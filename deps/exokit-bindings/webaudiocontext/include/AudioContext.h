@@ -106,8 +106,6 @@ public:
   std::deque<function<void()>> threadFns;
   std::mutex mutex;
   uv_async_t *threadAsync;
-  /* uv_sem_t threadReqSemaphore;
-  uv_sem_t threadResSemaphore; */
 };
 
 extern thread_local unique_ptr<lab::AudioContext> _defaultAudioContext;
