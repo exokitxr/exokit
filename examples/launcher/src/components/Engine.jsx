@@ -54,6 +54,10 @@ class Engine extends React.Component {
       });
     }
 
+    postViewportMessage(){
+      _postViewportMessage();
+    }
+
     handleURLChange(e){
       this.setState({
         url: e.target.value
@@ -341,7 +345,7 @@ class Engine extends React.Component {
                 onResize={(e, direction, ref, d) => {
                   _postViewportMessage();
                 }}>
-                <Console open={this.state.consoleOpen} />
+                <Console open={this.state.consoleOpen} postViewportMessage={this.postViewportMessage} />
               </Resizable>
             </div>
             <Resizable
