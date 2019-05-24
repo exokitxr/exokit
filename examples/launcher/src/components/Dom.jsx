@@ -205,9 +205,7 @@ class DomItem extends React.Component {
 
   cloneTab() {
     const {el} = this.props;
-    let url;
-
-    el.attrs.find(attr => (attr.name === "src") ? url = attr.value : null);
+    const url = el.attrs.find(attr => attr.name === 'src').value;
 
     window.postMessage({
       method: 'open',
