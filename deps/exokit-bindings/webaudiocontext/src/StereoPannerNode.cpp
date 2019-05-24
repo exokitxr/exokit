@@ -31,7 +31,7 @@ void StereoPannerNode::InitializePrototype(Local<ObjectTemplate> proto) {
 }
 
 NAN_METHOD(StereoPannerNode::New) {
-  Nan::HandleScope scope;
+  // Nan::HandleScope scope;
 
   if (info[0]->IsObject() && JS_OBJ(JS_OBJ(info[0])->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("AudioContext"))) {
     Local<Object> audioContextObj = Local<Object>::Cast(info[0]);

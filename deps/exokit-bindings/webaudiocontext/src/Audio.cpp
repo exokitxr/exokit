@@ -4,7 +4,7 @@
 
 namespace webaudio {
 
-Audio::Audio() {
+Audio::Audio() : audioContext(nullptr) {
   WebAudioAsync *webaudioAsync = getWebAudioAsync();
   audioNode.reset(new lab::FinishableSourceNode(
     [this, webaudioAsync](lab::ContextRenderLock &r){
@@ -49,23 +49,58 @@ NAN_METHOD(Audio::New) {
   info.GetReturnValue().Set(audioObj);
 }
 
-void Audio::Load(uint8_t *bufferValue, size_t bufferLength) {
-  vector<uint8_t> buffer(bufferLength);
-  memcpy(buffer.data(), bufferValue, bufferLength);
+void Audio::Load(uint8_t *bufferValue, size_t bufferLength, Local<Function> cbFn) {
+  if (this->cbFn.IsEmpty()) {
+    this->cbFn.Reset(cbFn);
 
-  string error;
-  shared_ptr<lab::AudioBus> audioBus(lab::MakeBusFromMemory(buffer, false, &error));
-  if (audioBus) {
-    lab::AudioContext *defaultAudioContext = getDefaultAudioContext();
-    {
-      lab::ContextRenderLock lock(defaultAudioContext, "Audio::Load");
-      audioNode->setBus(lock, audioBus);
-    }
+    WebAudioAsync *webAudioAsync = getWebAudioAsync();
+    std::vector<unsigned char> buffer(bufferLength);
+    memcpy(buffer.data(), bufferValue, bufferLength);
+    std::thread([this, webAudioAsync, buffer{std::move(buffer)}]() mutable -> void {
+      this->audioBus = lab::MakeBusFromMemory(buffer, false, &this->error);
 
-    defaultAudioContext->connect(defaultAudioContext->destination(), audioNode, 0, 0); // default connection
+      webAudioAsync->QueueOnMainThread(std::bind(ProcessLoadInMainThread, this));
+    }).detach();
   } else {
-    Nan::ThrowError(error.c_str());
+    Local<String> arg0 = Nan::New<String>("already loading").ToLocalChecked();
+    Local<Value> argv[] = {
+      arg0,
+    };
+    cbFn->Call(Isolate::GetCurrent()->GetCurrentContext(), Nan::Null(), sizeof(argv)/sizeof(argv[0]), argv);
   }
+}
+
+void Audio::ProcessLoadInMainThread(Audio *audio) {
+  Nan::HandleScope scope;
+
+  lab::AudioContext *localAudioContext = audio->audioContext;
+  if (!localAudioContext) {
+    localAudioContext = getDefaultAudioContext();
+  }
+  {
+    lab::ContextRenderLock lock(localAudioContext, "Audio::ProcessLoadInMainThread");
+
+    audio->audioNode->setBus(lock, audio->audioBus);
+
+    /* if (!audio->audioContext) {
+      audio->audioContext = getDefaultAudioContext();
+      audio->audioContext->connect(audio->audioContext->destination(), audio->audioNode, 0, 0);
+    } */
+  }
+
+  Local<Object> asyncObject = Nan::New<Object>();
+  AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "Audio::ProcessLoadInMainThread");
+
+  Local<Function> cbFn = Nan::New(audio->cbFn);
+  Local<String> arg0 = Nan::New<String>(audio->error).ToLocalChecked();
+  Local<Value> argv[] = {
+    arg0,
+  };
+  asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
+
+  audio->cbFn.Reset();
+  audio->audioBus.reset();
+  audio->error = "";
 }
 
 void Audio::Play() {
@@ -76,20 +111,36 @@ void Audio::Pause() {
   audioNode->stop(0);
 }
 
+// for when we reparent to MediaElementSourceNode
+void Audio::Reparent(AudioContext *newAudioContext) {
+  if (audioContext) {
+    audioContext->disconnect(nullptr, audioNode);
+    lab::ContextRenderLock lock(audioContext, "Audio::Reparent"); // commit the change
+  }
+  
+  audioContext = newAudioContext->audioContext.get();
+}
+
 NAN_METHOD(Audio::Load) {
-  if (info[0]->IsArrayBuffer()) {
-    Audio *audio = ObjectWrap::Unwrap<Audio>(info.This());
 
-    Local<ArrayBuffer> arrayBuffer = Local<ArrayBuffer>::Cast(info[0]);
+  if (info[1]->IsFunction()) {
+    if (info[0]->IsArrayBuffer()) {
+      Audio *audio = ObjectWrap::Unwrap<Audio>(info.This());
 
-    audio->Load((uint8_t *)arrayBuffer->GetContents().Data(), arrayBuffer->ByteLength());
-  } else if (info[0]->IsTypedArray()) {
-    Audio *audio = ObjectWrap::Unwrap<Audio>(info.This());
+      Local<ArrayBuffer> arrayBuffer = Local<ArrayBuffer>::Cast(info[0]);
+      Local<Function> cbFn = Local<Function>::Cast(info[1]);
 
-    Local<ArrayBufferView> arrayBufferView = Local<ArrayBufferView>::Cast(info[0]);
-    Local<ArrayBuffer> arrayBuffer = arrayBufferView->Buffer();
+      audio->Load((uint8_t *)arrayBuffer->GetContents().Data(), arrayBuffer->ByteLength(), cbFn);
+    } else if (info[0]->IsTypedArray()) {
+      Audio *audio = ObjectWrap::Unwrap<Audio>(info.This());
 
-    audio->Load((uint8_t *)arrayBuffer->GetContents().Data() + arrayBufferView->ByteOffset(), arrayBufferView->ByteLength());
+      Local<ArrayBufferView> arrayBufferView = Local<ArrayBufferView>::Cast(info[0]);
+      Local<Function> cbFn = Local<Function>::Cast(info[1]);
+
+      audio->Load((uint8_t *)arrayBufferView->Buffer()->GetContents().Data() + arrayBufferView->ByteOffset(), arrayBufferView->ByteLength(), cbFn);
+    } else {
+      Nan::ThrowError("invalid arguments");
+    }
   } else {
     Nan::ThrowError("invalid arguments");
   }

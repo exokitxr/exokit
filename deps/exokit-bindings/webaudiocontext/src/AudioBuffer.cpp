@@ -22,6 +22,7 @@ Local<Object> AudioBuffer::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "getChannelData", GetChannelData);
   Nan::SetMethod(proto, "copyFromChannel", CopyFromChannel);
   Nan::SetMethod(proto, "copyToChannel", CopyToChannel);
+  Nan::SetMethod(proto, "load", Load);
 
   Local<Function> ctorFn = Nan::GetFunction(ctor).ToLocalChecked();
 
@@ -45,6 +46,13 @@ NAN_METHOD(AudioBuffer::New) {
         buffers->Set(i, float32Array);
       }
     }
+
+    AudioBuffer *audioBuffer = new AudioBuffer(sampleRate, buffers);
+    Local<Object> audioBufferObj = info.This();
+    audioBuffer->Wrap(audioBufferObj);
+  } else if (info[0]->IsNumber()) {
+    uint32_t sampleRate = TO_UINT32(info[0]);
+    Local<Array> buffers = Nan::New<Array>();
 
     AudioBuffer *audioBuffer = new AudioBuffer(sampleRate, buffers);
     Local<Object> audioBufferObj = info.This();
@@ -161,6 +169,84 @@ NAN_METHOD(AudioBuffer::CopyToChannel) {
   } else {
     Nan::ThrowError("AudioBuffer:CopyToChannel: invalid arguments");
   }
+}
+NAN_METHOD(AudioBuffer::Load) {
+  if (info[1]->IsFunction()) {
+    if (info[0]->IsArrayBuffer()) {
+      AudioBuffer *audioBuffer = ObjectWrap::Unwrap<AudioBuffer>(info.This());
+
+      Local<ArrayBuffer> arrayBuffer = Local<ArrayBuffer>::Cast(info[0]);
+      Local<Function> cbFn = Local<Function>::Cast(info[1]);
+
+      audioBuffer->Load(arrayBuffer, 0, arrayBuffer->ByteLength(), cbFn);
+    } else if (info[0]->IsTypedArray()) {
+      AudioBuffer *audioBuffer = ObjectWrap::Unwrap<AudioBuffer>(info.This());
+
+      Local<ArrayBufferView> arrayBufferView = Local<ArrayBufferView>::Cast(info[0]);
+      Local<ArrayBuffer> arrayBuffer = arrayBufferView->Buffer();
+      Local<Function> cbFn = Local<Function>::Cast(info[1]);
+
+      audioBuffer->Load(arrayBuffer, arrayBufferView->ByteOffset(), arrayBufferView->ByteLength(), cbFn);
+    } else {
+      Nan::ThrowError("invalid arguments");
+    }
+  } else {
+    Nan::ThrowError("invalid arguments");
+  }
+}
+
+void AudioBuffer::Load(Local<ArrayBuffer> arrayBuffer, size_t byteOffset, size_t byteLength, Local<Function> cbFn) {
+  if (this->cbFn.IsEmpty()) {
+    this->cbFn.Reset(cbFn);
+    this->error = "";
+
+    WebAudioAsync *webAudioAsync = getWebAudioAsync();
+    std::vector<unsigned char> buffer(byteLength);
+    memcpy(buffer.data(), (unsigned char *)arrayBuffer->GetContents().Data() + byteOffset, byteLength);
+    std::thread([this, webAudioAsync, buffer{std::move(buffer)}]() mutable -> void {
+      this->audioBus = lab::MakeBusFromMemory(buffer, false, &this->error);
+
+      webAudioAsync->QueueOnMainThread(std::bind(ProcessLoadInMainThread, this));
+    }).detach();
+  } else {
+    Local<String> arg0 = Nan::New<String>("already loading").ToLocalChecked();
+    Local<Value> argv[] = {
+      arg0,
+    };
+    cbFn->Call(Isolate::GetCurrent()->GetCurrentContext(), Nan::Null(), sizeof(argv)/sizeof(argv[0]), argv);
+  }
+}
+
+void AudioBuffer::ProcessLoadInMainThread(AudioBuffer *audioBuffer) {
+  Nan::HandleScope scope;
+  
+  uint32_t numChannels = audioBuffer->audioBus->numberOfChannels();
+  uint32_t numFrames = audioBuffer->audioBus->channel(0)->length();
+  Local<Array> buffers = Nan::New<Array>(numChannels);
+  for (size_t i = 0; i < numChannels; i++) {
+    lab::AudioChannel *audioChannel = audioBuffer->audioBus->channel(i);
+    const float *source = audioChannel->data();
+
+    Local<ArrayBuffer> sourceArrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), numFrames * sizeof(float));
+    memcpy(sourceArrayBuffer->GetContents().Data(), source, sourceArrayBuffer->ByteLength());
+    Local<Float32Array> sourceFloat32Array = Float32Array::New(sourceArrayBuffer, 0, numFrames);
+    buffers->Set(i, sourceFloat32Array);
+  }
+  audioBuffer->buffers.Reset(buffers);
+
+  Local<Object> asyncObject = Nan::New<Object>();
+  AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "AudioBuffer::ProcessLoadInMainThread");
+
+  Local<Function> cbFn = Nan::New(audioBuffer->cbFn);
+  Local<String> arg0 = Nan::New<String>(audioBuffer->error).ToLocalChecked();
+  Local<Value> argv[] = {
+    arg0,
+  };
+  asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
+
+  audioBuffer->cbFn.Reset();
+  audioBuffer->audioBus.reset();
+  audioBuffer->error = "";
 }
 
 AudioBufferSourceNode::AudioBufferSourceNode() {
