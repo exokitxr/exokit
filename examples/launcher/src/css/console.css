@@ -7,6 +7,9 @@
   white-space: pre-wrap;
   overflow-y: auto;
 }
+.Console.open {
+  height: 100px;
+}
 
 .Console .console-output {
   width: 100%;
