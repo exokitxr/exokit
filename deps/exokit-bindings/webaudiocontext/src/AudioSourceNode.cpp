@@ -47,6 +47,8 @@ NAN_METHOD(AudioSourceNode::New) {
 
         audioSourceNode->context.Reset(audioContextObj);
         audioSourceNode->audioNode = audio->audioNode;
+        
+        audio->Reparent();
 
         info.GetReturnValue().Set(audioSourceNodeObj);
       } else {
