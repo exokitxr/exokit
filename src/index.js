@@ -502,6 +502,7 @@ const _startTopRenderLoop = () => {
     total: 0,
   };
   const TIMESTAMP_FRAMES = 100;
+  const childSyncs = [];	
 
   if (nativeBindings.nativeWindow.pollEvents) {
     setInterval(() => {
