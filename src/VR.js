@@ -576,7 +576,6 @@ class FakeVRDisplay extends VRDisplay {
     this.session = null;
     this.position = new THREE.Vector3();
     this.quaternion = new THREE.Quaternion();
-    this.gamepads = [];
 
     if (!globalGamepads) {
       globalGamepads = _makeGlobalGamepads();
@@ -595,7 +594,6 @@ class FakeVRDisplay extends VRDisplay {
     };
     for (let i = 0; i < globalGamepads.main.length; i++) {
       _decorateGamepad(globalGamepads.main[i], 'tracked-pointer');
-      this.gamepads[i] = globalGamepads.main[i];
     }
     for (let i = 0; i < globalGamepads.tracker.length; i++) {
       _decorateGamepad(globalGamepads.tracker[i], 'tracked-pointer');
