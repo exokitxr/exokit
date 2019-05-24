@@ -10,6 +10,10 @@ class Console extends React.Component {
     };
   }
 
+  postViewportMessage() {
+    this.props.postViewportMessage();
+  }
+
   componentDidMount() {
     const consoleWrap = document.getElementById('console');
     const consoleOuput = document.getElementById('console-output');
@@ -35,6 +39,7 @@ class Console extends React.Component {
       this.setState({
         open: prevState.open,
       });
+      this.postViewportMessage();
     }
   }
 
