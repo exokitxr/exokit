@@ -444,31 +444,53 @@ NAN_GETTER(AudioContext::SampleRateGetter) {
 WebAudioAsync::WebAudioAsync() : threadAsync(new uv_async_t()) {
   uv_async_init(windowsystembase::GetEventLoop(), threadAsync, RunInMainThread);
   threadAsync->data = this;
-  uv_sem_init(&threadSemaphore, 0);
+  /* uv_sem_init(&threadReqSemaphore, 1);
+  uv_sem_init(&threadResSemaphore, 0); */
 }
 
 WebAudioAsync::~WebAudioAsync() {
   uv_close((uv_handle_t *)threadAsync, [](uv_handle_t *handle) {
     delete handle;
   });
-  uv_sem_destroy(&threadSemaphore);
+  /* uv_sem_destroy(&threadReqSemaphore);
+  uv_sem_destroy(&threadResSemaphore); */
 }
 
 void WebAudioAsync::QueueOnMainThread(lab::ContextRenderLock &r, function<void()> &&newThreadFn) {
-  threadFn = std::move(newThreadFn);
-
   {
-    lab::ContextRenderUnlock contextUnlock(r.context());
-    uv_async_send(threadAsync);
-    uv_sem_wait(&threadSemaphore);
-  }
+    std::lock_guard<std::mutex> lock(mutex);
 
-  threadFn = function<void()>();
+    threadFns.emplace_back(std::move(newThreadFn));
+  }
+  uv_async_send(threadAsync);
+}
+void WebAudioAsync::QueueOnMainThread(function<void()> &&newThreadFn) {
+  {
+    std::lock_guard<std::mutex> lock(mutex);
+
+    threadFns.emplace_back(std::move(newThreadFn));
+  }
+  uv_async_send(threadAsync);
 }
 void WebAudioAsync::RunInMainThread(uv_async_t *handle) {
   WebAudioAsync *webAudioAsync = (WebAudioAsync *)handle->data;
-  webAudioAsync->threadFn();
-  uv_sem_post(&webAudioAsync->threadSemaphore);
+
+  for (;;) {
+    function<void()> threadFn;
+    {
+      std::lock_guard<std::mutex> lock(webAudioAsync->mutex);
+
+      if (webAudioAsync->threadFns.size() > 0) {
+        threadFn = std::move(webAudioAsync->threadFns.front());
+        webAudioAsync->threadFns.pop_front();
+      }
+    }
+    if (threadFn) {
+      threadFn();
+    } else {
+      break;
+    }
+  }
 }
 
 thread_local unique_ptr<lab::AudioContext> _defaultAudioContext;

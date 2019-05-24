@@ -97,12 +97,15 @@ public:
   ~WebAudioAsync();
 
   void QueueOnMainThread(lab::ContextRenderLock &r, function<void()> &&newThreadFn);
+  void QueueOnMainThread(function<void()> &&newThreadFn);
   static void RunInMainThread(uv_async_t *handle);
 
 // protected:
-  function<void()> threadFn;
+  std::deque<function<void()>> threadFns;
+  std::mutex mutex;
   uv_async_t *threadAsync;
-  uv_sem_t threadSemaphore;
+  /* uv_sem_t threadReqSemaphore;
+  uv_sem_t threadResSemaphore; */
 };
 
 extern thread_local unique_ptr<lab::AudioContext> _defaultAudioContext;
