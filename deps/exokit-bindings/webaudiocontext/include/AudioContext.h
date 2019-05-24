@@ -47,7 +47,8 @@ public:
   Local<Object> CreatePanner(Local<Function> pannerNodeConstructor, Local<Object> audioContextObj);
   Local<Object> CreateStereoPanner(Local<Function> stereoPannerNodeConstructor, Local<Object> audioContextObj);
   Local<Object> CreateOscillator(Local<Function> oscillatorNodeConstructor, Local<Object> audioContextObj);
-  Local<Object> CreateBuffer(Local<Function> audioBufferConstructor, uint32_t bufferSize, uint32_t numberOfInputChannels, uint32_t numberOfOutputChannels);
+  Local<Object> CreateBuffer(Local<Function> audioBufferConstructor, uint32_t numOfChannels, uint32_t length, uint32_t sampleRate);
+  Local<Object> CreateEmptyBuffer(Local<Function> audioBufferConstructor, uint32_t sampleRate);
   Local<Object> CreateBufferSource(Local<Function> audioBufferSourceNodeConstructor, Local<Object> audioContextObj);
   Local<Object> CreateScriptProcessor(Local<Function> scriptProcessorNodeConstructor, uint32_t bufferSize, uint32_t numberOfInputChannels, uint32_t numberOfOutputChannels, Local<Object> audioContextObj);
   void Suspend();
@@ -66,6 +67,7 @@ public:
   static NAN_METHOD(CreateStereoPanner);
   static NAN_METHOD(CreateOscillator);
   static NAN_METHOD(CreateBuffer);
+  static NAN_METHOD(CreateEmptyBuffer);
   static NAN_METHOD(CreateBufferSource);
   static NAN_METHOD(CreateScriptProcessor);
   static NAN_METHOD(Suspend);

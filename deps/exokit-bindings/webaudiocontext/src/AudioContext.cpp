@@ -62,6 +62,7 @@ Local<Object> AudioContext::Initialize(Isolate *isolate, Local<Value> audioListe
   Nan::SetMethod(proto, "createStereoPanner", CreateStereoPanner);
   Nan::SetMethod(proto, "createOscillator", CreateOscillator);
   Nan::SetMethod(proto, "createBuffer", CreateBuffer);
+  Nan::SetMethod(proto, "createEmptyBuffer", CreateEmptyBuffer);
   Nan::SetMethod(proto, "createBufferSource", CreateBufferSource);
   Nan::SetMethod(proto, "createScriptProcessor", CreateScriptProcessor);
   Nan::SetMethod(proto, "suspend", Suspend);
@@ -168,6 +169,15 @@ Local<Object> AudioContext::CreateBuffer(Local<Function> audioBufferConstructor,
   Local<Value> argv[] = {
     JS_INT(numOfChannels),
     JS_INT(length),
+    JS_INT(sampleRate),
+  };
+  Local<Object> audioBufferObj = audioBufferConstructor->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(argv)/sizeof(argv[0]), argv).ToLocalChecked();
+
+  return audioBufferObj;
+}
+
+Local<Object> AudioContext::CreateEmptyBuffer(Local<Function> audioBufferConstructor, uint32_t sampleRate) {
+  Local<Value> argv[] = {
     JS_INT(sampleRate),
   };
   Local<Object> audioBufferObj = audioBufferConstructor->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(argv)/sizeof(argv[0]), argv).ToLocalChecked();
@@ -366,8 +376,21 @@ NAN_METHOD(AudioContext::CreateBuffer) {
 
     info.GetReturnValue().Set(audioBufferObj);
   } else {
-    Nan::ThrowError("invalid arguments");
+    Nan::ThrowError("AudioContext::CreateBuffer: invalid arguments");
   }
+}
+
+NAN_METHOD(AudioContext::CreateEmptyBuffer) {
+  // Nan::HandleScope scope;
+  
+  Local<Object> audioContextObj = info.This();
+  AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(audioContextObj);
+
+  Local<Function> audioBufferConstructor = Local<Function>::Cast(JS_OBJ(audioContextObj->Get(JS_STR("constructor")))->Get(JS_STR("AudioBuffer")));
+  uint32_t sampleRate = (uint32_t)audioContext->audioContext->sampleRate();
+  Local<Object> audioBufferObj = audioContext->CreateEmptyBuffer(audioBufferConstructor, sampleRate);
+
+  info.GetReturnValue().Set(audioBufferObj);
 }
 
 NAN_METHOD(AudioContext::CreateBufferSource) {
