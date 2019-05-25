@@ -1151,7 +1151,7 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
   /* Nan::SetMethod(proto, "getFramebuffer", glSwitchCallWrap<GetFramebuffer>);
   Nan::SetMethod(proto, "setDefaultFramebuffer", glSwitchCallWrap<SetDefaultFramebuffer>); */
   Nan::SetMethod(proto, "getBoundFramebuffer", glCallWrap<GetBoundFramebuffer>);
-  Nan::SetMethod(proto, "getDefaultFramebuffer", glCallWrap<GetDefaultFramebuffer>);
+  Nan::SetMethod(proto, "getDefaultFramebuffer", GetDefaultFramebuffer);
   Nan::SetMethod(proto, "setDefaultFramebuffer", glCallWrap<SetDefaultFramebuffer>);
 
   setGlConstants(proto);
