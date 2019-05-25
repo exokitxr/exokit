@@ -24,14 +24,15 @@ OculusMobileContext::OculusMobileContext(NATIVEwindow *windowHandle) :
     java.Env = androidJniEnv;
     java.ActivityObject = androidApp->activity->clazz;
 
-    if(VRAPI_SYS_PROP_FOVEATION_AVAILABLE){
-      vrapi_SetPropertyInt( &java, VRAPI_FOVEATION_LEVEL, 3 );
-    }
     const ovrInitParms initParms = vrapi_DefaultInitParms(&java);
     int32_t initResult = vrapi_Initialize(&initParms);
     if (initResult != VRAPI_INITIALIZE_SUCCESS) {
       exerr << "VRAPI failed to initialize: " << initResult << std::endl;
     }
+    if(VRAPI_SYS_PROP_FOVEATION_AVAILABLE){
+      vrapi_SetPropertyInt( &java, VRAPI_FOVEATION_LEVEL, 3 );
+    }
+
   }
 
   {
