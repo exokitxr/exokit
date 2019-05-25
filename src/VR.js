@@ -626,6 +626,29 @@ const getHMDType = () => {
     return null;
   }
 };
+const hmdTypes = [
+  'fake',
+  'oculus',
+  'openvr',
+  'oculusMobile',
+  'magicleap',
+];
+const hmdTypeIndexMap = (() => {
+  const result = {};
+  hmdTypes.forEach((t, i) => {
+    result[t] = i;
+  });
+  return result;
+})();
+const lookupHMDTypeIndex = s => hmdTypeIndexMap[k];
+const hmdTypeStringMap = (() => {
+  const result = {};
+  hmdTypes.forEach((t, i) => {
+    result[i] = t;
+  });
+  return result;
+})();
+const lookupHMDTypeString = i => hmdTypeStringMap[k];
 
 const createVRDisplay = () => new FakeVRDisplay();
 
