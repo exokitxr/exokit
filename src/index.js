@@ -295,7 +295,21 @@ const topVrPresentState = {
   hasPose: false,
 };
 
-const handleRequest = ({type}, window) => {
+const requests = [];
+const handleRequest = (req, window) => {
+  requests.push({
+    req,
+    window,
+  });
+};
+GlobalContext.handleRequest = handleRequest;
+const _handleRequests = () => {
+  for (let i = 0; i < requests.length; i++) {
+    _handleRequest(requests[i]);
+  }
+  requests.length = 0;
+};
+const _handleRequest = ({req: {type}, window}) => {
   if (!topVrPresentState.hmdType) {
     if (type === 'requestPresent') {
       const hmdType = getHMDType();
@@ -405,7 +419,6 @@ const handleRequest = ({type}, window) => {
     method: 'response',
   }));
 };
-GlobalContext.handleRequest = handleRequest;
 
 const _startTopRenderLoop = () => {
   const timestamps = {
@@ -864,6 +877,7 @@ const _startTopRenderLoop = () => {
       timestamps.last = now;
     }
 
+    _handleRequests();
     await _waitGetPoses();
 
     _computeDerivedGamepadsData();
