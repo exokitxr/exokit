@@ -340,8 +340,9 @@ const _handleRequest = ({req: {type}, window}) => {
         const {width: halfWidth, height} = system.GetRecommendedRenderTargetSize();
         const width = halfWidth * 2;
 
-        const [tex, depthTex] = system.CreateSwapChain(width, height);
+        const [fbo, tex, depthTex] = system.CreateSwapChain(width, height);
 
+        topVrPresentState.fbo = fbo;
         xrState.tex[0] = tex;
         xrState.depthTex[0] = depthTex;
         xrState.renderWidth[0] = halfWidth;
@@ -847,7 +848,8 @@ const _startTopRenderLoop = () => {
   const _submitFrame = async () => {
     if (topVrPresentState.hasPose) {
       if (topVrPresentState.hmdType === 'oculus') {
-        const [tex, depthTex] = topVrPresentState.vrContext.Submit();
+        const [fbo, tex, depthTex] = topVrPresentState.vrContext.Submit();
+        topVrPresentState.fbo = fbo;
         xrState.tex[0] = tex;
         xrState.depthTex[0] = depthTex;
       } else if (topVrPresentState.hmdType === 'openvr') {
