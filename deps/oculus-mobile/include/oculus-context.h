@@ -37,7 +37,7 @@ public:
   ANativeWindow *androidNativeWindow;
   std::vector<GLuint> framebuffers;
   ovrTextureSwapChain *colorSwapChain;
-  ovrTextureSwapChain *depthSwapChain;
+  std::vector<GLuint> depthTextures;
   int swapChainLength;
   int swapChainIndex;
   bool hasSwapChain;
