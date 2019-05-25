@@ -326,6 +326,7 @@ const _handleRequest = ({req: {type}, window}) => {
 
         const [fbo, tex, depthTex] = nativeBindings.nativeWindow.createVrTopRenderTarget(width, height);
 
+        topVrPresentState.fbo = fbo;
         xrState.tex[0] = tex;
         xrState.depthTex[0] = depthTex;
         // xrState.renderWidth[0] = halfWidth;
@@ -409,6 +410,7 @@ const _handleRequest = ({req: {type}, window}) => {
       }
 
       topVrPresentState.hmdType = null;
+      topVrPresentState.fbo = null;
 
       xrState.isPresenting[0] = 0;
       xrState.hmdType[0] = 0;
