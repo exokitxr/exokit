@@ -835,6 +835,11 @@ const _startTopRenderLoop = () => {
         .toArray(gamepad.transformMatrix);
     }
   };
+  const _clearXrFramebuffer = () => {
+    if (topVrPresentState.hmdType !== null) {
+      nativeBindings.nativeWindow.clearFramebuffer(topVrPresentState.fbo);
+    }
+  };
   const _submitFrame = async () => {
     if (topVrPresentState.hasPose) {
       if (topVrPresentState.hmdType === 'oculus') {
@@ -919,6 +924,8 @@ const _startTopRenderLoop = () => {
       nativeBindings.nativeWindow.deleteSync(childSyncs[i]);
     }
     childSyncs.length = 0;
+    
+    _clearXrFramebuffer();
 
     // tick animation frames
     await Promise.all(windows.map(window => window.runAsync(JSON.stringify({method: 'tickAnimationFrame'})).then(syncs => {
