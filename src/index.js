@@ -874,7 +874,7 @@ const _startTopRenderLoop = () => {
       } else if (topVrPresentState.hmdType === 'openvr') {
         topVrPresentState.vrCompositor.Submit(xrState.tex[0]);
       } else if (topVrPresentState.hmdType === 'oculusMobile') {
-        const [fbo, tex, depthTex] = topVrPresentState.vrContext.Submit(); // XXX
+        const [fbo, tex, depthTex] = topVrPresentState.vrContext.Submit();
         topVrPresentState.fbo = fbo;
         xrState.tex[0] = tex;
         xrState.depthTex[0] = depthTex;
