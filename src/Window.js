@@ -1382,6 +1382,8 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
         });
       }
       vrPresentState.hmdType = null;
+      vrPresentState.glContext.setTopLevel(true);
+      vrPresentState.glContext = null;
       GlobalContext.clearGamepads();
     };
 
