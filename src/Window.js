@@ -1320,10 +1320,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
               console.warn(e);
             }
 
-            const index = rafCbs.indexOf(rafCb); // could have changed due to sorting
-            if (index !== -1) {
-              rafCbs[index] = null;
-            }
+            rafCbs[i] = null;
           }
         }
 
