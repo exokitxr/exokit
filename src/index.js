@@ -438,7 +438,7 @@ const _startTopRenderLoop = () => {
     total: 0,
   };
   const TIMESTAMP_FRAMES = 100;
-  const childSyncs = [];
+  const prevSyncs = [];
 
   if (nativeBindings.nativeWindow.pollEvents) {
     setInterval(() => {
@@ -840,11 +840,30 @@ const _startTopRenderLoop = () => {
         .toArray(gamepad.transformMatrix);
     }
   };
+  const _clearPrevSyncs = () => {
+    for (let i = 0; i < prevSyncs.length; i++) {
+      nativeBindings.nativeWindow.deleteSync(prevSyncs[i]);
+    }
+    prevSyncs.length = 0;
+  };
   const _clearXrFramebuffer = () => {
     if (topVrPresentState.hmdType !== null) {
       nativeBindings.nativeWindow.clearFramebuffer(topVrPresentState.fbo);
     }
   };
+  const _tickAnimationFrames = () => Promise.all(windows.map(window => window.runAsync(JSON.stringify({
+    method: 'tickAnimationFrame',
+    syncs: topVrPresentState.hmdType !== null ? [nativeBindings.nativeWindow.getSync()] : [],
+  })).then(syncs => {
+    if (topVrPresentState.windowHandle) {
+      nativeBindings.nativeWindow.setCurrentWindowContext(topVrPresentState.windowHandle);
+      for (let i = 0; i < syncs.length; i++) {
+        const sync = syncs[i];
+        nativeBindings.nativeWindow.waitSync(sync);
+        prevSyncs.push(sync);
+      }
+    }
+  })));
   const _submitFrame = async () => {
     if (topVrPresentState.hasPose) {
       if (topVrPresentState.hmdType === 'oculus') {
@@ -927,28 +946,9 @@ const _startTopRenderLoop = () => {
       console.log('-'.repeat(80) + 'start frame');
     }
 
-    for (let i = 0; i < childSyncs.length; i++) {
-      nativeBindings.nativeWindow.deleteSync(childSyncs[i]);
-    }
-    childSyncs.length = 0;
-    
+    _clearPrevSyncs();
     _clearXrFramebuffer();
-
-    // tick animation frames
-    await Promise.all(windows.map(window => window.runAsync(JSON.stringify({
-      method: 'tickAnimationFrame',
-      syncs: topVrPresentState.hmdType !== null ? [nativeBindings.nativeWindow.getSync()] : [],
-    })).then(syncs => {
-      if (topVrPresentState.windowHandle) {
-        nativeBindings.nativeWindow.setCurrentWindowContext(topVrPresentState.windowHandle);
-        for (let i = 0; i < syncs.length; i++) {
-          const sync = syncs[i];
-          nativeBindings.nativeWindow.waitSync(sync);
-          childSyncs.push(sync);
-        }
-      }
-    })));
-
+    await _tickAnimationFrames();
 
     if (args.performance) {
       const now = Date.now();
