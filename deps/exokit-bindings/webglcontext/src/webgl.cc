@@ -3117,11 +3117,13 @@ NAN_METHOD(WebGLRenderingContext::TexParameterf) {
 
 NAN_METHOD(WebGLRenderingContext::Clear) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
-  GLint arg = TO_INT32(info[0]);
+  if (gl->topLevel) {
+    GLint arg = TO_INT32(info[0]);
 
-  glClear(arg);
+    glClear(arg);
 
-  gl->dirty = true;
+    gl->dirty = true;
+  }
 }
 
 
