@@ -16,6 +16,10 @@ class WorkerVm extends EventEmitter {
     });
     worker.on('message', m => {
       switch (m.method) {
+        case 'request': {
+          GlobalContext.handleRequest(m, this);
+          break;
+        }
         case 'response': {
           const fn = this.queue[m.requestKey];
 
