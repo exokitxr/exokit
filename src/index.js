@@ -930,7 +930,10 @@ const _startTopRenderLoop = () => {
     _clearXrFramebuffer();
 
     // tick animation frames
-    await Promise.all(windows.map(window => window.runAsync(JSON.stringify({method: 'tickAnimationFrame'})).then(syncs => {
+    await Promise.all(windows.map(window => window.runAsync(JSON.stringify({
+      method: 'tickAnimationFrame',
+      syncs: topVrPresentState.hmdType !== null ? [nativeBindings.nativeWindow.getSync()] : [],
+    })).then(syncs => {
       if (topVrPresentState.windowHandle) {
         nativeBindings.nativeWindow.setCurrentWindowContext(topVrPresentState.windowHandle);
         for (let i = 0; i < syncs.length; i++) {
