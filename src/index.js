@@ -295,33 +295,11 @@ const topVrPresentState = {
   hasPose: false,
 };
 
-const _startTopRenderLoop = () => {
-  const timestamps = {
-    frames: 0,
-    last: Date.now(),
-    idle: 0,
-    wait: 0,
-    events: 0,
-    media: 0,
-    user: 0,
-    submit: 0,
-    total: 0,
-  };
-  const TIMESTAMP_FRAMES = 100;
-  const childSyncs = [];
-
-  if (nativeBindings.nativeWindow.pollEvents) {
-    setInterval(() => {
-      nativeBindings.nativeWindow.pollEvents();
-    }, 1000/60); // XXX make this run at the native frame rate
-  }
-
-  const _handleRequestPresent = async () => {
-    const vrRequestMethod = xrState.vrRequest[0];
-
-    if (vrRequestMethod === 1) { // requestPresent
+const handleRequest = ({type}, window) () => {
+  if (!topVrPresentState.hmdType) {
+    if (type === 'requestPresent') {
       const hmdType = getHMDType();
-      console.log('request present', hmdType); // XXX
+      // console.log('request present', hmdType);
 
       if (!topVrPresentState.windowHandle) {
         topVrPresentState.windowHandle = nativeBindings.nativeWindow.createWindowHandle(1, 1, false);
@@ -407,21 +385,9 @@ const _startTopRenderLoop = () => {
 
       topVrPresentState.hmdType = hmdType;
 
-      const windowId = xrState.vrRequest[1];
-      const window = windows.find(window => window.id === windowId);
-
       xrState.isPresenting[0] = 1;
-      xrState.vrRequest.fill(0);
-
-      if (window) {
-        window.runAsync(JSON.stringify({
-          method: 'response',
-          hmdType,
-        }));
-      } else {
-        console.warn(`no top level window to respond to for request present: ${hmdType} ${windowId} ${JSON.stringify(windows.map(window => window.id))}`);
-      }
-    } else if (vrRequestMethod === 2) { // exitPresent
+      xrState.hmdType[0] = lookupHMDTypeIndex(hmdType);
+    } else if (type === 'exitPresent') {
       if (topVrPresentState.hmdType === 'fake') {
         // XXX destroy fbo
       } else {
@@ -430,17 +396,38 @@ const _startTopRenderLoop = () => {
 
       topVrPresentState.hmdType = null;
 
-      const windowId = xrState.vrRequest[1];
-      const window = windows.find(window => window.id === windowId);
-
       xrState.isPresenting[0] = 0;
-      xrState.vrRequest.fill(0);
-
-      window.runAsync(JSON.stringify({
-        method: 'response',
-      }));
+      xrState.hmdType[0] = 0;
     }
+  }
+
+  window.runAsync(JSON.stringify({
+    method: 'response',
+  }));
+};
+GlobalContext.handleRequest = handleRequest;
+
+const _startTopRenderLoop = () => {
+  const timestamps = {
+    frames: 0,
+    last: Date.now(),
+    idle: 0,
+    wait: 0,
+    events: 0,
+    media: 0,
+    user: 0,
+    submit: 0,
+    total: 0,
   };
+  const TIMESTAMP_FRAMES = 100;
+  const childSyncs = [];
+
+  if (nativeBindings.nativeWindow.pollEvents) {
+    setInterval(() => {
+      nativeBindings.nativeWindow.pollEvents();
+    }, 1000/60); // XXX make this run at the native frame rate
+  }
+
   const _waitGetPoses = () => {
     if (topVrPresentState.hmdType === 'oculus') {
       return _waitGetPosesOculus();
@@ -877,7 +864,6 @@ const _startTopRenderLoop = () => {
       timestamps.last = now;
     }
 
-    await _handleRequestPresent();
     await _waitGetPoses();
 
     _computeDerivedGamepadsData();
