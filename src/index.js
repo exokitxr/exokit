@@ -27,7 +27,7 @@ const {defaultEyeSeparation, maxNumTrackers} = require('./constants.js');
 const symbols = require('./symbols');
 const THREE = require('../lib/three-min.js');
 
-const {getHMDType} = require('./VR.js');
+const {getHMDType, lookupHMDTypeIndex} = require('./VR.js');
 
 const nativeBindings = require(path.join(__dirname, 'native-bindings.js'));
 
@@ -274,7 +274,7 @@ const xrState = (() => {
     return result;
   })();
   result.id = _makeTypedArray(Uint32Array, 1);
-  result.vrRequest = _makeTypedArray(Uint32Array, 2);
+  result.hmdType = _makeTypedArray(Uint32Array, 1);
   result.tex = _makeTypedArray(Uint32Array, 1);
   result.depthTex = _makeTypedArray(Uint32Array, 1);
   result.fakeVrDisplayEnabled = _makeTypedArray(Uint32Array, 1);
