@@ -1461,13 +1461,14 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
         await new Promise((accept, reject) => {
           vrPresentState.responseAccept = accept;
 
-          xrState.vrRequest[1] = GlobalContext.id;
-          xrState.vrRequest[0] = 2; // exitPresent
+          parentPort.postMessage({
+            method: 'request',
+            type: 'exitPresent',
+          });
         });
-
-        vrPresentState.hmdType = null;
-        GlobalContext.clearGamepads();
       }
+      vrPresentState.hmdType = null;
+      GlobalContext.clearGamepads();
     };
 
     const fakeVrDisplay = new FakeVRDisplay(window);
