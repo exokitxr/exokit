@@ -1361,8 +1361,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       GlobalContext.clearGamepads();
     };
     const _onmakeswapchain = context => {
-      const windowHandle = context.getWindowHandle();
-      nativeWindow.setCurrentWindowContext(windowHandle);
+      context.setTopLevel(false);
 
       vrPresentState.glContext = context;
       vrPresentState.fbo = context.createFramebuffer().id;
