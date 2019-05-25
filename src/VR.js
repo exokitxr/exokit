@@ -640,7 +640,7 @@ const hmdTypeIndexMap = (() => {
   });
   return result;
 })();
-const lookupHMDTypeIndex = s => hmdTypeIndexMap[k];
+const lookupHMDTypeIndex = s => hmdTypeIndexMap[s];
 const hmdTypeStringMap = (() => {
   const result = {};
   hmdTypes.forEach((t, i) => {
@@ -648,7 +648,7 @@ const hmdTypeStringMap = (() => {
   });
   return result;
 })();
-const lookupHMDTypeString = i => hmdTypeStringMap[k];
+const lookupHMDTypeString = i => hmdTypeStringMap[i];
 
 const createVRDisplay = () => new FakeVRDisplay();
 

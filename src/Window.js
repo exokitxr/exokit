@@ -1388,11 +1388,11 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
 
           parentPort.postMessage({
             method: 'request',
-            type: 'requestPresent,
+            type: 'requestPresent',
           });
         });
       }
-      vrPresentState.hmdType = lookupHMDTypeString(vrPresentState.hmdType[0]);
+      vrPresentState.hmdType = lookupHMDTypeString(xrState.hmdType[0]);
       GlobalContext.clearGamepads();
     };
     const _onmakeswapchain = context => {
