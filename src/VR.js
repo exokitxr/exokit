@@ -713,6 +713,8 @@ module.exports = {
   Gamepad,
   GamepadButton,
   getHMDType,
+  lookupHMDTypeString,
+  lookupHMDTypeIndex,
   createVRDisplay,
   getGamepads
 };
