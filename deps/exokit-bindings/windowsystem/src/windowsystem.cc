@@ -1083,8 +1083,15 @@ NAN_METHOD(ComposeLayers) {
 uv_loop_t *GetEventLoop() {
   return node::GetCurrentEventLoop(Isolate::GetCurrent());
 }
-NAN_METHOD(GetEventLoop) {
+/* NAN_METHOD(GetEventLoop) {
   info.GetReturnValue().Set(pointerToArray(GetEventLoop()));
+} */
+
+NAN_METHOD(ClearFramebuffer) {
+  GLuint fbo = TO_UINT32(info[0]);
+  
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+  glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 }
 
 void Decorate(Local<Object> target) {
@@ -1098,7 +1105,8 @@ void Decorate(Local<Object> target) {
   Nan::SetMethod(target, "waitSync", WaitSync);
   Nan::SetMethod(target, "deleteSync", DeleteSync);
   Nan::SetMethod(target, "composeLayers", ComposeLayers);
-  Nan::SetMethod(target, "getEventLoop", GetEventLoop);
+  // Nan::SetMethod(target, "getEventLoop", GetEventLoop);
+  Nan::SetMethod(target, "clearFramebuffer", ClearFramebuffer);
 }
 
 }

@@ -79,7 +79,7 @@ NAN_METHOD(DeleteSync);
 void ComposeLayers(WebGLRenderingContext *gl, const std::vector<LayerSpec> &layers);
 NAN_METHOD(ComposeLayers);
 uv_loop_t *GetEventLoop();
-NAN_METHOD(GetEventLoop);
+// NAN_METHOD(GetEventLoop);
 void Decorate(Local<Object> target);
 
 }
