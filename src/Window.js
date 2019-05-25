@@ -72,6 +72,7 @@ const {
   GamepadButton,
   getGamepads,
   getHMDType,
+  lookupHMDTypeString,
 } = require('./VR.js');
 
 const {maxNumTrackers} = require('./constants');
@@ -1382,16 +1383,17 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
   const _makeMrDisplays = () => {
     const _onrequestpresent = async () => {
       if (!xrState.isPresenting[0]) {
-        const {hmdType} = await new Promise((accept, reject) => {
+        await new Promise((accept, reject) => {
           vrPresentState.responseAccept = accept;
 
-          xrState.vrRequest[1] = GlobalContext.id;
-          xrState.vrRequest[0] = 1; // requestPresent
+          parentPort.postMessage({
+            method: 'request',
+            type: 'requestPresent,
+          });
         });
-
-        vrPresentState.hmdType = hmdType;
-        GlobalContext.clearGamepads();
       }
+      vrPresentState.hmdType = lookupHMDTypeString(vrPresentState.hmdType[0]);
+      GlobalContext.clearGamepads();
     };
     const _onmakeswapchain = context => {
       const windowHandle = context.getWindowHandle();
