@@ -295,7 +295,7 @@ const topVrPresentState = {
   hasPose: false,
 };
 
-const handleRequest = ({type}, window) () => {
+const handleRequest = ({type}, window) => {
   if (!topVrPresentState.hmdType) {
     if (type === 'requestPresent') {
       const hmdType = getHMDType();
