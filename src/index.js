@@ -375,7 +375,7 @@ const _handleRequest = ({req: {type}, window}) => {
         const {width: halfWidth, height} = vrContext.GetRecommendedRenderTargetSize();
         const width = halfWidth * 2;
 
-        const [fbo, tex, depthTex] = vrContext.CreateSwapChain(width, height); // XXX
+        const [fbo, tex, depthTex] = vrContext.CreateSwapChain(width, height);
 
         topVrPresentState.fbo = fbo;
         xrState.tex[0] = tex;
