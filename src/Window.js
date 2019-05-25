@@ -115,16 +115,6 @@ const {
   nativeWindow,
 } = require('./native-bindings');
 
-const PHASES = (() => {
-  let phase = 0;
-  return {
-    NULL: phase++,
-    RENDERING: phase++,
-    RENDERED: phase++,
-    DONE: phase++,
-  };
-})();
-
 GlobalContext.id = id;
 GlobalContext.args = args;
 GlobalContext.version = version;
@@ -1191,7 +1181,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
   const timeouts = [];
   const intervals = [];
   const localCbs = [];
-  const childSyncs = [];
+  const prevSyncs = [];
   const _cacheLocalCbs = cbs => {
     for (let i = 0; i < cbs.length; i++) {
       localCbs[i] = cbs[i];
@@ -1205,176 +1195,144 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       localCbs[i] = null;
     }
   };
-  window.tickAnimationFrame = async () => {
-    const _bindXrFramebuffer = () => {
-      if (vrPresentState.glContext) {
-        nativeWindow.setCurrentWindowContext(vrPresentState.glContext.getWindowHandle());
-        vrPresentState.glContext.setDefaultFramebuffer((vrPresentState.layers.length > 0 || vrPresentState.glContext.attrs.antialias) ? vrPresentState.msFbo : vrPresentState.fbo);
-        nativeWindow.bindVrChildFbo(vrPresentState.glContext, vrPresentState.fbo, xrState.tex[0], xrState.depthTex[0]);
+  const _clearPrevSyncs = () => {
+    for (let i = 0; i < prevSyncs.length; i++) {
+      nativeWindow.deleteSync(prevSyncs[i]);
+    }
+    prevSyncs.length = 0;
+  };
+  const _bindXrFramebuffer = () => {
+    if (vrPresentState.glContext) {
+      nativeWindow.setCurrentWindowContext(vrPresentState.glContext.getWindowHandle());
+      vrPresentState.glContext.setDefaultFramebuffer(vrPresentState.fbo);
+      nativeWindow.bindVrChildFbo(vrPresentState.glContext, vrPresentState.fbo, xrState.tex[0], xrState.depthTex[0]);
+    }
+  };
+  const _emitXrEvents = () => {
+    if (vrPresentState.hmdType === 'fake') {
+      window[symbols.mrDisplaysSymbol].fakeVrDisplay.update();
+    }
+    if (window[symbols.mrDisplaysSymbol].vrDevice.session) {
+      window[symbols.mrDisplaysSymbol].vrDevice.session.update();
+    }
+  };
+  const _tickLocalRafs = () => {
+    if (rafCbs.length > 0) {
+      _cacheLocalCbs(rafCbs);
+      
+      const performanceNow = performance.now();
+
+      for (let i = 0; i < localCbs.length; i++) {
+        const rafCb = localCbs[i];
+        if (rafCb) {
+          try {
+            rafCb(performanceNow);
+          } catch (e) {
+            console.warn(e);
+          }
+
+          rafCbs[i] = null;
+        }
       }
-    };
-    const _emitXrEvents = () => {
-      if (vrPresentState.hmdType === 'fake') {
-        window[symbols.mrDisplaysSymbol].fakeVrDisplay.update();
-      }
-      if (window[symbols.mrDisplaysSymbol].vrDevice.session) {
-        window[symbols.mrDisplaysSymbol].vrDevice.session.update();
-      }
-    };
-    const _composeXrContext = (context, windowHandle) => {
+
+      _clearLocalCbs(); // release garbage
+    }
+  };
+  const _composeXrContext = (context, windowHandle) => {
+    if (vrPresentState.hmdType === 'fake' || vrPresentState.hmdType === 'oculus' || vrPresentState.hmdType === 'openvr') {
+      nativeWindow.setCurrentWindowContext(windowHandle);
       const width = xrState.renderWidth[0]*2;
       const height = xrState.renderHeight[0];
-      if (vrPresentState.layers.length > 0) {
-        nativeWindow.composeLayers(context, vrPresentState.fbo, vrPresentState.layers, xrState);
-      } else {
-        if (context.getDefaultFramebuffer() === vrPresentState.msFbo) { // if rendering to msFbo, not direct to fbo
-          nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, width, height, width, height, true, false, false);
-        }
-      }
+      const {width: dWidth, height: dHeight} = nativeWindow.getFramebufferSize(windowHandle);
+      nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, width, height, dWidth, dHeight, true, false, false);
 
-      if (vrPresentState.hmdType === 'fake' || vrPresentState.hmdType === 'oculus' || vrPresentState.hmdType === 'openvr') {
-        const {width: dWidth, height: dHeight} = nativeWindow.getFramebufferSize(windowHandle);
-        nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, width, height, dWidth, dHeight, true, false, false);
-
-        if (isMac) {
-          context.bindFramebufferRaw(context.FRAMEBUFFER, null);
-        }
-        nativeWindow.swapBuffers(windowHandle);
-      }
-    };
-    const _composeBasicContext = (context, windowHandle) => {
-      if (context.framebuffer.type === 'canvas' && !context.desynchronized) {
-        const width = context.canvas.width * (args.blit ? 0.5 : 1);
-        const height = context.canvas.height;
-        const {width: dWidth, height: dHeight} = nativeWindow.getFramebufferSize(windowHandle);
-        nativeWindow.blitFrameBuffer(context, context.framebuffer.msFbo, context.framebuffer.fbo, width, height, width, height, true, false, false);
-        nativeWindow.blitFrameBuffer(context, context.framebuffer.fbo, 0, width, height, dWidth, dHeight, true, false, false);
-
-        if (isMac) {
-          context.bindFramebufferRaw(context.FRAMEBUFFER, null);
-        }
-        nativeWindow.swapBuffers(windowHandle);
-      }
-    };
-    const _composeLayers = () => {
-      const syncs = [];
-
-      for (let i = 0; i < contexts.length; i++) {
-        const context = contexts[i];
-        const isDirty = (!!context.isDirty && context.isDirty()) || context === vrPresentState.glContext;
-        if (isDirty) {
-          const windowHandle = context.getWindowHandle();
-
-          nativeWindow.setCurrentWindowContext(windowHandle);
-          if (isMac) {
-            context.flush();
-          }
-
-          if (context === vrPresentState.glContext) {
-            _composeXrContext(context, windowHandle);
-          } else {
-            _composeBasicContext(context, windowHandle);
-          }
-
-          if (isMac) {
-            const drawFramebuffer = context.getBoundFramebuffer(context.DRAW_FRAMEBUFFER);
-            if (drawFramebuffer) {
-              context.bindFramebuffer(context.DRAW_FRAMEBUFFER, drawFramebuffer);
-            }
-
-            const readFramebuffer = context.getBoundFramebuffer(context.READ_FRAMEBUFFER);
-            if (readFramebuffer) {
-              context.bindFramebuffer(context.READ_FRAMEBUFFER, readFramebuffer);
-            }
-          }
-
-          context.clearDirty();
-
-          if (context.finish) {
-            syncs.push(nativeWindow.getSync());
-          }
-        }
-      }
-
-      for (let i = 0; i < windows.length; i++) {
-        const window = windows[i];
-        if (window.phase === PHASES.RENDERED) {
-          window.phase = PHASES.NULL;
-        }
-      }
-
-      return Promise.resolve(syncs);
-    };
-    const _renderLocal = () => {
-      if (rafCbs.length > 0) {
-        _cacheLocalCbs(rafCbs);
-        
-        const performanceNow = performance.now();
-
-        for (let i = 0; i < localCbs.length; i++) {
-          const rafCb = localCbs[i];
-          if (rafCb) {
-            try {
-              rafCb(performanceNow);
-            } catch (e) {
-              console.warn(e);
-            }
-
-            rafCbs[i] = null;
-          }
-        }
-
-        _clearLocalCbs(); // release garbage
-      }
-    };
-    const _renderChildren = () => {
-      /* let timeout;
-      const timeoutPromise = new Promise((accept, reject) => {
-        timeout = setTimeout(() => {
-          accept();
-        }, 1000/60); // XXX make this timeout accurate
-      }); */
-      for (let i = 0; i < windows.length; i++) {
-        const window = windows[i];
-        if (window.phase === PHASES.NULL) {
-          window.promise = window.runAsync('tickAnimationFrame')
-            .then(syncs => {
-              if (vrPresentState.glContext) {
-                nativeWindow.setCurrentWindowContext(vrPresentState.glContext.getWindowHandle());
-
-                for (let i = 0; i < syncs.length; i++) {
-                  const sync = syncs[i];
-                  nativeWindow.waitSync(sync);
-                  childSyncs.push(sync);
-                }
-              }
-
-              window.phase = PHASES.RENDERED;
-              window.promise = null;
-            });
-          window.phase = PHASES.RENDERING;
-        }
-      }
-      /* await Promise.race([
-        timeoutPromise,
-        Promise.all(windows.map(window => window.promise)),
-      ]);
-      clearTimeout(timeout); */
-      return Promise.all(windows.map(window => window.promise));
-    };
-
-    _bindXrFramebuffer();
-    _emitXrEvents();
-
-    for (let i = 0; i < childSyncs.length; i++) {
-      nativeWindow.deleteSync(childSyncs[i]);
+      _swapBuffers(context, windowHandle);
     }
-    childSyncs.length = 0;
-    const childrenPromise = _renderChildren();
-    _renderLocal();
-    await childrenPromise;
-    
-    return _composeLayers();
+  };
+  const _swapBuffers = (context, windowHandle) => {
+    /* if (isMac) {
+      context.bindFramebufferRaw(context.FRAMEBUFFER, null);
+    } */
+    nativeWindow.swapBuffers(windowHandle);
+  };
+  const _composeLocalLayers = () => {
+    const syncs = [];
+
+    for (let i = 0; i < contexts.length; i++) {
+      const context = contexts[i];
+      const isDirty = (!!context.isDirty && context.isDirty()) || context === vrPresentState.glContext;
+      if (isDirty) {
+        const windowHandle = context.getWindowHandle();
+
+        /* if (isMac) {
+          context.flush();
+        } */
+
+        if (context === vrPresentState.glContext) {
+          _composeXrContext(context, windowHandle);
+        } else if (!context.canvas.ownerDocument.hidden) {
+          _swapBuffers(context, windowHandle);
+        }
+
+        /* if (isMac) {
+          const drawFramebuffer = context.getBoundFramebuffer(context.DRAW_FRAMEBUFFER);
+          if (drawFramebuffer) {
+            context.bindFramebuffer(context.DRAW_FRAMEBUFFER, drawFramebuffer);
+          }
+
+          const readFramebuffer = context.getBoundFramebuffer(context.READ_FRAMEBUFFER);
+          if (readFramebuffer) {
+            context.bindFramebuffer(context.READ_FRAMEBUFFER, readFramebuffer);
+          }
+        } */
+
+        context.clearDirty();
+
+        if (context.finish) {
+          syncs.push(nativeWindow.getSync());
+        }
+      }
+    }
+
+    return Promise.resolve(syncs);
+  };
+  const _renderLocal = syncs => {
+    for (let i = 0; i < syncs.length; i++) {
+      const sync = syncs[i];
+      nativeWindow.waitSync(sync);
+      prevSyncs.push(sync);
+    }
+
+    _tickLocalRafs();
+    return _composeLocalLayers();
+  };
+  const _renderChild = syncs => window.runAsync(JSON.stringify({method: 'tickAnimationFrame', syncs}));
+  const _collectRenders = () => windows.map(_renderChild).concat([_renderLocal]);
+  const _render = syncs => new Promise((accept, reject) => {
+    const renders = _collectRenders();
+    const _recurse = i => {
+      if (i < renders.length) {
+        renders[i](syncs)
+          .then(newSyncs => {
+            syncs = newSyncs;
+            _recurse(i+1);
+          })
+          .catch(err => {
+            console.warn(err.stack);
+            syncs = [];
+            _recurse(i+1);
+          });
+      } else {
+        accept(syncs);
+      }
+    };
+    _recurse(0);
+  });
+  window.tickAnimationFrame = async ({syncs}) => {
+    _clearPrevSyncs();
+    _bindXrFramebuffer();
+    _emitXrEvents(); 
+    return _render(syncs);
   };
   
   const _makeMrDisplays = () => {
@@ -1396,62 +1354,12 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       const windowHandle = context.getWindowHandle();
       nativeWindow.setCurrentWindowContext(windowHandle);
 
-      const window = context.canvas.ownerDocument.defaultView;
-      const width = xrState.renderWidth[0]*2;
-      const height = xrState.renderHeight[0];
-      if (!window.document.hidden) {
-        const [fbo, msFbo, msTex, msDepthTex] = nativeWindow.createVrCompositorRenderTarget(context, width, height);
-        context.setDefaultFramebuffer(msFbo); // note: this is dynamically set depending on layer/antialias mode
+      vrPresentState.glContext = context;
+      vrPresentState.fbo = context.createFramebuffer().id;
 
-        vrPresentState.glContext = context;
-        vrPresentState.fbo = fbo;
-        vrPresentState.msFbo = msFbo;
-        vrPresentState.msTex = msTex;
-        vrPresentState.msDepthTex = msDepthTex;
-
-        {
-          let [fbo, tex, depthTex, _msFbo, _msTex, _msDepthTex] = nativeWindow.createRenderTarget(context, width, height);
-
-          context.canvas.framebuffer = {
-            type: 'compositor',
-            width,
-            height,
-            msFbo,
-            msTex,
-            msDepthTex,
-            fbo,
-            tex,
-            depthTex,
-          };
-        }
-
-        return {
-          msFbo,
-        };
-      } else {
-        const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeWindow.createRenderTarget(context, width, height);
-
-        context.setDefaultFramebuffer(msFbo);
-
-        context.framebuffer = {
-          type: 'layer',
-          msFbo,
-          msTex,
-          msDepthTex,
-          fbo,
-          tex,
-          depthTex,
-        };
-        window.windowEmit('framebuffer', context.framebuffer);
-        window.windowEmit('resize', {
-          width,
-          height,
-        });
-        
-        return {
-          msFbo,
-        };
-      }
+      return {
+        fbo: vrPresentState.fbo,
+      };
     };
     const _onexitpresent = async () => {
       if (xrState.isPresenting[0]) {
@@ -1535,8 +1443,9 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
 })(global);
 
 global.onrunasync = method => {
-  if (method === 'tickAnimationFrame') {
-    return global.tickAnimationFrame();
+  if (/^\{"method":"tickAnimationFrame"/.test(method)) {
+    const res = JSON.parse(method);
+    return global.tickAnimationFrame(res);
   } else if (/^\{"method":"response"/.test(method)) {
     if (vrPresentState.responseAccept) {
       const res = JSON.parse(method);

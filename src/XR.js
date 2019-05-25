@@ -356,10 +356,10 @@ class XRWebGLLayer {
     this.alpha = alpha;
     this.multiview = multiview;
 
-    const {msFbo} = this.session.device.onmakeswapchain(context);
+    const {fbo} = this.session.device.onmakeswapchain(context);
     
     this.framebuffer = {
-      id: msFbo,
+      id: fbo,
     };
   }
   getViewport(view) {

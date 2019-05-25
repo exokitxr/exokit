@@ -156,14 +156,14 @@ const _makeWindow = (options = {}, handlers = {}) => {
     },
   });
   window.id = id;
-  window.phase = 0; // XXX
+  // window.phase = 0; // XXX
   // window.rendered = false;
-  window.promise = null;
+  // window.promise = null;
   // window.syncs = null;
 
   window.evalAsync = scriptString => window.runAsync(JSON.stringify({method: 'eval', scriptString}));
 
-  window.on('resize', ({width, height}) => {
+  /* window.on('resize', ({width, height}) => {
     // console.log('got resize', width, height);
     window.width = width;
     window.height = height;
@@ -171,7 +171,7 @@ const _makeWindow = (options = {}, handlers = {}) => {
   window.on('framebuffer', framebuffer => {
     // console.log('got framebuffer', framebuffer);
     window.document.framebuffer = framebuffer;
-  });
+  }); */
   window.on('navigate', ({href}) => {
     window.destroy()
       .then(() => {
