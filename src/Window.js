@@ -1239,7 +1239,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     }
   };
   const _composeXrContext = (context, windowHandle) => {
-    if (vrPresentState.hmdType === 'fake' || vrPresentState.hmdType === 'oculus' || vrPresentState.hmdType === 'openvr') {
+    if ((vrPresentState.hmdType === 'fake' || vrPresentState.hmdType === 'oculus' || vrPresentState.hmdType === 'openvr') && !context.canvas.ownerDocument.hidden) {
       nativeWindow.setCurrentWindowContext(windowHandle);
       const width = xrState.renderWidth[0]*2;
       const height = xrState.renderHeight[0];
@@ -1250,12 +1250,14 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     }
   };
   const _composeNormalContext = (context, windowHandle) => {
-    const {canvas: {width, height}, framebuffer: {msFbo}} = context;
-    if (msFbo !== 0) {
-      nativeWindow.setCurrentWindowContext(windowHandle);
-      nativeWindow.blitFrameBuffer(context, msFbo, 0, width, height, width, height, true, false, false);
+    if (!context.canvas.ownerDocument.hidden) {
+      const {canvas: {width, height}, framebuffer: {msFbo}} = context;
+      if (msFbo !== 0) {
+        nativeWindow.setCurrentWindowContext(windowHandle);
+        nativeWindow.blitFrameBuffer(context, msFbo, 0, width, height, width, height, true, false, false);
+      }
+      _swapBuffers(context, windowHandle);
     }
-    _swapBuffers(context, windowHandle);
   };
   const _swapBuffers = (context, windowHandle) => {
     /* if (isMac) {
@@ -1278,7 +1280,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
 
         if (context === vrPresentState.glContext) {
           _composeXrContext(context, windowHandle);
-        } else if (!context.canvas.ownerDocument.hidden) {
+        } else {
           _composeNormalContext(context, windowHandle);
         }
 
