@@ -1249,6 +1249,14 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       _swapBuffers(context, windowHandle);
     }
   };
+  const _composeNormalContext = (context, windowHandle) => {
+    const {canvas: {width, height}, framebuffer: {msFbo}} = context;
+    if (msFbo !== 0) {
+      nativeWindow.setCurrentWindowContext(windowHandle);
+      nativeWindow.blitFrameBuffer(context, msFbo, 0, width, height, width, height, true, false, false);
+    }
+    _swapBuffers(context, windowHandle);
+  };
   const _swapBuffers = (context, windowHandle) => {
     /* if (isMac) {
       context.bindFramebufferRaw(context.FRAMEBUFFER, null);
@@ -1271,7 +1279,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
         if (context === vrPresentState.glContext) {
           _composeXrContext(context, windowHandle);
         } else if (!context.canvas.ownerDocument.hidden) {
-          _swapBuffers(context, windowHandle);
+          _composeNormalContext(context, windowHandle);
         }
 
         /* if (isMac) {
@@ -1306,8 +1314,8 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     _tickLocalRafs();
     return _composeLocalLayers();
   };
-  const _renderChild = syncs => window.runAsync(JSON.stringify({method: 'tickAnimationFrame', syncs}));
-  const _collectRenders = () => windows.map(_renderChild).concat([_renderLocal]);
+  const _makeRenderChild = window => syncs => window.runAsync(JSON.stringify({method: 'tickAnimationFrame', syncs}));
+  const _collectRenders = () => windows.map(_makeRenderChild).concat([_renderLocal]);
   const _render = syncs => new Promise((accept, reject) => {
     const renders = _collectRenders();
     const _recurse = i => {
@@ -1328,7 +1336,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     };
     _recurse(0);
   });
-  window.tickAnimationFrame = async ({syncs}) => {
+  window.tickAnimationFrame = async ({syncs = []}) => {
     _clearPrevSyncs();
     _bindXrFramebuffer();
     _emitXrEvents(); 
