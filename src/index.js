@@ -856,7 +856,7 @@ const _startTopRenderLoop = () => {
     syncs: topVrPresentState.hmdType !== null ? [nativeBindings.nativeWindow.getSync()] : [],
   })).then(syncs => {
     if (topVrPresentState.windowHandle) {
-      nativeBindings.nativeWindow.setCurrentWindowContext(topVrPresentState.windowHandle);
+      // nativeBindings.nativeWindow.setCurrentWindowContext(topVrPresentState.windowHandle);
       for (let i = 0; i < syncs.length; i++) {
         const sync = syncs[i];
         nativeBindings.nativeWindow.waitSync(sync);
