@@ -332,6 +332,8 @@ public:
   static NAN_METHOD(GetDefaultFramebuffer);
   static NAN_METHOD(SetDefaultFramebuffer);
 
+  static NAN_METHOD(SetTopLevel);
+
   void SetVertexArrayBinding(GLuint vao) {
     vertexArrayBindings[GL_VERTEX_SHADER] = vao;
   }
@@ -396,6 +398,7 @@ public:
   NATIVEwindow *windowHandle;
   GLuint defaultVao;
   GLuint defaultFramebuffer;
+  bool topLevel;
   bool dirty;
   bool flipY;
   bool premultiplyAlpha;

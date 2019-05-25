@@ -1154,6 +1154,8 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
   Nan::SetMethod(proto, "getDefaultFramebuffer", GetDefaultFramebuffer);
   Nan::SetMethod(proto, "setDefaultFramebuffer", glCallWrap<SetDefaultFramebuffer>);
 
+  Nan::SetMethod(proto, "setTopLevel", SetTopLevel);
+
   setGlConstants(proto);
 
   // ctor
@@ -1168,6 +1170,7 @@ WebGLRenderingContext::WebGLRenderingContext() :
   windowHandle(nullptr),
   defaultVao(0),
   defaultFramebuffer(0),
+  topLevel(true),
   dirty(false),
   flipY(false),
   premultiplyAlpha(true),
@@ -2440,6 +2443,13 @@ NAN_METHOD(WebGLRenderingContext::SetDefaultFramebuffer) {
   }
 
   gl->defaultFramebuffer = framebuffer;
+}
+
+NAN_METHOD(WebGLRenderingContext::SetTopLevel) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+  bool topLevel = TO_BOOL(info[0]);
+
+  gl->topLevel = topLevel;
 }
 
 NAN_METHOD(WebGLRenderingContext::GetShaderParameter) {
