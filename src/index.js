@@ -374,8 +374,9 @@ const _handleRequest = ({req: {type}, window}) => {
         const {width: halfWidth, height} = vrContext.GetRecommendedRenderTargetSize();
         const width = halfWidth * 2;
 
-        const [tex, depthTex] = vrContext.CreateSwapChain(width, height);
+        const [fbo, tex, depthTex] = vrContext.CreateSwapChain(width, height); // XXX
 
+        topVrPresentState.fbo = fbo;
         xrState.tex[0] = tex;
         xrState.depthTex[0] = depthTex;
         xrState.renderWidth[0] = halfWidth;
@@ -851,7 +852,8 @@ const _startTopRenderLoop = () => {
       } else if (topVrPresentState.hmdType === 'openvr') {
         topVrPresentState.vrCompositor.Submit(xrState.tex[0]);
       } else if (topVrPresentState.hmdType === 'oculusMobile') {
-        const [tex, depthTex] = topVrPresentState.vrContext.Submit();
+        const [fbo, tex, depthTex] = topVrPresentState.vrContext.Submit(); // XXX
+        topVrPresentState.fbo = fbo;
         xrState.tex[0] = tex;
         xrState.depthTex[0] = depthTex;
       } else if (topVrPresentState.hmdType === 'magicleap') {

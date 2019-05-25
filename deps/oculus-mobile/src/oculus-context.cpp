@@ -139,6 +139,8 @@ void OculusMobileContext::CreateSwapChain(int width, int height) {
 
   // create new swap chain
   {
+    oculusMobileContext->framebuffers = std::vector<GLuint>(3);
+    glGenFramebuffers(oculusMobileContext->framebuffers.size(), oculusMobileContext->framebuffers.data());
     oculusMobileContext->colorSwapChain = vrapi_CreateTextureSwapChain3(VRAPI_TEXTURE_TYPE_2D, GL_RGBA8, width, height, 1, 3);
     oculusMobileContext->depthSwapChain = vrapi_CreateTextureSwapChain3(VRAPI_TEXTURE_TYPE_2D, GL_DEPTH24_STENCIL8, width, height, 1, 3);
 
@@ -147,6 +149,8 @@ void OculusMobileContext::CreateSwapChain(int width, int height) {
     oculusMobileContext->hasSwapChain = true;
 
     for (int index = 0; index < oculusMobileContext->swapChainLength; index++) {
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, oculusMobileContext->framebuffers[index]);
+
       // Just clamp to edge. However, this requires manually clearing the border
       // around the layer to clear the edge texels.
       const GLuint colorTexture = vrapi_GetTextureSwapChainHandle(oculusMobileContext->colorSwapChain, index);
@@ -155,6 +159,7 @@ void OculusMobileContext::CreateSwapChain(int width, int height) {
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTexture, 0);
 
       const GLuint depthTexture = vrapi_GetTextureSwapChainHandle(oculusMobileContext->depthSwapChain, index);
       glBindTexture(GL_TEXTURE_2D, depthTexture);
@@ -162,6 +167,7 @@ void OculusMobileContext::CreateSwapChain(int width, int height) {
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+      glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthTexture, 0);
     }
   }
 }
@@ -239,12 +245,14 @@ NAN_METHOD(OculusMobileContext::CreateSwapChain) {
 
   oculusMobileContext->CreateSwapChain(width, height);
 
+  const GLuint fbo = oculusMobileContext->framebuffers[oculusMobileContext->swapChainIndex];
   const GLuint colorTextureId = vrapi_GetTextureSwapChainHandle(oculusMobileContext->colorSwapChain, oculusMobileContext->swapChainIndex);
   const GLuint depthTextureId = vrapi_GetTextureSwapChainHandle(oculusMobileContext->depthSwapChain, oculusMobileContext->swapChainIndex);
 
-  Local<Array> array = Array::New(Isolate::GetCurrent(), 2);
-  array->Set(0, JS_INT(colorTextureId));
-  array->Set(1, JS_INT(depthTextureId));
+  Local<Array> array = Array::New(Isolate::GetCurrent(), 3);
+  array->Set(0, JS_INT(fbo));
+  array->Set(1, JS_INT(colorTextureId));
+  array->Set(2, JS_INT(depthTextureId));
   info.GetReturnValue().Set(array);
 }
 
@@ -465,12 +473,14 @@ NAN_METHOD(OculusMobileContext::Submit) {
 
   oculusMobileContext->swapChainIndex = (oculusMobileContext->swapChainIndex + 1) % oculusMobileContext->swapChainLength;
 
+  const GLuint fbo = oculusMobileContext->framebuffers[oculusMobileContext->swapChainIndex];
   const GLuint colorTextureId = vrapi_GetTextureSwapChainHandle(oculusMobileContext->colorSwapChain, oculusMobileContext->swapChainIndex);
   const GLuint depthTextureId = vrapi_GetTextureSwapChainHandle(oculusMobileContext->depthSwapChain, oculusMobileContext->swapChainIndex);
 
-  Local<Array> array = Array::New(Isolate::GetCurrent(), 2);
-  array->Set(0, JS_INT(colorTextureId));
-  array->Set(1, JS_INT(depthTextureId));
+  Local<Array> array = Array::New(Isolate::GetCurrent(), 3);
+  array->Set(0, JS_INT(fbo));
+  array->Set(1, JS_INT(colorTextureId));
+  array->Set(2, JS_INT(depthTextureId));
   info.GetReturnValue().Set(array);
 }
 
