@@ -1240,7 +1240,6 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
   };
   const _composeXrContext = (context, windowHandle) => {
     if ((vrPresentState.hmdType === 'fake' || vrPresentState.hmdType === 'oculus' || vrPresentState.hmdType === 'openvr') && !context.canvas.ownerDocument.hidden) {
-      nativeWindow.setCurrentWindowContext(windowHandle);
       const width = xrState.renderWidth[0]*2;
       const height = xrState.renderHeight[0];
       const {width: dWidth, height: dHeight} = nativeWindow.getFramebufferSize(windowHandle);
@@ -1253,7 +1252,6 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     if (!context.canvas.ownerDocument.hidden) {
       const {canvas: {width, height}, framebuffer: {msFbo}} = context;
       if (msFbo !== 0) {
-        nativeWindow.setCurrentWindowContext(windowHandle);
         nativeWindow.blitFrameBuffer(context, msFbo, 0, width, height, width, height, true, false, false);
       }
       _swapBuffers(context, windowHandle);
@@ -1274,6 +1272,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       if (isDirty) {
         const windowHandle = context.getWindowHandle();
 
+        nativeWindow.setCurrentWindowContext(windowHandle);
         /* if (isMac) {
           context.flush();
         } */
