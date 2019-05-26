@@ -1204,7 +1204,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
   const _bindXrFramebuffer = () => {
     if (vrPresentState.glContext) {
       nativeWindow.setCurrentWindowContext(vrPresentState.glContext.getWindowHandle());
-      vrPresentState.glContext.setDefaultFramebuffer(vrPresentState.fbo);
+      // vrPresentState.glContext.setDefaultFramebuffer(vrPresentState.fbo);
       nativeWindow.bindVrChildFbo(vrPresentState.glContext, vrPresentState.fbo, xrState.tex[0], xrState.depthTex[0]);
     }
   };
@@ -1369,6 +1369,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     };
     const _onmakeswapchain = context => {
       if (vrPresentState.glContext) {
+        vrPresentState.glContext.setDefaultFramebuffer(vrPresentState.glContext.framebuffer.msFbo);
         vrPresentState.glContext.setTopLevel(true);
       }
 
@@ -1376,6 +1377,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
 
       vrPresentState.glContext = context;
       vrPresentState.fbo = context.createFramebuffer().id;
+      vrPresentState.glContext.setDefaultFramebuffer(vrPresentState.fbo);
 
       return {
         fbo: vrPresentState.fbo,
