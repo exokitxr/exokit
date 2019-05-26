@@ -1306,10 +1306,18 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     return Promise.resolve(syncs);
   };
   const _renderLocal = syncs => {
-    for (let i = 0; i < syncs.length; i++) {
-      const sync = syncs[i];
-      nativeWindow.waitSync(sync);
-      prevSyncs.push(sync);
+    if (vrPresentState.glContext) {
+      nativeWindow.setCurrentWindowContext(vrPresentState.glContext.getWindowHandle());
+
+      for (let i = 0; i < syncs.length; i++) {
+        const sync = syncs[i];
+        nativeWindow.waitSync(sync);
+        prevSyncs.push(sync);
+      }
+    } else {
+      for (let i = 0; i < syncs.length; i++) {
+        nativeWindow.deleteSync(syncs[i]);
+      }
     }
 
     _tickLocalRafs();
