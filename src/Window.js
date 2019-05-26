@@ -1178,8 +1178,12 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       window._emit('beforeunload');
       window._emit('unload');
 
-      window.windowEmit('navigate', {
-        href,
+      parentPort.postMessage({
+        method: 'emit',
+        type: 'navigate',
+        event: {
+          href,
+        },
       });
     }
   });

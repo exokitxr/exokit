@@ -45,11 +45,6 @@ Object.defineProperty(global, 'onmessage', {
   },
 });
 
-global.windowEmit = (type, event, transferList) => parentPort.postMessage({
-  method: 'emit',
-  type,
-  event,
-}, transferList);
 
 let baseUrl = '';
 function setBaseUrl(newBaseUrl) {
