@@ -2,14 +2,11 @@ const events = require('events');
 const {EventEmitter} = events;
 const path = require('path');
 const fs = require('fs');
-const url = require('url');
 const http = require('http');
 const https = require('https');
-const crypto = require('crypto');
 const os = require('os');
 const {parentPort} = require('worker_threads');
 const util = require('util');
-const {URL} = url;
 const {TextEncoder, TextDecoder} = util;
 const {XRRigidTransform} = require('./XR.js');
 const {performance} = require('perf_hooks');
@@ -25,19 +22,11 @@ const {
   },
 } = require('worker_threads');
 
-const {WorkerVm} = require('./WindowVm.js');
-const {FileReader} = require('./File.js');
-
 const mkdirp = require('mkdirp');
 const ws = require('ws');
-const {XMLHttpRequest: XMLHttpRequestBase, FormData} = require('window-xhr');
-
-const fetch = require('window-fetch');
-const {Request, Response, Headers, Blob} = fetch;
 
 const core = require('./core.js');
 
-const WebSocket = require('ws/lib/websocket');
 const {
   /* getUserMedia,
   MediaStream,
@@ -78,7 +67,6 @@ const {
 const {maxNumTrackers} = require('./constants');
 const GlobalContext = require('./GlobalContext');
 const symbols = require('./symbols');
-const {urls} = require('./urls');
 
 const {
   nativeImage: Image,
@@ -130,17 +118,14 @@ const {
   DOMPoint,
   createImageBitmap,
 } = require('./DOM');
-const {CustomEvent, DragEvent, ErrorEvent, Event, EventTarget, KeyboardEvent, MessageEvent, MouseEvent, WheelEvent, PromiseRejectionEvent} = require('./Event');
 const {History} = require('./History');
 const {Location} = require('./Location');
-const {XMLHttpRequest} = require('./Network');
 const XR = require('./XR');
 const DevTools = require('./DevTools');
 const utils = require('./utils');
 const {_elementGetter, _elementSetter, _download} = utils;
 
-const btoa = s => Buffer.from(s, 'binary').toString('base64');
-const atob = s => Buffer.from(s, 'base64').toString('binary');
+setBaseUrl(options.baseUrl);
 
 const isMac = os.platform() === 'darwin';
 
@@ -454,50 +439,6 @@ class DataTransferItem {
   }
 }
 
-class Worker extends EventTarget {
-  constructor(src) {
-    super();
-
-    const worker = new WorkerVm({
-      initModule: path.join(__dirname, 'Worker.js'),
-      args: {
-        src,
-      },
-    });
-    worker.on('message', m => {
-      const e = new MessageEvent('message', {
-        data: m.message,
-      });
-      this.emit('message', e);
-    });
-    worker.on('error', err => {
-      this.emit('error', err);
-    });
-    this.worker = worker;
-  }
-
-  postMessage(message, transferList) {
-    this.worker.postMessage(message, transferList);
-  }
-
-  terminate() {
-    this.worker.destroy();
-  }
-
-  get onmessage() {
-    return this.listeners('message')[0];
-  }
-  set onmessage(onmessage) {
-    this.on('message', onmessage);
-  }
-  get onerror() {
-    return this.listeners('error')[0];
-  }
-  set onerror(onerror) {
-    this.on('error', onerror);
-  }
-}
-
 let rafIndex = 0;
 const _findFreeSlot = a => {
   let i;
@@ -519,8 +460,6 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
   return id;
 };
 const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.RequestHitTest(origin, direction, cb, window);
-
-const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
 
 (window => {
   for (const k in EventEmitter.prototype) {
@@ -665,8 +604,6 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     window.navigator.xr = new XR.XR(window);
   }
 
-  window.URL = URL;
-  window.console = console;
   window.alert = console.log;
   window.setTimeout = (setTimeout => (fn, timeout, args) => {
     fn = fn.bind.apply(fn, [window].concat(args));
@@ -701,113 +638,12 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       intervals[id] = null;
     }
   })(clearInterval);
-  const _maybeDownload = (m, u, data, bufferifyFn) => options.args.download ? _download(m, u, data, bufferifyFn, options.args.download) : data;
-  window.fetch = (u, options) => {
-    const _boundFetch = (u, options) => fetch(u, options)
-      .then(res => {
-        const method = (options && options.method) || 'GET';
-        res.arrayBuffer = (fn => function() {
-          return fn.apply(this, arguments)
-            .then(ab => _maybeDownload(method, u, ab, ab => Buffer.from(ab)));
-        })(res.arrayBuffer);
-        res.blob = (fn => function() {
-          return fn.apply(this, arguments)
-            .then(blob => _maybeDownload(method, u, blob, blob => blob.buffer));
-        })(res.blob);
-        res.json = (fn => function() {
-          return fn.apply(this, arguments)
-            .then(j => _maybeDownload(method, u, j, j => Buffer.from(JSON.stringify(j))));
-        })(res.json);
-        res.text = (fn => function() {
-          return fn.apply(this, arguments)
-            .then(t => _maybeDownload(method, u, t, t => Buffer.from(t, 'utf8')));
-        })(res.text);
-
-        return res;
-      });
-
-    if (typeof u === 'string') {
-      const blob = urls.get(u);
-      if (blob) {
-        return Promise.resolve(new Response(blob));
-      } else {
-        u = _normalizeUrl(u);
-        return _boundFetch(u, options);
-      }
-    } else {
-      return _boundFetch(u, options);
-    }
-  };
-  window.Request = Request;
-  window.Response = Response;
-  window.Headers = Headers;
-  window.Blob = Blob;
-  window.FormData = FormData;
-  window.XMLHttpRequest = (Old => {
-    class XMLHttpRequest extends Old {
-      open(method, url, async, username, password) {
-        url = _normalizeUrl(url);
-        return super.open(method, url, async, username, password);
-      }
-      get response() {
-        return _maybeDownload(this._properties.method, this._properties.uri, super.response, o => {
-          switch (this.responseType) {
-            case 'arraybuffer': return Buffer.from(o);
-            case 'blob': return o.buffer;
-            case 'json': return Buffer.from(JSON.stringify(o), 'utf8');
-            case 'text': return Buffer.from(o, 'utf8');
-            default: throw new Error(`cannot download responseType ${responseType}`);
-          }
-        });
-      }
-    }
-    for (const k in XMLHttpRequestBase) {
-      XMLHttpRequest[k] = XMLHttpRequestBase[k];
-    }
-    return XMLHttpRequest;
-  })(XMLHttpRequest);
-  window.WebSocket = WebSocket;
-  window.crypto = {
-    getRandomValues(typedArray) {
-      crypto.randomFillSync(Buffer.from(typedArray.buffer, typedArray.byteOffset, typedArray.byteLength));
-      return typedArray;
-    },
-
-    subtle: {
-      digest(algo, bytes) {
-        switch (algo) {
-          case 'SHA-1': {
-            algo = 'sha1';
-            break;
-          }
-          case 'SHA-256': {
-            algo = 'sha256';
-            break;
-          }
-          case 'SHA-384': {
-            algo = 'sha384';
-            break;
-          }
-          case 'SHA-512': {
-            algo = 'sha512';
-            break;
-          }
-          default: throw new Error(`unknown algorithm: ${algo}`);
-        }
-        const hash = crypto.createHash(algo).update(bytes).digest();
-        const result = new ArrayBuffer(hash.byteLength);
-        new Buffer(result).set(hash);
-        return Promise.resolve(result);
-      },
-    },
-  };
   window.event = new Event(); // XXX this needs to track the current event
   window.localStorage = new LocalStorage(path.join(options.dataPath, '.localStorage'));
   window.sessionStorage = new LocalStorage(path.join(options.dataPath, '.sessionStorage'));
   window.indexedDB = indexedDB;
   window.performance = performance;
   window.screen = new Screen(window);
-  window.urls = urls; // XXX non-standard
   window.scrollTo = function(x = 0, y = 0) {
     this.scrollX = x;
     this.scrollY = y;
@@ -1014,15 +850,6 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     }
   };
   // window.Buffer = Buffer; // XXX non-standard
-  window.Event = Event;
-  window.KeyboardEvent = KeyboardEvent;
-  window.MouseEvent = MouseEvent;
-  window.WheelEvent = WheelEvent;
-  window.DragEvent = DragEvent;
-  window.MessageEvent = MessageEvent;
-  window.PromiseRejectionEvent = PromiseRejectionEvent;
-  window.CustomEvent = CustomEvent;
-  window.EventTarget = EventTarget;
   window.addEventListener = EventTarget.prototype.addEventListener.bind(window);
   window.removeEventListener = EventTarget.prototype.removeEventListener.bind(window);
   window.dispatchEvent = EventTarget.prototype.dispatchEvent.bind(window);
@@ -1040,7 +867,6 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
   window.MediaRecorder = MediaRecorder;
   window.DataTransfer = DataTransfer;
   window.DataTransferItem = DataTransferItem;
-  window.FileReader = FileReader;
   window.Screen = Screen;
   window.Gamepad = Gamepad;
   window.VRStageParameters = VRStageParameters;
@@ -1066,8 +892,6 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     window.XRStageBounds = XR.XRStageBounds;
     window.XRStageBoundsPoint = XR.XRStageBoundsPoint;
   }
-  window.btoa = btoa;
-  window.atob = atob;
   window.TextEncoder = TextEncoder;
   window.TextDecoder = TextDecoder;
   window.AudioContext = AudioContext;
@@ -1082,20 +906,7 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
   window.PannerNode = PannerNode;
   window.StereoPannerNode = StereoPannerNode;
   window.createImageBitmap = createImageBitmap;
-  window.Worker = class extends Worker {
-    constructor(src) {
-      if (src instanceof Blob) {
-        super('data:application/javascript,' + src.buffer.toString('utf8'));
-      } else {
-        const blob = urls.get(src);
-        const normalizedSrc = blob ?
-          'data:application/octet-stream;base64,' + blob.buffer.toString('base64')
-        :
-          _normalizeUrl(src);
-        super(normalizedSrc);
-      }
-    }
-  };
+  window.Worker = Worker;
   window.requestAnimationFrame = _makeRequestAnimationFrame(window);
   window.cancelAnimationFrame = id => {
     const index = rafCbs.findIndex(r => r && r[symbols.idSymbol] === id);
@@ -1170,8 +981,12 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       window._emit('beforeunload');
       window._emit('unload');
 
-      window.windowEmit('navigate', {
-        href,
+      parentPort.postMessage({
+        method: 'emit',
+        type: 'navigate',
+        event: {
+          href,
+        },
       });
     }
   });
