@@ -675,7 +675,6 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
   }
 
   window.URL = URL;
-  window.console = console;
   window.alert = console.log;
   window.setTimeout = (setTimeout => (fn, timeout, args) => {
     fn = fn.bind.apply(fn, [window].concat(args));
