@@ -113,7 +113,7 @@ class GamepadHapticActuator {
   }
   set type(type) {}
   pulse(value, duration) {
-    if (GlobalContext.vrPresentState.isPresenting) {
+    if (GlobalContext.xrState.isPresenting[0]) {
       value = Math.min(Math.max(value, 0), 1);
       const deviceIndex = GlobalContext.vrPresentState.system.GetTrackedDeviceIndexForControllerRole(this.index + 1);
 
