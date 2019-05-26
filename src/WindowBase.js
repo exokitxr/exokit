@@ -12,8 +12,6 @@ const {
 } = require('./native-bindings');
 const {process} = global;
 
-// global initialization
-
 const consoleStream = new stream.Writable();
 consoleStream._write = (chunk, encoding, callback) => {
   nativeConsole.Log(chunk);
@@ -26,6 +24,8 @@ consoleStream._writev = (chunks, callback) => {
   callback();
 };
 global.console = new Console(consoleStream);
+
+// global initialization
 
 for (const k in EventEmitter.prototype) {
   global[k] = EventEmitter.prototype[k];
