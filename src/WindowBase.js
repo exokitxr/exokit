@@ -3,16 +3,32 @@ const {EventEmitter} = require('events');
 const stream = require('stream');
 const path = require('path');
 const fs = require('fs');
+const url = require('url');
+const {URL} = url;
 const vm = require('vm');
 const util = require('util');
-const {Worker, workerData, parentPort} = require('worker_threads');
-const {MessageEvent} = require('./Event');
+const crypto = require('crypto');
+const {Worker: WorkerBase, workerData, parentPort} = require('worker_threads');
+
+const {CustomEvent, DragEvent, ErrorEvent, Event, EventTarget, KeyboardEvent, MessageEvent, MouseEvent, WheelEvent, PromiseRejectionEvent} = require('./Event');
+const {FileReader} = require('./File.js');
+const {XMLHttpRequest, FormData} = require('window-xhr');
+const fetch = require('window-fetch');
+const {Request, Response, Headers, Blob} = fetch;
+const WebSocket = require('ws/lib/websocket');
+
+const {WorkerVm} = require('./WindowVm');
+
+const btoa = s => Buffer.from(s, 'binary').toString('base64');
+const atob = s => Buffer.from(s, 'base64').toString('binary');
+
+const utils = require('./utils');
+const {urls} = require('./urls');
+
 const {
   nativeConsole,
 } = require('./native-bindings');
 const {process} = global;
-
-// global initialization
 
 const consoleStream = new stream.Writable();
 consoleStream._write = (chunk, encoding, callback) => {
@@ -27,48 +43,209 @@ consoleStream._writev = (chunks, callback) => {
 };
 global.console = new Console(consoleStream);
 
+// global initialization
+
 for (const k in EventEmitter.prototype) {
   global[k] = EventEmitter.prototype[k];
 }
 EventEmitter.call(global);
 
-global.postMessage = (message, transferList) => parentPort.postMessage({
-  method: 'postMessage',
-  message,
-}, transferList);
-Object.defineProperty(global, 'onmessage', {
-  get() {
-    return this.listeners('message')[0];
-  },
-  set(onmessage) {
-    global.on('message', onmessage);
-  },
-});
+class Worker extends EventTarget {
+  constructor(src) {
+    super();
+    
+    if (src instanceof Blob) {
+      src = 'data:application/javascript,' + src.buffer.toString('utf8');
+    } else {
+      const blob = urls.get(src);
+      src = blob ?
+        'data:application/octet-stream;base64,' + blob.buffer.toString('base64')
+      :
+        _normalizeUrl(src);
+    }
 
-global.windowEmit = (type, event, transferList) => parentPort.postMessage({
-  method: 'emit',
-  type,
-  event,
-}, transferList);
+    const worker = new WorkerVm({
+      initModule: path.join(__dirname, 'Worker.js'),
+      args: {
+        src,
+      },
+    });
+    worker.on('message', m => {
+      const e = new MessageEvent('message', {
+        data: m.message,
+      });
+      this.emit('message', e);
+    });
+    worker.on('error', err => {
+      this.emit('error', err);
+    });
+    this.worker = worker;
+  }
+
+  postMessage(message, transferList) {
+    this.worker.postMessage(message, transferList);
+  }
+
+  terminate() {
+    this.worker.destroy();
+  }
+
+  get onmessage() {
+    return this.listeners('message')[0];
+  }
+  set onmessage(onmessage) {
+    this.on('message', onmessage);
+  }
+  get onerror() {
+    return this.listeners('error')[0];
+  }
+  set onerror(onerror) {
+    this.on('error', onerror);
+  }
+}
+
+(self => {
+  self.btoa = btoa;
+  self.atob = atob;
+  
+  self.Event = Event;
+  self.KeyboardEvent = KeyboardEvent;
+  self.MouseEvent = MouseEvent;
+  self.WheelEvent = WheelEvent;
+  self.DragEvent = DragEvent;
+  self.MessageEvent = MessageEvent;
+  self.PromiseRejectionEvent = PromiseRejectionEvent;
+  self.CustomEvent = CustomEvent;
+  self.EventTarget = EventTarget;
+  
+  self.URL = URL;
+  
+  // const _maybeDownload = (m, u, data, bufferifyFn) => options.args.download ? _download(m, u, data, bufferifyFn, options.args.download) : data;
+  const _maybeDownload = (m, u, data, bufferifyFn) => data;
+  self.fetch = (u, options) => {
+    const _boundFetch = (u, options) => fetch(u, options)
+      .then(res => {
+        const method = (options && options.method) || 'GET';
+        res.arrayBuffer = (fn => function() {
+          return fn.apply(this, arguments)
+            .then(ab => _maybeDownload(method, u, ab, ab => Buffer.from(ab)));
+        })(res.arrayBuffer);
+        res.blob = (fn => function() {
+          return fn.apply(this, arguments)
+            .then(blob => _maybeDownload(method, u, blob, blob => blob.buffer));
+        })(res.blob);
+        res.json = (fn => function() {
+          return fn.apply(this, arguments)
+            .then(j => _maybeDownload(method, u, j, j => Buffer.from(JSON.stringify(j))));
+        })(res.json);
+        res.text = (fn => function() {
+          return fn.apply(this, arguments)
+            .then(t => _maybeDownload(method, u, t, t => Buffer.from(t, 'utf8')));
+        })(res.text);
+
+        return res;
+      });
+
+    if (typeof u === 'string') {
+      const blob = urls.get(u);
+      if (blob) {
+        return Promise.resolve(new Response(blob));
+      } else {
+        u = _normalizeUrl(u);
+        return _boundFetch(u, options);
+      }
+    } else {
+      return _boundFetch(u, options);
+    }
+  };
+  self.Request = Request;
+  self.Response = Response;
+  self.Headers = Headers;
+  self.Blob = Blob;
+  self.FormData = FormData;
+  self.XMLHttpRequest = (Old => {
+    class XMLHttpRequest extends Old {
+      open(method, url, async, username, password) {
+        url = _normalizeUrl(url);
+        return super.open(method, url, async, username, password);
+      }
+      get response() {
+        return _maybeDownload(this._properties.method, this._properties.uri, super.response, o => {
+          switch (this.responseType) {
+            case 'arraybuffer': return Buffer.from(o);
+            case 'blob': return o.buffer;
+            case 'json': return Buffer.from(JSON.stringify(o), 'utf8');
+            case 'text': return Buffer.from(o, 'utf8');
+            default: throw new Error(`cannot download responseType ${responseType}`);
+          }
+        });
+      }
+    }
+    for (const k in Old) {
+      XMLHttpRequest[k] = Old[k];
+    }
+    return XMLHttpRequest;
+  })(XMLHttpRequest);
+  self.WebSocket = WebSocket;
+  self.FileReader = FileReader;
+  self.crypto = {
+    getRandomValues(typedArray) {
+      crypto.randomFillSync(Buffer.from(typedArray.buffer, typedArray.byteOffset, typedArray.byteLength));
+      return typedArray;
+    },
+
+    subtle: {
+      digest(algo, bytes) {
+        switch (algo) {
+          case 'SHA-1': {
+            algo = 'sha1';
+            break;
+          }
+          case 'SHA-256': {
+            algo = 'sha256';
+            break;
+          }
+          case 'SHA-384': {
+            algo = 'sha384';
+            break;
+          }
+          case 'SHA-512': {
+            algo = 'sha512';
+            break;
+          }
+          default: throw new Error(`unknown algorithm: ${algo}`);
+        }
+        const hash = crypto.createHash(algo).update(bytes).digest();
+        const result = new ArrayBuffer(hash.byteLength);
+        new Buffer(result).set(hash);
+        return Promise.resolve(result);
+      },
+    },
+  };
+  
+  self.Worker = Worker;
+  
+  self.postMessage = (message, transferList) => parentPort.postMessage({
+    method: 'postMessage',
+    message,
+  }, transferList);
+  Object.defineProperty(self, 'onmessage', {
+    get() {
+      return this.listeners('message')[0];
+    },
+    set(onmessage) {
+      self.on('message', onmessage);
+    },
+  });
+})(global);
 
 let baseUrl = '';
 function setBaseUrl(newBaseUrl) {
   baseUrl = newBaseUrl;
 }
 global.setBaseUrl = setBaseUrl;
+const _normalizeUrl = src => utils._normalizeUrl(src, baseUrl);
 
-const _normalizeUrl = src => {
-  if (!/^(?:data|blob):/.test(src)) {
-    const match = baseUrl.match(/^(file:\/\/)(.*)$/);
-    if (match) {
-      return match[1] + path.join(match[2], src);
-    } else {
-      return new URL(src, baseUrl).href;
-    }
-  } else {
-    return src;
-  }
-};
 const SYNC_REQUEST_BUFFER_SIZE = 5 * 1024 * 1024; // TODO: we can make this unlimited with a streaming buffer + atomics loop
 function getScript(url) {
   let match;
@@ -83,7 +260,7 @@ function getScript(url) {
   } else {
     const sab = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT*3 + SYNC_REQUEST_BUFFER_SIZE);
     const int32Array = new Int32Array(sab);
-    const worker = new Worker(path.join(__dirname, 'request.js'), {
+    const worker = new WorkerBase(path.join(__dirname, 'request.js'), {
       workerData: {
         url: _normalizeUrl(url),
         int32Array,
