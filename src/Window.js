@@ -143,7 +143,6 @@ const {
 const {CustomEvent, DragEvent, ErrorEvent, Event, EventTarget, KeyboardEvent, MessageEvent, MouseEvent, WheelEvent, PromiseRejectionEvent} = require('./Event');
 const {History} = require('./History');
 const {Location} = require('./Location');
-const {XMLHttpRequest} = require('./Network');
 const XR = require('./XR');
 const DevTools = require('./DevTools');
 const utils = require('./utils');
