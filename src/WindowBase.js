@@ -69,6 +69,7 @@ const _normalizeUrl = src => {
     return src;
   }
 };
+const SYNC_REQUEST_BUFFER_SIZE = 5 * 1024 * 1024; // TODO: we can make this unlimited with a streaming buffer + atomics loop
 function getScript(url) {
   let match;
   if (match = url.match(/^data:.+?(;base64)?,(.*)$/)) {
@@ -80,7 +81,7 @@ function getScript(url) {
   } else if (match = url.match(/^file:\/\/(.*)$/)) {
     return fs.readFileSync(match[1], 'utf8');
   } else {
-    const sab = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT*2 + 5 * 1024 * 1024);
+    const sab = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT*3 + SYNC_REQUEST_BUFFER_SIZE);
     const int32Array = new Int32Array(sab);
     const worker = new Worker(path.join(__dirname, 'request.js'), {
       workerData: {
@@ -92,10 +93,10 @@ function getScript(url) {
       console.warn(err.stack);
     });
     Atomics.wait(int32Array, 0, 0);
-    const status = new Uint32Array(sab, 0, 1)[0];
-    const length = new Uint32Array(sab, Int32Array.BYTES_PER_ELEMENT, 1)[0];
-    const result = Buffer.from(sab, Int32Array.BYTES_PER_ELEMENT*2, length).toString('utf8');
-    if (status === 1) {
+    const status = new Uint32Array(sab, Int32Array.BYTES_PER_ELEMENT*1, 1)[0];
+    const length = new Uint32Array(sab, Int32Array.BYTES_PER_ELEMENT*2, 1)[0];
+    const result = Buffer.from(sab, Int32Array.BYTES_PER_ELEMENT*3, length).toString('utf8');
+    if (status >= 200 && status < 300) {
       return result;
     } else {
       throw new Error(`fetch ${url} failed (${JSON.stringify(status)}): ${result}`);
