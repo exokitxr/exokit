@@ -2741,6 +2741,7 @@ class HTMLAudioElement extends HTMLMediaElement {
                 this._emit(progressEvent);
 
                 this._dispatchEventOnDocumentReady(new Event('loadeddata', {target: this}));
+                this._dispatchEventOnDocumentReady(new Event('loadedmetadata', {target: this}));
                 this._dispatchEventOnDocumentReady(new Event('canplay', {target: this}));
                 this._dispatchEventOnDocumentReady(new Event('canplaythrough', {target: this}));
                 
@@ -2852,6 +2853,7 @@ class HTMLVideoElement extends HTMLMediaElement {
           this.readyState = 'complete';
 
           this._dispatchEventOnDocumentReady(new Event('loadeddata', {target: this}));
+          this._dispatchEventOnDocumentReady(new Event('loadedmetadata', {target: this}));
           this._dispatchEventOnDocumentReady(new Event('canplay', {target: this}));
           this._dispatchEventOnDocumentReady(new Event('canplaythrough', {target: this}));
 
