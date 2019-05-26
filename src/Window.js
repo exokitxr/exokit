@@ -654,7 +654,6 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
   window.indexedDB = indexedDB;
   window.performance = performance;
   window.screen = new Screen(window);
-  window.urls = urls; // XXX non-standard
   window.scrollTo = function(x = 0, y = 0) {
     this.scrollX = x;
     this.scrollY = y;
