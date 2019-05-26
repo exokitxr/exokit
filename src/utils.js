@@ -25,16 +25,20 @@ function _getBaseUrl(u) {
 }
 module.exports._getBaseUrl = _getBaseUrl;
 
-function _makeNormalizeUrl(baseUrl) {
-  return src => {
-    if (!/^[a-z]+:\/\//i.test(src)) {
-      src = new URL(src, baseUrl).href
+function _normalizeUrl(src, baseUrl) {
+  if (!/^(?:https?|data|blob):/.test(src)) {
+    const match = baseUrl.match(/^(file:\/\/)(.*)$/);
+    if (match) {
+      return match[1] + path.join(match[2], src);
+    } else {
+      return new URL(src, baseUrl).href
         .replace(/^(file:\/\/)\/([a-z]:.*)$/i, '$1$2');
     }
+  } else {
     return src;
-  };
+  }
 }
-module.exports._makeNormalizeUrl = _makeNormalizeUrl;
+module.exports._normalizeUrl = _normalizeUrl;
 
 const _makeHtmlCollectionProxy = (el, query) => new Proxy(el, {
   get(target, prop) {
