@@ -310,114 +310,112 @@ const _handleRequests = () => {
   requests.length = 0;
 };
 const _handleRequest = ({req: {type}, window}) => {
-  if (!topVrPresentState.hmdType) {
-    if (type === 'requestPresent') {
-      const hmdType = getHMDType();
-      // console.log('request present', hmdType);
+  if (type === 'requestPresent' && topVrPresentState.hmdType === null) {
+    const hmdType = getHMDType();
+    // console.log('request present', hmdType);
 
-      if (!topVrPresentState.windowHandle) {
-        topVrPresentState.windowHandle = nativeBindings.nativeWindow.createWindowHandle(1, 1, false);
-      }
-      nativeBindings.nativeWindow.setCurrentWindowContext(topVrPresentState.windowHandle);
-
-      if (hmdType === 'fake') {
-        const width = xrState.renderWidth[0]*2;
-        const height = xrState.renderHeight[0];
-
-        const [fbo, tex, depthTex] = nativeBindings.nativeWindow.createVrTopRenderTarget(width, height);
-
-        topVrPresentState.fbo = fbo;
-        xrState.tex[0] = tex;
-        xrState.depthTex[0] = depthTex;
-        // xrState.renderWidth[0] = halfWidth;
-        // xrState.renderHeight[0] = height;
-      } else if (hmdType === 'oculus') {
-        const system = topVrPresentState.oculusSystem || nativeBindings.nativeOculusVR.Oculus_Init();
-        // const lmContext = topVrPresentState.lmContext || (nativeBindings.nativeLm && new nativeBindings.nativeLm());
-
-        topVrPresentState.vrContext = system;
-
-        const {width: halfWidth, height} = system.GetRecommendedRenderTargetSize();
-        const width = halfWidth * 2;
-
-        const [fbo, tex, depthTex] = system.CreateSwapChain(width, height);
-
-        topVrPresentState.fbo = fbo;
-        xrState.tex[0] = tex;
-        xrState.depthTex[0] = depthTex;
-        xrState.renderWidth[0] = halfWidth;
-        xrState.renderHeight[0] = height;
-      } else if (hmdType === 'openvr') {
-        const vrContext = nativeBindings.nativeOpenVR.getContext();
-        const system = nativeBindings.nativeOpenVR.VR_Init(nativeBindings.nativeOpenVR.EVRApplicationType.Scene);
-        const compositor = vrContext.compositor.NewCompositor();
-
-        // const lmContext = topVrPresentState.lmContext || (nativeLm && new nativeLm());
-
-        topVrPresentState.vrContext = vrContext;
-        topVrPresentState.vrSystem = system;
-        topVrPresentState.vrCompositor = compositor;
-
-        const {width: halfWidth, height} = system.GetRecommendedRenderTargetSize();
-        const width = halfWidth * 2;
-
-        const [fbo, tex, depthTex] = nativeBindings.nativeWindow.createVrTopRenderTarget(width, height);
-
-        topVrPresentState.fbo = fbo;
-        xrState.tex[0] = tex;
-        xrState.depthTex[0] = depthTex;
-        xrState.renderWidth[0] = halfWidth;
-        xrState.renderHeight[0] = height;
-      } else if (hmdType === 'oculusMobile') {
-        const vrContext = nativeBindings.nativeOculusMobileVr.OculusMobile_Init(topVrPresentState.windowHandle);
-
-        topVrPresentState.vrContext = vrContext;
-
-        const {width: halfWidth, height} = vrContext.GetRecommendedRenderTargetSize();
-        const width = halfWidth * 2;
-
-        const [fbo, tex, depthTex] = vrContext.CreateSwapChain(width, height);
-
-        topVrPresentState.fbo = fbo;
-        xrState.tex[0] = tex;
-        xrState.depthTex[0] = depthTex;
-        xrState.renderWidth[0] = halfWidth;
-        xrState.renderHeight[0] = height;
-      } else if (hmdType === 'magicleap') {
-        topVrPresentState.vrContext = new nativeBindings.nativeMl();
-        topVrPresentState.vrContext.Present(topVrPresentState.windowHandle);
-
-        const {width: halfWidth, height} = topVrPresentState.vrContext.GetSize();
-        const width = halfWidth * 2;
-
-        const [fbo, tex, depthTex] = nativeBindings.nativeWindow.createVrTopRenderTarget(width, height);
-
-        topVrPresentState.fbo = fbo;
-        xrState.tex[0] = tex;
-        xrState.depthTex[0] = depthTex;
-        xrState.renderWidth[0] = halfWidth;
-        xrState.renderHeight[0] = height;
-      } else {
-        throw new Error('unknown hmd type');
-      }
-
-      topVrPresentState.hmdType = hmdType;
-
-      xrState.isPresenting[0] = 1;
-      xrState.hmdType[0] = lookupHMDTypeIndex(hmdType);
-    } else if (type === 'exitPresent') {
-      if (topVrPresentState.hmdType === 'fake') {
-        // XXX destroy fbo
-      } else {
-        throw new Error(`fail to exit present for hmd type ${topVrPresentState.hmdType}`);
-      }
-
-      topVrPresentState.hmdType = null;
-      topVrPresentState.fbo = null;
-
-      xrState.isPresenting[0] = 0;
-      xrState.hmdType[0] = 0;
+    if (!topVrPresentState.windowHandle) {
+      topVrPresentState.windowHandle = nativeBindings.nativeWindow.createWindowHandle(1, 1, false);
     }
+    nativeBindings.nativeWindow.setCurrentWindowContext(topVrPresentState.windowHandle);
+
+    if (hmdType === 'fake') {
+      const width = xrState.renderWidth[0]*2;
+      const height = xrState.renderHeight[0];
+
+      const [fbo, tex, depthTex] = nativeBindings.nativeWindow.createVrTopRenderTarget(width, height);
+
+      topVrPresentState.fbo = fbo;
+      xrState.tex[0] = tex;
+      xrState.depthTex[0] = depthTex;
+      // xrState.renderWidth[0] = halfWidth;
+      // xrState.renderHeight[0] = height;
+    } else if (hmdType === 'oculus') {
+      const system = topVrPresentState.oculusSystem || nativeBindings.nativeOculusVR.Oculus_Init();
+      // const lmContext = topVrPresentState.lmContext || (nativeBindings.nativeLm && new nativeBindings.nativeLm());
+
+      topVrPresentState.vrContext = system;
+
+      const {width: halfWidth, height} = system.GetRecommendedRenderTargetSize();
+      const width = halfWidth * 2;
+
+      const [fbo, tex, depthTex] = system.CreateSwapChain(width, height);
+
+      topVrPresentState.fbo = fbo;
+      xrState.tex[0] = tex;
+      xrState.depthTex[0] = depthTex;
+      xrState.renderWidth[0] = halfWidth;
+      xrState.renderHeight[0] = height;
+    } else if (hmdType === 'openvr') {
+      const vrContext = nativeBindings.nativeOpenVR.getContext();
+      const system = nativeBindings.nativeOpenVR.VR_Init(nativeBindings.nativeOpenVR.EVRApplicationType.Scene);
+      const compositor = vrContext.compositor.NewCompositor();
+
+      // const lmContext = topVrPresentState.lmContext || (nativeLm && new nativeLm());
+
+      topVrPresentState.vrContext = vrContext;
+      topVrPresentState.vrSystem = system;
+      topVrPresentState.vrCompositor = compositor;
+
+      const {width: halfWidth, height} = system.GetRecommendedRenderTargetSize();
+      const width = halfWidth * 2;
+
+      const [fbo, tex, depthTex] = nativeBindings.nativeWindow.createVrTopRenderTarget(width, height);
+
+      topVrPresentState.fbo = fbo;
+      xrState.tex[0] = tex;
+      xrState.depthTex[0] = depthTex;
+      xrState.renderWidth[0] = halfWidth;
+      xrState.renderHeight[0] = height;
+    } else if (hmdType === 'oculusMobile') {
+      const vrContext = nativeBindings.nativeOculusMobileVr.OculusMobile_Init(topVrPresentState.windowHandle);
+
+      topVrPresentState.vrContext = vrContext;
+
+      const {width: halfWidth, height} = vrContext.GetRecommendedRenderTargetSize();
+      const width = halfWidth * 2;
+
+      const [fbo, tex, depthTex] = vrContext.CreateSwapChain(width, height);
+
+      topVrPresentState.fbo = fbo;
+      xrState.tex[0] = tex;
+      xrState.depthTex[0] = depthTex;
+      xrState.renderWidth[0] = halfWidth;
+      xrState.renderHeight[0] = height;
+    } else if (hmdType === 'magicleap') {
+      topVrPresentState.vrContext = new nativeBindings.nativeMl();
+      topVrPresentState.vrContext.Present(topVrPresentState.windowHandle);
+
+      const {width: halfWidth, height} = topVrPresentState.vrContext.GetSize();
+      const width = halfWidth * 2;
+
+      const [fbo, tex, depthTex] = nativeBindings.nativeWindow.createVrTopRenderTarget(width, height);
+
+      topVrPresentState.fbo = fbo;
+      xrState.tex[0] = tex;
+      xrState.depthTex[0] = depthTex;
+      xrState.renderWidth[0] = halfWidth;
+      xrState.renderHeight[0] = height;
+    } else {
+      throw new Error('unknown hmd type');
+    }
+
+    topVrPresentState.hmdType = hmdType;
+
+    xrState.isPresenting[0] = 1;
+    xrState.hmdType[0] = lookupHMDTypeIndex(hmdType);
+  } else if (topVrPresentState.hmdType !== null && type === 'exitPresent') {
+    if (topVrPresentState.hmdType === 'fake') {
+      // XXX destroy fbo
+    } else {
+      throw new Error(`fail to exit present for hmd type ${topVrPresentState.hmdType}`);
+    }
+
+    topVrPresentState.hmdType = null;
+    topVrPresentState.fbo = null;
+
+    xrState.isPresenting[0] = 0;
+    xrState.hmdType[0] = 0;
   }
 
   window.runAsync(JSON.stringify({
