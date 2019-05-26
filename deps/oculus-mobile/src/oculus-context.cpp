@@ -29,6 +29,10 @@ OculusMobileContext::OculusMobileContext(NATIVEwindow *windowHandle) :
     if (initResult != VRAPI_INITIALIZE_SUCCESS) {
       exerr << "VRAPI failed to initialize: " << initResult << std::endl;
     }
+    if(VRAPI_SYS_PROP_FOVEATION_AVAILABLE){
+      vrapi_SetPropertyInt( &java, VRAPI_FOVEATION_LEVEL, 3 );
+    }
+
   }
 
   {
