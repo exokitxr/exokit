@@ -214,7 +214,7 @@ const vrPresentState = {
   // hasPose: false,
   // lmContext: null,
   layers: [],
-  responseAccept: null,
+  responseAccepts: [],
 };
 GlobalContext.vrPresentState = vrPresentState;
 
@@ -1351,19 +1351,18 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
     _emitXrEvents(); 
     return _render(syncs);
   };
-  
+
   const _makeMrDisplays = () => {
     const _onrequestpresent = async () => {
-      if (!xrState.isPresenting[0]) {
-        await new Promise((accept, reject) => {
-          vrPresentState.responseAccept = accept;
+      await new Promise((accept, reject) => {
+        vrPresentState.responseAccepts.push(accept);
 
-          parentPort.postMessage({
-            method: 'request',
-            type: 'requestPresent',
-          });
+        parentPort.postMessage({
+          method: 'request',
+          type: 'requestPresent',
         });
-      }
+      });
+
       vrPresentState.hmdType = lookupHMDTypeString(xrState.hmdType[0]);
       GlobalContext.clearGamepads();
     };
@@ -1384,16 +1383,15 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       };
     };
     const _onexitpresent = async () => {
-      if (xrState.isPresenting[0]) {
-        await new Promise((accept, reject) => {
-          vrPresentState.responseAccept = accept;
+      await new Promise((accept, reject) => {
+        vrPresentState.responseAccepts.push(accept);
 
-          parentPort.postMessage({
-            method: 'request',
-            type: 'exitPresent',
-          });
+        parentPort.postMessage({
+          method: 'request',
+          type: 'exitPresent',
         });
-      }
+      });
+
       vrPresentState.hmdType = null;
       vrPresentState.glContext.setTopLevel(true);
       vrPresentState.glContext = null;
@@ -1471,15 +1469,13 @@ global.onrunasync = method => {
     const res = JSON.parse(method);
     return global.tickAnimationFrame(res);
   } else if (/^\{"method":"response"/.test(method)) {
-    if (vrPresentState.responseAccept) {
+    if (vrPresentState.responseAccepts.length > 0) {
       const res = JSON.parse(method);
-      
-      const {responseAccept} = vrPresentState;
-      vrPresentState.responseAccept = null;
-      responseAccept(res);
+
+      vrPresentState.responseAccepts.shift()(res);
       return Promise.resolve();
     } else {
-      return Promise.reject(new Error(`unexpected window response`));
+      return Promise.reject(new Error(`unexpected window response ${method}`));
     }
   } else if (/^\{"method":"eval"/.test(method)) {
     return Promise.resolve(eval(JSON.parse(method).scriptString));
