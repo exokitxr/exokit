@@ -1368,6 +1368,10 @@ const _normalizeUrl = utils._makeNormalizeUrl(options.baseUrl);
       GlobalContext.clearGamepads();
     };
     const _onmakeswapchain = context => {
+      if (vrPresentState.glContext) {
+        vrPresentState.glContext.setTopLevel(true);
+      }
+
       context.setTopLevel(false);
 
       vrPresentState.glContext = context;
