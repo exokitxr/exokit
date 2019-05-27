@@ -22,7 +22,7 @@ NAN_METHOD(Get) {
     }
   }
   if (value) {
-    info.GetReturnValue().Set(JS_STR(value));
+    info.GetReturnValue().Set(JS_STR(*value));
   } else {
     info.GetReturnValue().Set(Nan::Null());
   }
