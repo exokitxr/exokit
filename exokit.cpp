@@ -109,6 +109,9 @@ void InitExports(Local<Object> exports) {
   Local<Value> console = makeConsole();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeConsole"), console);
 
+  Local<Value> cache = makeCache();
+  exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeCache"), cache);
+
   /* uintptr_t initFunctionAddress = (uintptr_t)InitExports;
   Local<Array> initFunctionAddressArray = Nan::New<Array>(2);
   initFunctionAddressArray->Set(0, Nan::New<Integer>((uint32_t)(initFunctionAddress >> 32)));
