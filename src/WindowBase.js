@@ -150,7 +150,7 @@ class Worker extends EventTarget {
         }
       }
       get response() {
-        return switch (this.responseType) {
+        switch (this.responseType) {
           case 'arraybuffer': return Buffer.from(o);
           case 'blob': return new Blob(o, {
             type: this.getResponseHeader('content-type') || 'application/octet-stream',
