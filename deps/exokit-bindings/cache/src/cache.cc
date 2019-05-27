@@ -20,7 +20,6 @@ NAN_METHOD(Get) {
     } else {
       value = nullptr;
     }
-    end = items.end();
   }
   if (value) {
     info.GetReturnValue().Set(JS_STR(value));
