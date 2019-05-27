@@ -141,7 +141,7 @@ class Worker extends EventTarget {
   self.XMLHttpRequest = (Old => {
     class XMLHttpRequest extends Old {
       open(method, url, async, username, password) {
-        const blob = urls.get(u);
+        const blob = urls.get(url);
         if (blob) {
           return super.open(method, blob, async, username, password);
         } else {
