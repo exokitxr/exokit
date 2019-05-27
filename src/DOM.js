@@ -22,7 +22,7 @@ const {_makeWindow} = require('./WindowVm');
 const GlobalContext = require('./GlobalContext');
 const symbols = require('./symbols');
 const {urls} = require('./urls');
-const {_elementGetter, _elementSetter, _makeNormalizeUrl} = require('./utils');
+const {_elementGetter, _elementSetter, _normalizeUrl} = require('./utils');
 const {XRRigidTransform} = require('./XR');
 
 he.encode.options.useNamedReferences = true;
@@ -1950,7 +1950,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
           url = 'data:text/html,' + encodeURIComponent(`<!doctype html><html><head><script>${match[1]}</script></head></html>`);
         }
         const oldUrl = url;
-        url = _makeNormalizeUrl(this.ownerDocument.defaultView[symbols.optionsSymbol].baseUrl)(url);
+        url = _normalizeUrl(url, this.ownerDocument.defaultView[symbols.optionsSymbol].baseUrl);
 
         this.ownerDocument.resources.addResource((onprogress, cb) => {
           (async () => {
@@ -2041,7 +2041,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                 const parentWindow = this.ownerDocument.defaultView;
                 const options = parentWindow[symbols.optionsSymbol];
 
-                url = _makeNormalizeUrl(options.baseUrl)(url);
+                url = _normalizeUrl(url, options.baseUrl);
                 const parent = {};
                 const top = parentWindow === parentWindow.top ? parent : {};
                 const contentWindow = _makeWindow({
