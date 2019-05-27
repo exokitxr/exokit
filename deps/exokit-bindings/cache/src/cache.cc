@@ -11,7 +11,8 @@ NAN_METHOD(Get) {
 
   auto iter = items.find(key);
   if (iter != items.end()) {
-    info.GetReturnValue().Set(JS_STR(*iter));
+    const std::string &key = iter->second;
+    info.GetReturnValue().Set(JS_STR(key));
   } else {
     info.GetReturnValue().Set(Nan::Null());
   }
