@@ -10,16 +10,19 @@ NAN_METHOD(Get) {
   Nan::Utf8String keyUtf8String(keyValue);
   std::string key(*keyUtf8String, keyUtf8String.length());
 
-  std::map<std::string, std::string>::iterator iter;
-  std::map<std::string, std::string>::iterator end;
+  std::string *value;
   {
     std::lock_guard<std::mutex> lock(mutex);
 
-    iter = items.find(key);
+    auto iter = items.find(key);
+    if (iter != items.end()) {
+      value = &iter->second;
+    } else {
+      value = nullptr;
+    }
     end = items.end();
   }
-  if (iter != end {
-    const std::string &value = iter->second;
+  if (value) {
     info.GetReturnValue().Set(JS_STR(value));
   } else {
     info.GetReturnValue().Set(Nan::Null());
