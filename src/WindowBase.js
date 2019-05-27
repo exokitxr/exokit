@@ -53,6 +53,21 @@ consoleStream._writev = (chunks, callback) => {
 };
 global.console = new Console(consoleStream);
 
+URL.createObjectURL = blob => {
+  const url = 'blob:' + GlobalContext.xrState.blobId[0]++;
+  nativeCache.set(url, blob.buffer);
+  return url;
+};
+URL.revokeObjectURL = url => {
+  nativeCache.delete(url);
+};
+URL.lookupObjectURL = url => {
+  const uint8Array = nativeCache.get(url);
+  return uint8Array && new Blob([uint8Array], {
+    type: 'application/octet-stream', // TODO: make this the correct type
+  });
+}
+
 // global initialization
 
 for (const k in EventEmitter.prototype) {
@@ -67,7 +82,7 @@ class Worker extends EventTarget {
     if (src instanceof Blob) {
       src = 'data:application/javascript,' + src.buffer.toString('utf8');
     } else {
-      const blob = urls.get(src);
+      const blob = URL.lookupObjectURL(src);
       src = blob ?
         'data:application/octet-stream;base64,' + blob.buffer.toString('base64')
       :
@@ -133,7 +148,7 @@ class Worker extends EventTarget {
 
   self.fetch = (u, options) => {
     if (typeof u === 'string') {
-      const blob = urls.get(u);
+      const blob = URL.lookupObjectURL(u);
       if (blob) {
         return Promise.resolve(new Response(blob));
       } else {
@@ -152,7 +167,7 @@ class Worker extends EventTarget {
   self.XMLHttpRequest = (Old => {
     class XMLHttpRequest extends Old {
       open(method, url, async, username, password) {
-        const blob = urls.get(url);
+        const blob = URL.lookupObjectURL(url);
         if (blob) {
           return super.open(method, blob, async, username, password);
         } else {

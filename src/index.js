@@ -275,6 +275,7 @@ const xrState = (() => {
   result.tex = _makeTypedArray(Uint32Array, 1);
   result.depthTex = _makeTypedArray(Uint32Array, 1);
   result.fakeVrDisplayEnabled = _makeTypedArray(Uint32Array, 1);
+  result.blobId = _makeTypedArray(Uint32Array, 1);
 
   return result;
 })();
