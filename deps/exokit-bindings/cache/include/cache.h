@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string>
 #include <map>
+#include <mutex>
 
 #include <v8.h>
 #include <node.h>
@@ -17,6 +18,7 @@ using namespace node;
 namespace cache {
 
 extern std::map<std::string, std::string> items;
+extern std::mutex mutex;
 
 NAN_METHOD(Get);
 NAN_METHOD(Set);

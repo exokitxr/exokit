@@ -3,16 +3,24 @@
 namespace cache {
 
 std::map<std::string, std::string> items;
+std::mutex mutex;
 
 NAN_METHOD(Get) {
   Local<String> keyValue = Local<String>::Cast(info[0]);
   Nan::Utf8String keyUtf8String(keyValue);
   std::string key(*keyUtf8String, keyUtf8String.length());
 
-  auto iter = items.find(key);
-  if (iter != items.end()) {
-    const std::string &key = iter->second;
-    info.GetReturnValue().Set(JS_STR(key));
+  std::map<std::string, std::string>::iterator iter;
+  std::map<std::string, std::string>::iterator end;
+  {
+    std::lock_guard<std::mutex> lock(mutex);
+
+    iter = items.find(key);
+    end = items.end();
+  }
+  if (iter != end {
+    const std::string &value = iter->second;
+    info.GetReturnValue().Set(JS_STR(value));
   } else {
     info.GetReturnValue().Set(Nan::Null());
   }
@@ -27,7 +35,11 @@ NAN_METHOD(Set) {
   Nan::Utf8String valueUtf8String(valueValue);
   std::string value(*valueUtf8String, valueUtf8String.length());
 
-  items[std::move(key)] = std::move(value);
+  {
+    std::lock_guard<std::mutex> lock(mutex);
+
+    items[std::move(key)] = std::move(value);
+  }
 }
 
 Local<Object> Initialize(Isolate *isolate) {
