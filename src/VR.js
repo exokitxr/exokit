@@ -656,7 +656,7 @@ const controllerIDs = {
   fake: 'OpenVR Gamepad',
   openvr: 'OpenVR Gamepad',
   // oculusMobile: 'Oculus Go',
-  openvrTracker: 'Tracker',
+  openvrTracker: 'OpenVR Tracker',
   oculusLeft: 'Oculus Touch (Left)',
   oculusRight: 'Oculus Touch (Right)',
   oculusMobileLeft: 'Oculus Touch (Left)',
