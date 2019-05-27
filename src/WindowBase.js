@@ -119,43 +119,18 @@ class Worker extends EventTarget {
   self.EventTarget = EventTarget;
   
   self.URL = URL;
-  
-  // const _maybeDownload = (m, u, data, bufferifyFn) => options.args.download ? _download(m, u, data, bufferifyFn, options.args.download) : data;
-  const _maybeDownload = (m, u, data, bufferifyFn) => data;
+
   self.fetch = (u, options) => {
-    const _boundFetch = (u, options) => fetch(u, options)
-      .then(res => {
-        const method = (options && options.method) || 'GET';
-        res.arrayBuffer = (fn => function() {
-          return fn.apply(this, arguments)
-            .then(ab => _maybeDownload(method, u, ab, ab => Buffer.from(ab)));
-        })(res.arrayBuffer);
-        res.blob = (fn => function() {
-          return fn.apply(this, arguments)
-            .then(blob => _maybeDownload(method, u, blob, blob => blob.buffer));
-        })(res.blob);
-        res.json = (fn => function() {
-          return fn.apply(this, arguments)
-            .then(j => _maybeDownload(method, u, j, j => Buffer.from(JSON.stringify(j))));
-        })(res.json);
-        res.text = (fn => function() {
-          return fn.apply(this, arguments)
-            .then(t => _maybeDownload(method, u, t, t => Buffer.from(t, 'utf8')));
-        })(res.text);
-
-        return res;
-      });
-
     if (typeof u === 'string') {
       const blob = urls.get(u);
       if (blob) {
         return Promise.resolve(new Response(blob));
       } else {
         u = _normalizeUrl(u);
-        return _boundFetch(u, options);
+        return fetch(u, options);
       }
     } else {
-      return _boundFetch(u, options);
+      return fetch(u, options);
     }
   };
   self.Request = Request;
@@ -166,19 +141,22 @@ class Worker extends EventTarget {
   self.XMLHttpRequest = (Old => {
     class XMLHttpRequest extends Old {
       open(method, url, async, username, password) {
-        url = _normalizeUrl(url);
-        return super.open(method, url, async, username, password);
+        const blob = urls.get(url);
+        if (blob) {
+          return super.open(method, blob, async, username, password);
+        } else {
+          url = _normalizeUrl(url);
+          return super.open(method, url, async, username, password);
+        }
       }
       get response() {
-        return _maybeDownload(this._properties.method, this._properties.uri, super.response, o => {
-          switch (this.responseType) {
-            case 'arraybuffer': return Buffer.from(o);
-            case 'blob': return o.buffer;
-            case 'json': return Buffer.from(JSON.stringify(o), 'utf8');
-            case 'text': return Buffer.from(o, 'utf8');
-            default: throw new Error(`cannot download responseType ${responseType}`);
-          }
-        });
+        if (this.responseType === 'blob') {
+          return new Blob(super.response, {
+            type: this.getResponseHeader('content-type') || 'application/octet-stream',
+          });
+        } else {
+          return super.response;
+        }
       }
     }
     for (const k in Old) {

@@ -4,7 +4,7 @@ const {URL} = url;
 const fetch = require('window-fetch');
 const GlobalContext = require('./GlobalContext');
 const symbols = require('./symbols');
-const {_getBaseUrl, _download} = require('./utils');
+const {_getBaseUrl} = require('./utils');
 const {_makeWindow} = require('./WindowVm');
 
 const exokit = module.exports;
@@ -38,13 +38,6 @@ exokit.load = (src, options = {}) => {
     .then(res => {
       if (res.status >= 200 && res.status < 300) {
         return res.text()
-          .then(t => {
-            if (options.args.download) {
-              return _download('GET', src, t, t => Buffer.from(t, 'utf8'), options.args.download);
-            } else {
-              return Promise.resolve(t);
-            }
-          })
           .then(htmlString => ({
             src,
             htmlString,
@@ -84,17 +77,6 @@ exokit.load = (src, options = {}) => {
       });
     });
 };
-exokit.download = (src, dst) => exokit.load(src, {
-  args: {
-    download: dst,
-    headless: true,
-  },
-})
-  .then(window => new Promise((accept, reject) => {
-    window.document.resources.addEventListener('drain', () => {
-      accept();
-    });
-  }));
 exokit.setArgs = newArgs => {
   GlobalContext.args = newArgs;
 };
