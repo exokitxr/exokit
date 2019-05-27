@@ -567,12 +567,12 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
       }
     },
     createVRDisplay(width, height) {
-      xrState.fakeVrDisplayEnabled[0] = 1;
+      GlobalContext.xrState.fakeVrDisplayEnabled[0] = 1;
       if (width !== undefined) {
-        xrState.renderWidth[0] = width;
+        GlobalContext.xrState.renderWidth[0] = width;
       }
       if (height !== undefined) {
-        xrState.renderHeight[0] = height;
+        GlobalContext.xrState.renderHeight[0] = height;
       }
       return window[symbols.mrDisplaysSymbol].fakeVrDisplay;
     },
@@ -1018,7 +1018,7 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
     if (vrPresentState.glContext) {
       nativeWindow.setCurrentWindowContext(vrPresentState.glContext.getWindowHandle());
       // vrPresentState.glContext.setDefaultFramebuffer(vrPresentState.fbo);
-      nativeWindow.bindVrChildFbo(vrPresentState.glContext, vrPresentState.fbo, xrState.tex[0], xrState.depthTex[0]);
+      nativeWindow.bindVrChildFbo(vrPresentState.glContext, vrPresentState.fbo, GlobalContext.xrState.tex[0], GlobalContext.xrState.depthTex[0]);
     }
   };
   const _emitXrEvents = () => {
@@ -1053,8 +1053,8 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
   };
   const _composeXrContext = (context, windowHandle) => {
     if ((vrPresentState.hmdType === 'fake' || vrPresentState.hmdType === 'oculus' || vrPresentState.hmdType === 'openvr') && !context.canvas.ownerDocument.hidden) {
-      const width = xrState.renderWidth[0]*2;
-      const height = xrState.renderHeight[0];
+      const width = GlobalContext.xrState.renderWidth[0]*2;
+      const height = GlobalContext.xrState.renderHeight[0];
       const {width: dWidth, height: dHeight} = nativeWindow.getFramebufferSize(windowHandle);
       nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, width, height, dWidth, dHeight, true, false, false);
 
@@ -1178,7 +1178,7 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
         });
       }
 
-      vrPresentState.hmdType = lookupHMDTypeString(xrState.hmdType[0]);
+      vrPresentState.hmdType = lookupHMDTypeString(GlobalContext.xrState.hmdType[0]);
       GlobalContext.clearGamepads();
     };
     const _onmakeswapchain = context => {
