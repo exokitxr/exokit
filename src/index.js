@@ -106,7 +106,6 @@ const args = (() => {
         'webgl',
         'xr',
         'size',
-        'download',
         'replace',
       ],
       alias: {
@@ -127,7 +126,6 @@ const args = (() => {
         u: 'require',
         n: 'nogl',
         e: 'headless',
-        d: 'download',
       },
     });
     return {
@@ -148,7 +146,6 @@ const args = (() => {
       require: minimistArgs.require,
       nogl: minimistArgs.nogl,
       headless: minimistArgs.headless,
-      download: minimistArgs.download !== undefined ? (minimistArgs.download || path.join(process.cwd(), 'downloads')) : undefined,
     };
   } else {
     return {};

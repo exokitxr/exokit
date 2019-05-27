@@ -123,7 +123,7 @@ const {Location} = require('./Location');
 const XR = require('./XR');
 const DevTools = require('./DevTools');
 const utils = require('./utils');
-const {_elementGetter, _elementSetter, _download} = utils;
+const {_elementGetter, _elementSetter} = utils;
 
 setBaseUrl(options.baseUrl);
 
