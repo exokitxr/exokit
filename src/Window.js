@@ -1169,14 +1169,16 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
 
   const _makeMrDisplays = () => {
     const _onrequestpresent = async () => {
-      await new Promise((accept, reject) => {
-        vrPresentState.responseAccepts.push(accept);
+      if (!GlobalContext.xrState.isPresenting[0]) {
+        await new Promise((accept, reject) => {
+          vrPresentState.responseAccepts.push(accept);
 
-        parentPort.postMessage({
-          method: 'request',
-          type: 'requestPresent',
+          parentPort.postMessage({
+            method: 'request',
+            type: 'requestPresent',
+          });
         });
-      });
+      }
 
       vrPresentState.hmdType = lookupHMDTypeString(xrState.hmdType[0]);
       GlobalContext.clearGamepads();
@@ -1198,14 +1200,16 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
       };
     };
     const _onexitpresent = async () => {
-      await new Promise((accept, reject) => {
-        vrPresentState.responseAccepts.push(accept);
+      if (GlobalContext.xrState.isPresenting[0]) {
+        await new Promise((accept, reject) => {
+          vrPresentState.responseAccepts.push(accept);
 
-        parentPort.postMessage({
-          method: 'request',
-          type: 'exitPresent',
+          parentPort.postMessage({
+            method: 'request',
+            type: 'exitPresent',
+          });
         });
-      });
+      }
 
       vrPresentState.hmdType = null;
       vrPresentState.glContext.setTopLevel(true);
