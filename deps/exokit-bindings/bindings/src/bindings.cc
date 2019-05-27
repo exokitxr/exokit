@@ -8,6 +8,14 @@ Local<Object> makeConsole() {
   return scope.Escape(console::Initialize(isolate));
 }
 
+Local<Object> makeCache() {
+  Isolate *isolate = Isolate::GetCurrent();
+
+  Nan::EscapableHandleScope scope;
+
+  return scope.Escape(cache::Initialize(isolate));
+}
+
 std::pair<Local<Object>, Local<FunctionTemplate>> makeGl() {
   return WebGLRenderingContext::Initialize(Isolate::GetCurrent());
 }
