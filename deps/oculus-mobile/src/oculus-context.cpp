@@ -215,8 +215,8 @@ void OculusMobileContext::PollEvents(bool wait) {
         oculusMobileContext->androidNativeWindow = nullptr;
       }
 
-      static const int CPU_LEVEL = 3;
-      static const int GPU_LEVEL = 3;
+      static const int CPU_LEVEL = 5;
+      static const int GPU_LEVEL = 5;
       // Set performance parameters once we have entered VR mode and have a valid ovrMobile.
       if (oculusMobileContext->ovrState) {
         vrapi_SetClockLevels(oculusMobileContext->ovrState, CPU_LEVEL, GPU_LEVEL);
