@@ -30,6 +30,8 @@ const {
 } = require('./native-bindings');
 const {process} = global;
 
+GlobalContext.xrState = args.xrState;
+
 const consoleStream = new stream.Writable();
 consoleStream._write = (chunk, encoding, callback) => {
   nativeConsole.Log(chunk);
@@ -68,6 +70,7 @@ class Worker extends EventTarget {
       initModule: path.join(__dirname, 'Worker.js'),
       args: {
         src,
+        xrState: args.xrState,
       },
     });
     worker.on('message', m => {

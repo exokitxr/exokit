@@ -17,7 +17,6 @@ const {
       id,
       args,
       version,
-      xrState,
     },
   },
 } = require('worker_threads');
@@ -106,7 +105,6 @@ const {
 GlobalContext.id = id;
 GlobalContext.args = args;
 GlobalContext.version = version;
-GlobalContext.xrState = xrState;
 
 const {_parseDocument, _parseDocumentAst, getBoundDocumentElements, DocumentType, DOMImplementation, initDocument} = require('./Document');
 const {
