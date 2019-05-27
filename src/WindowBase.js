@@ -150,14 +150,12 @@ class Worker extends EventTarget {
         }
       }
       get response() {
-        switch (this.responseType) {
-          case 'arraybuffer': return Buffer.from(o);
-          case 'blob': return new Blob(o, {
+        if (this.responseType === 'blob') {
+          return new Blob(super.response, {
             type: this.getResponseHeader('content-type') || 'application/octet-stream',
           });
-          case 'json': return Buffer.from(JSON.stringify(o), 'utf8');
-          case 'text': return Buffer.from(o, 'utf8');
-          default: throw new Error(`cannot download responseType ${responseType}`);
+        } else {
+          return super.response;
         }
       }
     }
