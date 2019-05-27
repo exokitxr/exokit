@@ -120,32 +120,7 @@ class Worker extends EventTarget {
   
   self.URL = URL;
   
-  // const _maybeDownload = (m, u, data, bufferifyFn) => options.args.download ? _download(m, u, data, bufferifyFn, options.args.download) : data;
-  const _maybeDownload = (m, u, data, bufferifyFn) => data;
   self.fetch = (u, options) => {
-    const _boundFetch = (u, options) => fetch(u, options)
-      .then(res => {
-        const method = (options && options.method) || 'GET';
-        res.arrayBuffer = (fn => function() {
-          return fn.apply(this, arguments)
-            .then(ab => _maybeDownload(method, u, ab, ab => Buffer.from(ab)));
-        })(res.arrayBuffer);
-        res.blob = (fn => function() {
-          return fn.apply(this, arguments)
-            .then(blob => _maybeDownload(method, u, blob, blob => blob.buffer));
-        })(res.blob);
-        res.json = (fn => function() {
-          return fn.apply(this, arguments)
-            .then(j => _maybeDownload(method, u, j, j => Buffer.from(JSON.stringify(j))));
-        })(res.json);
-        res.text = (fn => function() {
-          return fn.apply(this, arguments)
-            .then(t => _maybeDownload(method, u, t, t => Buffer.from(t, 'utf8')));
-        })(res.text);
-
-        return res;
-      });
-
     if (typeof u === 'string') {
       const blob = urls.get(u);
       if (blob) {
