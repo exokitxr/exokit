@@ -52,7 +52,7 @@ protected:
 
 class AudioBufferSourceNode : public AudioNode {
 public:
-  static Local<Object> Initialize(Isolate *isolate);
+  static Local<Object> Initialize(Isolate *isolate, Local<Value> audioParamCons);
   static void InitializePrototype(Local<ObjectTemplate> proto);
 
 protected:
