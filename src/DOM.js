@@ -21,7 +21,6 @@ const {Event, EventTarget, MessageEvent, MouseEvent, ErrorEvent} = require('./Ev
 const {_makeWindow} = require('./WindowVm');
 const GlobalContext = require('./GlobalContext');
 const symbols = require('./symbols');
-const {urls} = require('./urls');
 const {_elementGetter, _elementSetter, _normalizeUrl} = require('./utils');
 const {XRRigidTransform} = require('./XR');
 
@@ -2836,12 +2835,12 @@ class HTMLVideoElement extends HTMLMediaElement {
 
         this.readyState = HTMLMediaElement.HAVE_ENOUGH_DATA;
 
-        if (urls.has(value)) {
+        /* if (urls.has(value)) {
           const blob = urls.get(value);
           if (blob instanceof bindings.nativeVideo.VideoDevice) {
             this.video = blob;
           }
-        }
+        } */
 
         this.ownerDocument.resources.addResource((onprogress, cb) => {
           const progressEvent = new Event('progress', {target: this});
