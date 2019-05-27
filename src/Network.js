@@ -1,4 +1,6 @@
-const fs = require('fs');
+throw new Error('fail');
+
+/* const fs = require('fs');
 const stream = require('stream');
 const {XMLHttpRequest: XMLHttpRequestBase} = require('window-xhr');
 const XHRUtils = require('window-xhr/lib/utils');
@@ -71,4 +73,4 @@ XHRUtils.createClient = (createClient => function() {
   } else {
     return createClient.apply(this, arguments);
   }
-})(XHRUtils.createClient);
+})(XHRUtils.createClient); */
