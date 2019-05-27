@@ -119,7 +119,7 @@ class Worker extends EventTarget {
   self.EventTarget = EventTarget;
   
   self.URL = URL;
-  
+
   self.fetch = (u, options) => {
     if (typeof u === 'string') {
       const blob = urls.get(u);
@@ -127,10 +127,10 @@ class Worker extends EventTarget {
         return Promise.resolve(new Response(blob));
       } else {
         u = _normalizeUrl(u);
-        return _boundFetch(u, options);
+        return fetch(u, options);
       }
     } else {
-      return _boundFetch(u, options);
+      return fetch(u, options);
     }
   };
   self.Request = Request;
