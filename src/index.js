@@ -1059,7 +1059,7 @@ const _start = () => {
     if (u === '.') {
       console.warn('NOTE: You ran `exokit . <url>`\n(Did you mean to run `node . <url>` or `exokit <url>` instead?)')
     }
-    u = u.replace(/^exokit:/, '');
+    u = u.replace(/^exokit:\/\//, '');
     if (args.tab) {
       u = u.replace(/\/?$/, '/');
       u = `${realityTabsUrl}?t=${encodeURIComponent(u)}`
