@@ -200,6 +200,19 @@ class VRDisplay extends EventEmitter {
     this._layers = [];
   }
 
+  // Multiview with opaque framebuffer approach
+	this.multiview = false;
+
+	var multiviewAvailability = null;
+
+	checkMultiviewAvailability() {
+
+		if ( ! device.getViews ) return false;
+
+		var views = device.getViews();
+		return !! views && views.length === 1 && !! views[ 0 ].getAttributes().multiview;
+
+	}
   getFrameData(frameData) {
     const {xrOffset} = this.window.document;
     if (xrOffset) {
@@ -283,7 +296,7 @@ class VRDisplay extends EventEmitter {
 
   async requestPresent(layers) {
     await this.onrequestpresent();
-    
+
     const [{source: canvas}] = layers;
     const context = canvas._context || canvas.getContext('webgl');
     this.onmakeswapchain(context);
@@ -301,7 +314,7 @@ class VRDisplay extends EventEmitter {
       this.cancelAnimationFrame(this._rafs[i]);
     }
     this._rafs.length = 0;
-    
+
     await this.onexitpresent();
 
     if (this.onvrdisplaypresentchange && this.isPresenting) {
@@ -403,7 +416,7 @@ class FakeVRDisplay extends VRDisplay {
     const self = this;
 
     await this.onrequestpresent();
-    
+
     const {xrState} = GlobalContext;
 
     const session = {
