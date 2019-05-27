@@ -145,15 +145,13 @@ class Worker extends EventTarget {
         return super.open(method, url, async, username, password);
       }
       get response() {
-        return _maybeDownload(this._properties.method, this._properties.uri, super.response, o => {
-          switch (this.responseType) {
-            case 'arraybuffer': return Buffer.from(o);
-            case 'blob': return o.buffer;
-            case 'json': return Buffer.from(JSON.stringify(o), 'utf8');
-            case 'text': return Buffer.from(o, 'utf8');
-            default: throw new Error(`cannot download responseType ${responseType}`);
-          }
-        });
+        return switch (this.responseType) {
+          case 'arraybuffer': return Buffer.from(o);
+          case 'blob': return o.buffer;
+          case 'json': return Buffer.from(JSON.stringify(o), 'utf8');
+          case 'text': return Buffer.from(o, 'utf8');
+          default: throw new Error(`cannot download responseType ${responseType}`);
+        }
       }
     }
     for (const k in Old) {
