@@ -256,7 +256,7 @@ AudioBufferSourceNode::AudioBufferSourceNode() {
   }));
 }
 AudioBufferSourceNode::~AudioBufferSourceNode() {}
-Local<Object> AudioBufferSourceNode::Initialize(Isolate *isolate) {
+Local<Object> AudioBufferSourceNode::Initialize(Isolate *isolate, Local<Value> audioParamCons) {
   Nan::EscapableHandleScope scope;
 
   // constructor
@@ -270,6 +270,8 @@ Local<Object> AudioBufferSourceNode::Initialize(Isolate *isolate) {
   AudioBufferSourceNode::InitializePrototype(proto);
 
   Local<Function> ctorFn = Nan::GetFunction(ctor).ToLocalChecked();
+  
+  ctorFn->Set(JS_STR("AudioParam"), audioParamCons);
 
   return scope.Escape(ctorFn);
 }
@@ -289,8 +291,16 @@ NAN_METHOD(AudioBufferSourceNode::New) {
     AudioBufferSourceNode *audioBufferSourceNode = new AudioBufferSourceNode();
     Local<Object> audioBufferSourceNodeObj = info.This();
     audioBufferSourceNode->Wrap(audioBufferSourceNodeObj);
-
     audioBufferSourceNode->context.Reset(audioContextObj);
+    
+    Local<Function> audioParamConstructor = Local<Function>::Cast(JS_OBJ(audioBufferSourceNodeObj->Get(JS_STR("constructor")))->Get(JS_STR("AudioParam")));
+    Local<Value> args[] = {
+      audioContextObj,
+    };
+    Local<Object> playbackRateAudioParamObj = audioParamConstructor->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(args)/sizeof(args[0]), args).ToLocalChecked();
+    AudioParam *playbackRateAudioParam = ObjectWrap::Unwrap<AudioParam>(playbackRateAudioParamObj);
+    playbackRateAudioParam->audioParam = (*(shared_ptr<lab::FinishableSourceNode> *)(&audioBufferSourceNode->audioNode))->playbackRate();
+    audioBufferSourceNodeObj->Set(JS_STR("playbackRate"), playbackRateAudioParamObj);
 
     info.GetReturnValue().Set(audioBufferSourceNodeObj);
   } else {
