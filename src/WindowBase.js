@@ -8,7 +8,14 @@ const {URL} = url;
 const vm = require('vm');
 const util = require('util');
 const crypto = require('crypto');
-const {Worker: WorkerBase, workerData, parentPort} = require('worker_threads');
+const {
+  Worker: WorkerBase,
+  workerData: {
+    initModule,
+    args,
+  },
+  parentPort,
+} = require('worker_threads');
 
 const {CustomEvent, DragEvent, ErrorEvent, Event, EventTarget, KeyboardEvent, MessageEvent, MouseEvent, WheelEvent, PromiseRejectionEvent} = require('./Event');
 const {FileReader} = require('./File.js');
@@ -18,15 +25,16 @@ const {Request, Response, Headers, Blob} = fetch;
 const WebSocket = require('ws/lib/websocket');
 
 const {WorkerVm} = require('./WindowVm');
+const GlobalContext = require('./GlobalContext');
+
+const utils = require('./utils');
 
 const btoa = s => Buffer.from(s, 'binary').toString('base64');
 const atob = s => Buffer.from(s, 'base64').toString('binary');
 
-const utils = require('./utils');
-const {urls} = require('./urls');
-
 const {
   nativeConsole,
+  nativeCache,
 } = require('./native-bindings');
 const {process} = global;
 
@@ -338,9 +346,9 @@ parentPort.on('close', close);
 
 // run init module
 
-if (workerData.args) {
+/* if (workerData.args) {
   global.args = workerData.args;
-}
+} */
 
 process.on('uncaughtException', err => {
   console.warn(err.stack);
@@ -349,11 +357,11 @@ process.on('unhandledRejection', err => {
   console.warn(err.stack);
 });
 
-if (workerData.initModule) {
-  require(workerData.initModule);
+if (initModule) {
+  require(initModule);
 }
 
-if (!workerData.args.require) {
+if (!args.require) {
   global.require = undefined;
 }
 global.process = undefined;
