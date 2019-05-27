@@ -1059,7 +1059,16 @@ const _start = () => {
     if (u === '.') {
       console.warn('NOTE: You ran `exokit . <url>`\n(Did you mean to run `node . <url>` or `exokit <url>` instead?)')
     }
-    u = u.replace(/^exokit:/, '');
+    if (u.includes("exokit://")){
+      u = u.replace(/^exokit:\/\//, '');
+    }
+    if (u.includes("https//") || u.includes("http//")){
+      u = u.replace(/(^\w+|^)\/\//, '');
+    }
+    if (u.includes("https://") || u.includes("http://")){
+      u = u.replace(/(^\w+:|^)\/\//, '');
+    }
+    u = 'http://' + u;
     if (args.tab) {
       u = u.replace(/\/?$/, '/');
       u = `${realityTabsUrl}?t=${encodeURIComponent(u)}`
