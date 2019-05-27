@@ -152,7 +152,9 @@ class Worker extends EventTarget {
       get response() {
         return switch (this.responseType) {
           case 'arraybuffer': return Buffer.from(o);
-          case 'blob': return o.buffer;
+          case 'blob': return new Blob(o, {
+            type: this.getResponseHeader('content-type') || 'application/octet-stream',
+          });
           case 'json': return Buffer.from(JSON.stringify(o), 'utf8');
           case 'text': return Buffer.from(o, 'utf8');
           default: throw new Error(`cannot download responseType ${responseType}`);
