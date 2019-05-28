@@ -444,6 +444,8 @@ NAN_METHOD(OVRSession::Submit) {
   ovr_SubmitFrame(*session->session, session->frameIndex, nullptr, layers, sizeof(layers)/sizeof(layers[0]));
   session->frameIndex++;
 
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, session->fbo);
+
   GLuint colorTex;
   {
     int curIndex;
@@ -605,19 +607,21 @@ NAN_METHOD(OVRSession::CreateSwapChain) {
   
   session->ResetSwapChain();
 
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, session->fbo);
+
   GLuint colorTex;
   {
     int curIndex;
     ovr_GetTextureSwapChainCurrentIndex(*session->session, session->swapChain.ColorTextureChain, &curIndex);
     ovr_GetTextureSwapChainBufferGL(*session->session, session->swapChain.ColorTextureChain, curIndex, &colorTex);
-    // glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
   }
   GLuint depthStencilTex;
   {
     int curIndex;
     ovr_GetTextureSwapChainCurrentIndex(*session->session, session->swapChain.DepthTextureChain, &curIndex);
     ovr_GetTextureSwapChainBufferGL(*session->session, session->swapChain.DepthTextureChain, curIndex, &depthStencilTex);
-    // glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthStencilTex, 0);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthStencilTex, 0);
   }
 
   Local<Array> array = Array::New(Isolate::GetCurrent(), 3);
