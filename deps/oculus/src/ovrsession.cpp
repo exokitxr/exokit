@@ -619,8 +619,6 @@ NAN_METHOD(OVRSession::CreateSwapChain) {
     ovr_GetTextureSwapChainBufferGL(*session->session, session->swapChain.DepthTextureChain, curIndex, &depthStencilTex);
     // glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthStencilTex, 0);
   }
-  
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, session->fbo);
 
   Local<Array> array = Array::New(Isolate::GetCurrent(), 3);
   array->Set(0, JS_INT(session->fbo));
