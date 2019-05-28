@@ -1175,13 +1175,13 @@ class Element extends Node {
   }
 
   requestFullscreen() {
-    if (this.ownerDocument[symbols.fullscreenElementSymbol] === null) {
+    /* if (this.ownerDocument[symbols.fullscreenElementSymbol] === null) { // XXX
       this.ownerDocument[symbols.fullscreenElementSymbol] = this;
 
       process.nextTick(() => {
         this.ownerDocument._emit('fullscreenchange');
       });
-    }
+    } */
   }
 
   /**
