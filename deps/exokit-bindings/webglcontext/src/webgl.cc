@@ -3117,7 +3117,7 @@ NAN_METHOD(WebGLRenderingContext::TexParameterf) {
 
 NAN_METHOD(WebGLRenderingContext::Clear) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
-  if (gl->topLevel) {
+  if (gl->topLevel || (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER) && gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER) != gl->defaultFramebuffer)) {
     GLint arg = TO_INT32(info[0]);
 
     glClear(arg);
