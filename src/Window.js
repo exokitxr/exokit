@@ -1014,11 +1014,16 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
     }
     prevSyncs.length = 0;
   };
-  const _bindXrFramebuffer = () => {
+  const _bindXrFramebuffer = layered => {
     if (vrPresentState.glContext) {
       nativeWindow.setCurrentWindowContext(vrPresentState.glContext.getWindowHandle());
-      // vrPresentState.glContext.setDefaultFramebuffer(vrPresentState.fbo);
-      nativeWindow.bindVrChildFbo(vrPresentState.glContext, vrPresentState.fbo, GlobalContext.xrState.tex[0], GlobalContext.xrState.depthTex[0]);
+
+      if (layered) {
+        vrPresentState.glContext.setDefaultFramebuffer(vrPresentState.fbo);
+        nativeWindow.bindVrChildFbo(vrPresentState.glContext, vrPresentState.fbo, GlobalContext.xrState.tex[0], GlobalContext.xrState.depthTex[0]);
+      } else {
+        vrPresentState.glContext.setDefaultFramebuffer(vrPresentState.glContext.framebuffer.msFbo);
+      }
     }
   };
   const _emitXrEvents = () => {
@@ -1118,7 +1123,7 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
 
     return Promise.resolve(syncs);
   };
-  const _renderLocal = syncs => {
+  const _renderLocal = (syncs, layered) => {
     if (vrPresentState.glContext) {
       nativeWindow.setCurrentWindowContext(vrPresentState.glContext.getWindowHandle());
 
@@ -1136,13 +1141,17 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
     _tickLocalRafs();
     return _composeLocalLayers();
   };
-  const _makeRenderChild = window => syncs => window.runAsync(JSON.stringify({method: 'tickAnimationFrame', syncs}));
+  const _makeRenderChild = window => (syncs, layered) => window.runAsync(JSON.stringify({
+    method: 'tickAnimationFrame',
+    syncs,
+    layered: layered && vrPresentState.layers.some(layer => layer.contentWindow === window),
+  }));
   const _collectRenders = () => windows.map(_makeRenderChild).concat([_renderLocal]);
-  const _render = syncs => new Promise((accept, reject) => {
+  const _render = (syncs, layered) => new Promise((accept, reject) => {
     const renders = _collectRenders();
     const _recurse = i => {
       if (i < renders.length) {
-        renders[i](syncs)
+        renders[i](syncs, layered)
           .then(newSyncs => {
             syncs = newSyncs;
             _recurse(i+1);
@@ -1158,11 +1167,11 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
     };
     _recurse(0);
   });
-  window.tickAnimationFrame = async ({syncs = []}) => {
+  window.tickAnimationFrame = async ({syncs = [], layered = false}) => {
     _clearPrevSyncs();
-    _bindXrFramebuffer();
+    _bindXrFramebuffer(layered);
     _emitXrEvents(); 
-    return _render(syncs);
+    return _render(syncs, layered);
   };
 
   const _makeMrDisplays = () => {
@@ -1183,15 +1192,12 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
     };
     const _onmakeswapchain = context => {
       if (vrPresentState.glContext) {
-        vrPresentState.glContext.setDefaultFramebuffer(vrPresentState.glContext.framebuffer.msFbo);
         vrPresentState.glContext.setTopLevel(true);
       }
 
-      context.setTopLevel(false);
-
       vrPresentState.glContext = context;
       vrPresentState.fbo = context.createFramebuffer().id;
-      vrPresentState.glContext.setDefaultFramebuffer(vrPresentState.fbo);
+      vrPresentState.glContext.setTopLevel(false);
 
       return {
         fbo: vrPresentState.fbo,

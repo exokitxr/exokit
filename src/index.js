@@ -850,6 +850,7 @@ const _startTopRenderLoop = () => {
   const _tickAnimationFrames = () => Promise.all(windows.map(window => window.runAsync(JSON.stringify({
     method: 'tickAnimationFrame',
     syncs: topVrPresentState.hmdType !== null ? [nativeBindings.nativeWindow.getSync()] : [],
+    layered: true,
   })).then(syncs => {
     if (topVrPresentState.windowHandle) {
       // nativeBindings.nativeWindow.setCurrentWindowContext(topVrPresentState.windowHandle);
