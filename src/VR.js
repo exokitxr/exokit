@@ -181,6 +181,7 @@ class VRDisplay extends EventEmitter {
     this.displayName = displayName;
     this.window = window;
 
+    this.isConnected = true;
     this.isPresenting = false;
     this.capabilities = {
       canPresent: true,
