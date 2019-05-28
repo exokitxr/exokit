@@ -1167,7 +1167,7 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
 
   const _makeMrDisplays = () => {
     const _onrequestpresent = async () => {
-      if (!GlobalContext.xrState.isPresenting[0]) {
+      // if (!GlobalContext.xrState.isPresenting[0]) {
         await new Promise((accept, reject) => {
           vrPresentState.responseAccepts.push(accept);
 
@@ -1176,7 +1176,7 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
             type: 'requestPresent',
           });
         });
-      }
+      // }
 
       vrPresentState.hmdType = lookupHMDTypeString(GlobalContext.xrState.hmdType[0]);
       GlobalContext.clearGamepads();
@@ -1198,7 +1198,7 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
       };
     };
     const _onexitpresent = async () => {
-      if (GlobalContext.xrState.isPresenting[0]) {
+      // if (GlobalContext.xrState.isPresenting[0]) {
         await new Promise((accept, reject) => {
           vrPresentState.responseAccepts.push(accept);
 
@@ -1207,7 +1207,7 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
             type: 'exitPresent',
           });
         });
-      }
+      // }
 
       vrPresentState.hmdType = null;
       vrPresentState.glContext.setTopLevel(true);
