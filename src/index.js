@@ -555,13 +555,13 @@ const _startTopRenderLoop = () => {
 
     hmdMatrix.getInverse(hmdMatrix);
 
-    // left eye pose
-    const _loadHmd = (i, viewMatrix, projectionMatrix, fov) => {
+    // eye pose
+    const _loadHmd = (i, viewMatrix, projectionMatrix, eyeOffset, fov) => {
       topVrPresentState.vrSystem.GetEyeToHeadTransform(i, localFloat32MatrixArray);
       localMatrix2
         .fromArray(localFloat32MatrixArray)
         .decompose(localVector, localQuaternion, localVector2);
-      localVector.toArray(xrState.leftOffset);
+      localVector.toArray(eyeOffset);
       localMatrix2
         .getInverse(localMatrix2)
         .multiply(hmdMatrix)
@@ -575,8 +575,8 @@ const _startTopRenderLoop = () => {
         fov[i] = Math.atan(localFovArray[i]) / Math.PI * 180;
       }
     };
-    _loadHmd(0, xrState.leftViewMatrix, xrState.leftProjectionMatrix, xrState.leftFov);
-    _loadHmd(1, xrState.rightViewMatrix, xrState.rightProjectionMatrix, xrState.rightFov);
+    _loadHmd(0, xrState.leftViewMatrix, xrState.leftProjectionMatrix, xrState.leftOffset, xrState.leftFov);
+    _loadHmd(1, xrState.rightViewMatrix, xrState.rightProjectionMatrix, xrState.rightOffset, xrState.rightFov);
 
     // build stage parameters
     // topVrPresentState.vrSystem.GetSeatedZeroPoseToStandingAbsoluteTrackingPose(localFloat32MatrixArray);
