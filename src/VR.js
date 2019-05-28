@@ -270,6 +270,19 @@ class VRDisplay extends EventEmitter {
     };
   }
 
+  get depthNear() {
+    return GlobalContext.xrState.depthNear[0];
+  }
+  set depthNear(depthNear) {
+    GlobalContext.xrState.depthNear[0] = depthNear;
+  }
+  get depthFar() {
+    return GlobalContext.xrState.depthFar[0];
+  }
+  set depthFar(depthFar) {
+    GlobalContext.xrState.depthFar[0] = depthFar;
+  }
+
   async requestPresent(layers) {
     await this.onrequestpresent();
     
@@ -376,19 +389,6 @@ class FakeVRDisplay extends VRDisplay {
     this._lastPresseds = [false, false];
 
     // this._frameData = new VRFrameData();
-  }
-
-  get depthNear() {
-    return GlobalContext.xrState.depthNear[0];
-  }
-  set depthNear(depthNear) {
-    GlobalContext.xrState.depthNear[0] = depthNear;
-  }
-  get depthFar() {
-    return GlobalContext.xrState.depthFar[0];
-  }
-  set depthFar(depthFar) {
-    GlobalContext.xrState.depthFar[0] = depthFar;
   }
 
   /* setSize(width, height) {
