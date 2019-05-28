@@ -4,9 +4,14 @@
 
 namespace webaudio {
 
-Audio::Audio() : audioContext(nullptr) {
+Audio::Audio() : sourceAudioContext(nullptr), loaded(false), sourced(false) {
   WebAudioAsync *webaudioAsync = getWebAudioAsync();
   audioNode.reset(new lab::FinishableSourceNode(
+    [this, webaudioAsync](lab::ContextRenderLock &r){
+      webaudioAsync->QueueOnMainThread(r, std::bind(ProcessInMainThread, this));
+    }
+  ));
+  sourceAudioNode.reset(new lab::FinishableSourceNode(
     [this, webaudioAsync](lab::ContextRenderLock &r){
       webaudioAsync->QueueOnMainThread(r, std::bind(ProcessInMainThread, this));
     }
@@ -73,20 +78,21 @@ void Audio::Load(uint8_t *bufferValue, size_t bufferLength, Local<Function> cbFn
 void Audio::ProcessLoadInMainThread(Audio *audio) {
   Nan::HandleScope scope;
 
-  lab::AudioContext *localAudioContext = audio->audioContext;
-  if (!localAudioContext) {
-    localAudioContext = getDefaultAudioContext();
-  }
-  {
-    lab::ContextRenderLock lock(localAudioContext, "Audio::ProcessLoadInMainThread");
+  if (!audio->sourced) {
+    lab::AudioContext *defaultAudioContext = getDefaultAudioContext();
+    lab::ContextRenderLock lock(defaultAudioContext, "Audio::ProcessLoadInMainThread 1");
 
     audio->audioNode->setBus(lock, audio->audioBus);
+    defaultAudioContext->connect(defaultAudioContext->destination(), audio->audioNode, 0, 0);
+  } else {
+    lab::AudioContext *sourceAudioContext = audio->sourceAudioContext;
+    lab::ContextRenderLock lock(sourceAudioContext, "Audio::ProcessLoadInMainThread 2");
 
-    /* if (!audio->audioContext) {
-      audio->audioContext = getDefaultAudioContext();
-      audio->audioContext->connect(audio->audioContext->destination(), audio->audioNode, 0, 0);
-    } */
+    audio->sourceAudioNode->setBus(lock, audio->audioBus);
+    // sourceAudioContext->connect(sourceAudioContext->destination(), audio->sourceAudioNode, 0, 0);
   }
+
+  audio->loaded = true;
 
   Local<Object> asyncObject = Nan::New<Object>();
   AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "Audio::ProcessLoadInMainThread");
@@ -105,24 +111,51 @@ void Audio::ProcessLoadInMainThread(Audio *audio) {
 
 void Audio::Play() {
   audioNode->start(0);
+  sourceAudioNode->start(0);
 }
 
 void Audio::Pause() {
   audioNode->stop(0);
+  sourceAudioNode->stop(0);
 }
 
 // for when we reparent to MediaElementSourceNode
-void Audio::Reparent(AudioContext *newAudioContext) {
-  if (audioContext) {
-    audioContext->disconnect(nullptr, audioNode);
-    lab::ContextRenderLock lock(audioContext, "Audio::Reparent"); // commit the change
+shared_ptr<lab::AudioNode> Audio::Reparent(AudioContext *newSourceAudioContext) {
+  sourceAudioContext = newSourceAudioContext->audioContext.get();
+
+  if (loaded) {
+    shared_ptr<lab::AudioBus> audioBus = audioNode->getBus();
+    {
+      lab::AudioContext *defaultAudioContext = getDefaultAudioContext();
+      lab::ContextRenderLock lock(defaultAudioContext, "Audio::Reparent 1");
+
+      audioNode->setBus(lock, nullptr);
+      // audioNode->stop(0);
+      defaultAudioContext->disconnect(defaultAudioContext->destination(), audioNode, 0, 0);
+    }
+    {
+      lab::ContextRenderLock lock(sourceAudioContext, "Audio::Reparent 2");
+
+      audioBus->reset();
+      sourceAudioNode->setBus(lock, audioBus);
+      // sourceAudioContext->connect(sourceAudioContext->destination(), sourceAudioNode, 0, 0);
+    }
   }
+
+  sourced = true;
   
-  audioContext = newAudioContext->audioContext.get();
+  return sourceAudioNode;
+}
+
+lab::FinishableSourceNode *Audio::GetLocalAudioNode() {
+  if (sourced) {
+    return sourceAudioNode.get();
+  } else {
+    return audioNode.get();
+  }
 }
 
 NAN_METHOD(Audio::Load) {
-
   if (info[1]->IsFunction()) {
     if (info[0]->IsArrayBuffer()) {
       Audio *audio = ObjectWrap::Unwrap<Audio>(info.This());
@@ -160,7 +193,7 @@ NAN_GETTER(Audio::PausedGetter) {
   // Nan::HandleScope scope;
 
   Audio *audio = ObjectWrap::Unwrap<Audio>(info.This());
-  bool paused = !audio->audioNode->isPlayingOrScheduled();
+  bool paused = !audio->GetLocalAudioNode()->isPlayingOrScheduled();
 
   info.GetReturnValue().Set(JS_BOOL(paused));
 }
@@ -171,8 +204,9 @@ NAN_GETTER(Audio::CurrentTimeGetter) {
   Audio *audio = ObjectWrap::Unwrap<Audio>(info.This());
 
   double now = getDefaultAudioContext()->currentTime();
-  double startTime = audio->audioNode->startTime();
-  double duration = audio->audioNode->duration();
+  lab::FinishableSourceNode *localAudioNode = audio->GetLocalAudioNode();
+  double startTime = localAudioNode->startTime();
+  double duration = localAudioNode->duration();
   double currentTime = std::min<double>(std::max<double>(startTime - now, 0), duration);
 
   info.GetReturnValue().Set(JS_NUM(currentTime));
@@ -187,6 +221,7 @@ NAN_SETTER(Audio::CurrentTimeSetter) {
     double currentTime = TO_DOUBLE(value);
 
     audio->audioNode->setCurrentTime(currentTime);
+    audio->sourceAudioNode->setCurrentTime(currentTime);
   } else {
     Nan::ThrowError("loop: invalid arguments");
   }
@@ -197,7 +232,7 @@ NAN_GETTER(Audio::DurationGetter) {
 
   Audio *audio = ObjectWrap::Unwrap<Audio>(info.This());
 
-  double duration = audio->audioNode->duration();
+  double duration = audio->GetLocalAudioNode()->duration();
   info.GetReturnValue().Set(JS_NUM(duration));
 }
 
@@ -206,7 +241,7 @@ NAN_GETTER(Audio::LoopGetter) {
 
   Audio *audio = ObjectWrap::Unwrap<Audio>(info.This());
 
-  bool loop = audio->audioNode->loop();
+  bool loop = audio->GetLocalAudioNode()->loop();
   info.GetReturnValue().Set(JS_BOOL(loop));
 }
 
@@ -219,6 +254,7 @@ NAN_SETTER(Audio::LoopSetter) {
     Audio *audio = ObjectWrap::Unwrap<Audio>(info.This());
 
     audio->audioNode->setLoop(loop);
+    audio->sourceAudioNode->setLoop(loop);
   } else {
     Nan::ThrowError("loop: invalid arguments");
   }

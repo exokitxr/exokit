@@ -23,7 +23,8 @@ public:
   void Play();
   void Pause();
   void Load(uint8_t *bufferValue, size_t bufferLength, Local<Function> cbFn);
-  void Reparent(AudioContext *newAudioContext);
+  shared_ptr<lab::AudioNode> Reparent(AudioContext *newSourceAudioContext);
+  lab::FinishableSourceNode *GetLocalAudioNode();
 
 protected:
   static NAN_METHOD(New);
@@ -44,16 +45,19 @@ protected:
 
   Nan::Persistent<Function> onended;
 
-  lab::AudioContext *audioContext;
-  Nan::Persistent<Function> cbFn;
-  shared_ptr<lab::AudioBus> audioBus;
-  std::string error;
-
   Audio();
   ~Audio();
 
-private:
+protected:
+
   shared_ptr<lab::FinishableSourceNode> audioNode;
+  shared_ptr<lab::FinishableSourceNode> sourceAudioNode;
+  lab::AudioContext *sourceAudioContext;
+  bool loaded;
+  bool sourced;
+  Nan::Persistent<Function> cbFn;
+  shared_ptr<lab::AudioBus> audioBus;
+  std::string error;
 
   friend class AudioSourceNode;
 };
