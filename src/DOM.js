@@ -2696,12 +2696,9 @@ class HTMLAudioElement extends HTMLMediaElement {
   constructor(window, attrs = [], value = '') {    
     if (typeof attrs === 'string') {
       const src = attrs;
-      return new HTMLAudioElement(window, [
-        {
-          name: 'src',
-          value: src + '',
-        },
-      ], '', null);
+      const audio = new HTMLAudioElement(window, [], '', null);
+      audio.src = src + '';
+      return audio;
     } else {
       super(window, 'AUDIO', attrs, value);
 
