@@ -15,7 +15,7 @@ const {FileReader} = require('./File.js');
 
 const {src} = args;
 const baseUrl = (src => {
-  if (/^https?:/.test(src)) {
+  if (/^(?:https?|file):/.test(src)) {
     const u = new URL(src);
     u.pathname = path.dirname(u.pathname) + '/';
     return u.href;
