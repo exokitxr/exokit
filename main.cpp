@@ -393,8 +393,7 @@ int main(int argc, char **argv) {
 
     // construct real argv layout that node expects
     size_t argc = defaultArguments.size();
-    std::unique_ptr<char *> argv;
-    argv.resize(argc);
+    std::vector<char *> argv(argc);
 
     char argsString[4096];
     int offset = 0;
@@ -415,7 +414,7 @@ int main(int argc, char **argv) {
       }
     }
 
-    result = node::Start(argc, argv.get());
+    result = node::Start(argc, argv.data());
   }
 
   LOG_INFO("exit code %d", result);
