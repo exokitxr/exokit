@@ -294,11 +294,8 @@ const topVrPresentState = {
 };
 
 const requests = [];
-const handleRequest = (req, window) => {
-  requests.push({
-    req,
-    window,
-  });
+const handleRequest = req => {
+  requests.push(req);
 };
 GlobalContext.handleRequest = handleRequest;
 const _handleRequests = () => {
@@ -307,7 +304,7 @@ const _handleRequests = () => {
   }
   requests.length = 0;
 };
-const _handleRequest = ({req: {type}, window}) => {
+const _handleRequest = ({type, keypath}) => {
   if (type === 'requestPresent' && topVrPresentState.hmdType === null) {
     const hmdType = getHMDType();
     // console.log('request present', hmdType);
@@ -416,9 +413,16 @@ const _handleRequest = ({req: {type}, window}) => {
     xrState.hmdType[0] = 0;
   }
 
-  window.runAsync(JSON.stringify({
-    method: 'response',
-  }));
+  const windowId = keypath.pop();
+  const window = windows.find(window => window.id === windowId);
+  if (window) {
+    window.runAsync(JSON.stringify({
+      method: 'response',
+      keypath,
+    }));
+  } else {
+    console.warn('cannot find window to respond request to', windowId, windows.map(window => window.id));
+  }
 };
 
 const _startTopRenderLoop = () => {
@@ -1100,6 +1104,7 @@ const _start = () => {
         args,
         replacements,
         onnavigate: _onnavigate,
+        onrequest: handleRequest,
       });
     };
     _onnavigate(u);
@@ -1122,6 +1127,7 @@ const _start = () => {
     let window = core.make('', {
       dataPath,
       onnavigate: _onnavigate,
+      onrequest: handleRequest,
     });
 
     const prompt = '[x] ';

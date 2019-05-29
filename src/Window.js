@@ -1183,6 +1183,7 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
           parentPort.postMessage({
             method: 'request',
             type: 'requestPresent',
+            keypath: [],
           });
         });
       // }
@@ -1211,6 +1212,7 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
           parentPort.postMessage({
             method: 'request',
             type: 'exitPresent',
+            keypath: [],
           });
         });
       // }

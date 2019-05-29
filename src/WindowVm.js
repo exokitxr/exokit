@@ -17,7 +17,7 @@ class WorkerVm extends EventEmitter {
     worker.on('message', m => {
       switch (m.method) {
         case 'request': {
-          GlobalContext.handleRequest(m, this);
+          worker.emit('request', m);
           break;
         }
         case 'response': {
@@ -180,6 +180,11 @@ const _makeWindow = (options = {}, handlers = {}) => {
       .catch(err => {
         console.warn(err.stack);
       });
+  });
+  window.on('request', req => {
+    if (GlobalContext.handleRequest) {
+      GlobalContext.handleRequest();
+    options.onrequest && options.onrequest(req);
   });
   window.on('error', err => {
     console.warn(err.stack);

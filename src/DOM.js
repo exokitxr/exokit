@@ -2061,6 +2061,10 @@ class HTMLIFrameElement extends HTMLSrcableElement {
 
                     this.setAttribute('src', href);
                   },
+                  onrequest(req) {
+                    req.keypath.push(contentWindow.id);
+                    parentPort.postMessage(req);
+                  },
                 });
 
                 this.contentWindow = contentWindow;
