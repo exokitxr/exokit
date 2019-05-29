@@ -2,6 +2,7 @@
 #include <iostream>
 #include <string>
 // #include <sstream>
+#include <vector>
 #include <map>
 #include <thread>
 #include <v8.h>
@@ -27,9 +28,24 @@ namespace node {
 
 #include "build/libexokit/dlibs.h"
 
-namespace node {
-  extern std::map<std::string, std::pair<void *, bool>> dlibs;
-  int Start(int argc, char* argv[]);
+std::vector<const char *> getDefaultArguments() {
+  const char *launchUrl;
+  if (access("/package/app/index.html", F_OK) != -1) {
+    launchUrl = "/package/app/index.html";
+  } else {
+    launchUrl = "/package/examples/realitytabs.html";
+  }
+
+  std::vector<const char *> result = {
+    "node",
+#ifndef ANDROID
+    ".",
+#else
+    "/package",
+#endif
+    launchUrl,
+  };
+  return result;
 }
 
 #ifdef ANDROID
@@ -341,7 +357,7 @@ int main(int argc, char **argv) {
 
   int result;
   const char *argsEnv = getenv("ARGS");
-  if (argsEnv) {
+  if (argsEnv) { // get args from launch command
     char args[4096];
     strncpy(args, argsEnv, sizeof(args));
 
@@ -371,39 +387,34 @@ int main(int argc, char **argv) {
     }
 
     result = node::Start(argc, argv);
-  } else {
-    const char *jsString;
-    if (access("/package/app/index.html", F_OK) != -1) {
-      jsString = "/package/app/index.html";
-    } else {
-      jsString = "/package/examples/realitytabs.html";
+  } else { // get default launch args
+    // get the requested launch arguments list
+    const std::vector<const char *> defaultArguments = getDefaultArguments();
+
+    // construct real argv layout that node expects
+    size_t argc = defaultArguments.size();
+    std::vector<char *> argv(argc);
+
+    char argsString[4096];
+    int offset = 0;
+    for (size_t i = 0; i < defaultArguments.size(); i++) {
+      const char *srcArgString = defaultArguments[i];
+      char *dstArgString = argsString + offset;
+      size_t srcArgSize = strlen(srcArgString) + 1;
+      if ((offset + srcArgSize) < sizeof(argsString)) {
+        memcpy(dstArgString, srcArgString, srcArgSize);
+
+        argv[i] = dstArgString;
+
+        offset += strlen(srcArgString) + 1;
+      } else {
+        LOG_ERROR("node command line arguments overflow: %d", offset);
+
+        abort();
+      }
     }
 
-    const char *nodeString = "node";
-#ifndef ANDROID
-    const char *dotString = ".";
-#else
-    const char *dotString = "/package";
-#endif
-    char argsString[4096];
-    int i = 0;
-
-    char *nodeArg = argsString + i;
-    strncpy(nodeArg, nodeString, sizeof(argsString) - i);
-    i += strlen(nodeString) + 1;
-
-    char *dotArg = argsString + i;
-    strncpy(dotArg, dotString, sizeof(argsString) - i);
-    i += strlen(dotString) + 1;
-
-    char *jsArg = argsString + i;
-    strncpy(jsArg, jsString, sizeof(argsString) - i);
-    i += strlen(jsString) + 1;
-
-    char *argv[] = {nodeArg, dotArg, jsArg};
-    size_t argc = sizeof(argv) / sizeof(argv[0]);
-
-    result = node::Start(argc, argv);
+    result = node::Start(argc, argv.data());
   }
 
   LOG_INFO("exit code %d", result);
