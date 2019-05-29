@@ -26,12 +26,7 @@ const baseUrl = (src => {
 setBaseUrl(baseUrl);
 const _normalizeUrl = src => {
   if (!/^(?:file|data|blob):/.test(src)) {
-    /* const match = baseUrl.match(/^file:\/\/(.*)$/);
-    if (match) {
-      return match[1];
-    } else { */
-      return new URL(src, baseUrl).href;
-    // }
+    return new URL(src, baseUrl).href;
   } else {
     return src;
   }
