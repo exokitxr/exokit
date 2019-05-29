@@ -1,4 +1,6 @@
 const {EventEmitter} = require('events');
+const {parentPort} = require('worker_threads');
+
 const {Event} = require('./Event');
 const symbols = require('./symbols');
 const THREE = require('../lib/three-min.js');
@@ -113,19 +115,15 @@ class GamepadHapticActuator {
   }
   set type(type) {}
   pulse(value, duration) {
-    if (GlobalContext.xrState.isPresenting[0]) {
-      value = Math.min(Math.max(value, 0), 1);
-      const deviceIndex = GlobalContext.vrPresentState.system.GetTrackedDeviceIndexForControllerRole(this.index + 1);
-
-      const startTime = Date.now();
-      const _recurse = () => {
-        if ((Date.now() - startTime) < duration) {
-          GlobalContext.vrPresentState.system.TriggerHapticPulse(deviceIndex, 0, value * 4000);
-          setTimeout(_recurse, 50);
-        }
-      };
-      setTimeout(_recurse, 50);
-    }
+    parentPort.postMessage({
+      method: 'emit',
+      type: 'hapticPulse',
+      event: {
+        index: this.index,
+        value,
+        duration,
+      },
+    });
   }
 }
 class Gamepad {

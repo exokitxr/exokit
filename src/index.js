@@ -416,6 +416,24 @@ const _handleRequest = ({req: {type}, window}) => {
     method: 'response',
   }));
 };
+const handleHapticPulse = ({index, value, duration}) => {
+  if (topVrPresentState.hmdType === 'openvr') {
+    value = Math.min(Math.max(value, 0), 1);
+    const deviceIndex = topVrPresentState.vrSystem.GetTrackedDeviceIndexForControllerRole(index + 1);
+
+    const startTime = Date.now();
+    const _recurse = () => {
+      if ((Date.now() - startTime) < duration) {
+        topVrPresentState.vrSystem.TriggerHapticPulse(deviceIndex, 0, value * 4000);
+        setTimeout(_recurse, 50);
+      }
+    };
+    setTimeout(_recurse, 50);
+  } else {
+    console.warn(`ignoring haptic pulse: ${index}/${value}/${duration}`);
+    // TODO: handle the other HMD cases...
+  }
+};
 
 const _startTopRenderLoop = () => {
   const timestamps = {
@@ -1083,6 +1101,7 @@ const _start = () => {
         args,
         replacements,
         onnavigate: _onnavigate,
+        onhapticpulse: handleHapticPulse,
       });
     };
     _onnavigate(u);
@@ -1105,6 +1124,7 @@ const _start = () => {
     let window = core.make('', {
       dataPath,
       onnavigate: _onnavigate,
+      onhapticpulse: handleHapticPulse,
     });
 
     const prompt = '[x] ';

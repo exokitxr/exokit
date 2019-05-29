@@ -40,7 +40,7 @@ class WorkerVm extends EventEmitter {
           break;
         }
         default: {
-          throw new Error(`worker got unknown message type '${m.method}'`);
+          throw new Error(`worker got unknown message: '${JSON.stringify(m)}'`);
           break;
         }
       }
@@ -180,6 +180,9 @@ const _makeWindow = (options = {}, handlers = {}) => {
       .catch(err => {
         console.warn(err.stack);
       });
+  });
+  window.on('hapticPulse', e => {
+    options.onhapticpulse && options.onhapticpulse(e);
   });
   window.on('error', err => {
     console.warn(err.stack);
