@@ -181,6 +181,9 @@ const _makeWindow = (options = {}, handlers = {}) => {
         console.warn(err.stack);
       });
   });
+  window.on('hapticPulse', e => {
+    options.onhapticpulse && options.onhapticpulse(e);
+  });
   window.on('error', err => {
     console.warn(err.stack);
   });
