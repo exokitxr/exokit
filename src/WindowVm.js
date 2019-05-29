@@ -182,8 +182,6 @@ const _makeWindow = (options = {}, handlers = {}) => {
       });
   });
   window.on('request', req => {
-    if (GlobalContext.handleRequest) {
-      GlobalContext.handleRequest();
     options.onrequest && options.onrequest(req);
   });
   window.on('error', err => {
