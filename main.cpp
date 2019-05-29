@@ -408,7 +408,7 @@ int main(int argc, char **argv) {
 
         offset += strlen(srcArgString) + 1;
       } else {
-        LOG_ERROR("node command line arguments overflow %d %d %d %d", i, srcArgSize, offset, sizeof(argsString));
+        LOG_ERROR("node command line arguments overflow");
 
         abort();
       }
