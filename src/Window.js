@@ -1161,7 +1161,7 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
             _recurse(i+1);
           })
           .catch(err => {
-            console.warn(err.stack);
+            console.warn('failed to render child', err);
             syncs = [];
             _recurse(i+1);
           });
