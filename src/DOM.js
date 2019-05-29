@@ -2152,7 +2152,8 @@ class HTMLIFrameElement extends HTMLSrcableElement {
   }
 
   get d() {
-    return parseInt(this.getAttribute('d') || 1 + '', 10);
+    const d = parseInt(this.getAttribute('d') + '', 10);
+    return isFinite(d) ? d : 3;
   }
   set d(value) {
     if (typeof value === 'number' && isFinite(value)) {
