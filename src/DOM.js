@@ -2065,6 +2065,13 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   onrequest(req) {
                     parentPort.postMessage(req);
                   },
+                  onhapticpulse(event) {
+                    parentPort.postMessage({
+                      method: 'emit',
+                      type: 'hapticPulse',
+                      event,
+                    });
+                  },
                 });
 
                 this.contentWindow = contentWindow;
