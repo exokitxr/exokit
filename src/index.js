@@ -413,7 +413,6 @@ const _handleRequest = ({type, keypath}) => {
     xrState.hmdType[0] = 0;
   }
 
-  console.log('got key path top', keypath); // XXX
   const windowId = keypath.pop();
   const window = windows.find(window => window.id === windowId);
   if (window) {

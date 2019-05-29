@@ -2063,8 +2063,6 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                     this.setAttribute('src', href);
                   },
                   onrequest(req) {
-                    req.keypath.push(GlobalContext.id);
-                    console.log('iframe route req', req, contentWindow.id, GlobalContext.id); // XXX
                     parentPort.postMessage(req);
                   },
                 });
