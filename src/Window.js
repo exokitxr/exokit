@@ -1196,13 +1196,15 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
       GlobalContext.clearGamepads();
     };
     const _onmakeswapchain = context => {
-      if (vrPresentState.glContext) {
-        vrPresentState.glContext.setTopLevel(true);
-      }
+      if (context !== vrPresentState.glContext) {
+        if (vrPresentState.glContext) {
+          vrPresentState.glContext.setTopLevel(true);
+        }
 
-      vrPresentState.glContext = context;
-      vrPresentState.fbo = context.createFramebuffer().id;
-      vrPresentState.glContext.setTopLevel(false);
+        vrPresentState.glContext = context;
+        vrPresentState.fbo = context.createFramebuffer().id;
+        vrPresentState.glContext.setTopLevel(false);
+      }
 
       return {
         fbo: vrPresentState.fbo,
