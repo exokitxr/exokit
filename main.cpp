@@ -26,6 +26,8 @@ namespace node {
   int Start(int argc, char* argv[]);
 }
 
+#include "build/libexokit/dlibs.h"
+
 std::vector<const char *> getDefaultArguments() {
   const char *launchUrl;
   if (access("/package/app/index.html", F_OK) != -1) {
@@ -45,8 +47,6 @@ std::vector<const char *> getDefaultArguments() {
   };
   return result;
 }
-
-#include "build/libexokit/dlibs.h"
 
 #ifdef ANDROID
 
