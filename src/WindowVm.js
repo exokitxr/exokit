@@ -185,7 +185,7 @@ const _makeWindow = (options = {}, handlers = {}) => {
       });
   });
   window.on('request', req => {
-    req.keypath = [id];
+    req.keypath.push(id);
     options.onrequest && options.onrequest(req);
   });
   window.on('error', err => {
