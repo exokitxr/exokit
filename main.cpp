@@ -2,6 +2,7 @@
 #include <iostream>
 #include <string>
 // #include <sstream>
+#include <vector>
 #include <map>
 #include <thread>
 #include <v8.h>
