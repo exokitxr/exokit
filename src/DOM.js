@@ -2053,7 +2053,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   parent,
                   top,
                   htmlString,
-                  hidden: this.d === 3,
+                  hidden: true,
                   xrOffsetBuffer: this.xrOffset._buffer,
                   onnavigate(href) {
                     this.readyState = null;
