@@ -397,7 +397,7 @@ int main(int argc, char **argv) {
 
     char argsString[4096];
     int offset = 0;
-    for (size_t i = 0; i < defualtArguments.size(); i++) {
+    for (size_t i = 0; i < defaultArguments.size(); i++) {
       const char *srcArgString = defaultArguments[i];
       char *dstArgString = argsString + offset;
       size_t srcArgSize = strlen(srcArgString) + 1;
