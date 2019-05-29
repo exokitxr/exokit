@@ -45,6 +45,9 @@ class WorkerVm extends EventEmitter {
         }
       }
     });
+    worker.on('request', req => {
+      this.emit('request', req);
+    });
     worker.on('error', err => {
       this.emit('error', err);
     });
@@ -182,6 +185,7 @@ const _makeWindow = (options = {}, handlers = {}) => {
       });
   });
   window.on('request', req => {
+    req.keypath = [id];
     options.onrequest && options.onrequest(req);
   });
   window.on('error', err => {

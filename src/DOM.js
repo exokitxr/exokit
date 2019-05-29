@@ -3,6 +3,7 @@ const fs = require('fs');
 const url = require('url');
 const vm = require('vm');
 const util = require('util');
+const {parentPort} = require('worker_threads');
 
 const {process} = global;
 
@@ -2062,7 +2063,8 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                     this.setAttribute('src', href);
                   },
                   onrequest(req) {
-                    req.keypath.push(contentWindow.id);
+                    req.keypath.push(GlobalContext.id);
+                    console.log('iframe route req', req, contentWindow.id, GlobalContext.id); // XXX
                     parentPort.postMessage(req);
                   },
                 });
