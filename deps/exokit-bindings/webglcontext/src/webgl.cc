@@ -36,6 +36,8 @@ void unregisterGLObj(GLuint obj); */
 
 #define JS_GL_CONSTANT(name) JS_GL_SET_CONSTANT(#name, GL_ ## name)
 
+GlShader::~GlShader() {}
+
 template<NAN_METHOD(F)>
 NAN_METHOD(glCallWrap) {
   Local<Object> glObj = info.This();
@@ -1179,7 +1181,12 @@ WebGLRenderingContext::WebGLRenderingContext() :
   activeTexture(GL_TEXTURE0)
   {}
 
-WebGLRenderingContext::~WebGLRenderingContext() {}
+WebGLRenderingContext::~WebGLRenderingContext() {
+  for (auto iter = keys.begin(); iter != keys.end(); iter++) {
+    GlShader *glShader = (GlShader *)iter->second;
+    delete glShader;
+  }
+}
 
 NAN_METHOD(WebGLRenderingContext::New) {
   WebGLRenderingContext *gl = new WebGLRenderingContext();

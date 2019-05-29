@@ -28,7 +28,7 @@ enum class LayerType {
 
 class LayerSpec {
 public:
-  LayerType type;
+  LayerType layerType;
   int width;
   int height;
   GLuint msTex;
@@ -40,8 +40,13 @@ public:
   float *projection[2];
 };
 
-class ComposeSpec {
+class ComposeGlShader : public GlShader {
 public:
+  ComposeGlShader();
+  virtual ~ComposeGlShader();
+
+  static GlKey key;
+
   GLuint blitFbos[2];
   GLuint composeVao;
   GLuint composeProgram;
@@ -54,8 +59,13 @@ public:
   GLuint indexBuffer;
 };
 
-class PlaneSpec {
+class PlaneGlShader : public GlShader {
 public:
+  PlaneGlShader();
+  virtual ~PlaneGlShader();
+
+  static GlKey key;
+
   GLuint planeVao;
   GLuint planeProgram;
   GLint positionLocation;
@@ -68,8 +78,7 @@ public:
   GLuint indexBuffer;
 };
 
-void InitializeLocalGlState(WebGLRenderingContext *gl);
-void CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint sharedColorTex, GLuint sharedDepthStencilTex, GLuint sharedMsColorTex, GLuint sharedMsDepthStencilTex, GLuint *pfbo, GLuint *pcolorTex, GLuint *pdepthStencilTex, GLuint *pmsFbo, GLuint *pmsColorTex, GLuint *pmsDepthStencilTex);
+bool CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint sharedColorTex, GLuint sharedDepthStencilTex, GLuint sharedMsColorTex, GLuint sharedMsDepthStencilTex, GLuint *pfbo, GLuint *pcolorTex, GLuint *pdepthStencilTex, GLuint *pmsFbo, GLuint *pmsColorTex, GLuint *pmsDepthStencilTex);
 NAN_METHOD(CreateRenderTarget);
 NAN_METHOD(ResizeRenderTarget);
 NAN_METHOD(DestroyRenderTarget);

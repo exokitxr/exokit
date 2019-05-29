@@ -263,8 +263,6 @@ NAN_METHOD(InitWindow3D) {
   
   SetCurrentWindowContext(windowHandle);
 
-  windowsystembase::InitializeLocalGlState(gl);
-
   GLuint vao;
   glGenVertexArrays(1, &vao);
   glBindVertexArray(vao);
