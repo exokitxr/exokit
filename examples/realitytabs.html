@@ -1781,6 +1781,10 @@ window.addEventListener('keydown', e => {
         fakeDisplay.gamepads[1].buttons[2].pressed = true;
         break;
       }
+      case 81: { // Q
+        fakeDisplay.gamepads[1].buttons[0].pressed = true;
+        break;
+      }
       case 32: { // space
         keys.space = true;
         break;
@@ -1825,6 +1829,10 @@ window.addEventListener('keyup', e => {
       }
       case 69: { // E
         fakeDisplay.gamepads[1].buttons[2].pressed = false;
+        break;
+      }
+      case 81: { // Q
+        fakeDisplay.gamepads[1].buttons[0].pressed = false;
         break;
       }
       case 32: { // space
