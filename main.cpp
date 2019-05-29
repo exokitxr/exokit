@@ -388,8 +388,10 @@ int main(int argc, char **argv) {
 
     result = node::Start(argc, argv);
   } else { // get default launch args
+    // get the requested launch arguments list
     const std::vector<const char *> defaultArguments = getDefaultArguments();
 
+    // construct real argv layout that node expects
     size_t argc = defaultArguments.size();
     std::unique_ptr<char *> argv(argc);
 
