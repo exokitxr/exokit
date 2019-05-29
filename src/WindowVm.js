@@ -198,6 +198,7 @@ const _makeWindow = (options = {}, handlers = {}) => {
         message: 'cancel request: window destroyed',
       });
     }
+    window.queue = null;
 
     return new Promise((accept, reject) => {
       window.on('exit', () => {
