@@ -40,7 +40,7 @@ class WorkerVm extends EventEmitter {
           break;
         }
         default: {
-          throw new Error(`worker got unknown message type '${m.method}'`);
+          throw new Error(`worker got unknown message: '${JSON.stringify(m)}'`);
           break;
         }
       }
