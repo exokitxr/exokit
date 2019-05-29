@@ -3,6 +3,7 @@ const fs = require('fs');
 const url = require('url');
 const vm = require('vm');
 const util = require('util');
+const {parentPort} = require('worker_threads');
 
 const {process} = global;
 
@@ -2060,6 +2061,9 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                     this.contentDocument = null;
 
                     this.setAttribute('src', href);
+                  },
+                  onrequest(req) {
+                    parentPort.postMessage(req);
                   },
                 });
 

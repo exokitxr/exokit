@@ -74,6 +74,7 @@ exokit.load = (src, options = {}) => {
         args: options.args,
         replacements: options.replacements,
         onnavigate: options.onnavigate,
+        onrequest: options.onrequest,
       });
     });
 };

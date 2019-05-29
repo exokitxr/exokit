@@ -17,7 +17,7 @@ class WorkerVm extends EventEmitter {
     worker.on('message', m => {
       switch (m.method) {
         case 'request': {
-          GlobalContext.handleRequest(m, this);
+          worker.emit('request', m);
           break;
         }
         case 'response': {
@@ -44,6 +44,9 @@ class WorkerVm extends EventEmitter {
           break;
         }
       }
+    });
+    worker.on('request', req => {
+      this.emit('request', req);
     });
     worker.on('error', err => {
       this.emit('error', err);
@@ -180,6 +183,10 @@ const _makeWindow = (options = {}, handlers = {}) => {
       .catch(err => {
         console.warn(err.stack);
       });
+  });
+  window.on('request', req => {
+    req.keypath.push(id);
+    options.onrequest && options.onrequest(req);
   });
   window.on('error', err => {
     console.warn(err.stack);

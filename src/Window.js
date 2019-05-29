@@ -1183,6 +1183,7 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
           parentPort.postMessage({
             method: 'request',
             type: 'requestPresent',
+            keypath: [],
           });
         });
       // }
@@ -1211,6 +1212,7 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
           parentPort.postMessage({
             method: 'request',
             type: 'exitPresent',
+            keypath: [],
           });
         });
       // }
@@ -1292,13 +1294,33 @@ global.onrunasync = method => {
     const res = JSON.parse(method);
     return global.tickAnimationFrame(res);
   } else if (/^\{"method":"response"/.test(method)) {
-    if (vrPresentState.responseAccepts.length > 0) {
-      const res = JSON.parse(method);
+    const res = JSON.parse(method);
+    const {keypath} = res;
 
-      vrPresentState.responseAccepts.shift()(res);
-      return Promise.resolve();
+    if (keypath.length === 0) {
+      if (vrPresentState.responseAccepts.length > 0) {
+        const res = JSON.parse(method);
+
+        vrPresentState.responseAccepts.shift()(res);
+
+        return Promise.resolve();
+      } else {
+        return Promise.reject(new Error(`unexpected response at window ${method}`));
+      }
     } else {
-      return Promise.reject(new Error(`unexpected window response ${method}`));
+      const windowId = keypath.pop();
+      const window = windows.find(window => window.id === windowId);
+
+      if (window) {
+        window.runAsync(JSON.stringify({
+          method: 'response',
+          keypath,
+        }));
+
+        return Promise.resolve();
+      } else {
+        return Promise.reject(new Error(`response for unknown window ${method} ${JSON.stringify(windows.map(window => window.id))}`));
+      }
     }
   } else if (/^\{"method":"eval"/.test(method)) {
     return Promise.resolve(eval(JSON.parse(method).scriptString));
