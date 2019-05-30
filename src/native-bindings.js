@@ -401,20 +401,22 @@ GlobalContext.WebGL2RenderingContext = bindings.nativeGl2;
 if (bindings.nativeAudio) {
   bindings.nativeAudio.AudioContext = (OldAudioContext => class AudioContext extends OldAudioContext {
     decodeAudioData(arrayBuffer, successCallback, errorCallback) {
-      return new Promise((resolve, reject) => {
+      const result = new Promise((accept, reject) => {
         const audioBuffer = this.createEmptyBuffer();
         audioBuffer.load(arrayBuffer, err => {
           if (!err) {
-            resolve(audioBuffer);
+            accept(audioBuffer);
           } else {
             reject(new Error(err));
           }
         });
-      }).then(audioBuffer => {
+      });
+      result.then(audioBuffer => {
         successCallback && successCallback(audioBuffer);
       }).catch(err => {
         errorCallback && errorCallback(err);
       });
+      return result;
     }
   })(bindings.nativeAudio.AudioContext);
   bindings.nativeAudio.PannerNode.setPath(path.join(require.resolve('native-audio-deps').slice(0, -'index.js'.length), 'assets', 'hrtf'));
