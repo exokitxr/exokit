@@ -1198,7 +1198,29 @@ NAN_METHOD(WebGLRenderingContext::New) {
 
 NAN_METHOD(WebGLRenderingContext::Destroy) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
   gl->live = false;
+
+  for (auto iter = gl->objectCache.buffers.begin(); iter != gl->objectCache.buffers.end(); iter++) {
+    GLuint buffer = *iter;
+    glDeleteBuffers(1, &buffer);
+  }
+  for (auto iter = gl->objectCache.queries.begin(); iter != gl->objectCache.queries.end(); iter++) {
+    GLuint query = *iter;
+    glDeleteQueries(1, &query);
+  }
+  for (auto iter = gl->objectCache.renderbuffers.begin(); iter != gl->objectCache.renderbuffers.end(); iter++) {
+    GLuint renderbuffer = *iter;
+    glDeleteRenderbuffers(1, &renderbuffer);
+  }
+  for (auto iter = gl->objectCache.samplers.begin(); iter != gl->objectCache.samplers.end(); iter++) {
+    GLuint sampler = *iter;
+    glDeleteSamplers(1, &sampler);
+  }
+  for (auto iter = gl->objectCache.textures.begin(); iter != gl->objectCache.textures.end(); iter++) {
+    GLuint texture = *iter;
+    glDeleteTextures(1, &texture);
+  }
 }
 
 NAN_METHOD(WebGLRenderingContext::GetWindowHandle) {
