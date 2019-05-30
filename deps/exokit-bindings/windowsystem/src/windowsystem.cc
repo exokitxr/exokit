@@ -802,31 +802,57 @@ NAN_METHOD(DestroyRenderTarget) {
   }
 }
 
-void CreateVrTopRenderTarget(int width, int height, GLuint *pfbo, GLuint *pcolorTex, GLuint *pdepthStencilTex) {
+void CreateVrTopRenderTarget(int width, int height, GLuint *pfbo, GLuint *pcolorTex, GLuint *pdepthStencilTex, GLuint *pmsFbo, GLuint *pmsColorTex, GLuint *pmsDepthStencilTex) {
   GLuint &fbo = *pfbo;
   GLuint &colorTex = *pcolorTex;
   GLuint &depthStencilTex = *pdepthStencilTex;
+  GLuint &msFbo = *pmsFbo;
+  GLuint &msColorTex = *pmsColorTex;
+  GLuint &msDepthStencilTex = *pmsDepthStencilTex;
 
-  glGenFramebuffers(1, &fbo);
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+  {
+    glGenFramebuffers(1, &fbo);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
 
-  glGenTextures(1, &colorTex);
-  glBindTexture(GL_TEXTURE_2D, colorTex);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-  glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
+    glGenTextures(1, &colorTex);
+    glBindTexture(GL_TEXTURE_2D, colorTex);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
 
-  glGenTextures(1, &depthStencilTex);
-  glBindTexture(GL_TEXTURE_2D, depthStencilTex);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width, height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
-  glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthStencilTex, 0);
+    glGenTextures(1, &depthStencilTex);
+    glBindTexture(GL_TEXTURE_2D, depthStencilTex);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width, height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthStencilTex, 0);
+  }
 
-  // glClear(GL_DEPTH_BUFFER_BIT); // initialize to far depth
+  {
+    glGenFramebuffers(1, &msFbo);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, msFbo);
 
-  glFinish();
+    glGenTextures(1, &msColorTex);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msColorTex);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
+#if !defined(ANDROID) && !defined(LUMIN)
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, NUM_SAMPLES, GL_RGBA8, width, height, true);
+#else
+    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, NUM_SAMPLES, GL_RGBA8, width, height, true);
+#endif
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, msColorTex, 0);
+
+    glGenTextures(1, &msDepthStencilTex);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAX_LEVEL, 0);
+#if !defined(ANDROID) && !defined(LUMIN)
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, NUM_SAMPLES, GL_DEPTH24_STENCIL8, width, height, true);
+#else
+    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, NUM_SAMPLES, GL_DEPTH24_STENCIL8, width, height, true);
+#endif
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex, 0);
+  }
 }
 
 NAN_METHOD(CreateVrTopRenderTarget) {
@@ -836,13 +862,19 @@ NAN_METHOD(CreateVrTopRenderTarget) {
   GLuint fbo;
   GLuint colorTex;
   GLuint depthStencilTex;
+  GLuint msFbo;
+  GLuint msColorTex;
+  GLuint msDepthStencilTex;
 
-  CreateVrTopRenderTarget(width, height, &fbo, &colorTex, &depthStencilTex);
+  CreateVrTopRenderTarget(width, height, &fbo, &colorTex, &depthStencilTex, &msFbo, &msColorTex, &msDepthStencilTex);
 
-  Local<Array> result = Array::New(Isolate::GetCurrent(), 3);
+  Local<Array> result = Array::New(Isolate::GetCurrent(), 6);
   result->Set(0, JS_INT(fbo));
   result->Set(1, JS_INT(colorTex));
   result->Set(2, JS_INT(depthStencilTex));
+  result->Set(3, JS_INT(msFbo));
+  result->Set(4, JS_INT(msColorTex));
+  result->Set(5, JS_INT(msDepthStencilTex));
   info.GetReturnValue().Set(result);
 }
 
@@ -934,6 +966,23 @@ NAN_METHOD(BindVrChildFbo) {
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
   glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
   glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthStencilTex, 0);
+
+  if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
+  } else {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
+  }
+}
+
+NAN_METHOD(BindVrChildMsFbo) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
+  GLuint msFbo = TO_UINT32(info[1]);
+  GLuint msColorTex = TO_UINT32(info[2]);
+  GLuint msDepthStencilTex = TO_UINT32(info[3]);
+
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, msFbo);
+  glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, msColorTex, 0);
+  glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, msDepthStencilTex, 0);
 
   if (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER)) {
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER));
@@ -1352,6 +1401,7 @@ void Decorate(Local<Object> target) {
   Nan::SetMethod(target, "createVrTopRenderTarget", CreateVrTopRenderTarget);
   Nan::SetMethod(target, "createVrCompositorRenderTarget", CreateVrCompositorRenderTarget);
   Nan::SetMethod(target, "bindVrChildFbo", BindVrChildFbo);
+  Nan::SetMethod(target, "bindVrChildMsFbo", BindVrChildMsFbo);
   Nan::SetMethod(target, "getSync", GetSync);
   Nan::SetMethod(target, "waitSync", WaitSync);
   Nan::SetMethod(target, "deleteSync", DeleteSync);
