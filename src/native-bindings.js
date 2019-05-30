@@ -411,11 +411,8 @@ if (bindings.nativeAudio) {
           }
         });
       });
-      result.then(audioBuffer => {
-        successCallback && successCallback(audioBuffer);
-      }).catch(err => {
-        errorCallback && errorCallback(err);
-      });
+      successCallback && result.then(successCallback);
+      errorCallback && result.catch(errorCallback);
       return result;
     }
   })(bindings.nativeAudio.AudioContext);
