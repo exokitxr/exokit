@@ -869,20 +869,28 @@ const _startTopRenderLoop = () => {
       nativeBindings.nativeWindow.clearFramebuffer(topVrPresentState.fbo);
     }
   };
-  const _tickAnimationFrames = () => Promise.all(windows.map(window => window.runAsync(JSON.stringify({
+  const _tickAnimationFrame = window => window.runAsync(JSON.stringify({
     method: 'tickAnimationFrame',
     syncs: topVrPresentState.hmdType !== null ? [nativeBindings.nativeWindow.getSync()] : [],
     layered: true,
-  })).then(syncs => {
-    if (topVrPresentState.windowHandle) {
-      // nativeBindings.nativeWindow.setCurrentWindowContext(topVrPresentState.windowHandle);
-      for (let i = 0; i < syncs.length; i++) {
-        const sync = syncs[i];
-        nativeBindings.nativeWindow.waitSync(sync);
-        prevSyncs.push(sync);
+  }))
+    .catch(err => {
+      if (err.code !== 'ECANCEL') {
+        console.warn(err.stack);
       }
-    }
-  })));
+      return Promise.resolve([]);
+    })
+    .then(syncs => {
+      if (topVrPresentState.windowHandle) {
+        // nativeBindings.nativeWindow.setCurrentWindowContext(topVrPresentState.windowHandle);
+        for (let i = 0; i < syncs.length; i++) {
+          const sync = syncs[i];
+          nativeBindings.nativeWindow.waitSync(sync);
+          prevSyncs.push(sync);
+        }
+      }
+    });
+  const _tickAnimationFrames = () => Promise.all(windows.map(_tickAnimationFrame));
   const _submitFrame = async () => {
     if (topVrPresentState.hasPose) {
       if (topVrPresentState.hmdType === 'oculus') {

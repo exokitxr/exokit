@@ -199,10 +199,13 @@ const _makeWindow = (options = {}, handlers = {}) => {
   });
   window.destroy = (destroy => function() {
     GlobalContext.windows.splice(GlobalContext.windows.indexOf(window), 1);
-    for (const k in window.queue) {
-      window.queue[k]({
-        message: 'cancel request: window destroyed',
-      });
+    const ks = Object.keys(window.queue);
+    if (ks.length > 0) {
+      const err = new Error('cancel request: window destroyed');
+      err.code = 'ECANCEL';
+      for (let i = 0; i < ks.length; i++) {
+        window.queue[ks[i]](err);
+      }
     }
     window.queue = null;
 
