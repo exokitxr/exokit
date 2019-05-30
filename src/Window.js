@@ -180,22 +180,11 @@ const contexts = [];
 GlobalContext.contexts = contexts;
 
 const vrPresentState = {
-  /* vrContext: null,
-  system: null,
-  oculusSystem: null,
-  compositor: null,
-  glContextId: 0, */
   hmdType: null,
   vrContext: null,
   glContext: null,
   fbo: 0,
   msFbo: 0,
-  msTex: 0,
-  msDepthTex: 0,
-  // tex: null,
-  // depthTex: null,
-  // hasPose: false,
-  // lmContext: null,
   layers: [],
   responseAccepts: [],
 };
