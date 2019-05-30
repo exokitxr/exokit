@@ -90,6 +90,15 @@ public:
   virtual ~GlShader() = 0;
 };
 
+class GlObjectCache {
+public:
+  std::set<GLuint> buffers;
+  std::set<GLuint> queries;
+  std::set<GLuint> renderbuffers;
+  std::set<GLuint> samplers;
+  std::set<GLuint> textures;
+};
+
 void flipImageData(char *dstData, char *srcData, size_t width, size_t height, size_t pixelSize);
 
 class ViewportState {
@@ -403,6 +412,7 @@ public:
   NATIVEwindow *windowHandle;
   GLuint defaultVao;
   GLuint defaultFramebuffer;
+  GlObjectCache objectCache;
   bool topLevel;
   bool dirty;
   bool flipY;
