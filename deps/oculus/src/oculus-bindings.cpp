@@ -11,6 +11,8 @@
 
 using namespace v8;
 
+namespace oculusvr {
+
 bool oculusInitialized = false;
 
 NAN_METHOD(Oculus_Init)
@@ -36,11 +38,13 @@ NAN_METHOD(Oculus_IsHmdPresent)
   info.GetReturnValue().Set(Nan::New<Boolean>(detectResult.IsOculusHMDConnected));
 }
 
+};
+
 Local<Object> makeOculusVR() {
   v8::EscapableHandleScope scope(Isolate::GetCurrent());
 
   Local<Object> exports = Object::New(Isolate::GetCurrent());
-  Nan::SetMethod(exports, "Oculus_Init", Oculus_Init);
-  Nan::SetMethod(exports, "Oculus_IsHmdPresent", Oculus_IsHmdPresent);
+  Nan::SetMethod(exports, "Oculus_Init", oculusvr::Oculus_Init);
+  Nan::SetMethod(exports, "Oculus_IsHmdPresent", oculusvr::Oculus_IsHmdPresent);
   return scope.Escape(exports);
 }

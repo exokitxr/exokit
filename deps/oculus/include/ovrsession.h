@@ -10,12 +10,14 @@
 typedef struct SwapChain {
   ovrTextureSwapChain ColorTextureChain;
   ovrTextureSwapChain DepthTextureChain;
+  std::vector<GLuint> msColorTextureChain;
+  std::vector<GLuint> msDepthTextureChain;
 } EyeSwapChain;
 
 namespace oculusvr {
-  class OculusVRPosRes;
-  void RunResInMainThread(uv_async_t *handle);
-}
+
+class OculusVRPosRes;
+void RunResInMainThread(uv_async_t *handle);
 
 class OculusVRPosRes {
 public:
@@ -69,6 +71,9 @@ private:
   /// Reference to wrapped ovrSession instance.
   ovrSession *session;
   ovrHmdDesc hmdDesc;
+  ovrTimewarpProjectionDesc timewarpProjectionDesc;
+  GLuint fbo;
+  GLuint msFbo;
   EyeSwapChain swapChain;
   bool swapChainValid;
   ovrPosef eyeRenderPoses[2];
@@ -76,6 +81,8 @@ private:
   int frameIndex;
   double sensorSampleTime;
   bool hmdMounted;
+};
+
 };
 
 #endif

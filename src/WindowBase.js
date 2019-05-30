@@ -8,7 +8,14 @@ const {URL} = url;
 const vm = require('vm');
 const util = require('util');
 const crypto = require('crypto');
-const {Worker: WorkerBase, workerData, parentPort} = require('worker_threads');
+const {
+  Worker: WorkerBase,
+  workerData: {
+    initModule,
+    args,
+  },
+  parentPort,
+} = require('worker_threads');
 
 const {CustomEvent, DragEvent, ErrorEvent, Event, EventTarget, KeyboardEvent, MessageEvent, MouseEvent, WheelEvent, PromiseRejectionEvent} = require('./Event');
 const {FileReader} = require('./File.js');
@@ -18,17 +25,20 @@ const {Request, Response, Headers, Blob} = fetch;
 const WebSocket = require('ws/lib/websocket');
 
 const {WorkerVm} = require('./WindowVm');
+const GlobalContext = require('./GlobalContext');
+
+const utils = require('./utils');
 
 const btoa = s => Buffer.from(s, 'binary').toString('base64');
 const atob = s => Buffer.from(s, 'base64').toString('binary');
 
-const utils = require('./utils');
-const {urls} = require('./urls');
-
 const {
   nativeConsole,
+  nativeCache,
 } = require('./native-bindings');
 const {process} = global;
+
+GlobalContext.xrState = args.xrState;
 
 const consoleStream = new stream.Writable();
 consoleStream._write = (chunk, encoding, callback) => {
@@ -42,6 +52,21 @@ consoleStream._writev = (chunks, callback) => {
   callback();
 };
 global.console = new Console(consoleStream);
+
+URL.createObjectURL = blob => {
+  const url = 'blob:' + GlobalContext.xrState.blobId[0]++;
+  nativeCache.set(url, blob.buffer);
+  return url;
+};
+URL.revokeObjectURL = url => {
+  nativeCache.delete(url);
+};
+URL.lookupObjectURL = url => {
+  const uint8Array = nativeCache.get(url);
+  return uint8Array && new Blob([uint8Array], {
+    type: 'application/octet-stream', // TODO: make this the correct type
+  });
+}
 
 // global initialization
 
@@ -57,7 +82,7 @@ class Worker extends EventTarget {
     if (src instanceof Blob) {
       src = 'data:application/javascript,' + src.buffer.toString('utf8');
     } else {
-      const blob = urls.get(src);
+      const blob = URL.lookupObjectURL(src);
       src = blob ?
         'data:application/octet-stream;base64,' + blob.buffer.toString('base64')
       :
@@ -68,6 +93,7 @@ class Worker extends EventTarget {
       initModule: path.join(__dirname, 'Worker.js'),
       args: {
         src,
+        xrState: args.xrState,
       },
     });
     worker.on('message', m => {
@@ -122,7 +148,7 @@ class Worker extends EventTarget {
 
   self.fetch = (u, options) => {
     if (typeof u === 'string') {
-      const blob = urls.get(u);
+      const blob = URL.lookupObjectURL(u);
       if (blob) {
         return Promise.resolve(new Response(blob));
       } else {
@@ -141,7 +167,7 @@ class Worker extends EventTarget {
   self.XMLHttpRequest = (Old => {
     class XMLHttpRequest extends Old {
       open(method, url, async, username, password) {
-        const blob = urls.get(url);
+        const blob = URL.lookupObjectURL(url);
         if (blob) {
           return super.open(method, blob, async, username, password);
         } else {
@@ -289,7 +315,7 @@ parentPort.on('message', m => {
     case 'runAsync': {
       let result, err;
       try {
-        result = window.onrunasync ? window.onrunasync(m.jsString) : null;
+        result = global.onrunasync ? global.onrunasync(m.jsString) : null;
       } catch(e) {
         err = e.stack;
       }
@@ -335,9 +361,9 @@ parentPort.on('close', close);
 
 // run init module
 
-if (workerData.args) {
+/* if (workerData.args) {
   global.args = workerData.args;
-}
+} */
 
 process.on('uncaughtException', err => {
   console.warn(err.stack);
@@ -346,11 +372,11 @@ process.on('unhandledRejection', err => {
   console.warn(err.stack);
 });
 
-if (workerData.initModule) {
-  require(workerData.initModule);
+if (initModule) {
+  require(initModule);
 }
 
-if (!workerData.args.require) {
+if (!args.require) {
   global.require = undefined;
 }
 global.process = undefined;

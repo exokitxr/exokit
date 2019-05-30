@@ -85,6 +85,11 @@ enum GlKey {
   GL_KEY_PLANE,
 };
 
+class GlShader {
+public:
+  virtual ~GlShader() = 0;
+};
+
 void flipImageData(char *dstData, char *srcData, size_t width, size_t height, size_t pixelSize);
 
 class ViewportState {
@@ -332,6 +337,8 @@ public:
   static NAN_METHOD(GetDefaultFramebuffer);
   static NAN_METHOD(SetDefaultFramebuffer);
 
+  static NAN_METHOD(SetTopLevel);
+
   void SetVertexArrayBinding(GLuint vao) {
     vertexArrayBindings[GL_VERTEX_SHADER] = vao;
   }
@@ -396,6 +403,7 @@ public:
   NATIVEwindow *windowHandle;
   GLuint defaultVao;
   GLuint defaultFramebuffer;
+  bool topLevel;
   bool dirty;
   bool flipY;
   bool premultiplyAlpha;

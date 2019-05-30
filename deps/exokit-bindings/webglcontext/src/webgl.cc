@@ -36,6 +36,8 @@ void unregisterGLObj(GLuint obj); */
 
 #define JS_GL_CONSTANT(name) JS_GL_SET_CONSTANT(#name, GL_ ## name)
 
+GlShader::~GlShader() {}
+
 template<NAN_METHOD(F)>
 NAN_METHOD(glCallWrap) {
   Local<Object> glObj = info.This();
@@ -1151,8 +1153,10 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
   /* Nan::SetMethod(proto, "getFramebuffer", glSwitchCallWrap<GetFramebuffer>);
   Nan::SetMethod(proto, "setDefaultFramebuffer", glSwitchCallWrap<SetDefaultFramebuffer>); */
   Nan::SetMethod(proto, "getBoundFramebuffer", glCallWrap<GetBoundFramebuffer>);
-  Nan::SetMethod(proto, "getDefaultFramebuffer", glCallWrap<GetDefaultFramebuffer>);
+  Nan::SetMethod(proto, "getDefaultFramebuffer", GetDefaultFramebuffer);
   Nan::SetMethod(proto, "setDefaultFramebuffer", glCallWrap<SetDefaultFramebuffer>);
+
+  Nan::SetMethod(proto, "setTopLevel", SetTopLevel);
 
   setGlConstants(proto);
 
@@ -1168,6 +1172,7 @@ WebGLRenderingContext::WebGLRenderingContext() :
   windowHandle(nullptr),
   defaultVao(0),
   defaultFramebuffer(0),
+  topLevel(true),
   dirty(false),
   flipY(false),
   premultiplyAlpha(true),
@@ -1176,7 +1181,12 @@ WebGLRenderingContext::WebGLRenderingContext() :
   activeTexture(GL_TEXTURE0)
   {}
 
-WebGLRenderingContext::~WebGLRenderingContext() {}
+WebGLRenderingContext::~WebGLRenderingContext() {
+  for (auto iter = keys.begin(); iter != keys.end(); iter++) {
+    GlShader *glShader = (GlShader *)iter->second;
+    delete glShader;
+  }
+}
 
 NAN_METHOD(WebGLRenderingContext::New) {
   WebGLRenderingContext *gl = new WebGLRenderingContext();
@@ -2442,6 +2452,13 @@ NAN_METHOD(WebGLRenderingContext::SetDefaultFramebuffer) {
   gl->defaultFramebuffer = framebuffer;
 }
 
+NAN_METHOD(WebGLRenderingContext::SetTopLevel) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+  bool topLevel = TO_BOOL(info[0]);
+
+  gl->topLevel = topLevel;
+}
+
 NAN_METHOD(WebGLRenderingContext::GetShaderParameter) {
   GLint shaderId = TO_INT32(JS_OBJ(info[0])->Get(JS_STR("id")));
   GLint pname = TO_INT32(info[1]);
@@ -3107,11 +3124,13 @@ NAN_METHOD(WebGLRenderingContext::TexParameterf) {
 
 NAN_METHOD(WebGLRenderingContext::Clear) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
-  GLint arg = TO_INT32(info[0]);
+  if (gl->topLevel || (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER) && gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER) != gl->defaultFramebuffer)) {
+    GLint arg = TO_INT32(info[0]);
 
-  glClear(arg);
+    glClear(arg);
 
-  gl->dirty = true;
+    gl->dirty = true;
+  }
 }
 
 

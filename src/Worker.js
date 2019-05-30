@@ -15,7 +15,7 @@ const {FileReader} = require('./File.js');
 
 const {src} = args;
 const baseUrl = (src => {
-  if (/^https?:/.test(src)) {
+  if (/^(?:https?|file):/.test(src)) {
     const u = new URL(src);
     u.pathname = path.dirname(u.pathname) + '/';
     return u.href;
@@ -25,13 +25,8 @@ const baseUrl = (src => {
 })(src);
 setBaseUrl(baseUrl);
 const _normalizeUrl = src => {
-  if (!/^(?:data|blob):/.test(src)) {
-    const match = baseUrl.match(/^(file:\/\/)(.*)$/);
-    if (match) {
-      return match[1] + path.join(match[2], src);
-    } else {
-      return new URL(src, baseUrl).href;
-    }
+  if (!/^(?:file|data|blob):/.test(src)) {
+    return new URL(src, baseUrl).href;
   } else {
     return src;
   }

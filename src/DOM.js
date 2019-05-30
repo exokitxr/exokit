@@ -3,6 +3,7 @@ const fs = require('fs');
 const url = require('url');
 const vm = require('vm');
 const util = require('util');
+const {parentPort} = require('worker_threads');
 
 const {process} = global;
 
@@ -21,7 +22,6 @@ const {Event, EventTarget, MessageEvent, MouseEvent, ErrorEvent} = require('./Ev
 const {_makeWindow} = require('./WindowVm');
 const GlobalContext = require('./GlobalContext');
 const symbols = require('./symbols');
-const {urls} = require('./urls');
 const {_elementGetter, _elementSetter, _normalizeUrl} = require('./utils');
 const {XRRigidTransform} = require('./XR');
 
@@ -2053,7 +2053,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   parent,
                   top,
                   htmlString,
-                  hidden: this.d === 3,
+                  hidden: true,
                   xrOffsetBuffer: this.xrOffset._buffer,
                   onnavigate(href) {
                     this.readyState = null;
@@ -2062,13 +2062,16 @@ class HTMLIFrameElement extends HTMLSrcableElement {
 
                     this.setAttribute('src', href);
                   },
+                  onrequest(req) {
+                    parentPort.postMessage(req);
+                  },
                   onhapticpulse(event) {
                     parentPort.postMessage({
                       method: 'emit',
                       type: 'hapticPulse',
                       event,
                     });
-                  }
+                  },
                 });
 
                 this.contentWindow = contentWindow;
@@ -2841,12 +2844,12 @@ class HTMLVideoElement extends HTMLMediaElement {
 
         this.readyState = HTMLMediaElement.HAVE_ENOUGH_DATA;
 
-        if (urls.has(value)) {
+        /* if (urls.has(value)) {
           const blob = urls.get(value);
           if (blob instanceof bindings.nativeVideo.VideoDevice) {
             this.video = blob;
           }
-        }
+        } */
 
         this.ownerDocument.resources.addResource((onprogress, cb) => {
           const progressEvent = new Event('progress', {target: this});

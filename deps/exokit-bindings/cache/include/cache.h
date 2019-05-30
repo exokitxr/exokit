@@ -17,7 +17,7 @@ using namespace node;
 
 namespace cache {
 
-extern std::map<std::string, std::string> items;
+extern std::map<std::string, std::vector<uint8_t>> items;
 extern std::mutex mutex;
 
 NAN_METHOD(Get);

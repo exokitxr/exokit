@@ -17,7 +17,6 @@ const {
       id,
       args,
       version,
-      xrState,
     },
   },
 } = require('worker_threads');
@@ -103,20 +102,9 @@ const {
   nativeWindow,
 } = require('./native-bindings');
 
-const PHASES = (() => {
-  let phase = 0;
-  return {
-    NULL: phase++,
-    RENDERING: phase++,
-    RENDERED: phase++,
-    DONE: phase++,
-  };
-})();
-
 GlobalContext.id = id;
 GlobalContext.args = args;
 GlobalContext.version = version;
-GlobalContext.xrState = xrState;
 
 const {_parseDocument, _parseDocumentAst, getBoundDocumentElements, DocumentType, DOMImplementation, initDocument} = require('./Document');
 const {
@@ -192,24 +180,13 @@ const contexts = [];
 GlobalContext.contexts = contexts;
 
 const vrPresentState = {
-  /* vrContext: null,
-  system: null,
-  oculusSystem: null,
-  compositor: null,
-  glContextId: 0, */
   hmdType: null,
   vrContext: null,
   glContext: null,
   fbo: 0,
   msFbo: 0,
-  msTex: 0,
-  msDepthTex: 0,
-  // tex: null,
-  // depthTex: null,
-  // hasPose: false,
-  // lmContext: null,
   layers: [],
-  responseAccept: null,
+  responseAccepts: [],
 };
 GlobalContext.vrPresentState = vrPresentState;
 
@@ -232,12 +209,6 @@ const mlPresentState = {
   mlHasPose: false,
 };
 GlobalContext.mlPresentState = mlPresentState;
-
-/* const _getVrGlContext = () => contexts.find(context => context.contextId === vrPresentState.glContextId);
-const _getOculusVrGlContext = () => vrPresentState.oculusSystem ? contexts.find(context => context.contextId === vrPresentState.glContextId) : undefined;
-const _getOpenVrGlContext = () => vrPresentState.system ? contexts.find(context => context.contextId === vrPresentState.glContextId) : undefined;
-const _getOculusMobileVrGlContext = () => oculusMobileVrPresentState.vrContext ? contexts.find(context => context.contextId === oculusMobileVrPresentState.glContextId) : undefined;
-const _getMlGlContext = () => contexts.find(context => context.contextId === mlPresentState.mlGlContextId); */
 
 class CustomElementRegistry {
   constructor(window) {
@@ -579,12 +550,12 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
       }
     },
     createVRDisplay(width, height) {
-      xrState.fakeVrDisplayEnabled[0] = 1;
+      GlobalContext.xrState.fakeVrDisplayEnabled[0] = 1;
       if (width !== undefined) {
-        xrState.renderWidth[0] = width;
+        GlobalContext.xrState.renderWidth[0] = width;
       }
       if (height !== undefined) {
-        xrState.renderHeight[0] = height;
+        GlobalContext.xrState.renderHeight[0] = height;
       }
       return window[symbols.mrDisplaysSymbol].fakeVrDisplay;
     },
@@ -1006,7 +977,7 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
   const timeouts = [];
   const intervals = [];
   const localCbs = [];
-  const childSyncs = [];
+  const prevSyncs = [];
   const _cacheLocalCbs = cbs => {
     for (let i = 0; i < cbs.length; i++) {
       localCbs[i] = cbs[i];
@@ -1020,78 +991,110 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
       localCbs[i] = null;
     }
   };
-  window.tickAnimationFrame = async () => {
-    const _bindXrFramebuffer = () => {
-      if (vrPresentState.glContext) {
-        nativeWindow.setCurrentWindowContext(vrPresentState.glContext.getWindowHandle());
-        vrPresentState.glContext.setDefaultFramebuffer((vrPresentState.layers.length > 0 || vrPresentState.glContext.attrs.antialias) ? vrPresentState.msFbo : vrPresentState.fbo);
-        nativeWindow.bindVrChildFbo(vrPresentState.glContext, vrPresentState.fbo, xrState.tex[0], xrState.depthTex[0]);
-      }
-    };
-    const _emitXrEvents = () => {
-      if (vrPresentState.hmdType === 'fake') {
-        window[symbols.mrDisplaysSymbol].fakeVrDisplay.update();
-      }
-      if (window[symbols.mrDisplaysSymbol].vrDevice.session) {
-        window[symbols.mrDisplaysSymbol].vrDevice.session.update();
-      }
-    };
-    const _composeXrContext = (context, windowHandle) => {
-      const width = xrState.renderWidth[0]*2;
-      const height = xrState.renderHeight[0];
-      if (vrPresentState.layers.length > 0) {
-        nativeWindow.composeLayers(context, vrPresentState.fbo, vrPresentState.layers, xrState);
+  const _clearPrevSyncs = () => {
+    for (let i = 0; i < prevSyncs.length; i++) {
+      nativeWindow.deleteSync(prevSyncs[i]);
+    }
+    prevSyncs.length = 0;
+  };
+  const _bindXrFramebuffer = layered => {
+    if (vrPresentState.glContext) {
+      nativeWindow.setCurrentWindowContext(vrPresentState.glContext.getWindowHandle());
+
+      if (layered) {
+        if (GlobalContext.xrState.aaEnabled[0]) {
+          vrPresentState.glContext.setDefaultFramebuffer(vrPresentState.msFbo);
+          nativeWindow.bindVrChildMsFbo(vrPresentState.glContext, vrPresentState.msFbo, GlobalContext.xrState.msTex[0], GlobalContext.xrState.msDepthTex[0]);
+        } else {
+          vrPresentState.glContext.setDefaultFramebuffer(vrPresentState.fbo);
+          nativeWindow.bindVrChildFbo(vrPresentState.glContext, vrPresentState.fbo, GlobalContext.xrState.tex[0], GlobalContext.xrState.depthTex[0]);
+        }
       } else {
-        if (context.getDefaultFramebuffer() === vrPresentState.msFbo) { // if rendering to msFbo, not direct to fbo
-          nativeWindow.blitFrameBuffer(context, vrPresentState.msFbo, vrPresentState.fbo, width, height, width, height, true, false, false);
+        vrPresentState.glContext.setDefaultFramebuffer(vrPresentState.glContext.framebuffer.msFbo);
+      }
+    }
+  };
+  const _emitXrEvents = () => {
+    if (vrPresentState.hmdType === 'fake') {
+      window[symbols.mrDisplaysSymbol].fakeVrDisplay.update();
+    }
+    if (window[symbols.mrDisplaysSymbol].vrDevice.session) {
+      window[symbols.mrDisplaysSymbol].vrDevice.session.update();
+    }
+  };
+  const _tickLocalRafs = () => {
+    if (rafCbs.length > 0) {
+      _cacheLocalCbs(rafCbs);
+      
+      const performanceNow = performance.now();
+
+      for (let i = 0; i < localCbs.length; i++) {
+        const rafCb = localCbs[i];
+        if (rafCb) {
+          try {
+            rafCb(performanceNow);
+          } catch (e) {
+            console.warn(e);
+          }
+
+          rafCbs[i] = null;
         }
       }
 
-      if (vrPresentState.hmdType === 'fake' || vrPresentState.hmdType === 'oculus' || vrPresentState.hmdType === 'openvr') {
-        const {width: dWidth, height: dHeight} = nativeWindow.getFramebufferSize(windowHandle);
-        nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, width, height, dWidth, dHeight, true, false, false);
-
-        if (isMac) {
-          context.bindFramebufferRaw(context.FRAMEBUFFER, null);
-        }
-        nativeWindow.swapBuffers(windowHandle);
+      _clearLocalCbs(); // release garbage
+    }
+  };
+  const _composeXrContext = (context, windowHandle) => {
+    if (vrPresentState.hmdType === 'fake' || vrPresentState.hmdType === 'oculus' || vrPresentState.hmdType === 'openvr') {
+      // NOTE: we blit from fbo instead of msFbo, so this will be lagged by a frame in the multisample case
+      if (GlobalContext.xrState.aaEnabled[0]) { // fbo will not be bound by default in the aaEnabled case
+        nativeWindow.bindVrChildFbo(vrPresentState.glContext, vrPresentState.fbo, GlobalContext.xrState.tex[0], GlobalContext.xrState.depthTex[0]);
       }
-    };
-    const _composeBasicContext = (context, windowHandle) => {
-      if (context.framebuffer.type === 'canvas' && !context.desynchronized) {
-        const width = context.canvas.width * (args.blit ? 0.5 : 1);
-        const height = context.canvas.height;
-        const {width: dWidth, height: dHeight} = nativeWindow.getFramebufferSize(windowHandle);
-        nativeWindow.blitFrameBuffer(context, context.framebuffer.msFbo, context.framebuffer.fbo, width, height, width, height, true, false, false);
-        nativeWindow.blitFrameBuffer(context, context.framebuffer.fbo, 0, width, height, dWidth, dHeight, true, false, false);
+      const width = GlobalContext.xrState.renderWidth[0]*2;
+      const height = GlobalContext.xrState.renderHeight[0];
+      const {width: dWidth, height: dHeight} = nativeWindow.getFramebufferSize(windowHandle);
+      nativeWindow.blitChildFrameBuffer(context, vrPresentState.fbo, 0, width, height, dWidth, dHeight, true, false, false);
 
-        if (isMac) {
-          context.bindFramebufferRaw(context.FRAMEBUFFER, null);
-        }
-        nativeWindow.swapBuffers(windowHandle);
+      _swapBuffers(context, windowHandle);
+    }
+  };
+  const _composeNormalContext = (context, windowHandle) => {
+    if (!context.canvas.ownerDocument.hidden) {
+      const {canvas: {width, height}, framebuffer: {msFbo}} = context;
+      if (msFbo !== 0) {
+        nativeWindow.blitChildFrameBuffer(context, msFbo, 0, width, height, width, height, true, false, false);
       }
-    };
-    const _composeLayers = () => {
-      const syncs = [];
+      _swapBuffers(context, windowHandle);
+    }
+  };
+  const _swapBuffers = (context, windowHandle) => {
+    /* if (isMac) {
+      context.bindFramebufferRaw(context.FRAMEBUFFER, null);
+    } */
+    nativeWindow.swapBuffers(windowHandle);
+  };
+  const _composeLocalLayers = layered => {
+    const syncs = [];
 
-      for (let i = 0; i < contexts.length; i++) {
-        const context = contexts[i];
-        const isDirty = (!!context.isDirty && context.isDirty()) || context === vrPresentState.glContext;
-        if (isDirty) {
+    for (let i = 0; i < contexts.length; i++) {
+      const context = contexts[i];
+      const isDirty = (!!context.isDirty && context.isDirty()) || context === vrPresentState.glContext;
+      if (isDirty) {
+        if (layered) {
           const windowHandle = context.getWindowHandle();
 
           nativeWindow.setCurrentWindowContext(windowHandle);
-          if (isMac) {
+          /* if (isMac) {
             context.flush();
-          }
+          } */
 
           if (context === vrPresentState.glContext) {
             _composeXrContext(context, windowHandle);
           } else {
-            _composeBasicContext(context, windowHandle);
+            _composeNormalContext(context, windowHandle);
           }
 
-          if (isMac) {
+          /* if (isMac) {
             const drawFramebuffer = context.getBoundFramebuffer(context.DRAW_FRAMEBUFFER);
             if (drawFramebuffer) {
               context.bindFramebuffer(context.DRAW_FRAMEBUFFER, drawFramebuffer);
@@ -1101,188 +1104,121 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
             if (readFramebuffer) {
               context.bindFramebuffer(context.READ_FRAMEBUFFER, readFramebuffer);
             }
-          }
+          } */
 
           context.clearDirty();
 
           if (context.finish) {
             syncs.push(nativeWindow.getSync());
           }
+        } else {
+          context.clearDirty();
         }
       }
-
-      for (let i = 0; i < windows.length; i++) {
-        const window = windows[i];
-        if (window.phase === PHASES.RENDERED) {
-          window.phase = PHASES.NULL;
-        }
-      }
-
-      return Promise.resolve(syncs);
-    };
-    const _renderLocal = () => {
-      if (rafCbs.length > 0) {
-        _cacheLocalCbs(rafCbs);
-        
-        const performanceNow = performance.now();
-
-        for (let i = 0; i < localCbs.length; i++) {
-          const rafCb = localCbs[i];
-          if (rafCb) {
-            try {
-              rafCb(performanceNow);
-            } catch (e) {
-              console.warn(e);
-            }
-
-            const index = rafCbs.indexOf(rafCb); // could have changed due to sorting
-            if (index !== -1) {
-              rafCbs[index] = null;
-            }
-          }
-        }
-
-        _clearLocalCbs(); // release garbage
-      }
-    };
-    const _renderChildren = () => {
-      /* let timeout;
-      const timeoutPromise = new Promise((accept, reject) => {
-        timeout = setTimeout(() => {
-          accept();
-        }, 1000/60); // XXX make this timeout accurate
-      }); */
-      for (let i = 0; i < windows.length; i++) {
-        const window = windows[i];
-        if (window.phase === PHASES.NULL) {
-          window.promise = window.runAsync('tickAnimationFrame')
-            .then(syncs => {
-              if (vrPresentState.glContext) {
-                nativeWindow.setCurrentWindowContext(vrPresentState.glContext.getWindowHandle());
-
-                for (let i = 0; i < syncs.length; i++) {
-                  const sync = syncs[i];
-                  nativeWindow.waitSync(sync);
-                  childSyncs.push(sync);
-                }
-              }
-
-              window.phase = PHASES.RENDERED;
-              window.promise = null;
-            });
-          window.phase = PHASES.RENDERING;
-        }
-      }
-      /* await Promise.race([
-        timeoutPromise,
-        Promise.all(windows.map(window => window.promise)),
-      ]);
-      clearTimeout(timeout); */
-      return Promise.all(windows.map(window => window.promise));
-    };
-
-    _bindXrFramebuffer();
-    _emitXrEvents();
-
-    for (let i = 0; i < childSyncs.length; i++) {
-      nativeWindow.deleteSync(childSyncs[i]);
     }
-    childSyncs.length = 0;
-    const childrenPromise = _renderChildren();
-    _renderLocal();
-    await childrenPromise;
-    
-    return _composeLayers();
+
+    return Promise.resolve(syncs);
   };
-  
+  const _renderLocal = (syncs, layered) => {
+    if (vrPresentState.glContext) {
+      nativeWindow.setCurrentWindowContext(vrPresentState.glContext.getWindowHandle());
+
+      for (let i = 0; i < syncs.length; i++) {
+        const sync = syncs[i];
+        nativeWindow.waitSync(sync);
+        prevSyncs.push(sync);
+      }
+    } else {
+      for (let i = 0; i < syncs.length; i++) {
+        nativeWindow.deleteSync(syncs[i]);
+      }
+    }
+
+    _tickLocalRafs();
+    return _composeLocalLayers(layered);
+  };
+  const _makeRenderChild = window => (syncs, layered) => window.runAsync(JSON.stringify({
+    method: 'tickAnimationFrame',
+    syncs,
+    layered: layered && vrPresentState.layers.some(layer => layer.contentWindow === window),
+  }));
+  const _collectRenders = () => windows.map(_makeRenderChild).concat([_renderLocal]);
+  const _render = (syncs, layered) => new Promise((accept, reject) => {
+    const renders = _collectRenders();
+    const _recurse = i => {
+      if (i < renders.length) {
+        renders[i](syncs, layered)
+          .then(newSyncs => {
+            syncs = newSyncs;
+            _recurse(i+1);
+          })
+          .catch(err => {
+            console.warn('failed to render child', err);
+            syncs = [];
+            _recurse(i+1);
+          });
+      } else {
+        accept(syncs);
+      }
+    };
+    _recurse(0);
+  });
+  window.tickAnimationFrame = async ({syncs = [], layered = false}) => {
+    _clearPrevSyncs();
+    _bindXrFramebuffer(layered);
+    _emitXrEvents(); 
+    return _render(syncs, layered);
+  };
+
   const _makeMrDisplays = () => {
     const _onrequestpresent = async () => {
-      if (!xrState.isPresenting[0]) {
+      // if (!GlobalContext.xrState.isPresenting[0]) {
         await new Promise((accept, reject) => {
-          vrPresentState.responseAccept = accept;
+          vrPresentState.responseAccepts.push(accept);
 
           parentPort.postMessage({
             method: 'request',
             type: 'requestPresent',
+            keypath: [],
           });
         });
-      }
-      vrPresentState.hmdType = lookupHMDTypeString(xrState.hmdType[0]);
+      // }
+
+      vrPresentState.hmdType = lookupHMDTypeString(GlobalContext.xrState.hmdType[0]);
       GlobalContext.clearGamepads();
     };
     const _onmakeswapchain = context => {
-      const windowHandle = context.getWindowHandle();
-      nativeWindow.setCurrentWindowContext(windowHandle);
-
-      const window = context.canvas.ownerDocument.defaultView;
-      const width = xrState.renderWidth[0]*2;
-      const height = xrState.renderHeight[0];
-      if (!window.document.hidden) {
-        const [fbo, msFbo, msTex, msDepthTex] = nativeWindow.createVrCompositorRenderTarget(context, width, height);
-        context.setDefaultFramebuffer(msFbo); // note: this is dynamically set depending on layer/antialias mode
-
-        vrPresentState.glContext = context;
-        vrPresentState.fbo = fbo;
-        vrPresentState.msFbo = msFbo;
-        vrPresentState.msTex = msTex;
-        vrPresentState.msDepthTex = msDepthTex;
-
-        {
-          let [fbo, tex, depthTex, _msFbo, _msTex, _msDepthTex] = nativeWindow.createRenderTarget(context, width, height);
-
-          context.canvas.framebuffer = {
-            type: 'compositor',
-            width,
-            height,
-            msFbo,
-            msTex,
-            msDepthTex,
-            fbo,
-            tex,
-            depthTex,
-          };
+      if (context !== vrPresentState.glContext) {
+        if (vrPresentState.glContext) {
+          vrPresentState.glContext.setTopLevel(true);
         }
 
-        return {
-          msFbo,
-        };
-      } else {
-        const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeWindow.createRenderTarget(context, width, height);
-
-        context.setDefaultFramebuffer(msFbo);
-
-        context.framebuffer = {
-          type: 'layer',
-          msFbo,
-          msTex,
-          msDepthTex,
-          fbo,
-          tex,
-          depthTex,
-        };
-        window.windowEmit('framebuffer', context.framebuffer);
-        window.windowEmit('resize', {
-          width,
-          height,
-        });
-        
-        return {
-          msFbo,
-        };
+        vrPresentState.glContext = context;
+        vrPresentState.fbo = context.createFramebuffer().id;
+        vrPresentState.msFbo = context.createFramebuffer().id;
+        vrPresentState.glContext.setTopLevel(false);
       }
+
+      return {
+        fbo: vrPresentState.fbo,
+      };
     };
     const _onexitpresent = async () => {
-      if (xrState.isPresenting[0]) {
+      // if (GlobalContext.xrState.isPresenting[0]) {
         await new Promise((accept, reject) => {
-          vrPresentState.responseAccept = accept;
+          vrPresentState.responseAccepts.push(accept);
 
           parentPort.postMessage({
             method: 'request',
             type: 'exitPresent',
+            keypath: [],
           });
         });
-      }
+      // }
+
       vrPresentState.hmdType = null;
+      vrPresentState.glContext.setTopLevel(true);
+      vrPresentState.glContext = null;
       GlobalContext.clearGamepads();
     };
 
@@ -1353,18 +1289,37 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
 })(global);
 
 global.onrunasync = method => {
-  if (method === 'tickAnimationFrame') {
-    return global.tickAnimationFrame();
+  if (/^\{"method":"tickAnimationFrame"/.test(method)) {
+    const res = JSON.parse(method);
+    return global.tickAnimationFrame(res);
   } else if (/^\{"method":"response"/.test(method)) {
-    if (vrPresentState.responseAccept) {
-      const res = JSON.parse(method);
-      
-      const {responseAccept} = vrPresentState;
-      vrPresentState.responseAccept = null;
-      responseAccept(res);
-      return Promise.resolve();
+    const res = JSON.parse(method);
+    const {keypath} = res;
+
+    if (keypath.length === 0) {
+      if (vrPresentState.responseAccepts.length > 0) {
+        const res = JSON.parse(method);
+
+        vrPresentState.responseAccepts.shift()(res);
+
+        return Promise.resolve();
+      } else {
+        return Promise.reject(new Error(`unexpected response at window ${method}`));
+      }
     } else {
-      return Promise.reject(new Error(`unexpected window response`));
+      const windowId = keypath.pop();
+      const window = windows.find(window => window.id === windowId);
+
+      if (window) {
+        window.runAsync(JSON.stringify({
+          method: 'response',
+          keypath,
+        }));
+
+        return Promise.resolve();
+      } else {
+        return Promise.reject(new Error(`response for unknown window ${method} ${JSON.stringify(windows.map(window => window.id))}`));
+      }
     }
   } else if (/^\{"method":"eval"/.test(method)) {
     return Promise.resolve(eval(JSON.parse(method).scriptString));

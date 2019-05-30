@@ -14,10 +14,10 @@ class WorkerVm extends EventEmitter {
         args: options.args,
       },
     });
-    worker.on('message', m => {
+    const _message = m => {
       switch (m.method) {
         case 'request': {
-          GlobalContext.handleRequest(m, this);
+          this.emit('request', m);
           break;
         }
         case 'response': {
@@ -44,13 +44,17 @@ class WorkerVm extends EventEmitter {
           break;
         }
       }
-    });
+    };
+    worker.on('message', _message);
     worker.on('error', err => {
       this.emit('error', err);
     });
     worker.on('exit', () => {
       this.emit('exit');
     });
+    worker.cleanup = () => {
+      worker.removeListener('message', _message);
+    };
 
     this.worker = worker;
     this.requestKeys = 0;
@@ -108,6 +112,8 @@ class WorkerVm extends EventEmitter {
     const publicPortSymbol = symbols.find(s => s.toString() === 'Symbol(kPublicPort)');
     const publicPort = this.worker[publicPortSymbol];
     publicPort.close();
+
+    this.worker.cleanup();
   }
 
   get onmessage() {
@@ -156,14 +162,14 @@ const _makeWindow = (options = {}, handlers = {}) => {
     },
   });
   window.id = id;
-  window.phase = 0; // XXX
+  // window.phase = 0; // XXX
   // window.rendered = false;
-  window.promise = null;
+  // window.promise = null;
   // window.syncs = null;
 
   window.evalAsync = scriptString => window.runAsync(JSON.stringify({method: 'eval', scriptString}));
 
-  window.on('resize', ({width, height}) => {
+  /* window.on('resize', ({width, height}) => {
     // console.log('got resize', width, height);
     window.width = width;
     window.height = height;
@@ -171,7 +177,7 @@ const _makeWindow = (options = {}, handlers = {}) => {
   window.on('framebuffer', framebuffer => {
     // console.log('got framebuffer', framebuffer);
     window.document.framebuffer = framebuffer;
-  });
+  }); */
   window.on('navigate', ({href}) => {
     window.destroy()
       .then(() => {
@@ -181,6 +187,10 @@ const _makeWindow = (options = {}, handlers = {}) => {
         console.warn(err.stack);
       });
   });
+  window.on('request', req => {
+    req.keypath.push(id);
+    options.onrequest && options.onrequest(req);
+  });
   window.on('hapticPulse', e => {
     options.onhapticpulse && options.onhapticpulse(e);
   });
@@ -189,9 +199,15 @@ const _makeWindow = (options = {}, handlers = {}) => {
   });
   window.destroy = (destroy => function() {
     GlobalContext.windows.splice(GlobalContext.windows.indexOf(window), 1);
-    for (const k in window.queue) {
-      window.queue[k]();
+    const ks = Object.keys(window.queue);
+    if (ks.length > 0) {
+      const err = new Error('cancel request: window destroyed');
+      err.code = 'ECANCEL';
+      for (let i = 0; i < ks.length; i++) {
+        window.queue[ks[i]](err);
+      }
     }
+    window.queue = null;
 
     return new Promise((accept, reject) => {
       window.on('exit', () => {
