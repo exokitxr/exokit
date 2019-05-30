@@ -188,7 +188,14 @@ NAN_METHOD(AudioBuffer::Load) {
 
       audioBuffer->Load(arrayBuffer, arrayBufferView->ByteOffset(), arrayBufferView->ByteLength(), cbFn);
     } else {
-      Nan::ThrowError("invalid arguments");
+      Local<Object> asyncObject = Nan::New<Object>();
+      AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "AudioBuffer::Load");
+
+      Local<Function> cbFn = Local<Function>::Cast(info[1]);
+      Local<Value> argv[] = {
+        JS_STR("invalid buffer"),
+      };
+      asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
     }
   } else {
     Nan::ThrowError("invalid arguments");
