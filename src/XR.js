@@ -394,7 +394,7 @@ class XRFrame {
       new XRView('right'),
     ];
 
-    this._pose = new XRDevicePose(this);
+    this._pose = new XRViewerPose(this);
   }
   getDevicePose(coordinateSystem) {
     return this._pose;
@@ -464,7 +464,7 @@ class XRViewport {
 }
 module.exports.XRViewport = XRViewport;
 
-class XRDevicePose {
+class XRViewerPose {
   constructor(frame) {
     this.frame = frame; // non-standard
     this.poseModelMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
@@ -485,7 +485,7 @@ class XRDevicePose {
     return view._localViewMatrix;
   }
 }
-module.exports.XRDevicePose = XRDevicePose;
+module.exports.XRViewerPose = XRViewerPose;
 
 class XRInputSource {
   constructor(handedness = 'left', pointerOrigin = 'hand', index = 0) {

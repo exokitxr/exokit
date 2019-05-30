@@ -863,7 +863,7 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
     window.XRFrame = XR.XRFrame;
     window.XRView = XR.XRView;
     window.XRViewport = XR.XRViewport;
-    window.XRDevicePose = XR.XRDevicePose;
+    window.XRViewerPose = XR.XRViewerPose;
     window.XRInputSource = XR.XRInputSource;
     window.XRRay = XR.XRRay;
     window.XRInputPose = XR.XRInputPose;
