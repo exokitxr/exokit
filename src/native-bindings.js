@@ -310,6 +310,10 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
     
     gl.id = Atomics.add(GlobalContext.xrState.id, 0) + 1;
     GlobalContext.contexts.push(gl);
+
+    if (gl.attrs.antialias) {
+      GlobalContext.xrState.aaEnabled[0] = 1;
+    }
   } else {
     gl.destroy();
   }

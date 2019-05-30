@@ -180,22 +180,11 @@ const contexts = [];
 GlobalContext.contexts = contexts;
 
 const vrPresentState = {
-  /* vrContext: null,
-  system: null,
-  oculusSystem: null,
-  compositor: null,
-  glContextId: 0, */
   hmdType: null,
   vrContext: null,
   glContext: null,
   fbo: 0,
   msFbo: 0,
-  msTex: 0,
-  msDepthTex: 0,
-  // tex: null,
-  // depthTex: null,
-  // hasPose: false,
-  // lmContext: null,
   layers: [],
   responseAccepts: [],
 };
@@ -220,12 +209,6 @@ const mlPresentState = {
   mlHasPose: false,
 };
 GlobalContext.mlPresentState = mlPresentState;
-
-/* const _getVrGlContext = () => contexts.find(context => context.contextId === vrPresentState.glContextId);
-const _getOculusVrGlContext = () => vrPresentState.oculusSystem ? contexts.find(context => context.contextId === vrPresentState.glContextId) : undefined;
-const _getOpenVrGlContext = () => vrPresentState.system ? contexts.find(context => context.contextId === vrPresentState.glContextId) : undefined;
-const _getOculusMobileVrGlContext = () => oculusMobileVrPresentState.vrContext ? contexts.find(context => context.contextId === oculusMobileVrPresentState.glContextId) : undefined;
-const _getMlGlContext = () => contexts.find(context => context.contextId === mlPresentState.mlGlContextId); */
 
 class CustomElementRegistry {
   constructor(window) {
@@ -1019,8 +1002,13 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
       nativeWindow.setCurrentWindowContext(vrPresentState.glContext.getWindowHandle());
 
       if (layered) {
-        vrPresentState.glContext.setDefaultFramebuffer(vrPresentState.fbo);
-        nativeWindow.bindVrChildFbo(vrPresentState.glContext, vrPresentState.fbo, GlobalContext.xrState.tex[0], GlobalContext.xrState.depthTex[0]);
+        if (GlobalContext.xrState.aaEnabled[0]) {
+          vrPresentState.glContext.setDefaultFramebuffer(vrPresentState.msFbo);
+          nativeWindow.bindVrChildMsFbo(vrPresentState.glContext, vrPresentState.msFbo, GlobalContext.xrState.msTex[0], GlobalContext.xrState.msDepthTex[0]);
+        } else {
+          vrPresentState.glContext.setDefaultFramebuffer(vrPresentState.fbo);
+          nativeWindow.bindVrChildFbo(vrPresentState.glContext, vrPresentState.fbo, GlobalContext.xrState.tex[0], GlobalContext.xrState.depthTex[0]);
+        }
       } else {
         vrPresentState.glContext.setDefaultFramebuffer(vrPresentState.glContext.framebuffer.msFbo);
       }
@@ -1058,10 +1046,14 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
   };
   const _composeXrContext = (context, windowHandle) => {
     if (vrPresentState.hmdType === 'fake' || vrPresentState.hmdType === 'oculus' || vrPresentState.hmdType === 'openvr') {
+      // NOTE: we blit from fbo instead of msFbo, so this will be lagged by a frame in the multisample case
+      if (GlobalContext.xrState.aaEnabled[0]) { // fbo will not be bound by default in the aaEnabled case
+        nativeWindow.bindVrChildFbo(vrPresentState.glContext, vrPresentState.fbo, GlobalContext.xrState.tex[0], GlobalContext.xrState.depthTex[0]);
+      }
       const width = GlobalContext.xrState.renderWidth[0]*2;
       const height = GlobalContext.xrState.renderHeight[0];
       const {width: dWidth, height: dHeight} = nativeWindow.getFramebufferSize(windowHandle);
-      nativeWindow.blitFrameBuffer(context, vrPresentState.fbo, 0, width, height, dWidth, dHeight, true, false, false);
+      nativeWindow.blitChildFrameBuffer(context, vrPresentState.fbo, 0, width, height, dWidth, dHeight, true, false, false);
 
       _swapBuffers(context, windowHandle);
     }
@@ -1070,7 +1062,7 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
     if (!context.canvas.ownerDocument.hidden) {
       const {canvas: {width, height}, framebuffer: {msFbo}} = context;
       if (msFbo !== 0) {
-        nativeWindow.blitFrameBuffer(context, msFbo, 0, width, height, width, height, true, false, false);
+        nativeWindow.blitChildFrameBuffer(context, msFbo, 0, width, height, width, height, true, false, false);
       }
       _swapBuffers(context, windowHandle);
     }
@@ -1203,6 +1195,7 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
 
         vrPresentState.glContext = context;
         vrPresentState.fbo = context.createFramebuffer().id;
+        vrPresentState.msFbo = context.createFramebuffer().id;
         vrPresentState.glContext.setTopLevel(false);
       }
 
