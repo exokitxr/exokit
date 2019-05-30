@@ -95,7 +95,7 @@ class XRSession extends EventTarget {
     this.exclusive = exclusive;
     this.outputContext = outputContext;
 
-    this._frame = new XRPresentationFrame(this);
+    this._frame = new XRFrame(this);
     this._frameOfReference = new XRFrameOfReference();
     this._inputSources = (() => {
       const result = Array(2 + maxNumTrackers);
@@ -386,7 +386,7 @@ class XRWebGLLayer {
 }
 module.exports.XRWebGLLayer = XRWebGLLayer;
 
-class XRPresentationFrame {
+class XRFrame {
   constructor(session) {
     this.session = session;
     this.views = [
@@ -421,7 +421,7 @@ class XRPresentationFrame {
     return inputSource._pose;
   }
 }
-module.exports.XRPresentationFrame = XRPresentationFrame;
+module.exports.XRFrame = XRFrame;
 
 class XRView {
   constructor(eye = 'left') {
