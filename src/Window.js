@@ -210,12 +210,6 @@ const mlPresentState = {
 };
 GlobalContext.mlPresentState = mlPresentState;
 
-/* const _getVrGlContext = () => contexts.find(context => context.contextId === vrPresentState.glContextId);
-const _getOculusVrGlContext = () => vrPresentState.oculusSystem ? contexts.find(context => context.contextId === vrPresentState.glContextId) : undefined;
-const _getOpenVrGlContext = () => vrPresentState.system ? contexts.find(context => context.contextId === vrPresentState.glContextId) : undefined;
-const _getOculusMobileVrGlContext = () => oculusMobileVrPresentState.vrContext ? contexts.find(context => context.contextId === oculusMobileVrPresentState.glContextId) : undefined;
-const _getMlGlContext = () => contexts.find(context => context.contextId === mlPresentState.mlGlContextId); */
-
 class CustomElementRegistry {
   constructor(window) {
     this._window = window;
