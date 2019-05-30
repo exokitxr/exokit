@@ -1524,7 +1524,14 @@ NAN_METHOD(CanvasRenderingContext2D::ToArrayBuffer) {
 
 NAN_METHOD(CanvasRenderingContext2D::Destroy) {
   CanvasRenderingContext2D *ctx = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+
   ctx->live = false;
+
+  ctx->surface.reset();
+  ctx->grContext.reset();
+  if (ctx->tex) {
+    glDeleteTextures(1, &ctx->tex);
+  }
 }
 
 NAN_METHOD(CanvasRenderingContext2D::GetWindowHandle) {
