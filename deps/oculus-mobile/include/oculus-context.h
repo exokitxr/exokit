@@ -35,9 +35,12 @@ public:
   ovrMobile *ovrState;
   bool running;
   ANativeWindow *androidNativeWindow;
-  std::vector<GLuint> framebuffers;
+  GLuint fbo;
   ovrTextureSwapChain *colorSwapChain;
   std::vector<GLuint> depthTextures;
+  GLuint msFbo;
+  std::vector<GLuint> msColorTextures;
+  std::vector<GLuint> msDepthTextures;
   int swapChainLength;
   int swapChainIndex;
   bool hasSwapChain;
