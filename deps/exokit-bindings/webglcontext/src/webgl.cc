@@ -2610,8 +2610,12 @@ NAN_METHOD(WebGLRenderingContext::Enable) {
 
 
 NAN_METHOD(WebGLRenderingContext::CreateTexture) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
   GLuint texture;
   glGenTextures(1, &texture);
+
+  gl->objectCache.samplers.insert(texture);
 
   Local<Object> textureObject = Nan::New<Object>();
   textureObject->Set(JS_STR("id"), JS_INT(texture));
@@ -3144,8 +3148,12 @@ NAN_METHOD(WebGLRenderingContext::UseProgram) {
 }
 
 NAN_METHOD(WebGLRenderingContext::CreateBuffer) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
   GLuint buffer;
   glGenBuffers(1, &buffer);
+
+  gl->objectCache.buffers.insert(buffer);
 
   Local<Object> bufferObject = Nan::New<Object>();
   bufferObject->Set(JS_STR("id"), JS_INT(buffer));
@@ -3933,8 +3941,12 @@ NAN_METHOD(WebGLRenderingContext::BindRenderbuffer) {
 }
 
 NAN_METHOD(WebGLRenderingContext::CreateRenderbuffer) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
   GLuint renderbuffer;
   glGenRenderbuffers(1, &renderbuffer);
+
+  gl->objectCache.renderbuffers.insert(renderbuffer);
 
   Local<Object> renderbufferObject = Nan::New<Object>();
   renderbufferObject->Set(JS_STR("id"), JS_INT(renderbuffer));
@@ -3942,9 +3954,13 @@ NAN_METHOD(WebGLRenderingContext::CreateRenderbuffer) {
 }
 
 NAN_METHOD(WebGLRenderingContext::DeleteBuffer) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
   GLuint buffer = info[0]->IsObject() ? TO_UINT32(JS_OBJ(info[0])->Get(JS_STR("id"))) : 0;
 
   glDeleteBuffers(1, &buffer);
+
+  gl->objectCache.buffers.erase(buffer);
 
   // info.GetReturnValue().Set(Nan::Undefined());
 }
@@ -3964,7 +3980,11 @@ NAN_METHOD(WebGLRenderingContext::DeleteProgram) {
 }
 
 NAN_METHOD(WebGLRenderingContext::DeleteRenderbuffer) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
   GLuint renderbuffer = info[0]->IsObject() ? TO_UINT32(JS_OBJ(info[0])->Get(JS_STR("id"))) : 0;
+
+  gl->objectCache.renderbuffers.erase(renderbuffer);
 
   glDeleteRenderbuffers(1, &renderbuffer);
 
@@ -3980,7 +4000,11 @@ NAN_METHOD(WebGLRenderingContext::DeleteShader) {
 }
 
 NAN_METHOD(WebGLRenderingContext::DeleteTexture) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
   GLuint texture = info[0]->IsObject() ? TO_UINT32(JS_OBJ(info[0])->Get(JS_STR("id"))) : 0;
+
+  gl->objectCache.samplers.erase(texture);
 
   glDeleteTextures(1, &texture);
 
@@ -5219,8 +5243,12 @@ NAN_METHOD(WebGL2RenderingContext::New) {
 
 // reference used https://www.khronos.org/registry/OpenGL-Refpages/es3.0/
 NAN_METHOD(WebGL2RenderingContext::CreateQuery) { // adapted from CreateBuffer
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
   GLuint queryId;
   glGenQueries(1, &queryId);
+
+  gl->objectCache.queries.insert(queryId);
 
   Local<Object> queryObject = Nan::New<Object>();
   queryObject->Set(JS_STR("id"), JS_INT(queryId));
@@ -5291,7 +5319,11 @@ NAN_METHOD(WebGL2RenderingContext::IsQuery) { // adapted from IsVertexArray
 }
 
 NAN_METHOD(WebGL2RenderingContext::DeleteQuery) { // adapted from DeleteBuffer
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
   GLuint query = info[0]->IsObject() ? TO_UINT32(JS_OBJ(info[0])->Get(JS_STR("id"))) : 0;
+
+  gl->objectCache.queries.erase(query);
 
   glDeleteQueries(1, &query);
 }
@@ -5387,8 +5419,12 @@ NAN_METHOD(WebGL2RenderingContext::ResumeTransformFeedback) {
 }
 
 NAN_METHOD(WebGL2RenderingContext::CreateSampler) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
   GLuint samplerId;
   glGenSamplers(1, &samplerId);
+
+  gl->objectCache.samplers.insert(samplerId);
 
   Local<Object> samplerObject = Nan::New<Object>();
   samplerObject->Set(JS_STR("id"), JS_INT(samplerId));
@@ -5396,7 +5432,11 @@ NAN_METHOD(WebGL2RenderingContext::CreateSampler) {
 }
 
 NAN_METHOD(WebGL2RenderingContext::DeleteSampler) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
   GLuint sampler = info[0]->IsObject() ? TO_UINT32(JS_OBJ(info[0])->Get(JS_STR("id"))) : 0;
+
+  gl->objectCache.samplers.erase(sampler);
 
   glDeleteSamplers(1, &sampler);
 }
