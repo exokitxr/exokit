@@ -403,16 +403,21 @@ if (bindings.nativeAudio) {
     decodeAudioData(arrayBuffer, successCallback, errorCallback) {
       const result = new Promise((accept, reject) => {
         const audioBuffer = this.createEmptyBuffer();
-        audioBuffer.load(arrayBuffer, err => {
-          if (!err) {
+        audioBuffer.load(arrayBuffer, errorString => {
+          if (!errorString) {
+            if (successCallback) {
+              successCallback(audioBuffer);
+            }
             accept(audioBuffer);
           } else {
-            reject(new Error(err));
+            const err = new Error(errorString);
+            if (errorCallback) {
+              errorCallback(err);
+            }
+            reject(err);
           }
         });
       });
-      successCallback && result.then(successCallback);
-      errorCallback && result.catch(errorCallback);
       return result;
     }
   })(bindings.nativeAudio.AudioContext);
