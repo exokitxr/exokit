@@ -14,10 +14,10 @@ class WorkerVm extends EventEmitter {
         args: options.args,
       },
     });
-    worker.on('message', m => {
+    const _message = m => {
       switch (m.method) {
         case 'request': {
-          worker.emit('request', m);
+          this.emit('request', m);
           break;
         }
         case 'response': {
@@ -44,16 +44,17 @@ class WorkerVm extends EventEmitter {
           break;
         }
       }
-    });
-    worker.on('request', req => {
-      this.emit('request', req);
-    });
+    };
+    worker.on('message', _message);
     worker.on('error', err => {
       this.emit('error', err);
     });
     worker.on('exit', () => {
       this.emit('exit');
     });
+    worker.cleanup = () => {
+      worker.removeListener('message', _message);
+    };
 
     this.worker = worker;
     this.requestKeys = 0;
@@ -111,6 +112,8 @@ class WorkerVm extends EventEmitter {
     const publicPortSymbol = symbols.find(s => s.toString() === 'Symbol(kPublicPort)');
     const publicPort = this.worker[publicPortSymbol];
     publicPort.close();
+
+    this.worker.cleanup();
   }
 
   get onmessage() {
