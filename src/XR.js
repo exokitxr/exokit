@@ -130,6 +130,8 @@ class XRSession extends EventTarget {
     this.exclusive = exclusive;
     this.outputContext = outputContext;
 
+    this.renderState = new XRRenderState();
+
     this._frame = new XRFrame(this);
     this._frameOfReference = new XRFrameOfReference();
     this._inputSources = (() => {
@@ -205,6 +207,9 @@ class XRSession extends EventTarget {
         reject(new Error('api not supported'));
       }
     });
+  }
+  updateRenderState(newState) {
+    this.renderState.set(newState);
   }
   end() {
     this.emit('end');
