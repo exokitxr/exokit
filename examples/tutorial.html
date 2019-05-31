@@ -346,22 +346,19 @@
       console.log('request device');
 
       if (navigator.xr) {
-        display = await navigator.xr.requestDevice();
+        console.log('request session');
+        const session = await navigator.xr.requestSession({
+          exclusive: true,
+        }).catch(err => Promise.resolve(null));
 
-        if (display) {
-          console.log('request session');
-          const session = await display.requestSession({
-            exclusive: true,
-          });
-          display.session = session;
-
+        if (session) {
           // console.log('request first frame');
           session.requestAnimationFrame((timestamp, frame) => {
             renderer.vr.setSession(session, {
               frameOfReferenceType: 'stage',
             });
 
-            const viewport = session.baseLayer.getViewport(frame.views[0]);
+            const viewport = session.renderState.baseLayer.getViewport(frame.views[0]);
             const width = viewport.width;
             const height = viewport.height;
 
@@ -370,7 +367,6 @@
             renderer.setAnimationLoop(null);
 
             renderer.vr.enabled = true;
-            renderer.vr.setDevice(display);
             renderer.vr.setAnimationLoop(animate);
 
             console.log('running!');
