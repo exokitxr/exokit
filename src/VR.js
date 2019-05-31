@@ -200,18 +200,6 @@ class VRDisplay extends EventEmitter {
     this._layers = [];
   }
 
-  // Multiview with opaque framebuffer approach
-  this.multiview = false;
-
-  var multiviewAvailability = null;
-
-  checkMultiviewAvailability() {
-
-    if ( ! device.getViews ) return false;
-
-  	var views = device.getViews();
-  	return !! views && views.length === 1 && !! views[ 0 ].getAttributes().multiview;
-  }
   getFrameData(frameData) {
     const {xrOffset} = this.window.document;
     if (xrOffset) {
