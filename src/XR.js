@@ -129,6 +129,9 @@ class XRSession extends EventTarget {
     // const {disableStageEmulation = false, stageEmulationHeight  = 0} = options;
     return Promise.resolve(this._referenceSpace);
   }
+  requestFrameOfReference() { // non-standard
+    return this.requestReferenceSpace.apply(this, arguments);
+  }
   getInputSources() {
     return this._inputSources.filter(inputSource => inputSource.connected);
   }
@@ -165,6 +168,12 @@ class XRSession extends EventTarget {
   }
   updateRenderState(newState) {
     this.renderState.update(newState);
+  }
+  get baseLayer() { // non-standard
+    return this.renderState.baseLayer;
+  }
+  set baseLayer(baseLayer) {
+    this.renderState.update({baseLayer});
   }
   end() {
     this.emit('end');
@@ -360,6 +369,9 @@ class XRFrame {
   getViewerPose(coordinateSystem) {
     return this._viewerPose;
   }
+  getDevicePose() { // non-standard
+    return this.getViewerPose.apply(this, arguments);
+  }
   getPose(sourceSpace, destinationSpace) {
     return sourceSpace._pose;
   }
@@ -392,7 +404,7 @@ class XRView {
     this.eye = eye;
     this.transform = new XRRigidTransform(eye);
     this.projectionMatrix = eye === 'left' ? GlobalContext.xrState.leftProjectionMatrix : GlobalContext.xrState.rightProjectionMatrix;
-    this.viewMatrix = this.transform.inverse.matrix; // XXX non-standard
+    this.viewMatrix = this.transform.inverse.matrix; // non-standard
 
     this._viewport = new XRViewport(eye);
     /* this._viewMatrix = eye === 'left' ? GlobalContext.xrState.leftViewMatrix : GlobalContext.xrState.rightViewMatrix;
@@ -439,19 +451,26 @@ class XRPose {
 module.exports.XRPose = XRPose;
 
 class XRViewerPose extends XRPose {
-  constructor() {
+  constructor(frame) {
     super();
+
+    this.frame = frame; // non-standard
 
     this._views = [
       new XRView('left'),
       new XRView('right'),
     ];
-    /* this.frame = frame; // non-standard
-    this.poseModelMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]); */
+
+    this.poseModelMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]); // non-standard
   }
-  /* getViewMatrix(view) {
-    if (this.frame && this.frame.session && this.frame.session.baseLayer && this.frame.session.baseLayer.context.canvas.ownerDocument.xrOffset) {
-      const {xrOffset} = this.frame.session.baseLayer.context.canvas.ownerDocument;
+  get views() {
+    return this._views;
+  }
+  set views(views) {}
+  getViewMatrix(view) { // non-standard
+    return view.transform.inverse.matrix;
+    /* if (this.frame && this.frame.session && this.frame.session.renderState.baseLayer && this.frame.session.renderState.baseLayer.context.canvas.ownerDocument.xrOffset) {
+      const {xrOffset} = this.frame.session.renderState.baseLayer.context.canvas.ownerDocument;
       
       localMatrix
         .fromArray(view._viewMatrix)
@@ -462,12 +481,8 @@ class XRViewerPose extends XRPose {
     } else {
       view._localViewMatrix.set(view._viewMatrix);
     }
-    return view._localViewMatrix;
-  } */
-  get views() {
-    return this._views;
+    return view._localViewMatrix; */
   }
-  set views(views) {}
 }
 module.exports.XRViewerPose = XRViewerPose;
 
