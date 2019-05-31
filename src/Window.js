@@ -1218,7 +1218,7 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
     xrSession.onexitpresent = _onexitpresent;
     xrSession.onrequestanimationframe = _makeRequestAnimationFrame(window);
     xrSession.oncancelanimationframe = window.cancelAnimationFrame;
-    vrDevice.onlayers = layers => {
+    xrSession.onlayers = layers => {
       vrPresentState.layers = layers;
     };
 
