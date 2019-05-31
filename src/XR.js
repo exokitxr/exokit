@@ -27,7 +27,7 @@ class XR extends EventEmitter {
   supportsSessionMode(mode) { // XXX non-standard
     return this.supportsSession(mode);
   }
-  requestSession({exclusive = false, outputContext = null} = {}) {
+  async requestSession({exclusive = false, outputContext = null} = {}) {
     if (!this.session) {
       const hmdType = getHMDType();
 
