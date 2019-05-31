@@ -21,10 +21,10 @@ class XR extends EventEmitter {
 
     this._window = window;
   }
-  async supportsSession(mode) {
-    return true;
+  supportsSession(mode) {
+    return Promise.resolve(true);
   }
-  supportsSessionMode(mode) { // XXX non-standard
+  supportsSessionMode(mode) { // non-standard
     return this.supportsSession(mode);
   }
   async requestSession({exclusive = false, outputContext = null} = {}) {
