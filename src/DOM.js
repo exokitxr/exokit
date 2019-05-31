@@ -2101,13 +2101,13 @@ class HTMLIFrameElement extends HTMLSrcableElement {
         const v = _parseVector(value);
         if (name === 'position' && v.length === 3) {
           this.xrOffset.position.set(v);
-          this.xrOffset.updateMatrix();
+          this.xrOffset.pushUpdate();
         } else if (name === 'orientation' && v.length === 4) {
           this.xrOffset.orientation.set(v);
-          this.xrOffset.updateMatrix();
+          this.xrOffset.pushUpdate();
         } else if (name === 'scale' && v.length === 3) {
           this.xrOffset.scale.set(v);
-          this.xrOffset.updateMatrix();
+          this.xrOffset.pushUpdate();
         }
       } else if (name === 'width') {
         if (this.browser) {
