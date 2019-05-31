@@ -272,7 +272,7 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
     const ondomchange = () => {
       process.nextTick(() => { // show/hide synchronously emits events
         if (!document.hidden && !window[symbols.optionsSymbol].args.headless) {
-          const domVisible = canvas.ownerDocument.documentElement.contains(canvas);
+          const domVisible = canvas.ownerDocument.documentElement.contains(canvas) || canvas._context === GlobalContext.vrPresentState.glContext;
           const windowVisible = nativeWindow.isVisible(windowHandle);
           if (domVisible && !windowVisible) {
             nativeWindow.setVisibility(windowHandle, true);

@@ -1199,6 +1199,8 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
         vrPresentState.fbo = context.createFramebuffer().id;
         vrPresentState.msFbo = context.createFramebuffer().id;
         vrPresentState.glContext.setTopLevel(false);
+        
+        window.document.emit('domchange'); // open mirror window
       }
 
       return {
