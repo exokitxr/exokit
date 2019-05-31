@@ -72,7 +72,7 @@ class XR extends EventEmitter {
 };
 module.exports.XR = XR;
 
-class XRDevice {
+/* class XRDevice {
   constructor(name, window) {
     this.name = name; // non-standard
     this.window = window; // non-standard
@@ -85,24 +85,6 @@ class XRDevice {
     
     this._layers = [];
   }
-  /* supportsSession() {
-    return Promise.resolve(null);
-  }
-  async requestSession({exclusive = false, outputContext = null} = {}) {
-    if (!this.session) {
-      const session = new XRSession({
-        device: this,
-        exclusive,
-        outputContext,
-      });
-      await this.onrequestpresent();
-      session.once('end', () => {
-        this.session = null;
-      });
-      this.session = session;
-    }
-    return this.session;
-  } */
   get layers() {
     return this._layers;
   }
@@ -114,7 +96,7 @@ class XRDevice {
     }
   }
 }
-module.exports.XRDevice = XRDevice;
+module.exports.XRDevice = XRDevice; */
 
 class XRSession extends EventTarget {
   constructor({device = null, exclusive = false, outputContext = null} = {}) {
