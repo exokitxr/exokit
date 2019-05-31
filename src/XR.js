@@ -37,7 +37,9 @@ class XR extends EventEmitter {
         session.outputContext = outputContext;
 
         await session.onrequestpresent();
+        session.isPresenting = true;
         session.once('end', () => {
+          session.isPresenting = false;
           this.session = null;
         });
         this.session = session;
@@ -104,6 +106,7 @@ class XRSession extends EventTarget {
     this.window = window;
 
     this.renderState = new XRRenderState();
+    this.isPresenting = false; // non-standard
 
     this._frame = new XRFrame(this);
     this._frameOfReference = new XRFrameOfReference();

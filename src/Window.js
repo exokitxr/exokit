@@ -985,8 +985,8 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
     }
   };
   const _emitXrEvents = () => {
-    if (window[symbols.mrDisplaysSymbol].vrDevice.session) {
-      window[symbols.mrDisplaysSymbol].vrDevice.session.update();
+    if (window[symbols.mrDisplaysSymbol].xrSession.isPresenting) {
+      window[symbols.mrDisplaysSymbol].xrSession.update();
     }
   };
   const _tickLocalRafs = () => {
