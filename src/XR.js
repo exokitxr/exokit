@@ -180,7 +180,7 @@ class XRSession extends EventTarget {
     });
   }
   updateRenderState(newState) {
-    this.renderState.set(newState);
+    this.renderState.update(newState);
   }
   end() {
     this.emit('end');
@@ -306,7 +306,7 @@ class XRRenderState {
     this._outputContext = outputContext;
   }
   
-  set(newState) {
+  update(newState) {
     for (const k in newState) {
       this[k] = newState[k];
     }
