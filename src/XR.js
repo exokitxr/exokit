@@ -401,9 +401,9 @@ module.exports.XRFrame = XRFrame;
 class XRView {
   constructor(eye = 'left') {
     this.eye = eye;
+    this.transform = new XRRigidTransform(eye);
     this.projectionMatrix = eye === 'left' ? GlobalContext.xrState.leftProjectionMatrix : GlobalContext.xrState.rightProjectionMatrix;
-    this.viewMatrix = eye === 'left' ? GlobalContext.xrState.leftViewMatrix : GlobalContext.xrState.rightViewMatrix; // XXX non-standard
-    this.transform = new XRRigidTransform();
+    this.viewMatrix = this.transform.matrix; // XXX non-standard
 
     this._viewport = new XRViewport(eye);
     /* this._viewMatrix = eye === 'left' ? GlobalContext.xrState.leftViewMatrix : GlobalContext.xrState.rightViewMatrix;
@@ -551,6 +551,12 @@ class XRRigidTransform {
       const inverse = orientation instanceof XRRigidTransform ? orientation : null;
 
       this.initialize(position, inverse);
+    } else if (typeof position === 'string') {
+      const eye = position;
+
+      const result = new XRRigidTransform();
+      result.inverse.matrix = eye === 'left' ? GlobalContext.xrState.leftViewMatrix : GlobalContext.xrState.rightViewMatrix; // XXX share all other XRRigidTransform properties
+      return result;
     } else {
       this.initialize();
 
