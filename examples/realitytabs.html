@@ -10,7 +10,7 @@
     <script src="xrmp.js"></script>
     <script src="xrmp-three.js"></script>
     <script>
-let display, fakeDisplay, tabs = [], tabId = 0, xrmp, lastPresseds = [false, false], lastAxes = [[0.5, 0.5], [0.5, 0.5]], lastPadToucheds = [false, false], scrollFactors = [0, 0], scaleFactors = [1, 1];
+let session, fakeDisplay, tabs = [], tabId = 0, xrmp, lastPresseds = [false, false], lastAxes = [[0.5, 0.5], [0.5, 0.5]], lastPadToucheds = [false, false], scrollFactors = [0, 0], scaleFactors = [1, 1];
 
 const links = [
   {
@@ -2715,55 +2715,47 @@ const _bootFakeDisplay = async () => {
 (async () => {
   if (!query.fake) {
     if (navigator.xr) { // WebXR
-      display = await navigator.xr.requestDevice();
+      session = await navigator.xr..requestSession({
+        exclusive: true,
+      });
 
-      if (display) {
-        const session = await display.requestSession({
-          exclusive: true,
+      session.layers = layers;
+
+      // console.log('request first frame');
+      session.requestAnimationFrame((timestamp, frame) => {
+        renderer.vr.setSession(session, {
+          frameOfReferenceType: 'stage',
         });
-        display.session = session;
 
-        session.layers = layers;
-
-        // console.log('request first frame');
-        session.requestAnimationFrame((timestamp, frame) => {
-          renderer.vr.setSession(session, {
-            frameOfReferenceType: 'stage',
-          });
-
-          const viewport = session.baseLayer.getViewport(frame.views[0]);
-          // const width = viewport.width;
-          const height = viewport.height;
-          const fullWidth = (() => {
-            let result = 0;
-            for (let i = 0; i < frame.views.length; i++) {
-              result += session.baseLayer.getViewport(frame.views[i]).width;
-            }
-            return result;
-          })();
-
-          renderer.setSize(fullWidth, height);
-
-          renderer.setAnimationLoop(null);
-
-          renderer.vr.enabled = true;
-          renderer.vr.setDevice(display);
-          renderer.vr.setAnimationLoop(animate);
-
-          if (window.browser && window.browser.magicleap) {
-            window.browser.magicleap.RequestDepthPopulation(true);
-            // renderer.autoClearDepth = false;
+        const viewport = session.baseLayer.getViewport(frame.views[0]);
+        // const width = viewport.width;
+        const height = viewport.height;
+        const fullWidth = (() => {
+          let result = 0;
+          for (let i = 0; i < frame.views.length; i++) {
+            result += session.baseLayer.getViewport(frame.views[i]).width;
           }
+          return result;
+        })();
 
-          _openUrl('tutorial.html');
-          _updateRigLists();
+        renderer.setSize(fullWidth, height);
 
-          console.log('loaded root in XR');
-        });
-      } else {
-        console.log('no xr displays');
-        await _bootFakeDisplay();
-      }
+        renderer.setAnimationLoop(null);
+
+        renderer.vr.enabled = true;
+        renderer.vr.setDevice(display);
+        renderer.vr.setAnimationLoop(animate);
+
+        if (window.browser && window.browser.magicleap) {
+          window.browser.magicleap.RequestDepthPopulation(true);
+          // renderer.autoClearDepth = false;
+        }
+
+        _openUrl('tutorial.html');
+        _updateRigLists();
+
+        console.log('loaded root in XR');
+      });
     } else { // WebVR
       console.log('request device');
       const displays = await navigator.getVRDisplays();
