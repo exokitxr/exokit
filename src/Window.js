@@ -199,17 +199,6 @@ const oculusMobileVrPresentState = {
 };
 GlobalContext.oculusMobileVrPresentState = oculusMobileVrPresentState;
 
-const mlPresentState = {
-  mlContext: null,
-  msFbo: null,
-  msTex: null,
-  msDepthTex: null,
-  mlGlContextId: 0,
-  mlCleanups: null,
-  mlHasPose: false,
-};
-GlobalContext.mlPresentState = mlPresentState;
-
 class CustomElementRegistry {
   constructor(window) {
     this._window = window;
