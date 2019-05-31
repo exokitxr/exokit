@@ -49,19 +49,15 @@ class XR extends EventEmitter {
     }
     return Promise.resolve(this.session);
   }
-  /* async requestDevice() {
+  async requestDevice() {
     const hmdType = getHMDType();
 
     if (hmdType) {
-      if (hmdType === 'fake') {
-        return this._window[symbols.mrDisplaysSymbol].fakeVrDisplay;
-      } else {
-        return this._window[symbols.mrDisplaysSymbol].vrDevice;
-      }
+      return new XRDevice(this);
     } else {
-      return null;
+      return Promise.resolve(null);
     }
-  } */
+  }
   get onvrdevicechange() {
     return _elementGetter(this, 'vrdevicechange');
   }
@@ -71,31 +67,19 @@ class XR extends EventEmitter {
 };
 module.exports.XR = XR;
 
-/* class XRDevice {
-  constructor(name, window) {
-    this.name = name; // non-standard
-    this.window = window; // non-standard
-    this.session = null; // non-standard
-
-    this.onrequestpresent = null;
-    this.onmakeswapchain = null;
-    this.onexitpresent = null;
-    this.onrequestanimationframe = null;
-    
-    this._layers = [];
+class XRDevice { // non-standard
+  constructor(xr) {
+    this.xr = xr;
   }
-  get layers() {
-    return this._layers;
-  }
-  set layers(layers) {
-    this._layers = layers;
 
-    if (this.onlayers) {
-      this.onlayers(layers);
-    }
+  supportsSession(opts) {
+    return this.xr.supportsSession(opts);
+  }
+  requestSession(opts) {
+    return this.xr.requestSession();
   }
 }
-module.exports.XRDevice = XRDevice; */
+module.exports.XRDevice = XRDevice;
 
 class XRSession extends EventTarget {
   constructor({exclusive = false, outputContext = null} = {}, window) {
