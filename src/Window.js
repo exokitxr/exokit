@@ -527,7 +527,7 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
       if (height !== undefined) {
         GlobalContext.xrState.renderHeight[0] = height;
       }
-      return window[symbols.mrDisplaysSymbol].fakeVrDisplay;
+      return new FakeXRDisplay();
     },
     getGamepads: getGamepads.bind(null, window),
     clipboard: {
@@ -986,9 +986,6 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
     }
   };
   const _emitXrEvents = () => {
-    if (vrPresentState.hmdType === 'fake') {
-      window[symbols.mrDisplaysSymbol].fakeVrDisplay.update();
-    }
     if (window[symbols.mrDisplaysSymbol].vrDevice.session) {
       window[symbols.mrDisplaysSymbol].vrDevice.session.update();
     }
@@ -1195,16 +1192,6 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
       GlobalContext.clearGamepads();
     };
 
-    const fakeVrDisplay = new FakeVRDisplay(window);
-    fakeVrDisplay.onrequestpresent = _onrequestpresent;
-    fakeVrDisplay.onmakeswapchain = _onmakeswapchain;
-    fakeVrDisplay.onexitpresent = _onexitpresent;
-    fakeVrDisplay.onrequestanimationframe = _makeRequestAnimationFrame(window);
-    fakeVrDisplay.oncancelanimationframe = window.cancelAnimationFrame;
-    fakeVrDisplay.onlayers = layers => {
-      vrPresentState.layers = layers;
-    };
-
     const vrDisplay = new VRDisplay('OpenVR', window);
     vrDisplay.onrequestanimationframe = _makeRequestAnimationFrame(window);
     vrDisplay.oncancelanimationframe = window.cancelAnimationFrame;
@@ -1241,7 +1228,6 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
     };
 
     return {
-      fakeVrDisplay,
       vrDisplay,
       vrDevice,
     };
