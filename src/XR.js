@@ -522,7 +522,6 @@ class XRInputPose { // non-standard
   constructor() {
     this.targetRay = new XRRay();
     this.gripTransform = new XRRigidTransform();
-    // this.gripMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
     // this._localPointerMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
   }
 }
