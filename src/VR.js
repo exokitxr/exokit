@@ -649,7 +649,7 @@ const hmdTypeStringMap = (() => {
 })();
 const lookupHMDTypeString = i => hmdTypeStringMap[i];
 
-const createVRDisplay = () => new FakeVRDisplay();
+const createFakeXRDisplay = () => new FakeVRDisplay();
 
 const controllerIDs = {
   fake: 'OpenVR Gamepad',
@@ -714,6 +714,6 @@ module.exports = {
   getHMDType,
   lookupHMDTypeString,
   lookupHMDTypeIndex,
-  createVRDisplay,
+  createFakeXRDisplay,
   getGamepads
 };
