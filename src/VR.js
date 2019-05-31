@@ -283,14 +283,16 @@ class VRDisplay extends EventEmitter {
 
   async requestPresent(layers) {
     await this.onrequestpresent();
-    
+
     const [{source: canvas}] = layers;
     const context = canvas._context || canvas.getContext('webgl');
     this.onmakeswapchain(context);
 
     if (this.onvrdisplaypresentchange && !this.isPresenting) {
       this.isPresenting = true;
-      this.onvrdisplaypresentchange();
+      setImmediate(() => {
+        this.onvrdisplaypresentchange();
+      });
     } else {
       this.isPresenting = true;
     }
@@ -306,7 +308,9 @@ class VRDisplay extends EventEmitter {
 
     if (this.onvrdisplaypresentchange && this.isPresenting) {
       this.isPresenting = false;
-      this.onvrdisplaypresentchange();
+      setImmediate(() => {
+        this.onvrdisplaypresentchange();
+      });
     } else {
       this.isPresenting = false;
     }
