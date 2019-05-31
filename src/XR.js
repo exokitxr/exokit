@@ -341,7 +341,7 @@ class XRFrame {
 
     this._pose = new XRViewerPose(this);
   }
-  getDevicePose(coordinateSystem) {
+  getViewerPose(coordinateSystem) {
     return this._pose;
   }
   getInputPose(inputSource, coordinateSystem) {
