@@ -624,6 +624,13 @@ void setGlConstants(T &proto) {
   JS_GL_SET_CONSTANT("PIXEL_PACK_BUFFER_BINDING" , 0x88ED);
   JS_GL_SET_CONSTANT("PIXEL_UNPACK_BUFFER_BINDING", 0x88EF);
 
+  // OVR_multiview2 in draft
+  JS_GL_SET_CONSTANT("FRAMEBUFFER_ATTACHMENT_TEXTURE_NUM_VIEWS_OVR", 0x9630);
+  JS_GL_SET_CONSTANT("FRAMEBUFFER_ATTACHMENT_TEXTURE_BASE_VIEW_INDEX_OVR", 0x9632);
+  JS_GL_SET_CONSTANT("MAX_VIEWS_OVR", 0x9631);
+  JS_GL_SET_CONSTANT("FRAMEBUFFER_INCOMPLETE_VIEW_TARGETS_OVR", 0x9633);
+
+
   // external
   JS_GL_SET_CONSTANT("TEXTURE_EXTERNAL_OES", 0x8D65);
 
@@ -4894,7 +4901,6 @@ NAN_METHOD(WebGLRenderingContext::GetExtension) {
   char *sname = *name;
 
   if (
-    strcmp(sname, "OVR_multiview2") == 0 ||
     strcmp(sname, "OES_texture_float") == 0 ||
     strcmp(sname, "OES_texture_float_linear") == 0 ||
     strcmp(sname, "OES_texture_half_float_linear") == 0 ||
@@ -5004,6 +5010,14 @@ NAN_METHOD(WebGLRenderingContext::GetExtension) {
     result->Set(JS_STR("RGB16F_EXT"), JS_INT(GL_RGB16F_EXT));
     result->Set(JS_STR("RGBA16F_EXT"), JS_INT(GL_RGBA16F_EXT));
     result->Set(JS_STR("UNSIGNED_NORMALIZED_EXT"), JS_INT(GL_UNSIGNED_NORMALIZED_EXT));
+    info.GetReturnValue().Set(result);
+  } else if (strcmp(sname, "OVR_multiview2") == 0) {
+    // Add constants: khronos.org/registry/webgl/extensions/OVR_multiview2/
+    Local<Object> result = Object::New(Isolate::GetCurrent());
+    result->Set(JS_STR("FRAMEBUFFER_ATTACHMENT_TEXTURE_NUM_VIEWS_OVR"), JS_INT(GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_NUM_VIEWS_OVR));
+    result->Set(JS_STR("FRAMEBUFFER_ATTACHMENT_TEXTURE_BASE_VIEW_INDEX_OVR"), JS_INT(GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_BASE_VIEW_INDEX_OVR));
+    result->Set(JS_STR("MAX_VIEWS_OVR"), JS_INT(GL_MAX_VIEWS_OVR));
+    result->Set(JS_STR("FRAMEBUFFER_INCOMPLETE_VIEW_TARGETS_OVR"), JS_INT(GL_FRAMEBUFFER_INCOMPLETE_VIEW_TARGETS_OVR));
     info.GetReturnValue().Set(result);
   } else if (strcmp(sname, "EXT_blend_minmax") == 0) {
     // Adds two constants: developer.mozilla.org/docs/Web/API/EXT_blend_minmax
