@@ -359,10 +359,6 @@ module.exports.XRWebGLLayer = XRWebGLLayer;
 class XRFrame {
   constructor(session) {
     this.session = session;
-    this.views = [
-      new XRView('left'),
-      new XRView('right'),
-    ];
 
     this._viewerPose = new XRViewerPose(this);
   }
