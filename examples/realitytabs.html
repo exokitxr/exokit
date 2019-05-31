@@ -2715,10 +2715,9 @@ const _bootFakeDisplay = async () => {
 (async () => {
   if (!query.fake) {
     if (navigator.xr) { // WebXR
-      session = await navigator.xr..requestSession({
+      session = await navigator.xr.requestSession({
         exclusive: true,
       });
-
       session.layers = layers;
 
       // console.log('request first frame');
