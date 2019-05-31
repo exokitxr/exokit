@@ -387,7 +387,7 @@ class XRFrame {
   getPose(sourceSpace, destinationSpace) {
     return sourceSpace._pose;
   }
-  getInputPose(inputSource, coordinateSystem) { // non-standard
+  /* getInputPose(inputSource, coordinateSystem) { // non-standard
     localMatrix.fromArray(inputSource._inputPose._localPointerMatrix);
 
     if (this.session.renderState.baseLayer) {
@@ -407,7 +407,7 @@ class XRFrame {
       .toArray(inputSource._inputPose.gripTransform.matrix);
 
     return inputSource._inputPose;
-  }
+  } */
 }
 module.exports.XRFrame = XRFrame;
 
