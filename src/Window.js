@@ -517,17 +517,7 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
     },
     webkitGetUserMedia: getUserMedia, // for feature detection
     getVRDisplaysSync() {
-      const hmdType = getHMDType();
-
-      if (hmdType) {
-        if (hmdType === 'fake') {
-          return [window[symbols.mrDisplaysSymbol].fakeVrDisplay];
-        } else {
-          return [window[symbols.mrDisplaysSymbol].vrDisplay];
-        }
-      } else {
-        return [];
-      }
+      return getHMDType() ? [window[symbols.mrDisplaysSymbol].vrDisplay] : [];
     },
     createFakeXRDisplay(width, height) {
       GlobalContext.xrState.fakeVrDisplayEnabled[0] = 1;
