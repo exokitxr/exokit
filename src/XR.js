@@ -91,7 +91,7 @@ class XRDevice {
     
     this._layers = [];
   }
-  supportsSession() {
+  /* supportsSession() {
     return Promise.resolve(null);
   }
   async requestSession({exclusive = false, outputContext = null} = {}) {
@@ -108,7 +108,7 @@ class XRDevice {
       this.session = session;
     }
     return this.session;
-  }
+  } */
   get layers() {
     return this._layers;
   }
