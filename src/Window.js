@@ -190,15 +190,6 @@ const vrPresentState = {
 };
 GlobalContext.vrPresentState = vrPresentState;
 
-const oculusMobileVrPresentState = {
-  vrContext: null,
-  isPresenting: false,
-  glContextId: 0,
-  cleanups: null,
-  hasPose: false,
-};
-GlobalContext.oculusMobileVrPresentState = oculusMobileVrPresentState;
-
 class CustomElementRegistry {
   constructor(window) {
     this._window = window;
