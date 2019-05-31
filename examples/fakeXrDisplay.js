@@ -1,32 +1,31 @@
 (() => {
 
-window._makeFakeDisplay = () => {
-  const fakeDisplay = window.navigator.createFakeXRDisplay();
-  fakeDisplay.enter = async ({renderer, animate, layers}) => {
+window._makeFakeXrDisplay = () => {
+  const fakeXrDisplay = navigator.createFakeXRDisplay();
+  fakeXrDisplay.enter = async ({renderer, animate, layers}) => {
     const {domElement: canvas} = renderer;
 
     if (navigator.xr) {
-      const session = await fakeDisplay.requestSession({
+      const session = await navigator.xr.requestSession({
         exclusive: true,
       });
-
+      
       await new Promise((accept, reject) => {
         session.requestAnimationFrame((timestamp, frame) => {
-          fakeDisplay.layers = layers;
+          session.layers = layers;
 
           renderer.vr.enabled = true;
-          renderer.vr.setDevice(fakeDisplay);
           renderer.vr.setSession(session, {
             frameOfReferenceType: 'stage',
           });
           renderer.vr.setAnimationLoop(animate);
           
-          const viewport = session.baseLayer.getViewport(frame.views[0]);
+          const viewport = session.renderState.baseLayer.getViewport(frame.views[0]);
           const height = viewport.height;
           const fullWidth = (() => {
             let result = 0;
             for (let i = 0; i < frame.views.length; i++) {
-              result += session.baseLayer.getViewport(frame.views[i]).width;
+              result += session.renderState.baseLayer.getViewport(frame.views[i]).width;
             }
             return result;
           })();
@@ -36,24 +35,25 @@ window._makeFakeDisplay = () => {
         });
       });
     } else {
-      await fakeDisplay.requestPresent([
+      const display = await navigator.getVRDisplays()[0];
+      await display.requestPresent([
         {
           source: canvas,
         },
       ]);
       
-      fakeDisplay.layers = layers;
+      display.layers = layers;
 
       renderer.vr.enabled = true;
-      renderer.vr.setDevice(fakeDisplay);
+      renderer.vr.setDevice(display);
       renderer.vr.setAnimationLoop(animate);
  
-      // const {renderWidth: width, renderHeight: height} = fakeDisplay.getEyeParameters('left');
+      // const {renderWidth: width, renderHeight: height} = display.getEyeParameters('left');
       // renderer.setSize(width * 2, height);
     }
   };
 
-  return fakeDisplay;
+  return fakeXrDisplay;
 };
 
 })();
