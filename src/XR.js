@@ -168,7 +168,7 @@ class XRSession extends EventTarget {
   set layers(layers) {
     this.device.layers = layers;
   }
-  requestFrameOfReference(type, options = {}) {
+  requestReferenceSpace(type, options = {}) {
     // const {disableStageEmulation = false, stageEmulationHeight  = 0} = options;
     return Promise.resolve(this._frameOfReference);
   }
