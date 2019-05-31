@@ -1162,6 +1162,8 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
 
   // OVR_multiview2
   Nan::SetMethod(proto, "framebufferTextureMultiviewOVR", glCallWrap<FramebufferTextureMultiviewOVR>);
+  Nan::SetMethod(proto, "FramebufferTextureMultisampleMultiviewOVR", glCallWrap<FramebufferTextureMultisampleMultiviewOVR>);
+
 
   setGlConstants(proto);
 
@@ -2460,6 +2462,18 @@ NAN_METHOD(WebGLRenderingContext::FramebufferTextureMultiviewOVR) {
   GLsizei numViews = TO_UINT32(info[5]);
 
   glframebufferTextureMultiviewOVR(target, attachment, texture, level, baseViewIndex, numViews);
+}
+
+NAN_METHOD(WebGLRenderingContext::FramebufferTextureMultisampleMultiviewOVR) {
+  GLenum target = TO_UINT32(info[0]);
+  GLenum attachment = TO_UINT32(info[1]);
+  GLuint texture = TO_INT32(info[2]);
+  GLint level = TO_INT32(info[3]);
+  GLsizei samples = TO_UINT32(info[4]);
+  GLint baseViewIndex = TO_INT32(info[5]);
+  GLsizei numViews = TO_UINT32(info[6]);
+
+  glFramebufferTextureMultisampleMultiviewOVR(target, attachment, texture, level, baseViewIndex, numViews);
 }
 
 NAN_METHOD(WebGLRenderingContext::GetShaderParameter) {
@@ -5033,6 +5047,11 @@ NAN_METHOD(WebGLRenderingContext::GetExtension) {
     result->Set(JS_STR("MAX_VIEWS_OVR"), JS_INT(GL_MAX_VIEWS_OVR));
     result->Set(JS_STR("FRAMEBUFFER_INCOMPLETE_VIEW_TARGETS_OVR"), JS_INT(GL_FRAMEBUFFER_INCOMPLETE_VIEW_TARGETS_OVR));
     Nan::SetMethod(result, "framebufferTextureMultiviewOVR", FramebufferTextureMultiviewOVR);
+    info.GetReturnValue().Set(result);
+  } else if (strcmp(sname, "OVR_multiview_multisampled_render_to_texture") == 0) {
+    // Add constants: khronos.org/registry/webgl/extensions/OVR_multiview2/
+    Local<Object> result = Object::New(Isolate::GetCurrent());
+    Nan::SetMethod(result, "FramebufferTextureMultisampleMultiviewOVR", FramebufferTextureMultisampleMultiviewOVR);
     info.GetReturnValue().Set(result);
   } else if (strcmp(sname, "EXT_blend_minmax") == 0) {
     // Adds two constants: developer.mozilla.org/docs/Web/API/EXT_blend_minmax
