@@ -282,6 +282,52 @@ class XRSession extends EventTarget {
 }
 module.exports.XRSession = XRSession;
 
+class XRRenderState {
+  constructor() {
+    this._inlineVerticalFieldOfView = 90;
+    this._baseLayer = null;
+    this._outputContext = null;
+  }
+
+  get depthNear() {
+    return GlobalContext.xrState.depthNear[0];
+  }
+  set depthNear(depthNear) {
+    GlobalContext.xrState.depthNear[0] = depthNear;
+  }
+  get depthFar() {
+    return GlobalContext.xrState.depthFar[0];
+  }
+  set depthFar(depthFar) {
+    GlobalContext.xrState.depthFar[0] = depthFar;
+  }
+  get inlineVerticalFieldOfView() {
+    return this._inlineVerticalFieldOfView;
+  }
+  set inlineVerticalFieldOfView(inlineVerticalFieldOfView) {
+    this._inlineVerticalFieldOfView = inlineVerticalFieldOfView;
+  }
+  get baseLayer() {
+    return this._baseLayer;
+  }
+  set baseLayer(baseLayer) {
+    this._baseLayer = baseLayer;
+  }
+  get outputContext() {
+    return this._outputContext;
+  }
+  set outputContext(outputContext) {
+    this._outputContext = outputContext;
+  }
+  
+  set(newState) {
+    for (const k in newState) {
+      this[k] = newState[k];
+    }
+  }
+};
+module.exports.XRRenderState = XRRenderState;
+
 class XRWebGLLayer {
   constructor(session, context, options = {}) {
     this.session = session;
