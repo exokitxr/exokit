@@ -377,8 +377,8 @@ class XRFrame {
   getInputPose(inputSource, coordinateSystem) {
     localMatrix.fromArray(inputSource._pose._localPointerMatrix);
 
-    if (this.session.baseLayer) {
-      const {xrOffset} = this.session.baseLayer.context.canvas.ownerDocument;
+    if (this.session.renderState.baseLayer) {
+      const {xrOffset} = this.session.renderState.baseLayer.context.canvas.ownerDocument;
       
       if (xrOffset) {
         localMatrix
