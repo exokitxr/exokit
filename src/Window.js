@@ -529,7 +529,7 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
         return [];
       }
     },
-    createVRDisplay(width, height) {
+    createFakeXRDisplay(width, height) {
       GlobalContext.xrState.fakeVrDisplayEnabled[0] = 1;
       if (width !== undefined) {
         GlobalContext.xrState.renderWidth[0] = width;
