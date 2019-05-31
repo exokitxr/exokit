@@ -403,7 +403,7 @@ class XRView {
     this.eye = eye;
     this.transform = new XRRigidTransform(eye);
     this.projectionMatrix = eye === 'left' ? GlobalContext.xrState.leftProjectionMatrix : GlobalContext.xrState.rightProjectionMatrix;
-    this.viewMatrix = this.transform.matrix; // XXX non-standard
+    this.viewMatrix = this.transform.inverse.matrix; // XXX non-standard
 
     this._viewport = new XRViewport(eye);
     /* this._viewMatrix = eye === 'left' ? GlobalContext.xrState.leftViewMatrix : GlobalContext.xrState.rightViewMatrix;
