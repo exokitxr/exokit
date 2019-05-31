@@ -363,6 +363,22 @@ class XRFrame {
     this._viewerPose = new XRViewerPose(this);
   }
   getViewerPose(coordinateSystem) {
+    for (let i = 0; i < this._viewerPose.views.length; i++) {
+      const view = this._viewerPose.views[i];
+
+      if (this.session.renderState.baseLayer && this.session.renderState.baseLayer.context.canvas.ownerDocument.xrOffset) {
+        const {xrOffset} = this.session.renderState.baseLayer.context.canvas.ownerDocument;
+
+        localMatrix
+          .fromArray(view._realViewMatrix)
+          .multiply(
+            localMatrix2.fromArray(xrOffset.matrix)
+          )
+          .toArray(view._localViewMatrix);
+      } else {
+        view._localViewMatrix.set(view._realViewMatrix);
+      }
+    }
     return this._viewerPose;
   }
   /* getDevicePose() { // non-standard
@@ -389,7 +405,7 @@ class XRFrame {
       .toArray(inputSource._inputPose.targetRay.transformMatrix)
     localMatrix
       .toArray(inputSource._inputPose.gripTransform.matrix);
-    
+
     return inputSource._inputPose;
   }
 }
@@ -403,7 +419,9 @@ class XRView {
     // this.viewMatrix = this.transform.inverse.matrix; // non-standard
 
     this._viewport = new XRViewport(eye);
+    this._realViewMatrix = this.transform.inverse.matrix;
     this._localViewMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+    this.transform.inverse.matrix = this._localViewMatrix;
   }
 }
 module.exports.XRView = XRView;
@@ -457,19 +475,17 @@ class XRViewerPose extends XRPose {
   }
   set views(views) {}
   getViewMatrix(view) { // non-standard
-    const viewMatrix = view.transform.inverse.matrix;
-
     if (this.frame.session.renderState.baseLayer && this.frame.session.renderState.baseLayer.context.canvas.ownerDocument.xrOffset) {
       const {xrOffset} = this.frame.session.renderState.baseLayer.context.canvas.ownerDocument;
       
       localMatrix
-        .fromArray(viewMatrix)
+        .fromArray(view._realViewMatrix)
         .multiply(
           localMatrix2.fromArray(xrOffset.matrix)
         )
         .toArray(view._localViewMatrix);
     } else {
-      view._localViewMatrix.set(viewMatrix);
+      view._localViewMatrix.set(view._realViewMatrix);
     }
     return view._localViewMatrix;
   }
