@@ -479,10 +479,24 @@ module.exports.XRRay = XRRay;
 class XRInputPose {
   constructor() {
     this.emulatedPosition = false;
-    this.targetRay = new XRRay();
+    this._environmentBlendMode = 'opaque';
+    this._targetRay = new XRRay();
+    this._targetRayMode = 'hand';
     this.gripMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
-    this._localPointerMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+    // this._localPointerMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
   }
+  get environmentBlendMode() {
+    return this._environmentBlendMode;
+  }
+  set environmentBlendMode(environmentBlendMode) {}
+  get targetRayMode() {
+    return this._targetRay;
+  }
+  set targetRayMode(targetRayMode) {}
+  get targetRay() {
+    return this._targetRay;
+  }
+  set targetRay(targetRay) {}
 }
 module.exports.XRInputPose = XRInputPose;
 
