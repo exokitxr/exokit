@@ -21,7 +21,42 @@ class XR extends EventEmitter {
 
     this._window = window;
   }
-  async requestDevice() {
+  async supportsSession(mode) {
+    return true;
+  }
+  supportsSessionMode(mode) { // XXX non-standard
+    return this.supportsSession(mode);
+  }
+  async requestSession({exclusive = false, outputContext = null} = {}) {
+    if (!this.session) {
+      const device = (() => {
+        const hmdType = getHMDType();
+
+        if (hmdType) {
+          if (hmdType === 'fake') {
+            return this._window[symbols.mrDisplaysSymbol].fakeVrDisplay;
+          } else {
+            return this._window[symbols.mrDisplaysSymbol].vrDevice;
+          }
+        } else {
+          return null;
+        }
+      })();
+
+      const session = new XRSession({
+        device,
+        exclusive,
+        outputContext,
+      });
+      await device.onrequestpresent();
+      session.once('end', () => {
+        this.session = null;
+      });
+      this.session = session;
+    }
+    return this.session;
+  }
+  /* async requestDevice() {
     const hmdType = getHMDType();
 
     if (hmdType) {
@@ -33,7 +68,7 @@ class XR extends EventEmitter {
     } else {
       return null;
     }
-  }
+  } */
   get onvrdevicechange() {
     return _elementGetter(this, 'vrdevicechange');
   }
