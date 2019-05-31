@@ -4942,6 +4942,7 @@ const char *webglExtensions[] = {
   "OES_texture_half_float_linear",
   "OES_vertex_array_object",
   "OVR_multiview2",
+  "OVR_multiview_multisampled_render_to_texture",
   "WEBGL_color_buffer_float",
   "WEBGL_compressed_texture_astc",
   "WEBGL_compressed_texture_atc",
@@ -5098,6 +5099,7 @@ NAN_METHOD(WebGLRenderingContext::GetExtension) {
     result->Set(JS_STR("FRAMEBUFFER_ATTACHMENT_TEXTURE_BASE_VIEW_INDEX_OVR"), JS_INT(GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_BASE_VIEW_INDEX_OVR));
     result->Set(JS_STR("MAX_VIEWS_OVR"), JS_INT(GL_MAX_VIEWS_OVR));
     result->Set(JS_STR("FRAMEBUFFER_INCOMPLETE_VIEW_TARGETS_OVR"), JS_INT(GL_FRAMEBUFFER_INCOMPLETE_VIEW_TARGETS_OVR));
+    Nan::SetMethod(result, "framebufferTextureMultiviewOVR", FramebufferTextureMultiviewOVR);
     info.GetReturnValue().Set(result);
   } else if (strcmp(sname, "EXT_blend_minmax") == 0) {
     // Adds two constants: developer.mozilla.org/docs/Web/API/EXT_blend_minmax
