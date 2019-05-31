@@ -32,14 +32,11 @@ class XR extends EventEmitter {
       const hmdType = getHMDType();
 
       if (hmdType) {
-        const device = this._window[symbols.mrDisplaysSymbol].vrDevice;
+        const session = this._window[symbols.mrDisplaysSymbol].xrSession;
+        session.exclusive = exclusive;
+        session.outputContext = outputContext;
 
-        const session = new XRSession({
-          device,
-          exclusive,
-          outputContext,
-        });
-        await device.onrequestpresent();
+        await session.onrequestpresent();
         session.once('end', () => {
           this.session = null;
         });
@@ -99,12 +96,12 @@ module.exports.XR = XR;
 module.exports.XRDevice = XRDevice; */
 
 class XRSession extends EventTarget {
-  constructor({device = null, exclusive = false, outputContext = null} = {}) {
+  constructor({exclusive = false, outputContext = null} = {}, window) {
     super();
 
-    this.device = device;
     this.exclusive = exclusive;
     this.outputContext = outputContext;
+    this.window = window;
 
     this.renderState = new XRRenderState();
 
@@ -130,21 +127,14 @@ class XRSession extends EventTarget {
     })();
     this._lastPresseds = [false, false];
     this._rafs = [];
-  }
-  
-  get depthNear() {
-    return GlobalContext.xrState.depthNear[0];
-  }
-  set depthNear(depthNear) {}
-  get depthFar() {
-    return GlobalContext.xrState.depthFar[0];
-  }
-  set depthFar(depthFar) {}
-  get layers() {
-    return this.device.layers;
-  }
-  set layers(layers) {
-    this.device.layers = layers;
+    this._layers = [];
+
+    this.onrequestpresent = null;
+    this.onmakeswapchain = null;
+    this.onexitpresent = null;
+    this.onrequestanimationframe = null;
+    this.oncancelanimationframe = null;
+    this.onlayers = null;
   }
   requestReferenceSpace(type, options = {}) {
     // const {disableStageEmulation = false, stageEmulationHeight  = 0} = options;
@@ -154,8 +144,8 @@ class XRSession extends EventTarget {
     return this._inputSources.filter(inputSource => inputSource.connected);
   }
   requestAnimationFrame(fn) {
-    if (this.device.onrequestanimationframe) {
-      const animationFrame = this.device.onrequestanimationframe(timestamp => {
+    if (this.onrequestanimationframe) {
+      const animationFrame = this.onrequestanimationframe(timestamp => {
         this._rafs.splice(animationFrame, 1);
         fn(timestamp, this._frame);
       });
@@ -164,8 +154,8 @@ class XRSession extends EventTarget {
     }
   }
   cancelAnimationFrame(animationFrame) {
-    if (this.device.oncancelanimationframe) {
-      const result = this.device.oncancelanimationframe(animationFrame);
+    if (this.oncancelanimationframe) {
+      const result = this.oncancelanimationframe(animationFrame);
       const index = this._rafs.indexOf(animationFrame);
       if (index !== -1) {
         this._rafs.splice(index, 1);
@@ -175,8 +165,8 @@ class XRSession extends EventTarget {
   }
   requestHitTest(origin, direction, coordinateSystem) {
     return new Promise((accept, reject) => {
-      if (this.device.onrequesthittest)  {
-        this.device.onrequesthittest(origin, direction, result => {
+      if (this.onrequesthittest)  {
+        this.onrequesthittest(origin, direction, result => {
           accept(result);
         });
       } else {
@@ -192,7 +182,7 @@ class XRSession extends EventTarget {
     return Promise.resolve();
   }
   update() {
-    const gamepads = GlobalContext.getGamepads(this.device.window);
+    const gamepads = GlobalContext.getGamepads(this.window);
     
     for (let i = 0; i < gamepads.length; i++) {
       const gamepad = gamepads[i];
@@ -216,6 +206,16 @@ class XRSession extends EventTarget {
         }));
       }
       this._lastPresseds[i] = pressed;
+    }
+  }
+  get layers() {
+    return this._layers;
+  }
+  set layers(layers) {
+    this._layers = layers;
+
+    if (this.onlayers) {
+      this.onlayers(layers);
     }
   }
   get onblur() {
