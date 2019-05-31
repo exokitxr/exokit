@@ -428,12 +428,6 @@ class XRViewport {
     return GlobalContext.xrState.renderHeight[0];
   }
   set height(height) {}
-  /* set(x, y, width, height) {
-    this.x = x;
-    this.y = y;
-    this.width = width;
-    this.height = height;
-  } */
 }
 module.exports.XRViewport = XRViewport;
 
