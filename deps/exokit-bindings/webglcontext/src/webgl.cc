@@ -632,7 +632,6 @@ void setGlConstants(T &proto) {
   JS_GL_SET_CONSTANT("MAX_VIEWS_OVR", 0x9631);
   JS_GL_SET_CONSTANT("FRAMEBUFFER_INCOMPLETE_VIEW_TARGETS_OVR", 0x9633);
 
-
   // external
   JS_GL_SET_CONSTANT("TEXTURE_EXTERNAL_OES", 0x8D65);
 
@@ -1164,6 +1163,10 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
   Nan::SetMethod(proto, "setDefaultFramebuffer", glCallWrap<SetDefaultFramebuffer>);
 
   Nan::SetMethod(proto, "setTopLevel", SetTopLevel);
+
+  // OVR_multiview2
+  Nan::SetMethod(proto, "framebufferTextureMultiviewOVR", glCallWrap<FramebufferTextureMultiviewOVR>);
+  Nan::SetMethod(proto, "FramebufferTextureMultisampleMultiviewOVR", glCallWrap<FramebufferTextureMultisampleMultiviewOVR>);
 
   setGlConstants(proto);
 
@@ -2481,11 +2484,23 @@ NAN_METHOD(WebGLRenderingContext::SetDefaultFramebuffer) {
   gl->defaultFramebuffer = framebuffer;
 }
 
+<<<<<<< HEAD
 NAN_METHOD(WebGLRenderingContext::SetTopLevel) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
   bool topLevel = TO_BOOL(info[0]);
 
   gl->topLevel = topLevel;
+=======
+NAN_METHOD(WebGLRenderingContext::FramebufferTextureMultiviewOVR) {
+  GLenum target = TO_UINT32(info[0]);
+  GLenum attachment = TO_UINT32(info[1]);
+  WebGLTexture? texture = TO_INT32(info[2]);
+  GLint level = TO_INT32(info[3]);
+  GLint baseViewIndex = TO_INT32(info[4]);
+  GLsizei numViews = TO_UINT32(info[5]);
+
+  glframebufferTextureMultiviewOVR(target, attachment, texture, level, baseViewIndex, numViews);
+>>>>>>> add glframebufferTextureMultiviewOVR method
 }
 
 NAN_METHOD(WebGLRenderingContext::GetShaderParameter) {
