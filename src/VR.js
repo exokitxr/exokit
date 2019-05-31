@@ -493,7 +493,7 @@ GlobalContext.clearGamepads = clearGamepads;
 
 module.exports = {
   VRDisplay,
-  FakeVRDisplay,
+  FakeXRDisplay,
   VRFrameData,
   VRPose,
   VRStageParameters,

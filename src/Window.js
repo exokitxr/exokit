@@ -52,7 +52,7 @@ const THREE = require('../lib/three-min.js');
 const {
   MRDisplay,
   VRDisplay,
-  FakeVRDisplay,
+  FakeXRDisplay,
   VRFrameData,
   VRPose,
   VRStageParameters,
@@ -822,7 +822,6 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
   window.Gamepad = Gamepad;
   window.VRStageParameters = VRStageParameters;
   window.VRDisplay = VRDisplay;
-  window.FakeVRDisplay = FakeVRDisplay;
   // window.ARDisplay = ARDisplay;
   window.VRFrameData = VRFrameData;
   if (window.navigator.xr) {
