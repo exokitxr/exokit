@@ -19,13 +19,14 @@ window._makeFakeXrDisplay = () => {
             frameOfReferenceType: 'stage',
           });
           renderer.vr.setAnimationLoop(animate);
-          
-          const viewport = session.renderState.baseLayer.getViewport(frame.views[0]);
+
+          const {views} = frame.getViewerPose();
+          const viewport = session.renderState.baseLayer.getViewport(views[0]);
           const height = viewport.height;
           const fullWidth = (() => {
             let result = 0;
-            for (let i = 0; i < frame.views.length; i++) {
-              result += session.renderState.baseLayer.getViewport(frame.views[i]).width;
+            for (let i = 0; i < views.length; i++) {
+              result += session.renderState.baseLayer.getViewport(views[i]).width;
             }
             return result;
           })();
