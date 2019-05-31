@@ -1207,29 +1207,25 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
       vrPresentState.layers = layers;
     };
     
-    const vrDevice = new XR.XRDevice('OpenVR', window);
-    vrDevice.onrequestpresent = _onrequestpresent;
-    vrDevice.onmakeswapchain = _onmakeswapchain;
-    vrDevice.onexitpresent = _onexitpresent;
-    vrDevice.onrequestanimationframe = _makeRequestAnimationFrame(window);
-    vrDevice.oncancelanimationframe = window.cancelAnimationFrame;
-    vrDevice.requestSession = (requestSession => function() {
-      return requestSession.apply(this, arguments)
-        .then(session => {
-          vrDisplay.isPresenting = true;
-          session.once('end', () => {
-            vrDisplay.isPresenting = false;
-          });
-          return session;
-        });
-    })(vrDevice.requestSession);
+    const xrSession = new XR.XRSession({}, window);
+    xrSession.onrequestpresent = (onrequestpresent => function() {
+      vrDisplay.isPresenting = true;
+      xrSession.once('end', () => {
+        vrDisplay.isPresenting = false;
+      });
+      return onrequestpresent.apply(this, arguments);
+    })(_onrequestpresent);
+    xrSession.onmakeswapchain = _onmakeswapchain;
+    xrSession.onexitpresent = _onexitpresent;
+    xrSession.onrequestanimationframe = _makeRequestAnimationFrame(window);
+    xrSession.oncancelanimationframe = window.cancelAnimationFrame;
     vrDevice.onlayers = layers => {
       vrPresentState.layers = layers;
     };
 
     return {
       vrDisplay,
-      vrDevice,
+      xrSession,
     };
   };
   window[symbols.mrDisplaysSymbol] = _makeMrDisplays();
