@@ -409,12 +409,26 @@ class XRViewport {
 }
 module.exports.XRViewport = XRViewport;
 
-class XRViewerPose {
-  constructor(frame) {
-    this.frame = frame; // non-standard
-    this.poseModelMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+class XRPose {
+  constructor() {
+    this.transform = new XRRigidTransform();
+    this.emulatedPosition = false;
   }
-  getViewMatrix(view) {
+}
+module.exports.XRPose = XRPose;
+
+class XRViewerPose extends XRPose {
+  constructor() {
+    super();
+
+    this._views = [
+      new XRView('left'),
+      new XRView('right'),
+    ];
+    /* this.frame = frame; // non-standard
+    this.poseModelMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]); */
+  }
+  /* getViewMatrix(view) {
     if (this.frame && this.frame.session && this.frame.session.baseLayer && this.frame.session.baseLayer.context.canvas.ownerDocument.xrOffset) {
       const {xrOffset} = this.frame.session.baseLayer.context.canvas.ownerDocument;
       
