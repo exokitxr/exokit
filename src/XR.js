@@ -27,34 +27,28 @@ class XR extends EventEmitter {
   supportsSessionMode(mode) { // XXX non-standard
     return this.supportsSession(mode);
   }
-  async requestSession({exclusive = false, outputContext = null} = {}) {
+  requestSession({exclusive = false, outputContext = null} = {}) {
     if (!this.session) {
-      const device = (() => {
-        const hmdType = getHMDType();
+      const hmdType = getHMDType();
 
-        if (hmdType) {
-          if (hmdType === 'fake') {
-            return this._window[symbols.mrDisplaysSymbol].fakeVrDisplay;
-          } else {
-            return this._window[symbols.mrDisplaysSymbol].vrDevice;
-          }
-        } else {
-          return null;
-        }
-      })();
+      if (hmdType) {
+        const device = this._window[symbols.mrDisplaysSymbol].vrDevice;
 
-      const session = new XRSession({
-        device,
-        exclusive,
-        outputContext,
-      });
-      await device.onrequestpresent();
-      session.once('end', () => {
-        this.session = null;
-      });
-      this.session = session;
+        const session = new XRSession({
+          device,
+          exclusive,
+          outputContext,
+        });
+        await device.onrequestpresent();
+        session.once('end', () => {
+          this.session = null;
+        });
+        this.session = session;
+      } else {
+        return Promise.reject(null);
+      }
     }
-    return this.session;
+    return Promise.resolve(this.session);
   }
   /* async requestDevice() {
     const hmdType = getHMDType();
