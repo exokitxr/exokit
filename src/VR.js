@@ -469,7 +469,7 @@ class FakeVRDisplay extends VRDisplay {
         },
       }],
       _pose: null, // defer
-      getDevicePose() {
+      getViewerPose() {
         return this._pose;
       },
       getInputPose(inputSource, coordinateSystem) {
