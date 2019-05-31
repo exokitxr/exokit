@@ -105,11 +105,13 @@ class XRSession extends EventTarget {
     this.outputContext = outputContext;
     this.window = window;
 
+    this.environmentBlendMode = 'opaque';
     this.renderState = new XRRenderState();
+    this.viewerSpace = new XRSpace();
     this.isPresenting = false; // non-standard
 
     this._frame = new XRFrame(this);
-    this._frameOfReference = new XRFrameOfReference();
+    this._referenceSpace = new XRReferenceSpace();
     this._inputSources = (() => {
       const result = Array(2 + maxNumTrackers);
       for (let i = 0; i < maxNumTrackers; i++) {
@@ -141,7 +143,7 @@ class XRSession extends EventTarget {
   }
   requestReferenceSpace(type, options = {}) {
     // const {disableStageEmulation = false, stageEmulationHeight  = 0} = options;
-    return Promise.resolve(this._frameOfReference);
+    return Promise.resolve(this._referenceSpace);
   }
   getInputSources() {
     return this._inputSources.filter(inputSource => inputSource.connected);
@@ -369,13 +371,16 @@ class XRFrame {
       new XRView('right'),
     ];
 
-    this._pose = new XRViewerPose(this);
+    this._viewerPose = new XRViewerPose(this);
   }
   getViewerPose(coordinateSystem) {
-    return this._pose;
+    return this._viewerPose;
   }
-  getInputPose(inputSource, coordinateSystem) {
-    localMatrix.fromArray(inputSource._pose._localPointerMatrix);
+  getPose(sourceSpace, destinationSpace) {
+    return sourceSpace._pose;
+  }
+  getInputPose(inputSource, coordinateSystem) { // non-standard
+    localMatrix.fromArray(inputSource._inputPose._localPointerMatrix);
 
     if (this.session.renderState.baseLayer) {
       const {xrOffset} = this.session.renderState.baseLayer.context.canvas.ownerDocument;
@@ -389,11 +394,11 @@ class XRFrame {
     }
 
     localMatrix
-      .toArray(inputSource._pose.targetRay.transformMatrix)
+      .toArray(inputSource._inputPose.targetRay.transformMatrix)
     localMatrix
-      .toArray(inputSource._pose.gripMatrix);
+      .toArray(inputSource._inputPose.gripTransform.matrix);
     
-    return inputSource._pose;
+    return inputSource._inputPose;
   }
 }
 module.exports.XRFrame = XRFrame;
@@ -488,11 +493,15 @@ class XRInputSource {
     this.pointerOrigin = pointerOrigin;
     this._index = index;
 
-    this._pose = new XRInputPose();
+    this.targetRayMode = 'hand';
+    this.targetRaySpace = new XRSpace();
+    this.gripSpace = new XRSpace();
+
+    this._inputPose = new XRInputPose();
     const gamepad = GlobalContext.xrState.gamepads[index];
-    this._pose.targetRay.origin.values = gamepad.position;
-    this._pose.targetRay.direction.values = gamepad.direction;
-    this._pose._localPointerMatrix = gamepad.transformMatrix;
+    this._inputPose.targetRay.origin.values = gamepad.position;
+    this._inputPose.targetRay.direction.values = gamepad.direction;
+    this._inputPose._localPointerMatrix = gamepad.transformMatrix;
   }
   get connected() {
     return GlobalContext.xrState.gamepads[this._index].connected[0] !== 0;
@@ -501,7 +510,7 @@ class XRInputSource {
 }
 module.exports.XRInputSource = XRInputSource;
 
-class XRRay {
+class XRRay { // non-standard
   constructor() {
     this.origin = new GlobalContext.DOMPoint();
     this.direction = new GlobalContext.DOMPoint(0, 0, -1);
@@ -510,27 +519,13 @@ class XRRay {
 }
 module.exports.XRRay = XRRay;
 
-class XRInputPose {
+class XRInputPose { // non-standard
   constructor() {
-    this.emulatedPosition = false;
-    this._environmentBlendMode = 'opaque';
-    this._targetRay = new XRRay();
-    this._targetRayMode = 'hand';
-    this.gripMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+    this.targetRay = new XRRay();
+    this.gripTransform = new XRRigidTransform();
+    // this.gripMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
     // this._localPointerMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
   }
-  get environmentBlendMode() {
-    return this._environmentBlendMode;
-  }
-  set environmentBlendMode(environmentBlendMode) {}
-  get targetRayMode() {
-    return this._targetRay;
-  }
-  set targetRayMode(targetRayMode) {}
-  get targetRay() {
-    return this._targetRay;
-  }
-  set targetRay(targetRay) {}
 }
 module.exports.XRInputPose = XRInputPose;
 
@@ -662,45 +657,39 @@ class XRRigidTransform {
 }
 module.exports.XRRigidTransform = XRRigidTransform;
 
-class XRCoordinateSystem {
-  getTransformTo(other) {
-    return Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]); // XXX
+class XRSpace extends EventTarget {
+  constructor() {
+    super();
+    
+    this._pose = new XRPose();
   }
 }
-module.exports.XRCoordinateSystem = XRCoordinateSystem;
+module.exports.XRSpace = XRSpace;
 
-class XRFrameOfReference extends XRCoordinateSystem {
+class XRReferenceSpace extends XRSpace {
+  getOffsetReferenceSpace(originOffset) {
+    return this; // XXX do the offsetting
+  }
+  get onreset() {
+    return _elementGetter(this, 'reset');
+  }
+  set onreset(onreset) {
+    _elementSetter(this, 'reset', onreset);
+  }
+}
+module.exports.XRReferenceSpace = XRReferenceSpace;
+
+class XRBoundedReferenceSpace extends XRReferenceSpace {
   constructor() {
     super();
 
-    this.bounds = new XRStageBounds();
+    this.boundsGeometry = [
+      new GlobalContext.DOMPoint(-3, -3),
+      new GlobalContext.DOMPoint(3, -3),
+      new GlobalContext.DOMPoint(3, 3),
+      new GlobalContext.DOMPoint(-3, 3),
+    ];
     this.emulatedHeight = 0;
   }
-  get onboundschange() {
-    return _elementGetter(this, 'boundschange');
-  }
-  set onboundschange(onboundschange) {
-    _elementSetter(this, 'boundschange', onboundschange);
-  }
 }
-module.exports.XRFrameOfReference = XRFrameOfReference;
-
-class XRStageBounds {
-  constructor() {
-    this.geometry = [
-      new XRStageBoundsPoint(-3, -3),
-      new XRStageBoundsPoint(3, -3),
-      new XRStageBoundsPoint(3, 3),
-      new XRStageBoundsPoint(-3, 3),
-    ];
-  }
-}
-module.exports.XRStageBounds = XRStageBounds;
-
-class XRStageBoundsPoint {
-  constructor(x, z) {
-    this.x = x;
-    this.z = z;
-  }
-}
-module.exports.XRStageBoundsPoint = XRStageBoundsPoint;
+module.exports.XRBoundedReferenceSpace = XRBoundedReferenceSpace;

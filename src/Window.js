@@ -838,10 +838,9 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
     window.XRRay = XR.XRRay;
     window.XRInputPose = XR.XRInputPose;
     window.XRInputSourceEvent = XR.XRInputSourceEvent;
-    window.XRCoordinateSystem = XR.XRCoordinateSystem;
-    window.XRFrameOfReference = XR.XRFrameOfReference;
-    window.XRStageBounds = XR.XRStageBounds;
-    window.XRStageBoundsPoint = XR.XRStageBoundsPoint;
+    window.XRSpace = XR.XRSpace;
+    window.XRReferenceSpace = XR.XRReferenceSpace;
+    window.XRBoundedReferenceSpace = XR.XRBoundedReferenceSpace;
   }
   window.TextEncoder = TextEncoder;
   window.TextDecoder = TextDecoder;
