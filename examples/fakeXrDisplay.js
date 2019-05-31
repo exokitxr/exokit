@@ -35,13 +35,14 @@ window._makeFakeXrDisplay = () => {
         });
       });
     } else {
-      const display = await navigator.getVRDisplays()[0];
+      const displays = await navigator.getVRDisplays();
+      const display = displays[0];
       await display.requestPresent([
         {
           source: canvas,
         },
       ]);
-      
+
       display.layers = layers;
 
       renderer.vr.enabled = true;
