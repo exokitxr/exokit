@@ -49,7 +49,7 @@ class XR extends EventEmitter {
     }
     return Promise.resolve(this.session);
   }
-  async requestDevice() {
+  /* async requestDevice() {
     const hmdType = getHMDType();
 
     if (hmdType) {
@@ -57,7 +57,7 @@ class XR extends EventEmitter {
     } else {
       return Promise.resolve(null);
     }
-  }
+  } */
   get onvrdevicechange() {
     return _elementGetter(this, 'vrdevicechange');
   }
@@ -67,7 +67,7 @@ class XR extends EventEmitter {
 };
 module.exports.XR = XR;
 
-class XRDevice { // non-standard
+/* class XRDevice { // non-standard
   constructor(xr) {
     this.xr = xr;
   }
@@ -79,7 +79,7 @@ class XRDevice { // non-standard
     return this.xr.requestSession();
   }
 }
-module.exports.XRDevice = XRDevice;
+module.exports.XRDevice = XRDevice; */
 
 class XRSession extends EventTarget {
   constructor({exclusive = false, outputContext = null} = {}, window) {
@@ -129,9 +129,9 @@ class XRSession extends EventTarget {
     // const {disableStageEmulation = false, stageEmulationHeight  = 0} = options;
     return Promise.resolve(this._referenceSpace);
   }
-  requestFrameOfReference() { // non-standard
+  /* requestFrameOfReference() { // non-standard
     return this.requestReferenceSpace.apply(this, arguments);
-  }
+  } */
   getInputSources() {
     return this._inputSources.filter(inputSource => inputSource.connected);
   }
@@ -369,9 +369,9 @@ class XRFrame {
   getViewerPose(coordinateSystem) {
     return this._viewerPose;
   }
-  getDevicePose() { // non-standard
+  /* getDevicePose() { // non-standard
     return this.getViewerPose.apply(this, arguments);
-  }
+  } */
   getPose(sourceSpace, destinationSpace) {
     return sourceSpace._pose;
   }
@@ -407,8 +407,7 @@ class XRView {
     this.viewMatrix = this.transform.inverse.matrix; // non-standard
 
     this._viewport = new XRViewport(eye);
-    /* this._viewMatrix = eye === 'left' ? GlobalContext.xrState.leftViewMatrix : GlobalContext.xrState.rightViewMatrix;
-    this._localViewMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]); */
+    this._localViewMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
   }
 }
 module.exports.XRView = XRView;
@@ -468,20 +467,21 @@ class XRViewerPose extends XRPose {
   }
   set views(views) {}
   getViewMatrix(view) { // non-standard
-    return view.transform.inverse.matrix;
-    /* if (this.frame && this.frame.session && this.frame.session.renderState.baseLayer && this.frame.session.renderState.baseLayer.context.canvas.ownerDocument.xrOffset) {
+    const viewMatrix = view.transform.inverse.matrix;
+
+    if (this.frame.session.renderState.baseLayer && this.frame.session.renderState.baseLayer.context.canvas.ownerDocument.xrOffset) {
       const {xrOffset} = this.frame.session.renderState.baseLayer.context.canvas.ownerDocument;
       
       localMatrix
-        .fromArray(view._viewMatrix)
+        .fromArray(viewMatrix)
         .multiply(
           localMatrix2.fromArray(xrOffset.matrix)
         )
         .toArray(view._localViewMatrix);
     } else {
-      view._localViewMatrix.set(view._viewMatrix);
+      view._localViewMatrix.set(viewMatrix);
     }
-    return view._localViewMatrix; */
+    return view._localViewMatrix;
   }
 }
 module.exports.XRViewerPose = XRViewerPose;
