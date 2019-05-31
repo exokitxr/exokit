@@ -1,4 +1,6 @@
 const {EventEmitter} = require('events');
+const {parentPort} = require('worker_threads');
+
 const {Event} = require('./Event');
 const symbols = require('./symbols');
 const THREE = require('../lib/three-min.js');
@@ -113,19 +115,15 @@ class GamepadHapticActuator {
   }
   set type(type) {}
   pulse(value, duration) {
-    if (GlobalContext.xrState.isPresenting[0]) {
-      value = Math.min(Math.max(value, 0), 1);
-      const deviceIndex = GlobalContext.vrPresentState.system.GetTrackedDeviceIndexForControllerRole(this.index + 1);
-
-      const startTime = Date.now();
-      const _recurse = () => {
-        if ((Date.now() - startTime) < duration) {
-          GlobalContext.vrPresentState.system.TriggerHapticPulse(deviceIndex, 0, value * 4000);
-          setTimeout(_recurse, 50);
-        }
-      };
-      setTimeout(_recurse, 50);
-    }
+    parentPort.postMessage({
+      method: 'emit',
+      type: 'hapticPulse',
+      event: {
+        index: this.index,
+        value,
+        duration,
+      },
+    });
   }
 }
 class Gamepad {
@@ -181,6 +179,7 @@ class VRDisplay extends EventEmitter {
     this.displayName = displayName;
     this.window = window;
 
+    this.isConnected = true;
     this.isPresenting = false;
     this.capabilities = {
       canPresent: true,
@@ -201,18 +200,6 @@ class VRDisplay extends EventEmitter {
     this._layers = [];
   }
 
-  // Multiview with opaque framebuffer approach
-  this.multiview = false;
-
-  var multiviewAvailability = null;
-
-  checkMultiviewAvailability() {
-
-    if ( ! device.getViews ) return false;
-
-  	var views = device.getViews();
-  	return !! views && views.length === 1 && !! views[ 0 ].getAttributes().multiview;
-  }
   getFrameData(frameData) {
     const {xrOffset} = this.window.document;
     if (xrOffset) {
@@ -279,6 +266,19 @@ class VRDisplay extends EventEmitter {
       offset: leftEye ? GlobalContext.xrState.leftOffset : GlobalContext.xrState.rightOffset,
       fieldOfView: _fovArrayToVRFieldOfView(leftEye ? GlobalContext.xrState.leftFov : GlobalContext.xrState.rightFov),
     };
+  }
+
+  get depthNear() {
+    return GlobalContext.xrState.depthNear[0];
+  }
+  set depthNear(depthNear) {
+    GlobalContext.xrState.depthNear[0] = depthNear;
+  }
+  get depthFar() {
+    return GlobalContext.xrState.depthFar[0];
+  }
+  set depthFar(depthFar) {
+    GlobalContext.xrState.depthFar[0] = depthFar;
   }
 
   async requestPresent(layers) {
@@ -387,19 +387,6 @@ class FakeVRDisplay extends VRDisplay {
     this._lastPresseds = [false, false];
 
     // this._frameData = new VRFrameData();
-  }
-
-  get depthNear() {
-    return GlobalContext.xrState.depthNear[0];
-  }
-  set depthNear(depthNear) {
-    GlobalContext.xrState.depthNear[0] = depthNear;
-  }
-  get depthFar() {
-    return GlobalContext.xrState.depthFar[0];
-  }
-  set depthFar(depthFar) {
-    GlobalContext.xrState.depthFar[0] = depthFar;
   }
 
   /* setSize(width, height) {
@@ -668,7 +655,7 @@ const controllerIDs = {
   fake: 'OpenVR Gamepad',
   openvr: 'OpenVR Gamepad',
   // oculusMobile: 'Oculus Go',
-  openvrTracker: 'Tracker',
+  openvrTracker: 'OpenVR Tracker',
   oculusLeft: 'Oculus Touch (Left)',
   oculusRight: 'Oculus Touch (Right)',
   oculusMobileLeft: 'Oculus Touch (Left)',
