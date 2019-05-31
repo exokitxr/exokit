@@ -444,7 +444,11 @@ class XRViewerPose extends XRPose {
       view._localViewMatrix.set(view._viewMatrix);
     }
     return view._localViewMatrix;
+  } */
+  get views() {
+    return this._views;
   }
+  set views(views) {}
 }
 module.exports.XRViewerPose = XRViewerPose;
 
