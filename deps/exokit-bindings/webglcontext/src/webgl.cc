@@ -4855,7 +4855,6 @@ const char *webglExtensions[] = {
   "OES_texture_half_float_linear",
   "OES_vertex_array_object",
   "OVR_multiview2",
-  "WEBGL_multiview",
   "WEBGL_color_buffer_float",
   "WEBGL_compressed_texture_astc",
   "WEBGL_compressed_texture_atc",
@@ -4896,7 +4895,6 @@ NAN_METHOD(WebGLRenderingContext::GetExtension) {
 
   if (
     strcmp(sname, "OVR_multiview2") == 0 ||
-    strcmp(sname, "WEBGL_multiview") == 0 ||
     strcmp(sname, "OES_texture_float") == 0 ||
     strcmp(sname, "OES_texture_float_linear") == 0 ||
     strcmp(sname, "OES_texture_half_float_linear") == 0 ||
