@@ -53,12 +53,11 @@ const indexedDB = require('fake-indexeddb');
 const parseXml = require('@rgrove/parse-xml');
 const THREE = require('../lib/three-min.js');
 const {
-  MRDisplay,
   VRDisplay,
-  FakeXRDisplay,
   VRFrameData,
   VRPose,
   VRStageParameters,
+  FakeXRDisplay,
   Gamepad,
   GamepadButton,
   getGamepads,
@@ -522,16 +521,6 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
     getVRDisplaysSync() {
       return getHMDType() ? [window[symbols.mrDisplaysSymbol].vrDisplay] : [];
     },
-    createFakeXRDisplay(width, height) {
-      GlobalContext.xrState.fakeVrDisplayEnabled[0] = 1;
-      if (width !== undefined) {
-        GlobalContext.xrState.renderWidth[0] = width;
-      }
-      if (height !== undefined) {
-        GlobalContext.xrState.renderHeight[0] = height;
-      }
-      return new FakeXRDisplay();
-    },
     getGamepads,
     clipboard: {
       read: () => Promise.resolve(), // Not implemented yet
@@ -852,6 +841,7 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
     window.XRReferenceSpace = XR.XRReferenceSpace;
     window.XRBoundedReferenceSpace = XR.XRBoundedReferenceSpace;
   }
+  window.FakeXRDisplay = FakeXRDisplay;
   window.TextEncoder = TextEncoder;
   window.TextDecoder = TextDecoder;
   window.AudioContext = AudioContext;

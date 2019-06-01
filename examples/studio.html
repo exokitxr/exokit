@@ -3144,7 +3144,7 @@ function animateComposeContext(time, frame) {
 
     composeContext.blitFramebuffer(
       0, 0,
-      renderer.domElement.framebuffer.width, renderer.domElement.framebuffer.height,
+      fakeXrDisplay.width, fakeXrDisplay.height,
       viewport.x*composeCanvas.width, viewport.y*composeCanvas.height,
       (viewport.x+viewport.z)*composeCanvas.width, (viewport.y+viewport.w)*composeCanvas.height,
       composeContext.COLOR_BUFFER_BIT,
@@ -3178,7 +3178,9 @@ const _emitLayersExitPresent = () => {
   }
 };
 const _startFakeVrDisplay = async (width, height) => {
-  fakeXrDisplay = navigator.createFakeXRDisplay(width, height);
+  fakeXrDisplay = new FakeXRDisplay();
+  fakeXrDisplay.width = width;
+  fakeXrDisplay.height = height;
   fakeXrDisplay.position.set(0, 1.6, 0);
   fakeXrDisplay.pushUpdate();
   fakeXrDisplay.hidden = true; // XXX can be an actual hidden check

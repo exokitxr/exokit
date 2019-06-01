@@ -576,6 +576,8 @@ class FakeXRDisplay {
   constructor() {
     this.position = new THREE.Vector3();
     this.quaternion = new THREE.Quaternion();
+
+    GlobalContext.xrState.fakeVrDisplayEnabled[0] = 1;
   }
 
   pushUpdate() {
@@ -615,6 +617,18 @@ class FakeXRDisplay {
     }
   }
 
+  get width() {
+    return GlobalContext.xrState.renderWidth[0];
+  }
+  set width(width) {
+    GlobalContext.xrState.renderWidth[0] = width;
+  }
+  get height() {
+    return GlobalContext.xrState.renderHeight[0];
+  }
+  set height(height) {
+    GlobalContext.xrState.renderHeight[0] = height;
+  }
   get texture() {
     return {
       id: GlobalContext.xrState.tex[0],

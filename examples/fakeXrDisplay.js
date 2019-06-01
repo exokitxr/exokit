@@ -1,7 +1,7 @@
 (() => {
 
 window._makeFakeXrDisplay = () => {
-  const fakeXrDisplay = navigator.createFakeXRDisplay();
+  const fakeXrDisplay = new FakeXRDisplay();
   fakeXrDisplay.enter = async ({renderer, animate, layers}) => {
     const {domElement: canvas} = renderer;
 
