@@ -2485,12 +2485,15 @@ NAN_METHOD(WebGLRenderingContext::SetDefaultFramebuffer) {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 NAN_METHOD(WebGLRenderingContext::SetTopLevel) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
   bool topLevel = TO_BOOL(info[0]);
 
   gl->topLevel = topLevel;
 =======
+=======
+>>>>>>> f680c8260e14107b2b04e7fc70e29a8f2547cf93
 NAN_METHOD(WebGLRenderingContext::FramebufferTextureMultiviewOVR) {
   GLenum target = TO_UINT32(info[0]);
   GLenum attachment = TO_UINT32(info[1]);
@@ -2500,7 +2503,10 @@ NAN_METHOD(WebGLRenderingContext::FramebufferTextureMultiviewOVR) {
   GLsizei numViews = TO_UINT32(info[5]);
 
   glframebufferTextureMultiviewOVR(target, attachment, texture, level, baseViewIndex, numViews);
+<<<<<<< HEAD
 >>>>>>> add glframebufferTextureMultiviewOVR method
+=======
+>>>>>>> f680c8260e14107b2b04e7fc70e29a8f2547cf93
 }
 
 NAN_METHOD(WebGLRenderingContext::FramebufferTextureMultisampleMultiviewOVR) {
