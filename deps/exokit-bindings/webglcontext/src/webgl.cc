@@ -5113,7 +5113,6 @@ NAN_METHOD(WebGLRenderingContext::GetExtension) {
     Nan::SetMethod(result, "framebufferTextureMultiviewOVR", FramebufferTextureMultiviewOVR);
     info.GetReturnValue().Set(result);
   } else if (strcmp(sname, "OVR_multiview_multisampled_render_to_texture") == 0) {
-    // Add constants: khronos.org/registry/webgl/extensions/OVR_multiview2/
     Local<Object> result = Object::New(Isolate::GetCurrent());
     Nan::SetMethod(result, "FramebufferTextureMultisampleMultiviewOVR", FramebufferTextureMultisampleMultiviewOVR);
     info.GetReturnValue().Set(result);
