@@ -520,7 +520,7 @@ THREE.TransformControls = function ( camera, domElement, viewport ) {
 
 		var rect = domElement.getBoundingClientRect();
 		rect.left += viewport.x*rect.width;
-		rect.top += (1-(viewport.y+viewport.w))*rect.height;
+		rect.top += viewport.y*rect.height;
 		rect.width *= viewport.z;
 		rect.height *= viewport.w;
 

@@ -849,6 +849,18 @@ const scene = new THREE.Scene();
 // scene.background = new THREE.Color(0x7E57C2);
 scene.matrixAutoUpdate = false;
 
+/* const cubeMesh = (() => {
+  const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
+  const material = new THREE.MeshPhongMaterial({
+    color: 0xab47bc,
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.rotation.order = 'YXZ';
+  mesh.frustumCulled = false;
+  return mesh;
+})();
+scene.add(cubeMesh); */
+
 const camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 100);
 camera.position.y = 1.6;
 // camera.position.z = 1;
@@ -902,7 +914,7 @@ const {
     iframe.contentWindow.onmessage = m => {
       switch (m.data.method) {
         case 'viewport': {
-          viewport.set(m.data.viewport[0], 1 - m.data.viewport[1] - m.data.viewport[3], m.data.viewport[2], m.data.viewport[3]);
+          viewport.set(m.data.viewport[0], m.data.viewport[1], m.data.viewport[2], m.data.viewport[3]);
           break;
         }
         case 'click': {
@@ -1133,11 +1145,15 @@ const _bindEventTarget = target => {
         }
 
         if (orbitControls) {
-          const localCamera = renderer.vr.enabled ? renderer.vr.getCamera(camera).cameras[0] : camera;
+          const localCamera = camera;
+          localCamera.matrixWorldInverse.fromArray(fakeXrDisplay.viewMatrix);
+          localCamera.matrixWorld.getInverse(localCamera.matrixWorldInverse);
+          localCamera.projectionMatrix.fromArray(fakeXrDisplay.projectionMatrix);
+          localCamera.projectionMatrixInverse.getInverse(localCamera.projectionMatrix);
 
           const rect = document.body.getBoundingClientRect();
           rect.left += viewport.x*rect.width;
-          rect.top += (1-(viewport.y+viewport.w))*rect.height;
+          rect.top += viewport.y*rect.height;
           rect.width *= viewport.z;
           rect.height *= viewport.w;
 
@@ -1152,8 +1168,11 @@ const _bindEventTarget = target => {
           const line = localLine.set(
             localRaycaster.ray.origin,
             localVector.copy(localRaycaster.ray.origin)
-              .add(localVector2.copy(localRaycaster.ray.direction).multiplyScalar(10))
+              .add(localVector2.copy(localRaycaster.ray.direction).multiplyScalar(100))
           );
+          /* cubeMesh.position.copy(localRaycaster.ray.origin)
+            .add(localVector2.copy(localRaycaster.ray.direction).multiplyScalar(5));
+          cubeMesh.updateMatrixWorld(); */
           const distanceSpecs = layers.map(layer => {
             if (layer.tagName === 'IFRAME') {
               line.closestPointToPoint(localVector.fromArray(_parseVector(layer.position)), true, localVector2);
@@ -3145,8 +3164,8 @@ function animateComposeContext(time, frame) {
     composeContext.blitFramebuffer(
       0, 0,
       fakeXrDisplay.width, fakeXrDisplay.height,
-      viewport.x*composeCanvas.width, viewport.y*composeCanvas.height,
-      (viewport.x+viewport.z)*composeCanvas.width, (viewport.y+viewport.w)*composeCanvas.height,
+      viewport.x*composeCanvas.width, (1-viewport.y-viewport.w)*composeCanvas.height,
+      (viewport.x+viewport.z)*composeCanvas.width, (1-viewport.y)*composeCanvas.height,
       composeContext.COLOR_BUFFER_BIT,
       composeContext.LINEAR
     );

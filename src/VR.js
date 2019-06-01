@@ -629,6 +629,14 @@ class FakeXRDisplay {
   set height(height) {
     GlobalContext.xrState.renderHeight[0] = height;
   }
+  get projectionMatrix() {
+    return GlobalContext.xrState.leftProjectionMatrix;
+  }
+  set projectionMatrix(projectionMatrix) {}
+  get viewMatrix() {
+    return GlobalContext.xrState.leftViewMatrix;
+  }
+  set viewMatrix(viewMatrix) {}
   get texture() {
     return {
       id: GlobalContext.xrState.tex[0],
