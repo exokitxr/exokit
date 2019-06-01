@@ -5100,10 +5100,10 @@ NAN_METHOD(WebGLRenderingContext::GetExtension) {
   } else if (strcmp(sname, "OVR_multiview2") == 0) {
     // Add constants: khronos.org/registry/webgl/extensions/OVR_multiview2/
     Local<Object> result = Object::New(Isolate::GetCurrent());
-    result->Set(JS_STR("FRAMEBUFFER_ATTACHMENT_TEXTURE_NUM_VIEWS_OVR"), JS_INT(GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_NUM_VIEWS_OVR));
-    result->Set(JS_STR("FRAMEBUFFER_ATTACHMENT_TEXTURE_BASE_VIEW_INDEX_OVR"), JS_INT(GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_BASE_VIEW_INDEX_OVR));
-    result->Set(JS_STR("MAX_VIEWS_OVR"), JS_INT(GL_MAX_VIEWS_OVR));
-    result->Set(JS_STR("FRAMEBUFFER_INCOMPLETE_VIEW_TARGETS_OVR"), JS_INT(GL_FRAMEBUFFER_INCOMPLETE_VIEW_TARGETS_OVR));
+    result->Set(JS_STR("FRAMEBUFFER_ATTACHMENT_TEXTURE_NUM_VIEWS_OVR"), JS_INT(0x9630));
+    result->Set(JS_STR("FRAMEBUFFER_ATTACHMENT_TEXTURE_BASE_VIEW_INDEX_OVR"), JS_INT(0x9632));
+    result->Set(JS_STR("MAX_VIEWS_OVR"), JS_INT(0x9631));
+    result->Set(JS_STR("FRAMEBUFFER_INCOMPLETE_VIEW_TARGETS_OVR"), JS_INT(0x9633));
     Nan::SetMethod(result, "framebufferTextureMultiviewOVR", FramebufferTextureMultiviewOVR);
     info.GetReturnValue().Set(result);
   } else if (strcmp(sname, "OVR_multiview_multisampled_render_to_texture") == 0) {
