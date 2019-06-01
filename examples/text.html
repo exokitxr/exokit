@@ -152,7 +152,8 @@ if (navigator.xr) {
           frameOfReferenceType: 'stage',
         });
 
-        const viewport = session.baseLayer.getViewport(frame.views[0]);
+        const {views} = frame.getViewerPose();
+        const viewport = session.baseLayer.getViewport(views[0]);
         const width = viewport.width;
         const height = viewport.height;
 
