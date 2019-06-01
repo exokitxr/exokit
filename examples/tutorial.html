@@ -25,7 +25,7 @@
   <script src="three.js"></script>
   <script src="GLTFLoader.js"></script>
   <script>
-    let container, scene, camera, display, model;
+    let container, scene, camera, display, session, model;
     let animation = null;
 
     const localVector = new THREE.Vector3();
@@ -347,7 +347,7 @@
 
       if (navigator.xr) {
         console.log('request session');
-        const session = await navigator.xr.requestSession({
+        session = await navigator.xr.requestSession({
           exclusive: true,
         }).catch(err => Promise.resolve(null));
 
