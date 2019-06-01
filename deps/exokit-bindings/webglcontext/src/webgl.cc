@@ -4968,11 +4968,17 @@ NAN_METHOD(WebGLRenderingContext::GetSupportedExtensions) {
   Local<Array> result = Nan::New<Array>(numExtensions);
   for (GLint i = 0; i < numExtensions; i++) {
     char *extension = (char *)glGetStringi(GL_EXTENSIONS, i);
-    if(extension || extension has WEBGL){
+    if(extension == webglExtensions[i]){
       result->Set(i, JS_STR(webglExtensions[i]));
     }
   }
-
+  for (GLint i = 0; i < numExtensions; i++) {
+    string currentExtension = string(webglExtensions[i]);
+    bool hasWebGL = currentExtension.find("WEBGL");
+      if(hasWebGL) {
+        result->Set(i, JS_STR(webglExtensions[i]));
+      }
+  }
   /* for (GLint i = 0; i < numExtensions; i++) {
     char *extension = (char *)glGetStringi(GL_EXTENSIONS, i);
     result->Set(i, JS_STR(extension));
