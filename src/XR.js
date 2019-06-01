@@ -356,6 +356,19 @@ class XRWebGLLayer {
 }
 module.exports.XRWebGLLayer = XRWebGLLayer;
 
+const _applyXrOffsetToPose = (pose, xrOffset, inverse) => {
+  if (xrOffset) {
+    localMatrix
+      .fromArray(pose._realViewMatrix)
+      .multiply(
+        localMatrix2.fromArray(inverse ? xrOffset.matrixInverse : xrOffset.matrix)
+      )
+      .toArray(pose._localViewMatrix);
+  } else {
+    pose._localViewMatrix.set(pose._realViewMatrix);
+  }
+};
+
 class XRFrame {
   constructor(session) {
     this.session = session;
@@ -363,51 +376,28 @@ class XRFrame {
     this._viewerPose = new XRViewerPose(this);
   }
   getViewerPose(coordinateSystem) {
+    const xrOffset = this.session.renderState.baseLayer && this.session.renderState.baseLayer.context.canvas.ownerDocument.xrOffset;
     for (let i = 0; i < this._viewerPose.views.length; i++) {
-      const view = this._viewerPose.views[i];
-
-      if (this.session.renderState.baseLayer && this.session.renderState.baseLayer.context.canvas.ownerDocument.xrOffset) {
-        const {xrOffset} = this.session.renderState.baseLayer.context.canvas.ownerDocument;
-
-        localMatrix
-          .fromArray(view._realViewMatrix)
-          .multiply(
-            localMatrix2.fromArray(xrOffset.matrix)
-          )
-          .toArray(view._localViewMatrix);
-      } else {
-        view._localViewMatrix.set(view._realViewMatrix);
-      }
+      _applyXrOffsetToPose(this._viewerPose.views[i], xrOffset, false);
     }
+
     return this._viewerPose;
   }
   /* getDevicePose() { // non-standard
     return this.getViewerPose.apply(this, arguments);
   } */
   getPose(sourceSpace, destinationSpace) {
+    _applyXrOffsetToPose(sourceSpace._pose, this.session.renderState.baseLayer && this.session.renderState.baseLayer.context.canvas.ownerDocument.xrOffset, true);
+
     return sourceSpace._pose;
   }
-  /* getInputPose(inputSource, coordinateSystem) { // non-standard
-    localMatrix.fromArray(inputSource._inputPose._localPointerMatrix);
-
-    if (this.session.renderState.baseLayer) {
-      const {xrOffset} = this.session.renderState.baseLayer.context.canvas.ownerDocument;
-      
-      if (xrOffset) {
-        localMatrix
-          .premultiply(
-            localMatrix2.fromArray(xrOffset.matrixInverse)
-          );
-      }
-    }
-
-    localMatrix
-      .toArray(inputSource._inputPose.targetRay.transformMatrix)
-    localMatrix
-      .toArray(inputSource._inputPose.gripTransform.matrix);
+  getInputPose(inputSource, coordinateSystem) { // non-standard
+    _applyXrOffsetToPose(inputSource._inputPose, this.session.renderState.baseLayer && this.session.renderState.baseLayer.context.canvas.ownerDocument.xrOffset, true);
+    inputSource._inputPose.targetRay.transformMatrix.set(inputSource._inputPose._localViewMatrix);
+    inputSource._inputPose.gripTransform.matrix.set(inputSource._inputPose._localViewMatrix);
 
     return inputSource._inputPose;
-  } */
+  }
 }
 module.exports.XRFrame = XRFrame;
 
