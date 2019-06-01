@@ -283,14 +283,16 @@ class VRDisplay extends EventEmitter {
 
   async requestPresent(layers) {
     await this.onrequestpresent();
-    
+
     const [{source: canvas}] = layers;
     const context = canvas._context || canvas.getContext('webgl');
     this.onmakeswapchain(context);
 
     if (this.onvrdisplaypresentchange && !this.isPresenting) {
       this.isPresenting = true;
-      this.onvrdisplaypresentchange();
+      setImmediate(() => {
+        this.onvrdisplaypresentchange();
+      });
     } else {
       this.isPresenting = true;
     }
@@ -306,7 +308,9 @@ class VRDisplay extends EventEmitter {
 
     if (this.onvrdisplaypresentchange && this.isPresenting) {
       this.isPresenting = false;
-      this.onvrdisplaypresentchange();
+      setImmediate(() => {
+        this.onvrdisplaypresentchange();
+      });
     } else {
       this.isPresenting = false;
     }
@@ -354,198 +358,10 @@ class VRDisplay extends EventEmitter {
   }
 }
 
-class FakeVRDisplay extends VRDisplay {
-  constructor(window) {
-    super('FAKE');
-
-    this.window = window;
+class FakeXRDisplay {
+  constructor() {
     this.position = new THREE.Vector3();
     this.quaternion = new THREE.Quaternion();
-    this.gamepads = [
-      new Gamepad('left', 0, 'fake'),
-      new Gamepad('right', 1, 'fake'),
-    ];
-    for (let i = 0; i < this.gamepads.length; i++) {
-      const gamepad = this.gamepads[i];
-      gamepad.handedness = gamepad.hand;
-      gamepad.pose.targetRay = {
-        transformMatrix: new Float32Array(16),
-      };
-      gamepad.pose._localPointerMatrix = new Float32Array(16);
-    }
-
-    this.onrequestanimationframe = fn => window.requestAnimationFrame(fn);
-    this.onvrdisplaypresentchange = () => {
-      setTimeout(() => {
-        const e = new Event('vrdisplaypresentchange');
-        e.display = this;
-        window.dispatchEvent(e);
-      });
-    };
-
-    this._onends = [];
-    this._lastPresseds = [false, false];
-
-    // this._frameData = new VRFrameData();
-  }
-
-  /* setSize(width, height) {
-    GlobalContext.xrState.renderWidth[0] = width;
-    GlobalContext.xrState.renderHeight[0] = height;
-  } */
-
-  /* setProjection(projectionMatrix) {
-    GlobalContext.xrState.leftProjectionMatrix.set(projectionMatrix);
-    GlobalContext.xrState.rightProjectionMatrix.set(projectionMatrix);
-  } */
-
-  async requestSession({exclusive = true} = {}) {
-    const self = this;
-
-    await this.onrequestpresent();
-    
-    const {xrState} = GlobalContext;
-
-    const session = {
-      addEventListener(e, fn) {
-        if (e === 'end') {
-          self._onends.push(fn);
-        }
-      },
-      removeEventListener(e, fn) {
-        if (e === 'end') {
-          const index = self._onends.indexOf(fn);
-          if (index !== -1) {
-            self._onends.splice(index, 1);
-          }
-        }
-      },
-      device: self,
-      baseLayer: null,
-      // layers,
-      _frame: null, // defer
-      getInputSources() {
-        return this.device.gamepads;
-      },
-      requestFrameOfReference() {
-        return Promise.resolve({});
-      },
-      requestAnimationFrame(fn) {
-        return self.requestAnimationFrame(timestamp => {
-          fn(timestamp, this._frame);
-        });
-      },
-      cancelAnimationFrame: fn => self.cancelAnimationFrame(fn),
-      async end() {
-        await self.exitPresent();
-
-        xrState.fakeVrDisplayEnabled[0] = 1;
-
-        const onends = self._onends.slice();
-        for (let i = 0; i < onends.length; i++) {
-          onends[i]();
-        }
-      },
-    };
-    const _frame = {
-      session,
-      views: [{
-        eye: 'left',
-        projectionMatrix: xrState.leftProjectionMatrix,
-        _viewport: {
-          x: 0,
-          y: 0,
-          width: xrState.renderWidth[0],
-          height: xrState.renderHeight[0],
-        },
-      }, {
-        eye: 'right',
-        projectionMatrix: xrState.rightProjectionMatrix,
-        _viewport: {
-          x: xrState.renderWidth[0],
-          y: 0,
-          width: xrState.renderWidth[0],
-          height: xrState.renderHeight[0],
-        },
-      }],
-      _pose: null, // defer
-      getDevicePose() {
-        return this._pose;
-      },
-      getInputPose(inputSource, coordinateSystem) {
-        localMatrix.fromArray(inputSource.pose._localPointerMatrix);
-
-        const {xrOffset} = self.window.document;
-        if (xrOffset) {
-          localMatrix
-            .premultiply(
-              localMatrix2.compose(
-                localVector.fromArray(xrOffset.position),
-                localQuaternion.fromArray(xrOffset.orientation),
-                localVector2.fromArray(xrOffset.scale)
-              )
-              .getInverse(localMatrix2)
-            );
-        }
-
-        localMatrix.toArray(inputSource.pose.targetRay.transformMatrix);
-
-        return inputSource.pose; // XXX or _pose
-      },
-    };
-    session._frame = _frame;
-    const _pose = {
-      frame: _frame,
-      getViewMatrix(view) {
-        const viewMatrix = view.eye === 'left' ? xrState.leftViewMatrix : xrState.rightViewMatrix;
-
-        const {xrOffset} = self.window.document;
-        if (xrOffset) {
-          localMatrix
-            .fromArray(viewMatrix)
-            .multiply(
-              localMatrix2.compose(
-                localVector.fromArray(xrOffset.position),
-                localQuaternion.fromArray(xrOffset.orientation),
-                localVector2.fromArray(xrOffset.scale)
-              )
-            )
-            .toArray(localViewMatrix);
-        } else {
-          localViewMatrix.set(viewMatrix);
-        }
-        return localViewMatrix;
-      },
-    };
-    _frame._pose = _pose;
-
-    return session;
-  }
-
-  supportsSession() {
-    return Promise.resolve(null);
-  }
-
-  /* getFrameData(frameData) {
-    frameData.copy(this._frameData);
-  } */
-
-  getLayers() {
-    return [
-      {
-        leftBounds: [0, 0, 0.5, 1],
-        rightBounds: [0.5, 0, 0.5, 1],
-        source: null,
-      }
-    ];
-  }
-
-  getEyeParameters(eye) {
-    const result = super.getEyeParameters(eye);
-    if (eye === 'right') {
-      result.renderWidth = 0;
-    }
-    return result;
   }
 
   pushUpdate() {
@@ -558,13 +374,14 @@ class FakeVRDisplay extends VRDisplay {
       this.quaternion,
       localVector2.set(1, 1, 1)
     )
-     .getInverse(localMatrix)
-     .toArray(GlobalContext.xrState.leftViewMatrix);
+      .getInverse(localMatrix)
+      .toArray(GlobalContext.xrState.leftViewMatrix);
     GlobalContext.xrState.rightViewMatrix.set(GlobalContext.xrState.leftViewMatrix);
 
     // update gamepads
-    for (let i = 0; i < this.gamepads.length; i++) {
-      const gamepad = this.gamepads[i];
+    const gamepads = navigator.getGamepads();
+    for (let i = 0; i < 2 && i < gamepads.length; i++) {
+      const gamepad = gamepads[i];
       localVector.copy(this.position)
         .add(
           localVector2.set(-0.3 + i*0.6, -0.3, 0)
@@ -581,31 +398,6 @@ class FakeVRDisplay extends VRDisplay {
         .toArray(gamepad.pose._localPointerMatrix);
 
       GlobalContext.xrState.gamepads[i].connected[0] = 1;
-    }
-  }
-
-  update() {
-    // emit gamepad events
-    for (let i = 0; i < this.gamepads.length; i++) {
-      const gamepad = this.gamepads[i];
-      const pressed = gamepad.buttons[1].pressed;
-      const lastPressed = this._lastPresseds[i];
-      if (pressed && !lastPressed) {
-        this.emit('selectstart', new GlobalContext.XRInputSourceEvent('selectstart', {
-          frame: this._frame,
-          inputSource: gamepad,
-        }));
-        this.emit('select', new GlobalContext.XRInputSourceEvent('select', {
-          frame: this._frame,
-          inputSource: gamepad,
-        }));
-      } else if (lastPressed && !pressed) {
-        this.emit('selectend', new GlobalContext.XRInputSourceEvent('selectend', {
-          frame: this._frame,
-          inputSource: gamepad,
-        }));
-      }
-      this._lastPresseds[i] = pressed;
     }
   }
 }
@@ -649,7 +441,7 @@ const hmdTypeStringMap = (() => {
 })();
 const lookupHMDTypeString = i => hmdTypeStringMap[i];
 
-const createVRDisplay = () => new FakeVRDisplay();
+const createFakeXRDisplay = () => new FakeXRDisplay();
 
 const controllerIDs = {
   fake: 'OpenVR Gamepad',
@@ -705,7 +497,7 @@ GlobalContext.clearGamepads = clearGamepads;
 
 module.exports = {
   VRDisplay,
-  FakeVRDisplay,
+  FakeXRDisplay,
   VRFrameData,
   VRPose,
   VRStageParameters,
@@ -714,6 +506,6 @@ module.exports = {
   getHMDType,
   lookupHMDTypeString,
   lookupHMDTypeIndex,
-  createVRDisplay,
+  createFakeXRDisplay,
   getGamepads
 };

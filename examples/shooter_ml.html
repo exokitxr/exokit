@@ -24,7 +24,7 @@
   <h1>shooter_ml</h1>
   <script src="three.js"></script>
   <script>
-    let container, scene, camera, renderer, display, controllerMeshes, hitMeshes;
+    let container, scene, camera, renderer, session, controllerMeshes, hitMeshes;
 
     const localVector = new THREE.Vector3();
     const localVector2 = new THREE.Vector3();
@@ -164,7 +164,7 @@
             controllerMeshes[i].visible = false;
           }
 
-          const inputSources = display.session.getInputSources();
+          const inputSources = session.getInputSources();
           for (let i = 0; i < inputSources.length; i++) {
             const inputSource = inputSources[i];
             const pose = frame.getInputPose(inputSource);
@@ -192,10 +192,10 @@
             bullet.updateMatrix();
             bullet.updateMatrixWorld(true);
 
-            if (display.session.requestHitTest && !bullet.hitTesting) {
+            if (session.requestHitTest && !bullet.hitTesting) {
               const startPosition = bullet.position.clone();
 
-              display.session.requestHitTest(
+              session.requestHitTest(
                 bullet.position
                   .toArray(localVectorFloat32Array),
                 localVector.set(0, 0, -1)
@@ -284,47 +284,47 @@
     init();
 
     (async () => {
-      console.log('request device');
-      display = await navigator.xr.requestDevice();
       console.log('request session');
-      const session = await display.requestSession({
+      session = await navigator.xr.requestSession({
         exclusive: true,
-      });
-      display.session = session;
+      }).catch(err => Promise.resolve(null));
 
-      session.onselect = e => {
-        const controllerIndex = _getControllerIndex(e.inputSource);
-        const controllerMesh = controllerMeshes[controllerIndex];
-        // controllerMesh.matrixWorld.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
+      if (session) {
+        session.onselect = e => {
+          const controllerIndex = _getControllerIndex(e.inputSource);
+          const controllerMesh = controllerMeshes[controllerIndex];
+          // controllerMesh.matrixWorld.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
 
-        const bullet = _makeBullet();
-        bullet.position.copy(controllerMesh.position);
-        bullet.quaternion.copy(controllerMesh.quaternion);
-        bullet.updateMatrix();
-        bullet.updateMatrixWorld(true);
-        scene.add(bullet);
-        bullets.push(bullet);
-      };
+          const bullet = _makeBullet();
+          bullet.position.copy(controllerMesh.position);
+          bullet.quaternion.copy(controllerMesh.quaternion);
+          bullet.updateMatrix();
+          bullet.updateMatrixWorld(true);
+          scene.add(bullet);
+          bullets.push(bullet);
+        };
 
-      session.requestAnimationFrame((timestamp, frame) => {
-        renderer.vr.setSession(session, {
-          frameOfReferenceType: 'stage',
+        session.requestAnimationFrame((timestamp, frame) => {
+          renderer.vr.setSession(session, {
+            frameOfReferenceType: 'stage',
+          });
+
+          const viewport = session.baseLayer.getViewport(frame.views[0]);
+          const width = viewport.width;
+          const height = viewport.height;
+
+          renderer.setSize(width * 2, height);
+
+          renderer.setAnimationLoop(null);
+
+          renderer.vr.enabled = true;
+          renderer.vr.setAnimationLoop(animate);
+
+          console.log('running!');
         });
-
-        const viewport = session.baseLayer.getViewport(frame.views[0]);
-        const width = viewport.width;
-        const height = viewport.height;
-
-        renderer.setSize(width * 2, height);
-
-        renderer.setAnimationLoop(null);
-
-        renderer.vr.enabled = true;
-        renderer.vr.setDevice(display);
-        renderer.vr.setAnimationLoop(animate);
-
-        console.log('running!');
-      });
+      } else {
+        console.log('no xr devices');
+      }
     })();
   </script>
   </body>

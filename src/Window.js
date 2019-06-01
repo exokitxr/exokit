@@ -52,7 +52,7 @@ const THREE = require('../lib/three-min.js');
 const {
   MRDisplay,
   VRDisplay,
-  FakeVRDisplay,
+  FakeXRDisplay,
   VRFrameData,
   VRPose,
   VRStageParameters,
@@ -189,26 +189,6 @@ const vrPresentState = {
   responseAccepts: [],
 };
 GlobalContext.vrPresentState = vrPresentState;
-
-const oculusMobileVrPresentState = {
-  vrContext: null,
-  isPresenting: false,
-  glContextId: 0,
-  cleanups: null,
-  hasPose: false,
-};
-GlobalContext.oculusMobileVrPresentState = oculusMobileVrPresentState;
-
-const mlPresentState = {
-  mlContext: null,
-  msFbo: null,
-  msTex: null,
-  msDepthTex: null,
-  mlGlContextId: 0,
-  mlCleanups: null,
-  mlHasPose: false,
-};
-GlobalContext.mlPresentState = mlPresentState;
 
 class CustomElementRegistry {
   constructor(window) {
@@ -537,19 +517,9 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
     },
     webkitGetUserMedia: getUserMedia, // for feature detection
     getVRDisplaysSync() {
-      const hmdType = getHMDType();
-
-      if (hmdType) {
-        if (hmdType === 'fake') {
-          return [window[symbols.mrDisplaysSymbol].fakeVrDisplay];
-        } else {
-          return [window[symbols.mrDisplaysSymbol].vrDisplay];
-        }
-      } else {
-        return [];
-      }
+      return getHMDType() ? [window[symbols.mrDisplaysSymbol].vrDisplay] : [];
     },
-    createVRDisplay(width, height) {
+    createFakeXRDisplay(width, height) {
       GlobalContext.xrState.fakeVrDisplayEnabled[0] = 1;
       if (width !== undefined) {
         GlobalContext.xrState.renderWidth[0] = width;
@@ -557,7 +527,7 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
       if (height !== undefined) {
         GlobalContext.xrState.renderHeight[0] = height;
       }
-      return window[symbols.mrDisplaysSymbol].fakeVrDisplay;
+      return new FakeXRDisplay();
     },
     getGamepads: getGamepads.bind(null, window),
     clipboard: {
@@ -852,26 +822,26 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
   window.Gamepad = Gamepad;
   window.VRStageParameters = VRStageParameters;
   window.VRDisplay = VRDisplay;
-  window.FakeVRDisplay = FakeVRDisplay;
   // window.ARDisplay = ARDisplay;
   window.VRFrameData = VRFrameData;
   if (window.navigator.xr) {
     window.XR = XR.XR;
-    window.XRDevice = XR.XRDevice;
+    // window.XRDevice = XR.XRDevice;
     window.XRSession = XR.XRSession;
+    window.XRRenderState = XR.XRRenderState;
     window.XRWebGLLayer = XR.XRWebGLLayer;
-    window.XRPresentationFrame = XR.XRPresentationFrame;
+    window.XRFrame = XR.XRFrame;
     window.XRView = XR.XRView;
     window.XRViewport = XR.XRViewport;
-    window.XRDevicePose = XR.XRDevicePose;
+    window.XRPose = XR.XRPose;
+    window.XRViewerPose = XR.XRViewerPose;
     window.XRInputSource = XR.XRInputSource;
     window.XRRay = XR.XRRay;
     window.XRInputPose = XR.XRInputPose;
     window.XRInputSourceEvent = XR.XRInputSourceEvent;
-    window.XRCoordinateSystem = XR.XRCoordinateSystem;
-    window.XRFrameOfReference = XR.XRFrameOfReference;
-    window.XRStageBounds = XR.XRStageBounds;
-    window.XRStageBoundsPoint = XR.XRStageBoundsPoint;
+    window.XRSpace = XR.XRSpace;
+    window.XRReferenceSpace = XR.XRReferenceSpace;
+    window.XRBoundedReferenceSpace = XR.XRBoundedReferenceSpace;
   }
   window.TextEncoder = TextEncoder;
   window.TextDecoder = TextDecoder;
@@ -1015,11 +985,8 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
     }
   };
   const _emitXrEvents = () => {
-    if (vrPresentState.hmdType === 'fake') {
-      window[symbols.mrDisplaysSymbol].fakeVrDisplay.update();
-    }
-    if (window[symbols.mrDisplaysSymbol].vrDevice.session) {
-      window[symbols.mrDisplaysSymbol].vrDevice.session.update();
+    if (window[symbols.mrDisplaysSymbol].xrSession.isPresenting) {
+      window[symbols.mrDisplaysSymbol].xrSession.update();
     }
   };
   const _tickLocalRafs = () => {
@@ -1197,6 +1164,8 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
         vrPresentState.fbo = context.createFramebuffer().id;
         vrPresentState.msFbo = context.createFramebuffer().id;
         vrPresentState.glContext.setTopLevel(false);
+        
+        window.document.emit('domchange'); // open mirror window
       }
 
       return {
@@ -1222,16 +1191,6 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
       GlobalContext.clearGamepads();
     };
 
-    const fakeVrDisplay = new FakeVRDisplay(window);
-    fakeVrDisplay.onrequestpresent = _onrequestpresent;
-    fakeVrDisplay.onmakeswapchain = _onmakeswapchain;
-    fakeVrDisplay.onexitpresent = _onexitpresent;
-    fakeVrDisplay.onrequestanimationframe = _makeRequestAnimationFrame(window);
-    fakeVrDisplay.oncancelanimationframe = window.cancelAnimationFrame;
-    fakeVrDisplay.onlayers = layers => {
-      vrPresentState.layers = layers;
-    };
-
     const vrDisplay = new VRDisplay('OpenVR', window);
     vrDisplay.onrequestanimationframe = _makeRequestAnimationFrame(window);
     vrDisplay.oncancelanimationframe = window.cancelAnimationFrame;
@@ -1247,30 +1206,25 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
       vrPresentState.layers = layers;
     };
     
-    const vrDevice = new XR.XRDevice('OpenVR', window);
-    vrDevice.onrequestpresent = _onrequestpresent;
-    vrDevice.onmakeswapchain = _onmakeswapchain;
-    vrDevice.onexitpresent = _onexitpresent;
-    vrDevice.onrequestanimationframe = _makeRequestAnimationFrame(window);
-    vrDevice.oncancelanimationframe = window.cancelAnimationFrame;
-    vrDevice.requestSession = (requestSession => function() {
-      return requestSession.apply(this, arguments)
-        .then(session => {
-          vrDisplay.isPresenting = true;
-          session.once('end', () => {
-            vrDisplay.isPresenting = false;
-          });
-          return session;
-        });
-    })(vrDevice.requestSession);
-    vrDevice.onlayers = layers => {
+    const xrSession = new XR.XRSession({}, window);
+    xrSession.onrequestpresent = (onrequestpresent => function() {
+      vrDisplay.isPresenting = true;
+      xrSession.once('end', () => {
+        vrDisplay.isPresenting = false;
+      });
+      return onrequestpresent.apply(this, arguments);
+    })(_onrequestpresent);
+    xrSession.onmakeswapchain = _onmakeswapchain;
+    xrSession.onexitpresent = _onexitpresent;
+    xrSession.onrequestanimationframe = _makeRequestAnimationFrame(window);
+    xrSession.oncancelanimationframe = window.cancelAnimationFrame;
+    xrSession.onlayers = layers => {
       vrPresentState.layers = layers;
     };
 
     return {
-      fakeVrDisplay,
       vrDisplay,
-      vrDevice,
+      xrSession,
     };
   };
   window[symbols.mrDisplaysSymbol] = _makeMrDisplays();
