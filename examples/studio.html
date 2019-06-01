@@ -3179,8 +3179,12 @@ const _emitLayersExitPresent = () => {
 };
 const _startFakeVrDisplay = async (width, height) => {
   fakeXrDisplay = new FakeXRDisplay();
-  fakeXrDisplay.width = width;
-  fakeXrDisplay.height = height;
+  if (isFinite(width)) {
+    fakeXrDisplay.width = width;
+  }
+  if (isFinite(height)) {
+    fakeXrDisplay.height = height;
+  }
   fakeXrDisplay.position.set(0, 1.6, 0);
   fakeXrDisplay.pushUpdate();
   fakeXrDisplay.hidden = true; // XXX can be an actual hidden check
