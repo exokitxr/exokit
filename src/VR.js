@@ -618,10 +618,10 @@ class FakeXRDisplay {
   }
 
   get width() {
-    return GlobalContext.xrState.renderWidth[0];
+    return GlobalContext.xrState.renderWidth[0]*2;
   }
   set width(width) {
-    GlobalContext.xrState.renderWidth[0] = width;
+    GlobalContext.xrState.renderWidth[0] = width/2;
   }
   get height() {
     return GlobalContext.xrState.renderHeight[0];
