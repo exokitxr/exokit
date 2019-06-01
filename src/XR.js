@@ -453,6 +453,10 @@ class XRPose {
   constructor() {
     this.transform = new XRRigidTransform();
     this.emulatedPosition = false;
+
+    this._realViewMatrix = this.transform.inverse.matrix;
+    this._localViewMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+    this.transform.inverse.matrix = this._localViewMatrix;
   }
 }
 module.exports.XRPose = XRPose;
@@ -477,7 +481,7 @@ class XRViewerPose extends XRPose {
   getViewMatrix(view) { // non-standard
     if (this.frame.session.renderState.baseLayer && this.frame.session.renderState.baseLayer.context.canvas.ownerDocument.xrOffset) {
       const {xrOffset} = this.frame.session.renderState.baseLayer.context.canvas.ownerDocument;
-      
+
       localMatrix
         .fromArray(view._realViewMatrix)
         .multiply(
@@ -498,15 +502,21 @@ class XRInputSource {
     this.pointerOrigin = pointerOrigin;
     this._index = index;
 
+    const gamepad = GlobalContext.xrState.gamepads[index];
+
     this.targetRayMode = 'hand';
     this.targetRaySpace = new XRSpace();
+    this.targetRaySpace._pose._realViewMatrix = gamepad.transformMatrix;
+    this.targetRaySpace._pose._localViewMatrix = this.targetRaySpace._pose.transform.inverse.matrix;
     this.gripSpace = new XRSpace();
+    this.gripSpace._pose._realViewMatrix = gamepad.transformMatrix;
+    this.gripSpace._pose._localViewMatrix = this.targetRaySpace._pose.transform.inverse.matrix;
 
     this._inputPose = new XRInputPose();
-    const gamepad = GlobalContext.xrState.gamepads[index];
     this._inputPose.targetRay.origin.values = gamepad.position;
     this._inputPose.targetRay.direction.values = gamepad.direction;
-    this._inputPose._localPointerMatrix = gamepad.transformMatrix;
+    this._inputPose._realViewMatrix = gamepad.transformMatrix;
+    this._inputPose._localViewMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
   }
   get connected() {
     return GlobalContext.xrState.gamepads[this._index].connected[0] !== 0;
@@ -528,7 +538,6 @@ class XRInputPose { // non-standard
   constructor() {
     this.targetRay = new XRRay();
     this.gripTransform = new XRRigidTransform();
-    // this._localPointerMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
   }
 }
 module.exports.XRInputPose = XRInputPose;
