@@ -3242,9 +3242,7 @@ const _startFakeVrDisplay = async (width, height) => {
 };
 const _endFakeVrDisplay = async () => {
   if (fakeXrDisplay.session) {
-    console.log('end fake vr display 1');
     await fakeXrDisplay.session.end();
-    console.log('end fake vr display 4');
   } else if (fakeXrDisplay.display) {
     await fakeXrDisplay.display.exitPresent();
   }
