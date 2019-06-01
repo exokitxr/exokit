@@ -361,8 +361,6 @@ const _handleRequest = ({type, keypath}) => {
       const width = halfWidth * 2;
 
       const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = nativeBindings.nativeWindow.createVrTopRenderTarget(width, height);
-      
-      console.log('top vr render target', fbo, tex, depthTex, msFbo, msTex, msDepthTex);
 
       topVrPresentState.fbo = fbo;
       topVrPresentState.msFbo = msFbo;

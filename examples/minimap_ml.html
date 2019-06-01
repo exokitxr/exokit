@@ -24,7 +24,7 @@
   <h1>minimap_ml</h1>
   <script src="three.js"></script>
   <script>
-    let container, scene, camera, renderer, display, controllerMeshes, rayMeshes, planeMesh, containerMesh;
+    let container, scene, camera, renderer, session, controllerMeshes, rayMeshes, planeMesh, containerMesh;
     let intersectScene, intersectCamera, renderTarget, terrainMeshes;
     let mesher = null;
 
@@ -344,7 +344,7 @@
           controllerMeshes[i].visible = false;
         }
 
-        const inputSources = display.session.getInputSources();
+        const inputSources = session.getInputSources();
         for (let i = 0; i < inputSources.length; i++) {
           const inputSource = inputSources[i];
           const pose = frame.getInputPose(inputSource);
@@ -442,38 +442,36 @@
 
     (async () => {
       if (navigator.xr) {
-        console.log('request device');
-        display = await navigator.xr.requestDevice();
         console.log('request session');
-        const session = await display.requestSession({
+        session = await navigator.xr.requestSession({
           exclusive: true,
-        });
-        display.session = session;
+        }).catch(err => Promise.resolve(null));
 
-        // console.log('request first frame');
-        session.requestAnimationFrame((timestamp, frame) => {
-          renderer.vr.setSession(session, {
-            frameOfReferenceType: 'stage',
+        if (session) {
+          // console.log('request first frame');
+          session.requestAnimationFrame((timestamp, frame) => {
+            renderer.vr.setSession(session, {
+              frameOfReferenceType: 'stage',
+            });
+
+            const viewport = session.baseLayer.getViewport(frame.views[0]);
+            const width = viewport.width;
+            const height = viewport.height;
+
+            renderer.setSize(width * 2, height);
+
+            renderer.setAnimationLoop(null);
+
+            renderer.vr.enabled = true;
+            renderer.vr.setAnimationLoop(animate);
+
+            console.log('running xr!');
           });
-
-          const viewport = session.baseLayer.getViewport(frame.views[0]);
-          const width = viewport.width;
-          const height = viewport.height;
-
-          renderer.setSize(width * 2, height);
-
-          renderer.setAnimationLoop(null);
-
-          renderer.vr.enabled = true;
-          renderer.vr.setDevice(display);
-          renderer.vr.setAnimationLoop(animate);
-
-          console.log('running!');
-        });
+        }
       } else {
         renderer.vr.setAnimationLoop(animate);
 
-        console.log('running!');
+        console.log('running 2d!');
       }
     })();
   </script>

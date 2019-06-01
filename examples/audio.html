@@ -9,7 +9,7 @@
   <body>
   <script src="three.js"></script>
   <script>
-    let container, scene, camera, renderer, display/*, controllerMeshes*/;
+    let container, scene, camera, renderer, session/*, controllerMeshes*/;
     let audio = null;
 
     const controllerGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.01);
@@ -79,7 +79,7 @@
           controllerMeshes[i].visible = false;
         }
 
-        const inputSources = display.session.getInputSources();
+        const inputSources = session.getInputSources();
         for (let i = 0; i < inputSources.length; i++) {
           const inputSource = inputSources[i];
           const pose = frame.getInputPose(inputSource);
@@ -116,22 +116,23 @@
     audio.src = 'ohno.mp3';
 
     (async () => {
-      console.log('request device');
-      display = await navigator.xr.requestDevice();
       console.log('request session');
-      const session = await display.requestSession({
+      session = await navigator.xr.requestSession({
         exclusive: true,
-      });
-      display.session = session;
+      }).catch(err => Promise.resolve(null));
 
-      // console.log('request first frame');
-      session.requestAnimationFrame((timestamp, frame) => {
-        renderer.vr.setSession(session, {
-          frameOfReferenceType: 'stage',
+      if (session) {
+        // console.log('request first frame');
+        session.requestAnimationFrame((timestamp, frame) => {
+          renderer.vr.setSession(session, {
+            frameOfReferenceType: 'stage',
+          });
+
+          console.log('running!');
         });
-
-        console.log('running!');
-      });
+      } else {
+        console.log('no xr devices');
+      }
     })();
   </script>
   </body>
