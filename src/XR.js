@@ -317,14 +317,12 @@ class XRWebGLLayer {
       depth = false,
       stencil = false,
       alpha = true,
-      multiview = false,
       framebufferScaleFactor = 1,
     } = options;
     this.antialias = antialias;
     this.depth = depth;
     this.stencil = stencil;
     this.alpha = alpha;
-    this.multiview = multiview;
 
     const {fbo} = this.session.onmakeswapchain(context);
     
