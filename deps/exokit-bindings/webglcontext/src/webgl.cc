@@ -1160,7 +1160,7 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
 
   // OVR_multiview2
   Nan::SetMethod(proto, "framebufferTextureMultiviewOVR", glCallWrap<FramebufferTextureMultiviewOVR>);
-  Nan::SetMethod(proto, "FramebufferTextureMultisampleMultiviewOVR", glCallWrap<FramebufferTextureMultisampleMultiviewOVR>);
+  Nan::SetMethod(proto, "framebufferTextureMultisampleMultiviewOVR", glCallWrap<FramebufferTextureMultisampleMultiviewOVR>);
 
   setGlConstants(proto);
 
@@ -4967,8 +4967,10 @@ NAN_METHOD(WebGLRenderingContext::GetSupportedExtensions) {
   int numExtensions = sizeof(webglExtensions)/sizeof(webglExtensions[0]);
   Local<Array> result = Nan::New<Array>(numExtensions);
   for (GLint i = 0; i < numExtensions; i++) {
-    // char *extension = (char *)glGetStringi(GL_EXTENSIONS, i);
-    result->Set(i, JS_STR(webglExtensions[i]));
+    char *extension = (char *)glGetStringi(GL_EXTENSIONS, i);
+    if(extension || extension has WEBGL){
+      result->Set(i, JS_STR(webglExtensions[i]));
+    }
   }
 
   /* for (GLint i = 0; i < numExtensions; i++) {
