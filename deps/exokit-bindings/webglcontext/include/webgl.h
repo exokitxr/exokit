@@ -353,7 +353,6 @@ public:
   static NAN_METHOD(FramebufferTextureMultiviewOVR);
   static NAN_METHOD(FramebufferTextureMultisampleMultiviewOVR);
 
-
   void SetVertexArrayBinding(GLuint vao) {
     vertexArrayBindings[GL_VERTEX_SHADER] = vao;
   }
