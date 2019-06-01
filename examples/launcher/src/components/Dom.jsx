@@ -50,7 +50,16 @@ class Dom extends React.Component {
             name: 'lol',
             value: 'zol',
           }],
-          childNodes: [],
+          childNodes: [{
+            nodeType: 1,
+            tagName: 'IFRAME',
+            value: '',
+            attrs: [{
+              name: 'src',
+              value: 'http://lol.com/',
+            }],
+            childNodes: [],
+          }],
         },
       ],
     };
