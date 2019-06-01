@@ -1274,7 +1274,7 @@ const _startTopRenderLoop = () => {
   }))
     .catch(err => {
       if (err.code !== 'ECANCEL') {
-        console.warn(err.stack);
+        console.warn(err);
       }
       return Promise.resolve([]);
     })
