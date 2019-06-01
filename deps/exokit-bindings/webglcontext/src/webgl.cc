@@ -2493,7 +2493,7 @@ NAN_METHOD(WebGLRenderingContext::FramebufferTextureMultiviewOVR) {
   GLint baseViewIndex = TO_INT32(info[4]);
   GLsizei numViews = TO_UINT32(info[5]);
 
-  glframebufferTextureMultiviewOVR(target, attachment, texture, level, baseViewIndex, numViews);
+  glFramebufferTextureMultiviewOVR(target, attachment, texture, level, baseViewIndex, numViews);
 }
 
 NAN_METHOD(WebGLRenderingContext::FramebufferTextureMultisampleMultiviewOVR) {
@@ -2505,7 +2505,7 @@ NAN_METHOD(WebGLRenderingContext::FramebufferTextureMultisampleMultiviewOVR) {
   GLint baseViewIndex = TO_INT32(info[5]);
   GLsizei numViews = TO_UINT32(info[6]);
 
-  glFramebufferTextureMultisampleMultiviewOVR(target, attachment, texture, level, baseViewIndex, numViews);
+  glFramebufferTextureMultisampleMultiviewOVR(target, attachment, texture, level, samples, baseViewIndex, numViews);
 }
 
 NAN_METHOD(WebGLRenderingContext::GetShaderParameter) {
