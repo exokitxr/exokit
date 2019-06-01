@@ -353,18 +353,6 @@ class VRDisplay extends EventEmitter {
       this.onlayers(layers);
     }
   }
-  get texture() {
-    return {
-      id: GlobalContext.xrState.tex[0],
-    };
-  }
-  set texture(texture) {}
-  get hidden() {
-    return GlobalContext.xrState.hidden[0] != 0;
-  }
-  set hidden(hidden) {
-    GlobalContext.xrState.hidden[0] = hidden ? 1 : 0;
-  }
 
   destroy() {
     for (let i = 0; i < this._rafs.length; i++) {
@@ -625,6 +613,19 @@ class FakeXRDisplay {
 
       gamepad.connected = true;
     }
+  }
+
+  get texture() {
+    return {
+      id: GlobalContext.xrState.tex[0],
+    };
+  }
+  set texture(texture) {}
+  get hidden() {
+    return GlobalContext.xrState.hidden[0] != 0;
+  }
+  set hidden(hidden) {
+    GlobalContext.xrState.hidden[0] = hidden ? 1 : 0;
   }
 }
 
