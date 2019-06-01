@@ -11,7 +11,7 @@
     <script src="xrmp.js"></script>
     <script src="xrmp-three.js"></script>
     <script>
-let display, fakeDisplay, tabs = [], tabId = 0, xrmp, lastPresseds = [false, false], lastAxes = [[0.5, 0.5], [0.5, 0.5]], lastPadToucheds = [false, false], scrollFactors = [0, 0], scaleFactors = [1, 1], viewport = new THREE.Vector4(), menuOpen = false, orbitControls, transformControls;
+let display, fakeXrDisplay, tabs = [], tabId = 0, xrmp, lastPresseds = [false, false], lastAxes = [[0.5, 0.5], [0.5, 0.5]], lastPadToucheds = [false, false], scrollFactors = [0, 0], scaleFactors = [1, 1], viewport = new THREE.Vector4(), menuOpen = false, orbitControls, transformControls;
 
 const links = [
   {
@@ -1076,8 +1076,8 @@ const _bindEventTarget = target => {
         const _addOrbitControls = () => {
           const orbitCamera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
           orbitControls = new THREE.OrbitControls(orbitCamera);
-          orbitCamera.position.copy(fakeDisplay.position);
-          orbitCamera.quaternion.copy(fakeDisplay.quaternion);
+          orbitCamera.position.copy(fakeXrDisplay.position);
+          orbitCamera.quaternion.copy(fakeXrDisplay.quaternion);
           scene.add(orbitCamera);
           orbitCamera.updateMatrixWorld();
           orbitControls.target.copy(orbitCamera.position).add(new THREE.Vector3(0, 0, -1).applyQuaternion(orbitCamera.quaternion));
@@ -1228,12 +1228,14 @@ const _bindEventTarget = target => {
       }, */
       mousedown(e) {
         if (window.document.pointerLockElement) {
-          fakeDisplay.gamepads[1].buttons[1].pressed = true;
+          const gamepads = navigator.getGamepads();
+          gamepads[1].buttons[1].pressed = true;
         }
       },
       mouseup(e) {
         if (window.document.pointerLockElement) {
-          fakeDisplay.gamepads[1].buttons[1].pressed = false;
+          const gamepads = navigator.getGamepads();
+          gamepads[1].buttons[1].pressed = false;
         }
       },
       mousemove(e) {
@@ -1249,13 +1251,13 @@ const _bindEventTarget = target => {
             controllerOffset.x += movementX * 0.002;
             controllerOffset.z += movementY * 0.002;
           } else { */
-            localEuler.setFromQuaternion(fakeDisplay.quaternion, localEuler.order);
+            localEuler.setFromQuaternion(fakeXrDisplay.quaternion, localEuler.order);
             localEuler.y -= movementX * 0.01;
             localEuler.x -= movementY * 0.01;
             localEuler.x = Math.min(Math.max(localEuler.x, -Math.PI/2), Math.PI/2);
-            fakeDisplay.quaternion.setFromEuler(localEuler);
+            fakeXrDisplay.quaternion.setFromEuler(localEuler);
 
-            fakeDisplay.pushUpdate();
+            fakeXrDisplay.pushUpdate();
           // }
         }
       },
@@ -1296,7 +1298,8 @@ const _bindEventTarget = target => {
               break;
             }
             case 69: { // E
-              fakeDisplay.gamepads[1].buttons[2].pressed = true;
+              const gamepads = navigator.getGamepads();
+              gamepads[1].buttons[2].pressed = true;
               break;
             }
             case 32: { // space
@@ -1342,7 +1345,8 @@ const _bindEventTarget = target => {
               break;
             }
             case 69: { // E
-              fakeDisplay.gamepads[1].buttons[2].pressed = false;
+              const gamepads = navigator.getGamepads();
+              gamepads[1].buttons[2].pressed = false;
               break;
             }
             case 32: { // space
@@ -3011,10 +3015,10 @@ function animateXrScene(time, frame) {
     if (orbitControls) {
       orbitControls.update();
 
-      fakeDisplay.position.copy(orbitControls.object.position);
+      fakeXrDisplay.position.copy(orbitControls.object.position);
       // console.log('got pos', orbitControls.object.position.toArray().join(','));
-      fakeDisplay.quaternion.copy(orbitControls.object.quaternion);
-      fakeDisplay.pushUpdate();
+      fakeXrDisplay.quaternion.copy(orbitControls.object.quaternion);
+      fakeXrDisplay.pushUpdate();
     }
   };
   _updateOrbitControls();
@@ -3025,7 +3029,7 @@ function animateXrScene(time, frame) {
   _render();
 
   const _updateMovement = () => {
-    if (fakeDisplay) {
+    if (fakeXrDisplay) {
       // if (window.document.pointerLockElement) {
         // let moving = false;
         const speed = 0.004;
@@ -3057,13 +3061,13 @@ function animateXrScene(time, frame) {
 
         // if (moving) {
           // velocity.multiplyScalar(Math.pow(moving ? 0.98 : 0.91, timePassed / 5));
-          localEuler.setFromQuaternion(fakeDisplay.quaternion, localEuler.order);
+          localEuler.setFromQuaternion(fakeXrDisplay.quaternion, localEuler.order);
           localEuler.x = 0;
-          fakeDisplay.position.add(
+          fakeXrDisplay.position.add(
             localVector.copy(velocity)
               .applyEuler(localEuler)
           );
-          fakeDisplay.pushUpdate();
+          fakeXrDisplay.pushUpdate();
         // }
       // }
     }
@@ -3133,7 +3137,7 @@ function animateComposeContext(time, frame) {
   }
   if (!menuOpen) {
     composeContext.bindFramebuffer(composeContext.READ_FRAMEBUFFER, composeContext.readFbo);
-    composeContext.framebufferTexture2D(composeContext.READ_FRAMEBUFFER, composeContext.COLOR_ATTACHMENT0, composeContext.TEXTURE_2D, display.texture, 0);
+    composeContext.framebufferTexture2D(composeContext.READ_FRAMEBUFFER, composeContext.COLOR_ATTACHMENT0, composeContext.TEXTURE_2D, fakeXrDisplay.texture, 0);
 
     // composeContext.bindFramebuffer(composeContext.DRAW_FRAMEBUFFER, 0);
     // glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, composeContext.worldTex, 0);
@@ -3174,15 +3178,16 @@ const _emitLayersExitPresent = () => {
   }
 };
 const _startFakeVrDisplay = async (width, height) => {
-  fakeDisplay = window.navigator.createVRDisplay(width, height);
-  fakeDisplay.position.set(0, 1.6, 0);
-  fakeDisplay.pushUpdate();
-  fakeDisplay.hidden = true; // XXX can be an actual hidden check
+  fakeXrDisplay = navigator.createFakeXRDisplay(width, height);
+  fakeXrDisplay.position.set(0, 1.6, 0);
+  fakeXrDisplay.pushUpdate();
+  fakeXrDisplay.hidden = true; // XXX can be an actual hidden check
 
   if (navigator.xr) {
-    const session = await fakeDisplay.requestSession({
+    const session = await navigator.xr.requestSession({
       exclusive: true,
     });
+    fakeXrDisplay.session = session;
 
     const _end = () => {
       renderer.vr.enabled = false;
@@ -3197,8 +3202,7 @@ const _startFakeVrDisplay = async (width, height) => {
 
     await new Promise((accept, reject) => {
       session.requestAnimationFrame((timestamp, frame) => {
-
-        fakeDisplay.layers = layers;
+        session.layers = layers;
 
         renderer.vr.enabled = true;
         renderer.vr.setSession(session, {
@@ -3212,37 +3216,38 @@ const _startFakeVrDisplay = async (width, height) => {
       });
     });
   } else {
-    await fakeDisplay.requestPresent([{
+    const displays = await navigator.getVRDisplays();
+    const display = displays[0];
+    await display.requestPresent([{
       source: renderer.domElement,
     }]);
+
+    fakeXrDisplay.display = display;
 
     const _vrdisplaypresentchange = () => {
       _emitLayersExitPresent();
 
-      fakeDisplay.removeEventListener('vrdisplaypresentchange', _vrdisplaypresentchange);
+      display.removeEventListener('vrdisplaypresentchange', _vrdisplaypresentchange);
     };
-    fakeDisplay.addEventListener('vrdisplaypresentchange', _vrdisplaypresentchange);
+    display.addEventListener('vrdisplaypresentchange', _vrdisplaypresentchange);
 
-    fakeDisplay.layers = layers;
+    display.layers = layers;
 
     renderer.vr.enabled = true;
-    renderer.vr.setDevice(fakeDisplay);
+    renderer.vr.setDevice(display);
     renderer.vr.setAnimationLoop(animate);
   }
-
-  display = fakeDisplay;
 };
 const _endFakeVrDisplay = async () => {
-  if (fakeDisplay.session) {
+  if (fakeXrDisplay.session) {
     console.log('end fake vr display 1');
-    await fakeDisplay.session.end();
+    await fakeXrDisplay.session.end();
     console.log('end fake vr display 4');
-  } else {
-    await fakeDisplay.exitPresent();
+  } else if (fakeXrDisplay.display) {
+    await fakeXrDisplay.display.exitPresent();
   }
 
-  fakeDisplay = null;
-  display = null;
+  fakeXrDisplay = null;
 
   // renderer.domElement.framebuffer = null; // XXX destroy this framebuffer
 };
