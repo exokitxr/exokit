@@ -4946,7 +4946,6 @@ const char *webglExtensions[] = {
   "OES_texture_half_float",
   "OES_texture_half_float_linear",
   "OES_vertex_array_object",
-  "OVR_multiview_multisampled_render_to_texture",
   "WEBGL_color_buffer_float",
   "WEBGL_compressed_texture_astc",
   "WEBGL_compressed_texture_atc",
