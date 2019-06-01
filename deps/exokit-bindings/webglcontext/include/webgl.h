@@ -323,7 +323,7 @@ public:
   static NAN_METHOD(GetSupportedExtensions);
   static NAN_METHOD(GetExtension);
   static NAN_METHOD(GetContextAttributes);
-  
+
   static NAN_METHOD(CheckFramebufferStatus);
 
   static NAN_METHOD(CreateVertexArray);
@@ -349,6 +349,10 @@ public:
   static NAN_METHOD(SetDefaultFramebuffer);
 
   static NAN_METHOD(SetTopLevel);
+
+  static NAN_METHOD(FramebufferTextureMultiviewOVR);
+  static NAN_METHOD(FramebufferTextureMultisampleMultiviewOVR);
+
 
   void SetVertexArrayBinding(GLuint vao) {
     vertexArrayBindings[GL_VERTEX_SHADER] = vao;
@@ -441,7 +445,7 @@ public:
   static std::pair<Local<Object>, Local<FunctionTemplate>> Initialize(Isolate *isolate, Local<FunctionTemplate> baseCtor);
 
   static NAN_METHOD(New);
-  
+
   static NAN_METHOD(CreateQuery);
   static NAN_METHOD(BeginQuery);
   static NAN_METHOD(EndQuery);
@@ -449,7 +453,7 @@ public:
   static NAN_METHOD(GetQueryParameter);
   static NAN_METHOD(IsQuery);
   static NAN_METHOD(DeleteQuery);
-  
+
   static NAN_METHOD(CreateTransformFeedback);
   static NAN_METHOD(DeleteTransformFeedback);
   static NAN_METHOD(IsTransformFeedback);
@@ -460,7 +464,7 @@ public:
   static NAN_METHOD(GetTransformFeedbackVarying);
   static NAN_METHOD(PauseTransformFeedback);
   static NAN_METHOD(ResumeTransformFeedback);
-  
+
   static NAN_METHOD(CreateSampler);
   static NAN_METHOD(DeleteSampler);
   static NAN_METHOD(IsSampler);
