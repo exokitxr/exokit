@@ -24,16 +24,16 @@
   <h1>meshing_ml</h1>
   <script src="three.js"></script>
   <script>
-    let container, scene, camera, session;
+    let container, scene, camera, display, cubeMesh, mesher;
     // let mesher = null;
 
-    /* const localVector = new THREE.Vector3();
+    const localVector = new THREE.Vector3();
     const localVector2 = new THREE.Vector3();
     const localEuler = new THREE.Euler();
     const localMatrix = new THREE.Matrix4();
-    const localFloat32Array = new Float32Array(16);
+    // const localFloat32Array = new Float32Array(16);
 
-    const numCubes = 100;
+    /* const numCubes = 100;
     const cubeSize = 0.2;
     const cubeRange = 1;
     const cubeGeometry = new THREE.BoxBufferGeometry(1, 1, 1); */
@@ -214,6 +214,22 @@
       const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
       directionalLight.position.set(1, 1, 1);
       scene.add(directionalLight);
+      
+      cubeMesh = (() => {
+        const geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
+        const material = new THREE.MeshPhongMaterial({
+          color: 0xab47bc,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        // mesh.position.x = parseFloat(query.x) || 0;
+        /* mesh.position.x = 0.05;
+        mesh.position.y = 1.55;
+        mesh.position.z = -1 + 0.05; */
+        // mesh.rotation.order = 'YXZ';
+        mesh.frustumCulled = false;
+        return mesh;
+      })();
+      scene.add(cubeMesh);
 
       renderer = new THREE.WebGLRenderer({
         antialias: true,
@@ -241,50 +257,67 @@
         model.updateMatrixWorld();
       } */
 
+      if (mesher) {
+        cubeMesh.position.fromArray(mesher.position);
+        cubeMesh.quaternion.fromArray(mesher.orientation);
+      }
+
       renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
     }
 
     init();
 
     (async () => {
+      console.log('request device');
+      display = await navigator.xr.requestDevice();
       console.log('request session');
-      session = await navigator.xr.requestSession({
+      const session = await display.requestSession({
         exclusive: true,
-        extensions: {
+        /* extensions: {
           meshing: true,
-        },
-      }).catch(err => Promise.resolve(null));
+        }, */
+      });
 
-      if (session) {
-        // console.log('request first frame');
-        session.requestAnimationFrame((timestamp, frame) => {
-          renderer.vr.setSession(session, {
-            frameOfReferenceType: 'stage',
-          });
-
-          const viewport = session.baseLayer.getViewport(frame.views[0]);
-          const width = viewport.width;
-          const height = viewport.height;
-
-          renderer.setSize(width * 2, height);
-
-          renderer.setAnimationLoop(null);
-
-          renderer.vr.enabled = true;
-          renderer.vr.setAnimationLoop(animate);
-
-          session.addEventListener('meshadd', _meshadd);
-          session.addEventListener('meshupdate', _meshupdate);
-          session.addEventListener('meshremove', _meshremove);
-
-          /* mesher = session.requestMeshing();
-          mesher.onmesh = _onMesh; */
-
-          console.log('running!');
+      // console.log('request first frame');
+      session.requestAnimationFrame((timestamp, frame) => {
+        renderer.vr.setSession(session, {
+          frameOfReferenceType: 'stage',
         });
-      } else {
-        console.log('no xr devices');
-      }
+
+        const viewport = session.baseLayer.getViewport(frame.views[0]);
+        const width = viewport.width;
+        const height = viewport.height;
+
+        renderer.setSize(width * 2, height);
+
+        renderer.setAnimationLoop(null);
+
+        renderer.vr.enabled = true;
+        renderer.vr.setDevice(display);
+        renderer.vr.setAnimationLoop(animate);
+        
+        session.addEventListener('meshadd', _meshadd);
+        session.addEventListener('meshupdate', _meshupdate);
+        session.addEventListener('meshremove', _meshremove);
+        
+        mesher = window.zed.requestMeshing();
+        mesher.on('meshes', meshes => {
+          const oldMeshes = terrainMeshes.slice();
+          for (let i = 0; i < oldMeshes.length; i++) {
+            _removeTerrainMesh(oldMeshes[i]);
+          }
+          for (let i = 0; i < meshes.length; i++) {
+            const update = meshes[i];
+            update.id = Math.random() + '';
+            update.transformMatrix = localMatrix.identity().toArray(new Float32Array(16));
+            _meshadd({
+              update,
+            });
+          }
+        });
+
+        console.log('running!');
+      });
     })();
   </script>
   </body>

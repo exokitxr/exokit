@@ -25,8 +25,8 @@
   <script src="three.js"></script>
   <script src="GLTFLoader.js"></script>
   <script>
-    let container, scene, camera, display, plantMeshes, planeMeshes;
-    let planeTracker = null;
+    let container, scene, camera, session, plantMeshes, planeMeshes;
+    // let planeTracker = null;
 
     const localVector = new THREE.Vector3();
     const localVector2 = new THREE.Vector3();
@@ -230,50 +230,50 @@
     (async () => {
       await init();
 
-      // console.log('request device');
-      display = await navigator.xr.requestDevice();
       // console.log('request session');
-      const session = await display.requestSession({
+      session = await navigator.xr.requestSession({
         exclusive: true,
         extensions: {
           planeTracking: true,
         },
-      });
-      display.session = session;
+      }).catch(err => Promise.resolve(null));
 
-      // console.log('request first frame');
-      session.requestAnimationFrame((timestamp, frame) => {
-        renderer.vr.setSession(session, {
-          frameOfReferenceType: 'stage',
-        });
-
-        const viewport = session.baseLayer.getViewport(frame.views[0]);
-        const width = viewport.width;
-        const height = viewport.height;
-
-        renderer.setSize(width * 2, height);
-
-        renderer.setAnimationLoop(null);
-
-        renderer.vr.enabled = true;
-        renderer.vr.setDevice(display);
-        renderer.vr.setAnimationLoop(animate);
-        
-        _loadPlantMeshes()
-          .then(newPlantMeshes => {
-            plantMeshes = newPlantMeshes;
-
-            session.addEventListener('planeadd', _planeadd);
-            session.addEventListener('planeremove', _planeremove);
-            /* planeTracker = session.requestPlaneTracking();
-            planeTracker.onplanes = _onPlanes; */
-          })
-          .catch(err => {
-            console.warn(err.stack);
+      if (session) {
+        // console.log('request first frame');
+        session.requestAnimationFrame((timestamp, frame) => {
+          renderer.vr.setSession(session, {
+            frameOfReferenceType: 'stage',
           });
+
+          const viewport = session.baseLayer.getViewport(frame.views[0]);
+          const width = viewport.width;
+          const height = viewport.height;
+
+          renderer.setSize(width * 2, height);
+
+          renderer.setAnimationLoop(null);
+
+          renderer.vr.enabled = true;
+          renderer.vr.setAnimationLoop(animate);
           
-        console.log('running!');
-      });
+          _loadPlantMeshes()
+            .then(newPlantMeshes => {
+              plantMeshes = newPlantMeshes;
+
+              session.addEventListener('planeadd', _planeadd);
+              session.addEventListener('planeremove', _planeremove);
+              /* planeTracker = session.requestPlaneTracking();
+              planeTracker.onplanes = _onPlanes; */
+            })
+            .catch(err => {
+              console.warn(err.stack);
+            });
+            
+          console.log('running!');
+        });
+      } else {
+        console.log('no xr devices');
+      }
     })();
   </script>
   </body>

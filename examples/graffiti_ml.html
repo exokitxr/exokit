@@ -27,7 +27,7 @@
 <script>
 (() => {
 
-let container, scene, camera, display, controllerMeshes, hitMeshes;
+let container, scene, camera, session, controllerMeshes, hitMeshes;
 let mesher = null;
 
 const MAX_NUM_POINTS = 1024;
@@ -375,7 +375,7 @@ function animate(time, frame) {
       controllerMeshes[i].visible = false;
     }
 
-    const inputSources = display.session.getInputSources();
+    const inputSources = session.getInputSources();
     for (let i = 0; i < inputSources.length; i++) {
       const inputSource = inputSources[i];
       const pose = frame.getInputPose(inputSource);
@@ -390,7 +390,7 @@ function animate(time, frame) {
       if (!controllerHitTesting[controllerIndex]) {
         const hitMesh = hitMeshes[controllerIndex];
 
-        display.session.requestHitTest(
+        session.requestHitTest(
           controllerMesh.position
             .toArray(localVectorFloat32Array),
           localVector.set(0, 0, -1)
@@ -468,50 +468,50 @@ function animate(time, frame) {
 init();
 
 (async () => {
-  console.log('request device');
-  display = await navigator.xr.requestDevice();
   console.log('request session');
-  const session = await display.requestSession({
+  session = await navigator.xr.requestSession({
     exclusive: true,
     extensions: {
       meshing: true,
     },
-  });
-  display.session = session;
+  }).catch(err => Promise.resolve(null));
 
-  session.onselectstart = e => {
-    if (!paintMesh) {
-      paintMesh = _getPaintMesh();
-      paintControllerIndex = _getControllerIndex(e.inputSource);
-    }
-  };
-  session.onselectend = e => {
-    if (paintControllerIndex === _getControllerIndex(e.inputSource)) {
-      paintMesh = null;
-      paintControllerIndex = -1;
-    }
-  };
+  if (session) {
+    session.onselectstart = e => {
+      if (!paintMesh) {
+        paintMesh = _getPaintMesh();
+        paintControllerIndex = _getControllerIndex(e.inputSource);
+      }
+    };
+    session.onselectend = e => {
+      if (paintControllerIndex === _getControllerIndex(e.inputSource)) {
+        paintMesh = null;
+        paintControllerIndex = -1;
+      }
+    };
 
-  // console.log('request first frame');
-  session.requestAnimationFrame((timestamp, frame) => {
-    renderer.vr.setSession(session, {
-      frameOfReferenceType: 'stage',
+    // console.log('request first frame');
+    session.requestAnimationFrame((timestamp, frame) => {
+      renderer.vr.setSession(session, {
+        frameOfReferenceType: 'stage',
+      });
+
+      const viewport = session.baseLayer.getViewport(frame.views[0]);
+      const width = viewport.width;
+      const height = viewport.height;
+
+      renderer.setSize(width * 2, height);
+
+      renderer.setAnimationLoop(null);
+
+      renderer.vr.enabled = true;
+      renderer.vr.setAnimationLoop(animate);
+
+      console.log('running!');
     });
-
-    const viewport = session.baseLayer.getViewport(frame.views[0]);
-    const width = viewport.width;
-    const height = viewport.height;
-
-    renderer.setSize(width * 2, height);
-
-    renderer.setAnimationLoop(null);
-
-    renderer.vr.enabled = true;
-    renderer.vr.setDevice(display);
-    renderer.vr.setAnimationLoop(animate);
-
-    console.log('running!');
-  });
+  } else {
+    console.log('no xr devices');
+  }
 })();
 
 })();

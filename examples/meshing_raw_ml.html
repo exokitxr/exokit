@@ -9,7 +9,7 @@
   <body>
   <script src="three.js"></script>
   <script>
-    let container, scene, camera, display, model;
+    let container, scene, camera, session, model;
     let mesher = null;
 
     const localVector = new THREE.Vector3();
@@ -248,34 +248,34 @@
     init();
 
     (async () => {
-      console.log('request device');
-      display = await navigator.xr.requestDevice();
       console.log('request session');
-      const session = await display.requestSession({
+      session = await navigator.xr.requestSession({
         exclusive: true,
-      });
-      display.session = session;
+      }).catch(err => Promise.resolve(null));
 
-      // console.log('request first frame');
-      session.requestAnimationFrame((timestamp, frame) => {
-        renderer.vr.setSession(session, {
-          frameOfReferenceType: 'stage',
+      if (session) {
+        // console.log('request first frame');
+        session.requestAnimationFrame((timestamp, frame) => {
+          renderer.vr.setSession(session, {
+            frameOfReferenceType: 'stage',
+          });
+
+          const viewport = session.baseLayer.getViewport(frame.views[0]);
+          const width = viewport.width;
+          const height = viewport.height;
+
+          renderer.setSize(width * 2, height);
+
+          renderer.setAnimationLoop(null);
+
+          renderer.vr.enabled = true;
+          renderer.vr.setAnimationLoop(animate);
+
+          console.log('running!');
         });
-
-        const viewport = session.baseLayer.getViewport(frame.views[0]);
-        const width = viewport.width;
-        const height = viewport.height;
-
-        renderer.setSize(width * 2, height);
-
-        renderer.setAnimationLoop(null);
-
-        renderer.vr.enabled = true;
-        renderer.vr.setDevice(display);
-        renderer.vr.setAnimationLoop(animate);
-
-        console.log('running!');
-      });
+      } else {
+        console.log('no xr devices');
+      }
     })();
   </script>
   </body>

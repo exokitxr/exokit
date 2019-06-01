@@ -8,6 +8,14 @@ Local<Object> makeConsole() {
   return scope.Escape(console::Initialize(isolate));
 }
 
+Local<Object> makeCache() {
+  Isolate *isolate = Isolate::GetCurrent();
+
+  Nan::EscapableHandleScope scope;
+
+  return scope.Escape(cache::Initialize(isolate));
+}
+
 std::pair<Local<Object>, Local<FunctionTemplate>> makeGl() {
   return WebGLRenderingContext::Initialize(Isolate::GetCurrent());
 }
@@ -115,7 +123,7 @@ Local<Object> makeAudio() {
   exports->Set(JS_STR("OscillatorNode"), oscillatorNodeCons);
   Local<Value> audioBufferCons = webaudio::AudioBuffer::Initialize(isolate);
   exports->Set(JS_STR("AudioBuffer"), audioBufferCons);
-  Local<Value> audioBufferSourceNodeCons = webaudio::AudioBufferSourceNode::Initialize(isolate);
+  Local<Value> audioBufferSourceNodeCons = webaudio::AudioBufferSourceNode::Initialize(isolate, audioParamCons);
   exports->Set(JS_STR("AudioBufferSourceNode"), audioBufferSourceNodeCons);
   Local<Value> audioProcessingEventCons = webaudio::AudioProcessingEvent::Initialize(isolate);
   exports->Set(JS_STR("AudioProcessingEvent"), audioProcessingEventCons);

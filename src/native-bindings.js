@@ -272,7 +272,7 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
     const ondomchange = () => {
       process.nextTick(() => { // show/hide synchronously emits events
         if (!document.hidden && !window[symbols.optionsSymbol].args.headless) {
-          const domVisible = canvas.ownerDocument.documentElement.contains(canvas);
+          const domVisible = canvas.ownerDocument.documentElement.contains(canvas) || canvas._context === GlobalContext.vrPresentState.glContext;
           const windowVisible = nativeWindow.isVisible(windowHandle);
           if (domVisible && !windowVisible) {
             nativeWindow.setVisibility(windowHandle, true);
@@ -287,7 +287,7 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
     gl.destroy = (destroy => function() {
       destroy.call(this);
 
-      if (gl.id === GlobalContext.vrPresentState.glContextId) {
+      if (gl === GlobalContext.vrPresentState.glContext) {
         throw new Error('destroyed vr presenting context');
         /* bindings.nativeOpenVR.VR_Shutdown();
 
@@ -310,6 +310,10 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
     
     gl.id = Atomics.add(GlobalContext.xrState.id, 0) + 1;
     GlobalContext.contexts.push(gl);
+
+    if (gl.attrs.antialias) {
+      GlobalContext.xrState.aaEnabled[0] = 1;
+    }
   } else {
     gl.destroy();
   }
@@ -401,33 +405,24 @@ GlobalContext.WebGL2RenderingContext = bindings.nativeGl2;
 if (bindings.nativeAudio) {
   bindings.nativeAudio.AudioContext = (OldAudioContext => class AudioContext extends OldAudioContext {
     decodeAudioData(arrayBuffer, successCallback, errorCallback) {
-      return new Promise((resolve, reject) => {
-        try {
-          let audioBuffer = this._decodeAudioDataSync(arrayBuffer);
-          if (successCallback) {
-            process.nextTick(() => {
-              try {
-                successCallback(audioBuffer);
-              } catch(err) {
-                console.warn(err);
-              }
-            });
+      const result = new Promise((accept, reject) => {
+        const audioBuffer = this.createEmptyBuffer();
+        audioBuffer.load(arrayBuffer, errorString => {
+          if (!errorString) {
+            if (successCallback) {
+              successCallback(audioBuffer);
+            }
+            accept(audioBuffer);
+          } else {
+            const err = new Error(errorString);
+            if (errorCallback) {
+              errorCallback(err);
+            }
+            reject(err);
           }
-          resolve(audioBuffer);
-        } catch(err) {
-          console.warn(err);
-          if (errorCallback) {
-            process.nextTick(() => {
-              try {
-                errorCallback(err);
-              } catch(err) {
-                console.warn(err);
-              }
-            });
-          }
-          reject(err);
-        }
+        });
       });
+      return result;
     }
   })(bindings.nativeAudio.AudioContext);
   bindings.nativeAudio.PannerNode.setPath(path.join(require.resolve('native-audio-deps').slice(0, -'index.js'.length), 'assets', 'hrtf'));

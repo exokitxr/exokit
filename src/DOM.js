@@ -3,6 +3,7 @@ const fs = require('fs');
 const url = require('url');
 const vm = require('vm');
 const util = require('util');
+const {parentPort} = require('worker_threads');
 
 const {process} = global;
 
@@ -21,8 +22,7 @@ const {Event, EventTarget, MessageEvent, MouseEvent, ErrorEvent} = require('./Ev
 const {_makeWindow} = require('./WindowVm');
 const GlobalContext = require('./GlobalContext');
 const symbols = require('./symbols');
-const {urls} = require('./urls');
-const {_elementGetter, _elementSetter, _makeNormalizeUrl} = require('./utils');
+const {_elementGetter, _elementSetter, _normalizeUrl} = require('./utils');
 const {XRRigidTransform} = require('./XR');
 
 he.encode.options.useNamedReferences = true;
@@ -1236,13 +1236,13 @@ class Element extends Node {
   }
 
   requestFullscreen() {
-    if (this.ownerDocument[symbols.fullscreenElementSymbol] === null) {
+    /* if (this.ownerDocument[symbols.fullscreenElementSymbol] === null) { // XXX
       this.ownerDocument[symbols.fullscreenElementSymbol] = this;
 
       process.nextTick(() => {
         this.ownerDocument._emit('fullscreenchange');
       });
-    }
+    } */
   }
 
   /**
@@ -2011,7 +2011,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
           url = 'data:text/html,' + encodeURIComponent(`<!doctype html><html><head><script>${match[1]}</script></head></html>`);
         }
         const oldUrl = url;
-        url = _makeNormalizeUrl(this.ownerDocument.defaultView[symbols.optionsSymbol].baseUrl)(url);
+        url = _normalizeUrl(url, this.ownerDocument.defaultView[symbols.optionsSymbol].baseUrl);
 
         this.ownerDocument.resources.addResource((onprogress, cb) => {
           (async () => {
@@ -2105,7 +2105,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                 const parentWindow = this.ownerDocument.defaultView;
                 const options = parentWindow[symbols.optionsSymbol];
 
-                url = _makeNormalizeUrl(options.baseUrl)(url);
+                url = _normalizeUrl(url, options.baseUrl);
                 const parent = {};
                 const top = parentWindow === parentWindow.top ? parent : {};
                 const contentWindow = _makeWindow({
@@ -2117,7 +2117,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   parent,
                   top,
                   htmlString,
-                  hidden: this.d === 3,
+                  hidden: true,
                   xrOffsetBuffer: this.xrOffset._buffer,
                   onnavigate(href) {
                     this.readyState = null;
@@ -2125,6 +2125,16 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                     this.contentDocument = null;
 
                     this.setAttribute('src', href);
+                  },
+                  onrequest(req) {
+                    parentPort.postMessage(req);
+                  },
+                  onhapticpulse(event) {
+                    parentPort.postMessage({
+                      method: 'emit',
+                      type: 'hapticPulse',
+                      event,
+                    });
                   },
                 });
 
@@ -2155,13 +2165,13 @@ class HTMLIFrameElement extends HTMLSrcableElement {
         const v = _parseVector(value);
         if (name === 'position' && v.length === 3) {
           this.xrOffset.position.set(v);
-          this.xrOffset.updateMatrix();
+          this.xrOffset.pushUpdate();
         } else if (name === 'orientation' && v.length === 4) {
           this.xrOffset.orientation.set(v);
-          this.xrOffset.updateMatrix();
+          this.xrOffset.pushUpdate();
         } else if (name === 'scale' && v.length === 3) {
           this.xrOffset.scale.set(v);
-          this.xrOffset.updateMatrix();
+          this.xrOffset.pushUpdate();
         }
       } else if (name === 'width') {
         if (this.browser) {
@@ -2216,7 +2226,8 @@ class HTMLIFrameElement extends HTMLSrcableElement {
   }
 
   get d() {
-    return parseInt(this.getAttribute('d') || 1 + '', 10);
+    const d = parseInt(this.getAttribute('d') + '', 10);
+    return isFinite(d) ? d : 3;
   }
   set d(value) {
     if (typeof value === 'number' && isFinite(value)) {
@@ -2761,12 +2772,9 @@ class HTMLAudioElement extends HTMLMediaElement {
   constructor(window, attrs = [], value = '') {    
     if (typeof attrs === 'string') {
       const src = attrs;
-      return new HTMLAudioElement(window, [
-        {
-          name: 'src',
-          value: src + '',
-        },
-      ], '', null);
+      const audio = new HTMLAudioElement(window, [], '', null);
+      audio.src = src + '';
+      return audio;
     } else {
       super(window, 'AUDIO', attrs, value);
 
@@ -2786,13 +2794,15 @@ class HTMLAudioElement extends HTMLMediaElement {
                   return Promise.reject(new Error(`audio src got invalid status code (url: ${JSON.stringify(src)}, code: ${res.status})`));
                 }
               })
-              .then(arrayBuffer => {
-                try {
-                  this.audio.load(arrayBuffer);
-                } catch(err) {
-                  throw new Error(`failed to decode audio: ${err.message} (url: ${JSON.stringify(src)}, size: ${arrayBuffer.byteLength})`);
-                }
-              })
+              .then(arrayBuffer => new Promise((accept, reject) => {
+                this.audio.load(arrayBuffer, err => {
+                  if (!err) {
+                    accept();
+                  } else {
+                    reject(new Error(`failed to decode audio: ${err.message} (url: ${JSON.stringify(src)}, size: ${arrayBuffer.byteLength})`));
+                  }
+                });
+              }))
               .then(() => {
                 this.readyState = HTMLMediaElement.HAVE_ENOUGH_DATA;
 
@@ -2802,6 +2812,8 @@ class HTMLAudioElement extends HTMLMediaElement {
                 progressEvent.lengthComputable = true;
                 this._emit(progressEvent);
 
+                this._dispatchEventOnDocumentReady(new Event('loadeddata', {target: this}));
+                this._dispatchEventOnDocumentReady(new Event('loadedmetadata', {target: this}));
                 this._dispatchEventOnDocumentReady(new Event('canplay', {target: this}));
                 this._dispatchEventOnDocumentReady(new Event('canplaythrough', {target: this}));
                 
@@ -2896,12 +2908,12 @@ class HTMLVideoElement extends HTMLMediaElement {
 
         this.readyState = HTMLMediaElement.HAVE_ENOUGH_DATA;
 
-        if (urls.has(value)) {
+        /* if (urls.has(value)) {
           const blob = urls.get(value);
           if (blob instanceof bindings.nativeVideo.VideoDevice) {
             this.video = blob;
           }
-        }
+        } */
 
         this.ownerDocument.resources.addResource((onprogress, cb) => {
           const progressEvent = new Event('progress', {target: this});
@@ -2912,6 +2924,8 @@ class HTMLVideoElement extends HTMLMediaElement {
           
           this.readyState = 'complete';
 
+          this._dispatchEventOnDocumentReady(new Event('loadeddata', {target: this}));
+          this._dispatchEventOnDocumentReady(new Event('loadedmetadata', {target: this}));
           this._dispatchEventOnDocumentReady(new Event('canplay', {target: this}));
           this._dispatchEventOnDocumentReady(new Event('canplaythrough', {target: this}));
 

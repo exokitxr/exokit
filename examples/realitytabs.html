@@ -2,7 +2,7 @@
 <html>
   <body>
     <script src="three.js"></script>
-    <script src="fakeDisplay.js"></script>
+    <script src="fakeXrDisplay.js"></script>
     <script src="keycode.js"></script>
     <script src="svg-boundings.js"></script>
     <script src="sprite3d.js"></script>
@@ -10,7 +10,7 @@
     <script src="xrmp.js"></script>
     <script src="xrmp-three.js"></script>
     <script>
-let display, fakeDisplay, tabs = [], tabId = 0, xrmp, lastPresseds = [false, false], lastAxes = [[0.5, 0.5], [0.5, 0.5]], lastPadToucheds = [false, false], scrollFactors = [0, 0], scaleFactors = [1, 1];
+let session, fakeXrDisplay, tabs = [], tabId = 0, xrmp, lastPresseds = [false, false], lastAxes = [[0.5, 0.5], [0.5, 0.5]], lastPadToucheds = [false, false], scrollFactors = [0, 0], scaleFactors = [1, 1];
 
 const links = [
   {
@@ -1714,13 +1714,13 @@ window.addEventListener('mousemove', e => {
       controllerOffset.x += movementX * 0.002;
       controllerOffset.z += movementY * 0.002;
     } else { */
-      localEuler.setFromQuaternion(fakeDisplay.quaternion, localEuler.order);
+      localEuler.setFromQuaternion(fakeXrDisplay.quaternion, localEuler.order);
       localEuler.y -= movementX * 0.01;
       localEuler.x -= movementY * 0.01;
       localEuler.x = Math.min(Math.max(localEuler.x, -Math.PI/2), Math.PI/2);
-      fakeDisplay.quaternion.setFromEuler(localEuler);
+      fakeXrDisplay.quaternion.setFromEuler(localEuler);
 
-      fakeDisplay.pushUpdate();
+      fakeXrDisplay.pushUpdate();
     // }
   }
 });
@@ -1751,6 +1751,7 @@ const intersectionSpecs = [
 window.addEventListener('keydown', e => {
   if (window.document.pointerLockElement) {
     const gamepads = navigator.getGamepads();
+
     switch (e.which) {
       case 87: { // W
         keys.up = true;
@@ -1784,6 +1785,10 @@ window.addEventListener('keydown', e => {
         gamepads[1].buttons[2].pressed = true;
         break;
       }
+      case 81: { // Q
+        gamepads[1].buttons[0].pressed = true;
+        break;
+      }
       case 32: { // space
         keys.space = true;
         break;
@@ -1810,6 +1815,7 @@ window.addEventListener('keydown', e => {
 window.addEventListener('keyup', e => {
   if (window.document.pointerLockElement) {
     const gamepads = navigator.getGamepads();
+
     switch (e.which) {
       case 87: { // W
         keys.up = false;
@@ -1829,6 +1835,10 @@ window.addEventListener('keyup', e => {
       }
       case 69: { // E
         gamepads[1].buttons[2].pressed = false;
+        break;
+      }
+      case 81: { // Q
+        gamepads[1].buttons[0].pressed = false;
         break;
       }
       case 32: { // space
@@ -2521,61 +2531,59 @@ function animate(time, frame) {
   _updateIntersections();
 
   const _updateButtons = () => {
-    if (display) {
-      for (let i = 0; i < gamepads.length && i < 2; i++) {
-        const gamepad = gamepads[i];
+    for (let i = 0; i < gamepads.length && i < 2; i++) {
+      const gamepad = gamepads[i];
 
-        {
-          const trigger = gamepad.buttons[1].pressed;
-          const lastTrigger = lastButtons[i].trigger;
+      {
+        const trigger = gamepad.buttons[1].pressed;
+        const lastTrigger = lastButtons[i].trigger;
 
-          if (trigger && !lastTrigger) {
-            const spec = intersectionSpecs[i];
-            if (spec && spec.type === 'key') {
-              const {data: {key, rig}} = spec;
-              const {menuMesh: {urlMesh, optionsMesh}} = rig;
+        if (trigger && !lastTrigger) {
+          const spec = intersectionSpecs[i];
+          if (spec && spec.type === 'key') {
+            const {data: {key, rig}} = spec;
+            const {menuMesh: {urlMesh, optionsMesh}} = rig;
 
-              if (focusedTab === rig.menuMesh.urlMesh) {
-                if (key !== 'enter') {
-                  const code = keyCode(key);
-                  rig.menuMesh.urlMesh.handleKey(code, false);
-                } else {
-                  const u = (optionsMesh.d === 3 && urlMesh.urlState.text === DEFAULT_URL) ? 'realitytab.html?color=29b6f6' : urlMesh.urlState.text;
-                  const {position, quaternion, scale} = _getFrontOfCamera();
-                  _openUrl(u, position, quaternion, scale, optionsMesh.d);
-                  _updateRigLists();
-                }
-              } else if (focusedTab.iframe) {
-                let code = keyCode(key);
-                const opts = {
-                  shiftKey: false,
-                  ctrlKey: false,
-                  altKey: false,
-                };
-                focusedTab.iframe.sendKeyDown(code, opts);
-                focusedTab.iframe.sendKeyPress(code + 32, opts);
-                focusedTab.iframe.sendKeyUp(code, opts);
+            if (focusedTab === rig.menuMesh.urlMesh) {
+              if (key !== 'enter') {
+                const code = keyCode(key);
+                rig.menuMesh.urlMesh.handleKey(code, false);
+              } else {
+                const u = (optionsMesh.d === 3 && urlMesh.urlState.text === DEFAULT_URL) ? 'realitytab.html?color=29b6f6' : urlMesh.urlState.text;
+                const {position, quaternion, scale} = _getFrontOfCamera();
+                _openUrl(u, position, quaternion, scale, optionsMesh.d);
+                _updateRigLists();
               }
+            } else if (focusedTab.iframe) {
+              let code = keyCode(key);
+              const opts = {
+                shiftKey: false,
+                ctrlKey: false,
+                altKey: false,
+              };
+              focusedTab.iframe.sendKeyDown(code, opts);
+              focusedTab.iframe.sendKeyPress(code + 32, opts);
+              focusedTab.iframe.sendKeyUp(code, opts);
             }
           }
-
-          lastButtons[i].trigger = trigger;
         }
-        {
-          const bumper = gamepad.buttons[2].pressed;
-          const lastBumper = lastButtons[i].bumper;
 
-          if (bumper && !lastBumper) {
-            const {position, quaternion} = _getFrontOfCamera();
-            localEuler.setFromQuaternion(quaternion, localEuler.order);
-            localEuler.x = 0;
-            localEuler.z = 0;
-            quaternion.setFromEuler(localEuler);
-            _openRig(position, quaternion);
-          }
+        lastButtons[i].trigger = trigger;
+      }
+      {
+        const bumper = gamepad.buttons[2].pressed;
+        const lastBumper = lastButtons[i].bumper;
 
-          lastButtons[i].bumper = bumper;
+        if (bumper && !lastBumper) {
+          const {position, quaternion} = _getFrontOfCamera();
+          localEuler.setFromQuaternion(quaternion, localEuler.order);
+          localEuler.x = 0;
+          localEuler.z = 0;
+          quaternion.setFromEuler(localEuler);
+          _openRig(position, quaternion);
         }
+
+        lastButtons[i].bumper = bumper;
       }
     }
   };
@@ -2587,7 +2595,7 @@ function animate(time, frame) {
   _render();
 
   const _updateMovement = () => {
-    if (fakeDisplay) {
+    if (fakeXrDisplay) {
       // if (window.document.pointerLockElement) {
         // let moving = false;
         const speed = 0.004;
@@ -2619,13 +2627,13 @@ function animate(time, frame) {
 
         // if (moving) {
           // velocity.multiplyScalar(Math.pow(moving ? 0.98 : 0.91, timePassed / 5));
-          localEuler.setFromQuaternion(fakeDisplay.quaternion, localEuler.order);
+          localEuler.setFromQuaternion(fakeXrDisplay.quaternion, localEuler.order);
           localEuler.x = 0;
-          fakeDisplay.position.add(
+          fakeXrDisplay.position.add(
             localVector.copy(velocity)
               .applyEuler(localEuler)
           );
-          fakeDisplay.pushUpdate();
+          fakeXrDisplay.pushUpdate();
         // }
       // }
     }
@@ -2679,18 +2687,16 @@ function animate(time, frame) {
 
 // bootstrap
 
-const _bootFakeDisplay = async () => {
-  fakeDisplay = _makeFakeDisplay();
-  fakeDisplay.position.set(0, 1.6, 0);
-  fakeDisplay.pushUpdate();
+const _bootFakeXrDisplay = async () => {
+  fakeXrDisplay = _makeFakeXrDisplay();
+  fakeXrDisplay.position.set(0, 1.6, 0);
+  fakeXrDisplay.pushUpdate();
 
-  await fakeDisplay.enter({
+  await fakeXrDisplay.enter({
     renderer,
     animate,
     layers,
   });
-
-  display = fakeDisplay;
 
   const tabUrl = (() => {
     const {t = 'examples/tutorial.html'} = query;
@@ -2711,29 +2717,23 @@ const _bootFakeDisplay = async () => {
 (async () => {
   if (!query.fake) {
     if (navigator.xr) { // WebXR
-      display = await navigator.xr.requestDevice();
-
-      if (display) {
-        const session = await display.requestSession({
-          exclusive: true,
-        });
-        display.session = session;
-
+      session = await navigator.xr.requestSession({
+        exclusive: true,
+      }).catch(err => Promise.resolve(null));
+      if (session) {
         session.layers = layers;
 
-        // console.log('request first frame');
         session.requestAnimationFrame((timestamp, frame) => {
           renderer.vr.setSession(session, {
             frameOfReferenceType: 'stage',
           });
 
-          const viewport = session.baseLayer.getViewport(frame.views[0]);
-          // const width = viewport.width;
+          const viewport = session.renderState.baseLayer.getViewport(frame.views[0]);
           const height = viewport.height;
           const fullWidth = (() => {
             let result = 0;
             for (let i = 0; i < frame.views.length; i++) {
-              result += session.baseLayer.getViewport(frame.views[i]).width;
+              result += session.renderState.baseLayer.getViewport(frame.views[i]).width;
             }
             return result;
           })();
@@ -2743,7 +2743,6 @@ const _bootFakeDisplay = async () => {
           renderer.setAnimationLoop(null);
 
           renderer.vr.enabled = true;
-          renderer.vr.setDevice(display);
           renderer.vr.setAnimationLoop(animate);
 
           if (window.browser && window.browser.magicleap) {
@@ -2754,11 +2753,11 @@ const _bootFakeDisplay = async () => {
           _openUrl('tutorial.html');
           _updateRigLists();
 
-          console.log('loaded root in XR');
+          console.log('loaded in xr device');
         });
       } else {
-        console.log('no xr displays');
-        await _bootFakeDisplay();
+        console.log('no xr devices');
+        await _bootFakeXrDisplay();
       }
     } else { // WebVR
       console.log('request device');
@@ -2795,15 +2794,15 @@ const _bootFakeDisplay = async () => {
         console.log('loaded root in XR');
       } else {
         console.log('no vr displays');
-        await _bootFakeDisplay();
+        await _bootFakeXrDisplay();
       }
     }
   } else {
-    await _bootFakeDisplay();
+    await _bootFakeXrDisplay();
   }
 })()
   .catch(err => {
-    console.warn(err.stack);
+    console.warn(err);
   });
 
 // renderer.setAnimationLoop(animate);

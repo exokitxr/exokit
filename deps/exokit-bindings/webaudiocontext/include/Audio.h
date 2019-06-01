@@ -14,12 +14,17 @@ using namespace node;
 
 namespace webaudio {
 
+class AudioContext;
+
 class Audio : public ObjectWrap {
 public:
   static Local<Object> Initialize(Isolate *isolate);
-  void Load(uint8_t *bufferValue, size_t bufferLength);
+
   void Play();
   void Pause();
+  void Load(uint8_t *bufferValue, size_t bufferLength, Local<Function> cbFn);
+  shared_ptr<lab::AudioNode> Reparent(AudioContext *newSourceAudioContext);
+  lab::FinishableSourceNode *GetLocalAudioNode();
 
 protected:
   static NAN_METHOD(New);
@@ -34,6 +39,8 @@ protected:
   static NAN_SETTER(LoopSetter);
   static NAN_GETTER(OnEndedGetter);
   static NAN_SETTER(OnEndedSetter);
+
+  static void ProcessLoadInMainThread(Audio *self);
   static void ProcessInMainThread(Audio *self);
 
   Nan::Persistent<Function> onended;
@@ -41,8 +48,16 @@ protected:
   Audio();
   ~Audio();
 
-private:
+protected:
+
   shared_ptr<lab::FinishableSourceNode> audioNode;
+  shared_ptr<lab::FinishableSourceNode> sourceAudioNode;
+  lab::AudioContext *sourceAudioContext;
+  bool loaded;
+  bool sourced;
+  Nan::Persistent<Function> cbFn;
+  shared_ptr<lab::AudioBus> audioBus;
+  std::string error;
 
   friend class AudioSourceNode;
 };

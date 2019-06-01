@@ -45,6 +45,7 @@ protected:
   friend class GainNode;
   friend class StereoPannerNode;
   friend class OscillatorNode;
+  friend class AudioBufferSourceNode;
 };
 
 }

@@ -35,9 +35,16 @@ protected:
   static NAN_METHOD(GetChannelData);
   static NAN_METHOD(CopyFromChannel);
   static NAN_METHOD(CopyToChannel);
+  static NAN_METHOD(Load);
+  
+  void Load(Local<ArrayBuffer> arrayBuffer, size_t byteOffset, size_t byteLength, Local<Function> cbFn);
+  static void ProcessLoadInMainThread(AudioBuffer *audioBuffer);
 
   uint32_t sampleRate;
   Nan::Persistent<Array> buffers;
+  Nan::Persistent<Function> cbFn;
+  shared_ptr<lab::AudioBus> audioBus;
+  string error;
 
   friend class AudioBufferSourceNode;
   friend class ScriptProcessorNode;
@@ -45,7 +52,7 @@ protected:
 
 class AudioBufferSourceNode : public AudioNode {
 public:
-  static Local<Object> Initialize(Isolate *isolate);
+  static Local<Object> Initialize(Isolate *isolate, Local<Value> audioParamCons);
   static void InitializePrototype(Local<ObjectTemplate> proto);
 
 protected:

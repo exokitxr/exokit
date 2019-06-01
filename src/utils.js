@@ -25,16 +25,15 @@ function _getBaseUrl(u) {
 }
 module.exports._getBaseUrl = _getBaseUrl;
 
-function _makeNormalizeUrl(baseUrl) {
-  return src => {
-    if (!/^[a-z]+:\/\//i.test(src)) {
-      src = new URL(src, baseUrl).href
-        .replace(/^(file:\/\/)\/([a-z]:.*)$/i, '$1$2');
-    }
+function _normalizeUrl(src, baseUrl) {
+  if (!/^(?:https?|data|blob):/.test(src)) {
+    return new URL(src, baseUrl).href
+      .replace(/^(file:\/\/)\/([a-z]:.*)$/i, '$1$2');
+  } else {
     return src;
-  };
+  }
 }
-module.exports._makeNormalizeUrl = _makeNormalizeUrl;
+module.exports._normalizeUrl = _normalizeUrl;
 
 const _makeHtmlCollectionProxy = (el, query) => new Proxy(el, {
   get(target, prop) {
@@ -81,30 +80,3 @@ const _elementSetter = (self, attribute, cb) => {
   }
 };
 module.exports._elementSetter = _elementSetter;
-
-const _download = (m, u, data, bufferifyFn, dstDir) => new Promise((accept, reject) => {
-  if (m === 'GET' && /^(?:https?|file):/.test(u)) {
-    const o = url.parse(u);
-    const d = path.resolve(path.join(__dirname, '..'), dstDir, o.host || '.');
-    const f = path.join(d, o.pathname === '/' ? 'index.html' : o.pathname);
-
-    console.log(`${u} -> ${f}`);
-
-    mkdirp(path.dirname(f), err => {
-      if (!err) {
-        fs.writeFile(f, bufferifyFn(data), err => {
-          if (!err) {
-            accept(data);
-          } else {
-            reject(err);
-          }
-        });
-      } else {
-        reject(err);
-      }
-    });
-  } else {
-    accept(data);
-  }
-});
-module.exports._download = _download;

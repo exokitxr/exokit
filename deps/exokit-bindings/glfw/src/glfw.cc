@@ -799,7 +799,33 @@ void APIENTRY scrollCB(NATIVEwindow *window, double xoffset, double yoffset) {
   });
 }
 
-NAN_METHOD(BlitFrameBuffer) {
+NAN_METHOD(BlitTopFrameBuffer) {
+  GLuint fbo1 = TO_UINT32(info[0]);
+  GLuint fbo2 = TO_UINT32(info[1]);
+  int sw = TO_UINT32(info[2]);
+  int sh = TO_UINT32(info[3]);
+  int dw = TO_UINT32(info[4]);
+  int dh = TO_UINT32(info[5]);
+  bool color = TO_BOOL(info[6]);
+  bool depth = TO_BOOL(info[7]);
+  bool stencil = TO_BOOL(info[8]);
+
+  glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo1);
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo2);
+
+  glBlitFramebuffer(
+    0, 0,
+    sw, sh,
+    0, 0,
+    dw, dh,
+    (color ? GL_COLOR_BUFFER_BIT : 0) |
+    (depth ? GL_DEPTH_BUFFER_BIT : 0) |
+    (stencil ? GL_STENCIL_BUFFER_BIT : 0),
+    (depth || stencil) ? GL_NEAREST : GL_LINEAR
+  );
+}
+
+NAN_METHOD(BlitChildFrameBuffer) {
   Local<Object> glObj = Local<Object>::Cast(info[0]);
   GLuint fbo1 = TO_UINT32(info[1]);
   GLuint fbo2 = TO_UINT32(info[2]);
@@ -1051,8 +1077,6 @@ NAN_METHOD(InitWindow3D) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[1]));
 
   SetCurrentWindowContext(windowHandle);
-
-  windowsystembase::InitializeLocalGlState(gl);
 
   GLuint vao;
   glGenVertexArrays(1, &vao);
@@ -1665,7 +1689,8 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "setCursorPosition", glfw::SetCursorPosition);
   Nan::SetMethod(target, "getClipboard", glfw::GetClipboard);
   Nan::SetMethod(target, "setClipboard", glfw::SetClipboard);
-  Nan::SetMethod(target, "blitFrameBuffer", glfw::BlitFrameBuffer);
+  Nan::SetMethod(target, "blitTopFrameBuffer", glfw::BlitTopFrameBuffer);
+  Nan::SetMethod(target, "blitChildFrameBuffer", glfw::BlitChildFrameBuffer);
   Nan::SetMethod(target, "setCurrentWindowContext", glfw::SetCurrentWindowContext);
 #ifdef TARGET_OS_MAC
   Nan::SetMethod(target, "pollEvents", glfw::PollEvents);

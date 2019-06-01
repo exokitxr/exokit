@@ -32,7 +32,31 @@ void Uninitialize() {
   eglTerminate(display);
 }
 
-NAN_METHOD(BlitFrameBuffer) {
+NAN_METHOD(BlitTopFrameBuffer) {
+  GLuint fbo1 = TO_UINT32(info[0]);
+  GLuint fbo2 = TO_UINT32(info[1]);
+  int sw = TO_INT32(info[2]);
+  int sh = TO_INT32(info[3]);
+  int dw = TO_INT32(info[4]);
+  int dh = TO_INT32(info[5]);
+  bool color = TO_BOOL(info[6]);
+  bool depth = TO_BOOL(info[7]);
+  bool stencil = TO_BOOL(info[8]);
+
+  glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo1);
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo2);
+
+  glBlitFramebuffer(0, 0,
+    sw, sh,
+    0, 0,
+    dw, dh,
+    (color ? GL_COLOR_BUFFER_BIT : 0) |
+    (depth ? GL_DEPTH_BUFFER_BIT : 0) |
+    (stencil ? GL_STENCIL_BUFFER_BIT : 0),
+    (depth || stencil) ? GL_NEAREST : GL_LINEAR);
+}
+
+NAN_METHOD(BlitChildFrameBuffer) {
   Local<Object> glObj = Local<Object>::Cast(info[0]);
   GLuint fbo1 = TO_UINT32(info[1]);
   GLuint fbo2 = TO_UINT32(info[2]);
@@ -263,8 +287,6 @@ NAN_METHOD(InitWindow3D) {
   
   SetCurrentWindowContext(windowHandle);
 
-  windowsystembase::InitializeLocalGlState(gl);
-
   GLuint vao;
   glGenVertexArrays(1, &vao);
   glBindVertexArray(vao);
@@ -398,7 +420,8 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "setCursorPosition", egl::SetCursorPosition);
   Nan::SetMethod(target, "getClipboard", egl::GetClipboard);
   Nan::SetMethod(target, "setClipboard", egl::SetClipboard);
-  Nan::SetMethod(target, "blitFrameBuffer", egl::BlitFrameBuffer);
+  Nan::SetMethod(target, "blitTopFrameBuffer", egl::BlitTopFrameBuffer);
+  Nan::SetMethod(target, "blitChildFrameBuffer", egl::BlitChildFrameBuffer);
   Nan::SetMethod(target, "setCurrentWindowContext", egl::SetCurrentWindowContext);
 
   return scope.Escape(target);

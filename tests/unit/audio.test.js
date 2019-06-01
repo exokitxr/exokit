@@ -38,7 +38,9 @@ helpers.describeSkipCI('audio', () => {
   it('handles invalid audio context data', async () => {
     return await window.evalAsync(`new Promise((accept, reject) => {
       let context = new window.AudioContext();
-      context.decodeAudioData('foo').catch(() => {
+      context.decodeAudioData('foo').then(() => {
+        reject(new Error('invalid audio data succeeded'));
+      }).catch(() => {
         accept();
       });
     })`);
