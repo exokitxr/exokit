@@ -340,9 +340,9 @@ class Engine extends React.Component {
             <div className="engine-left">
               <div className="engine-render" id="engine-render" onClick={() => this.onEngineRenderClick()} />
               <Resizable
-                minWidth="200"
-                minHeight="100"
-                maxHeight="300"
+                minWidth="200px"
+                // minHeight="100px"
+                // maxHeight="300px"
                 onResize={(e, direction, ref, d) => {
                   _postViewportMessage();
                 }}>
@@ -350,8 +350,8 @@ class Engine extends React.Component {
               </Resizable>
             </div>
             <Resizable
-              minWidth="100"
-              maxWidth="300"
+              minWidth="200px"
+              maxWidth="300px"
               onResize={(e, direction, ref, d) => {
                 _postViewportMessage();
               }}>
