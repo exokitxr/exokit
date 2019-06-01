@@ -2499,7 +2499,7 @@ NAN_METHOD(WebGLRenderingContext::FramebufferTextureMultiviewOVR) {
 NAN_METHOD(WebGLRenderingContext::FramebufferTextureMultisampleMultiviewOVR) {
   GLenum target = TO_UINT32(info[0]);
   GLenum attachment = TO_UINT32(info[1]);
-  GLuint texture = TO_INT32(info[2]);
+  GLuint texture = info[2]->IsObject() ? TO_UINT32(JS_OBJ(info[2])->Get(JS_STR("id"))) : 0;
   GLint level = TO_INT32(info[3]);
   GLsizei samples = TO_UINT32(info[4]);
   GLint baseViewIndex = TO_INT32(info[5]);
