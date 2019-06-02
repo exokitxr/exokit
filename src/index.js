@@ -333,163 +333,6 @@ const topVrPresentState = {
   eyeTracker: null,
 };
 
-const requestPresent = async () => {
-  const hmdType = getHMDType();
-  console.log('request present', hmdType); // XXX
-
-  if (!topVrPresentState.windowHandle) {
-    topVrPresentState.windowHandle = nativeBindings.nativeWindow.createWindowHandle(1, 1, false);
-  }
-  nativeBindings.nativeWindow.setCurrentWindowContext(topVrPresentState.windowHandle);
-
-  if (hmdType === 'fake') {
-    const width = xrState.renderWidth[0]*2;
-    const height = xrState.renderHeight[0];
-
-    const [fbo, tex, depthTex] = nativeBindings.nativeWindow.createVrTopRenderTarget(width, height);
-
-    xrState.tex[0] = tex;
-    xrState.depthTex[0] = depthTex;
-    // xrState.renderWidth[0] = halfWidth;
-    // xrState.renderHeight[0] = height;
-  } else if (hmdType === 'oculus') {
-    const system = topVrPresentState.oculusSystem || nativeBindings.nativeOculusVR.Oculus_Init();
-    // const lmContext = topVrPresentState.lmContext || (nativeBindings.nativeLm && new nativeBindings.nativeLm());
-
-    topVrPresentState.vrContext = system;
-
-    const {width: halfWidth, height} = system.GetRecommendedRenderTargetSize();
-    const width = halfWidth * 2;
-
-    const [tex, depthTex] = system.CreateSwapChain(width, height);
-
-    xrState.tex[0] = tex;
-    xrState.depthTex[0] = depthTex;
-    xrState.renderWidth[0] = halfWidth;
-    xrState.renderHeight[0] = height;
-  } else if (hmdType === 'openvr') {
-    const vrContext = nativeBindings.nativeOpenVR.getContext();
-    const system = nativeBindings.nativeOpenVR.VR_Init(nativeBindings.nativeOpenVR.EVRApplicationType.Scene);
-    const compositor = vrContext.compositor.NewCompositor();
-
-    topVrPresentState.vrContext = vrContext;
-    topVrPresentState.vrSystem = system;
-    topVrPresentState.vrCompositor = compositor;
-
-    const {width: halfWidth, height} = system.GetRecommendedRenderTargetSize();
-    const width = halfWidth * 2;
-
-    const [fbo, tex, depthTex] = nativeBindings.nativeWindow.createVrTopRenderTarget(width, height);
-
-    xrState.tex[0] = tex;
-    xrState.depthTex[0] = depthTex;
-    xrState.renderWidth[0] = halfWidth;
-    xrState.renderHeight[0] = height;
-  } else if (hmdType === 'oculusMobile') {
-    const vrContext = nativeBindings.nativeOculusMobileVr.OculusMobile_Init(topVrPresentState.windowHandle);
-
-    topVrPresentState.vrContext = vrContext;
-
-    const {width: halfWidth, height} = vrContext.GetRecommendedRenderTargetSize();
-    const width = halfWidth * 2;
-
-    const [tex, depthTex] = vrContext.CreateSwapChain(width, height);
-
-    xrState.tex[0] = tex;
-    xrState.depthTex[0] = depthTex;
-    xrState.renderWidth[0] = halfWidth;
-    xrState.renderHeight[0] = height;
-  } else if (hmdType === 'magicleap') {
-    topVrPresentState.vrContext = new nativeBindings.nativeMl();
-    topVrPresentState.vrContext.Present(topVrPresentState.windowHandle);
-
-    const {width: halfWidth, height} = topVrPresentState.vrContext.GetSize();
-    const width = halfWidth * 2;
-
-    const [fbo, tex, depthTex] = nativeBindings.nativeWindow.createVrTopRenderTarget(width, height);
-
-    topVrPresentState.fbo = fbo;
-    xrState.tex[0] = tex;
-    xrState.depthTex[0] = depthTex;
-    xrState.renderWidth[0] = halfWidth;
-    xrState.renderHeight[0] = height;
-    
-    nativeBindings.nativeMl.SetEventHandler(e => {
-      console.log('got ml event', e);
-
-      // const window = canvas.ownerDocument.defaultView;
-
-      switch (e.type) {
-        case 'newInitArg':
-        case 'resume':
-        case 'unloadResources': {
-          break;
-        }
-        case 'stop':
-        case 'pause': {
-          if (mlPresentState.mlContext) {
-            mlPresentState.mlContext.Exit();
-          }
-          nativeBindings.nativeMl.DeinitLifecycle();
-          process.exit();
-          break;
-        }
-        case 'keydown':
-        case 'keypress':
-        case 'keyup': {
-          const request = {
-            method: 'keyEvent',
-            event: e,
-          };
-          for (let i = 0; i < windows.length; i++) {
-            windows[i].runAsync(request);
-          }
-          break;
-        }
-        default: {
-          break;
-        }
-      }
-    });
-  } else {
-    throw new Error('unknown hmd type');
-  }
-
-  xrState.isPresenting[0] = 1;
-  topVrPresentState.hmdType = hmdType;
-
-  return {
-    hmdType,
-  };
-};
-GlobalContext.requestPresent = requestPresent;
-const exitPresent = async () => {
-  if (topVrPresentState.hmdType === 'fake') {
-    // XXX destroy fbo
-  } else if (topVrPresentState.hmdType === 'magicleap') {
-    nativeBindings.nativeMl.SetEventHandler(null);
-  } else {
-    throw new Error(`fail to exit present for hmd type ${topVrPresentState.hmdType}`);
-  }
-
-  xrState.isPresenting[0] = 0;
-  topVrPresentState.hmdType = null;
-};
-GlobalContext.exitPresent = exitPresent;
-const requestHitTest = (origin, direction, coordinateSystem) => {
-  if (topVrPresentState.hmdType === 'fake') {
-    if (!topVrPresentState.mesher) {
-      _startFakeMesher();
-    }
-    return topVrPresentState.mesher.requestHitTest(origin, direction, coordinateSystem);
-  } else if (topVrPresentState.hmdType === 'magicleap') {
-    return topVrPresentState.vrContext.requestHitTest(origin, direction, coordinateSystem);
-  } else {
-    return Promise.resolve([]);
-  }
-};
-GlobalContext.requestHitTest = requestHitTest;
-
 const requests = [];
 const handleRequest = req => {
   if (!_handleRequestImmediate(req)) {
@@ -502,7 +345,20 @@ const _handleRequestImmediate = req => {
 
   switch (type) {
     case 'requestHitTest': {
-       const _respond = (error, result) => {
+      if (topVrPresentState.hmdType === 'fake') {
+        if (!topVrPresentState.mesher) {
+          _startFakeMesher();
+        }
+        return topVrPresentState.mesher.requestHitTest(origin, direction, coordinateSystem);
+      } else if (topVrPresentState.hmdType === 'magicleap') {
+        return topVrPresentState.vrContext.requestHitTest(origin, direction, coordinateSystem);
+      } else {
+        return Promise.resolve([]);
+      }
+
+      return true;
+
+      /* const _respond = (error, result) => {
         const targetWindowId = m.windowIdPath[0];
         const targetWindow = GlobalContext.windows.find(window => window.id === targetWindowId);
 
@@ -526,7 +382,7 @@ const _handleRequestImmediate = req => {
         })
         .catch(err => {
           console.warn(err.stack);
-        });
+        }); */
       return true;
     }
     default:
@@ -638,6 +494,44 @@ const _waitHandleRequest = ({type, keypath}) => {
       xrState.msDepthTex[0] = msDepthTex;
       xrState.renderWidth[0] = halfWidth;
       xrState.renderHeight[0] = height;
+
+      nativeBindings.nativeMl.SetEventHandler(e => {
+        console.log('got ml event', e);
+
+        // const window = canvas.ownerDocument.defaultView;
+
+        switch (e.type) {
+          case 'newInitArg':
+          case 'resume':
+          case 'unloadResources': {
+            break;
+          }
+          case 'stop':
+          case 'pause': {
+            if (mlPresentState.mlContext) {
+              mlPresentState.mlContext.Exit();
+            }
+            nativeBindings.nativeMl.DeinitLifecycle();
+            process.exit();
+            break;
+          }
+          case 'keydown':
+          case 'keypress':
+          case 'keyup': {
+            const request = {
+              method: 'keyEvent',
+              event: e,
+            };
+            for (let i = 0; i < windows.length; i++) {
+              windows[i].runAsync(request);
+            }
+            break;
+          }
+          default: {
+            break;
+          }
+        }
+      });
     } else {
       throw new Error('unknown hmd type');
     }
