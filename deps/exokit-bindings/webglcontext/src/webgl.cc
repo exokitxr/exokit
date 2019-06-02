@@ -16,6 +16,9 @@
 using namespace v8;
 using namespace std;
 
+PFNGLFRAMEBUFFERTEXTUREMULTIVIEWOVR glFramebufferTextureMultiviewOVRExt;
+PFNGLFRAMEBUFFERTEXTUREMULTISAMPLEMULTIVIEWOVR glFramebufferTextureMultisampleMultiviewOVRExt;
+
 // forward declarations
 /* enum GLObjectType {
   GLOBJECT_TYPE_BUFFER,
@@ -929,6 +932,19 @@ ColorMaskState &ColorMaskState::operator=(const ColorMaskState &colorMaskState) 
 
 std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initialize(Isolate *isolate) {
   // Nan::EscapableHandleScope scope;
+
+  glFramebufferTextureMultiviewOVRExt = (PFNGLFRAMEBUFFERTEXTUREMULTIVIEWOVR)eglGetProcAddress("glFramebufferTextureMultiviewOVR");
+  if (!glFramebufferTextureMultiviewOVRExt) {
+      std::cerr << "Can not get proc address for glFramebufferTextureMultiviewOVR." << std::endl;
+      sleep(1);
+      abort();
+  }
+  glFramebufferTextureMultisampleMultiviewOVRExt = (PFNGLFRAMEBUFFERTEXTUREMULTISAMPLEMULTIVIEWOVR)eglGetProcAddress("glFramebufferTextureMultisampleMultiviewOVR");
+  if (!glFramebufferTextureMultisampleMultiviewOVRExt) {
+      std::cerr << "Can not get proc address for glFramebufferTextureMultisampleMultiviewOVRExt." << std::endl;
+      sleep(1);
+      abort();
+  }
 
   // constructor
   Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(WebGLRenderingContext::New);
@@ -2493,7 +2509,7 @@ NAN_METHOD(WebGLRenderingContext::FramebufferTextureMultiviewOVR) {
   GLint baseViewIndex = TO_INT32(info[4]);
   GLsizei numViews = TO_UINT32(info[5]);
 
-  glFramebufferTextureMultiviewOVR(target, attachment, texture, level, baseViewIndex, numViews);
+  glFramebufferTextureMultiviewOVRExt(target, attachment, texture, level, baseViewIndex, numViews);
 }
 
 NAN_METHOD(WebGLRenderingContext::FramebufferTextureMultisampleMultiviewOVR) {
@@ -2505,7 +2521,7 @@ NAN_METHOD(WebGLRenderingContext::FramebufferTextureMultisampleMultiviewOVR) {
   GLint baseViewIndex = TO_INT32(info[5]);
   GLsizei numViews = TO_UINT32(info[6]);
 
-  glFramebufferTextureMultisampleMultiviewOVR(target, attachment, texture, level, samples, baseViewIndex, numViews);
+  glFramebufferTextureMultisampleMultiviewOVRExt(target, attachment, texture, level, samples, baseViewIndex, numViews);
 }
 
 NAN_METHOD(WebGLRenderingContext::GetShaderParameter) {
