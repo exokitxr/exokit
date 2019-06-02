@@ -2090,8 +2090,6 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                 this.browser.load(url);
               }
             } else {
-              console.log('load url', url);
-              
               const res = await this.ownerDocument.defaultView.fetch(url);
               if (this.epoch !== localEpoch) {
                 return;
