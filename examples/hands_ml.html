@@ -141,8 +141,8 @@
 
         const mesh = new THREE.Mesh(geometry, handMaterial);
         mesh.update = frame => {
-          if (display && display.session && frame) {
-            const handInputSources = display.session.getInputSources().filter(inputSource => inputSource.targetRayMode === 'hand');
+          if (session && frame) {
+            const handInputSources = session.getInputSources().filter(inputSource => inputSource.targetRayMode === 'hand');
             if (handInputSources.length > 0) {
               const inputSource = handInputSources[i];
 
@@ -375,7 +375,6 @@
           renderer.setAnimationLoop(null);
 
           renderer.vr.enabled = true;
-          renderer.vr.setDevice(display);
           renderer.vr.setAnimationLoop(animate);
 
           console.log('running!');

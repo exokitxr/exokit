@@ -24,7 +24,7 @@
   <h1>eyetracking_ml</h1>
   <script src="three.js"></script>
   <script>
-    let container, scene, camera, display, eyeMesh;
+    let container, scene, camera, session, eyeMesh;
 
     const controllerGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.01);
     const controllerMaterial = new THREE.MeshPhongMaterial({
@@ -92,8 +92,8 @@
 
     function animate(time, frame) {
       const _updateEyeMesh = () => {
-        if (display && display.session && frame) {
-          const eyeInputSources = display.session.getInputSources().filter(inputSource => inputSource.targetRayMode === 'gaze');
+        if (session && frame) {
+          const eyeInputSources = session.getInputSources().filter(inputSource => inputSource.targetRayMode === 'gaze');
           const eyeGamepads = navigator.getGamepads().filter(gamepad => gamepad.id === 'eye');
           if (eyeInputSources.length > 0 && eyeGamepads.length > 0) {
             const eyeInputSource = eyeInputSources[0];
@@ -118,16 +118,13 @@
     init();
 
     (async () => {
-      console.log('request device');
-      display = await navigator.xr.requestDevice();
       console.log('request session');
-      const session = await display.requestSession({
+      session = await navigator.xr.requestSession({
         exclusive: true,
         extensions: {
           eyeTracking: true,
         },
       });
-      display.session = session;
 
       // console.log('request first frame');
       session.requestAnimationFrame((timestamp, frame) => {
@@ -135,21 +132,18 @@
           frameOfReferenceType: 'stage',
         });
 
-        /* const viewport = session.baseLayer.getViewport(frame.views[0]);
+        const {views} = frame.getViewerPose();
+        const viewport = session.baseLayer.getViewport(views[0]);
         const width = viewport.width;
-        const height = viewport.height; */
+        const height = viewport.height;
 
-        // renderer.setSize(width * 2, height);
+        renderer.setSize(width * 2, height);
 
-        // renderer.setAnimationLoop(null);
+        renderer.setAnimationLoop(null);
 
         renderer.vr.enabled = true;
-        // renderer.vr.setDevice(display);
-        renderer.vr.setSession(session, {
-          frameOfReferenceType: 'stage',
-        });
         renderer.vr.setAnimationLoop(animate);
-        
+
         // eyeTracker = session.requestEyeTracking();
 
         console.log('running!');
