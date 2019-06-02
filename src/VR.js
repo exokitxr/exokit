@@ -746,8 +746,6 @@ function getGamepads() {
       globalGamepads = _makeGlobalGamepads();
     }
 
-    // XXX map oculusGo/oculusQuest
-    // XXX can do these decorations at XR entry time
     globalGamepads.main[0].id = getControllerID(hmdType, 'left');
     globalGamepads.main[1].id = getControllerID(hmdType, 'right');
 
