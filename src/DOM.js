@@ -247,11 +247,13 @@ class Node extends EventTarget {
     const promises = [];
     const _getExport = el => {
       if (el.nodeType === Node.ELEMENT_NODE && el.tagName === 'IFRAME' && el.contentWindow) {
-        const promise = el.contentWindow.evalAsync(`window.document.body.parentNode.requestExport()`)
-          .then(iframeResult => {
-            result.childNodes = iframeResult ? [iframeResult] : [];
-          });
-        promises.push(promise);
+        if (el.contentWindow.evalAsync) {
+          const promise = el.contentWindow.evalAsync(`window.document.body.parentNode.requestExport()`)
+            .then(iframeResult => {
+              result.childNodes = [iframeResult];
+            });
+          promises.push(promise);
+        }
       }
 
       const result = {
@@ -2068,7 +2070,6 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                         }));
                       } : null;
                     },
-                    async evalAsync() {},
                     /* destroy() {
                       self.browser.destroy();
                       self.browser = null;
