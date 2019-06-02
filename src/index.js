@@ -1047,21 +1047,22 @@ const _startTopRenderLoop = () => {
           // const gamepad = this.session.device.gamepads[i];
           const hand = xrState.hands[i];
           const xrGamepad = xrState.gamepads[i];
-          hand.position.set(xrGamepad.position);
+          /* hand.position.set(xrGamepad.position);
           hand.orientation.set(xrGamepad.orientation);
           hand.direction.set(xrGamepad.direction);
-          hand.transformMatrix.set(xrGamepad.transformMatrix);
-          /* localMatrix.compose(
+          hand.transformMatrix.set(xrGamepad.transformMatrix); */
+
+          localMatrix.compose(
             localVector.fromArray(xrGamepad.position),
             localQuaternion.fromArray(xrGamepad.orientation),
             localVector2.set(1, 1, 1)
-          ); */
+          );
 
           // wrist
           {
-            localVector.set(0, 0, 0)/*.applyMatrix4(localMatrix)*/.toArray(hand.wrist[0]);
-            localVector.set(-0.02, 0, -0.02)/*.applyMatrix4(localMatrix)*/.toArray(hand.wrist[1]);
-            localVector.set(0.02, 0, -0.02)/*.applyMatrix4(localMatrix)*/.toArray(hand.wrist[2]);
+            localVector.set(0, 0, 0).applyMatrix4(localMatrix).toArray(hand.wrist[0]);
+            localVector.set(-0.02, 0, -0.02).applyMatrix4(localMatrix).toArray(hand.wrist[1]);
+            localVector.set(0.02, 0, -0.02).applyMatrix4(localMatrix).toArray(hand.wrist[2]);
           }
 
           // fingers
@@ -1073,7 +1074,7 @@ const _startTopRenderLoop = () => {
 
             for (let k = 0; k < finger.length; k++) {
               const bone = finger[k];
-              localVector.set(x, 0, y).multiplyScalar(0.03*k)/*.applyMatrix4(localMatrix)*/.toArray(bone);
+              localVector.set(x, 0, y).multiplyScalar(0.03*k).applyMatrix4(localMatrix).toArray(bone);
             }
           }
 
@@ -1127,14 +1128,14 @@ const _startTopRenderLoop = () => {
     for (let i = 0; i < xrState.gamepads.length; i++) {
       _deriveGamepadData(xrState.gamepads[i]);
     }
-    if (xrState.handTracking[0]) {
+    /* if (xrState.handTracking[0]) {
       for (let i = 0; i < xrState.hands.length; i++) {
         _deriveGamepadData(xrState.hands[i]);
       }
     }
     if (xrState.eyeTracking[0]) {
       _deriveGamepadData(xrState.eye);
-    }
+    } */
   };
   const _clearPrevSyncs = () => {
     for (let i = 0; i < prevSyncs.length; i++) {
