@@ -1370,12 +1370,7 @@ global.onrunasync = req => {
             localMatrix
               .fromArray(update.transformMatrix)
               .premultiply(
-                localMatrix2.compose(
-                  localVector.fromArray(xrOffset.position),
-                  localQuaternion.fromArray(xrOffset.orientation),
-                  localVector2.fromArray(xrOffset.scale)
-                )
-                .getInverse(localMatrix2)
+                localMatrix2.fromArray(xrOffset.matrixInverse)
               )
               .toArray(update.transformMatrix);          
           }
@@ -1396,11 +1391,7 @@ global.onrunasync = req => {
       
       const {xrOffset} = global.document;
       if (xrOffset) {
-        localMatrix.compose(
-          localVector.fromArray(xrOffset.position),
-          localQuaternion.fromArray(xrOffset.orientation),
-          localVector2.fromArray(xrOffset.scale)
-        ).getInverse(localMatrix);
+        localMatrix.fromArray(xrOffset.matrixInverse);
       }
       
       if (window[symbols.mrDisplaysSymbol].xrSession.isPresenting) {
