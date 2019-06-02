@@ -1,6 +1,5 @@
 const events = require('events');
 const {EventEmitter} = events;
-const stream = require('stream');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
