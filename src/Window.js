@@ -1103,11 +1103,11 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
     _tickLocalRafs();
     return _composeLocalLayers(layered);
   };
-  const _makeRenderChild = window => (syncs, layered) => window.runAsync(JSON.stringify({
+  const _makeRenderChild = window => (syncs, layered) => window.runAsync({
     method: 'tickAnimationFrame',
     syncs,
     layered: layered && vrPresentState.layers.some(layer => layer.contentWindow === window),
-  }));
+  });
   const _collectRenders = () => windows.map(_makeRenderChild).concat([_renderLocal]);
   const _render = (syncs, layered) => new Promise((accept, reject) => {
     const renders = _collectRenders();
@@ -1241,8 +1241,7 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
   window.document.xrOffset = options.xrOffsetBuffer ? new XRRigidTransform(options.xrOffsetBuffer) : new XRRigidTransform();
 })(global);
 
-global.onrunasync = m => {
-  const req = JSON.parse(m);
+global.onrunasync = req => {
   const {method} = req;
 
   switch (method) {
@@ -1264,10 +1263,10 @@ global.onrunasync = m => {
         const window = windows.find(window => window.id === windowId);
 
         if (window) {
-          window.runAsync(JSON.stringify({
+          window.runAsync({
             method: 'response',
             keypath,
-          }));
+          });
 
           return Promise.resolve();
         } else {

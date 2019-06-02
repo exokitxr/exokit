@@ -663,10 +663,10 @@ const _waitHandleRequest = ({type, keypath}) => {
   const windowId = keypath.pop();
   const window = windows.find(window => window.id === windowId);
   if (window) {
-    window.runAsync(JSON.stringify({
+    window.runAsync({
       method: 'response',
       keypath,
-    }));
+    });
   } else {
     console.warn('cannot find window to respond request to', windowId, windows.map(window => window.id));
   }
@@ -1267,11 +1267,11 @@ const _startTopRenderLoop = () => {
       nativeBindings.nativeWindow.clearFramebuffer(xrState.aaEnabled[0] ? topVrPresentState.msFbo : topVrPresentState.fbo);
     }
   };
-  const _tickAnimationFrame = window => window.runAsync(JSON.stringify({
+  const _tickAnimationFrame = window => window.runAsync({
     method: 'tickAnimationFrame',
     syncs: topVrPresentState.hmdType !== null ? [nativeBindings.nativeWindow.getSync()] : [],
     layered: true,
-  }))
+  })
     .catch(err => {
       if (err.code !== 'ECANCEL') {
         console.warn(err);
