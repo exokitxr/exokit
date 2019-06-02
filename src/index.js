@@ -1100,8 +1100,8 @@ const _startTopRenderLoop = () => {
               .applyQuaternion(localQuaternion)
           )
           .toArray(eye.position);
-        // localQuaternion.toArray(eye.orientation);
-        localQuaternion.set(0, 0, 0, 1).toArray(eye.orientation);
+        localQuaternion.toArray(eye.orientation);
+        // localQuaternion.set(0, 0, 0, 1).toArray(eye.orientation);
         /* localMatrix
           .compose(localQuaternion, localQuaternion, localVector2)
           .toArray(eye.transformMatrix); */

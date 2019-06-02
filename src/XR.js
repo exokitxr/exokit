@@ -399,13 +399,17 @@ class XRWebGLLayer {
 }
 module.exports.XRWebGLLayer = XRWebGLLayer;
 
-const _applyXrOffsetToPose = (pose, xrOffset, inverse) => {
+const _applyXrOffsetToPose = (pose, xrOffset, inverse, premultiply) => {
   if (xrOffset) {
     localMatrix
-      .fromArray(pose._realViewMatrix)
-      .multiply(
-        localMatrix2.fromArray(inverse ? xrOffset.matrixInverse : xrOffset.matrix)
-      )
+      .fromArray(pose._realViewMatrix);
+    localMatrix2.fromArray(inverse ? xrOffset.matrixInverse : xrOffset.matrix);
+    if (premultiply) {
+      localMatrix.premultiply(localMatrix2);
+    } else {
+      localMatrix.multiply(localMatrix2);
+    }
+    localMatrix
       .toArray(pose._localViewMatrix);
   } else {
     pose._localViewMatrix.set(pose._realViewMatrix);
@@ -421,7 +425,7 @@ class XRFrame {
   getViewerPose(coordinateSystem) {
     const xrOffset = this.session.renderState.baseLayer && this.session.renderState.baseLayer.context.canvas.ownerDocument.xrOffset;
     for (let i = 0; i < this._viewerPose.views.length; i++) {
-      _applyXrOffsetToPose(this._viewerPose.views[i], xrOffset, false);
+      _applyXrOffsetToPose(this._viewerPose.views[i], xrOffset, false, false);
     }
 
     return this._viewerPose;
@@ -430,12 +434,12 @@ class XRFrame {
     return this.getViewerPose.apply(this, arguments);
   } */
   getPose(sourceSpace, destinationSpace) {
-    _applyXrOffsetToPose(sourceSpace._pose, this.session.renderState.baseLayer && this.session.renderState.baseLayer.context.canvas.ownerDocument.xrOffset, true);
+    _applyXrOffsetToPose(sourceSpace._pose, this.session.renderState.baseLayer && this.session.renderState.baseLayer.context.canvas.ownerDocument.xrOffset, true, true);
 
     return sourceSpace._pose;
   }
   getInputPose(inputSource, coordinateSystem) { // non-standard
-    _applyXrOffsetToPose(inputSource._inputPose, this.session.renderState.baseLayer && this.session.renderState.baseLayer.context.canvas.ownerDocument.xrOffset, true);
+    _applyXrOffsetToPose(inputSource._inputPose, this.session.renderState.baseLayer && this.session.renderState.baseLayer.context.canvas.ownerDocument.xrOffset, true, true);
     inputSource._inputPose.targetRay.transformMatrix.set(inputSource._inputPose._localViewMatrix);
     inputSource._inputPose.gripTransform.matrix.set(inputSource._inputPose._localViewMatrix);
 
