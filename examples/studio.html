@@ -882,13 +882,15 @@ scene.add(directionalLight);
 // iframe
 
 const _pushDomUpdate = () => {
-  document.body.parentNode.requestExport()
-    .then(root => {
-      uiIframe.contentWindow.postMessage({
-        method: 'dom',
-        root,
+  if (uiIframe.contentWindow) {
+    document.body.parentNode.requestExport()
+      .then(root => {
+        uiIframe.contentWindow.postMessage({
+          method: 'dom',
+          root,
+        });
       });
-    });
+  }
 };
 const {
   canvas: composeCanvas,
