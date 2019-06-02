@@ -99,10 +99,10 @@
             const eyeInputSource = eyeInputSources[0];
             const eyeGamepad = eyeGamepads[0];
 
-            const pose = frame.getInputPose(eyeInputSource);
-            const {axes/*, offsetMatrix*/} = eyeGamepad;
+            const pose = frame.getPose(eyeInputSource.targetRaySpace);
+            const {axes} = eyeGamepad;
 
-            eyeMesh.matrix.fromArray(pose.targetRay.transformMatrix);
+            eyeMesh.matrix.fromArray(pose.transform.inverse.matrix);
             eyeMesh.matrix.decompose(eyeMesh.position, eyeMesh.quaternion, eyeMesh.scale);
             const scaleFactor = axes.some(axis => axis < 0) ? 0.2 : 1;
             eyeMesh.scale.set(1, scaleFactor, 1);
