@@ -340,9 +340,9 @@ const handleRequest = req => {
 };
 GlobalContext.handleRequest = handleRequest;
 const _handleRequestImmediate = req => {
-  const {type, keypath} = req.type;
+  const {type, keypath} = req;
 
-  const _respond = (err, result) => {
+  const _respond = (error, result) => {
     const windowId = keypath.pop();
     const window = windows.find(window => window.id === windowId);
     if (window) {

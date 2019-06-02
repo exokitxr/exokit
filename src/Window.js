@@ -1249,7 +1249,8 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
       GlobalContext.clearGamepads();
     };
     const _onrequesthittest = (origin, direction, coordinateSystem) => new Promise((accept, reject) => {
-      vrPresentState.responseAccepts.push(({error, result}) => {
+      vrPresentState.responseAccepts.push(res => {
+        const {error, result} = res;
         if (!error) {
           accept(result);
         } else {
@@ -1344,6 +1345,8 @@ global.onrunasync = req => {
           window.runAsync({
             method: 'response',
             keypath,
+            error: req.error,
+            result: req.result,
           });
 
           return Promise.resolve();
