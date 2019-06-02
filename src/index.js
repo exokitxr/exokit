@@ -970,28 +970,16 @@ const _startTopRenderLoop = () => {
     const _loadExtensions = () => {
       if (xrState.meshing[0] && !topVrPresentState.mesher) {
         topVrPresentState.mesher = topVrPresentState.vrContext.requestMeshing(5, 2);
-      } /* else if (!xrState.meshing[0] && topVrPresentState.mesher) {
-        topVrPresentState.mesher.destroy();
-        topVrPresentState.mesher = null;
-      } */
+      }
       if (xrState.planeTracking[0] && !topVrPresentState.planeTracker) {
         topVrPresentState.planeTracker = topVrPresentState.vrContext.requestPlaneTracking(10);
-      } /* else if (!xrState.planeTracking[0] && topVrPresentState.planeTracker) {
-        topVrPresentState.planeTracker.destroy();
-        topVrPresentState.planeTracker = null;
-      } */
+      }
       if (xrState.handTracking[0] && !topVrPresentState.handTracker) {
         topVrPresentState.handTracker = topVrPresentState.vrContext.requestHandTracking();
-      } /* else if (!xrState.handTracking[0] && topVrPresentState.handTracker) {
-        topVrPresentState.handTracker.destroy();
-        topVrPresentState.handTracker = null;
-      } */
+      }
       if (xrState.eyeTracking[0] && !topVrPresentState.eyeTracker) {
         topVrPresentState.eyeTracker = topVrPresentState.vrContext.requestEyeTracking();
-      } /* else if (!xrState.eyeTracking[0] && topVrPresentState.eyeTracker) {
-        topVrPresentState.eyeTracker.destroy();
-        topVrPresentState.eyeTracker = null;
-      } */
+      }
     };
     _loadExtensions();
 
@@ -1042,20 +1030,14 @@ const _startTopRenderLoop = () => {
     const _updateMeshing = () => {
       if (xrState.meshing[0] && !topVrPresentState.mesher) {
         _startFakeMesher();
-      } /* else if (!xrState.meshing[0] && topVrPresentState.mesher) {
-        topVrPresentState.mesher.destroy();
-        topVrPresentState.mesher = null;
-      } */
+      }
     };
     _updateMeshing();
     
     const _updatePlanes = () => {
       if (xrState.planeTracking[0] && !topVrPresentState.planeTracker) {
         _startFakePlaneTracker();
-      } /* else if (!xrState.planeTracking[0] && topVrPresentState.planeTracker) {
-        topVrPresentState.planeTracker.destroy();
-        topVrPresentState.planeTracker = null;
-      } */
+      }
     };
     _updatePlanes();
 
