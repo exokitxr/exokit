@@ -1361,8 +1361,8 @@ global.onrunasync = req => {
       }
       break;
     }
-    /* case 'eval':
-      return Promise.resolve(eval(req.scriptString)); */
+    case 'eval':
+      return Promise.resolve(eval(req.scriptString));
     default:
       return Promise.reject(new Error(`invalid window async request: ${JSON.stringify(req)}`));
   }
