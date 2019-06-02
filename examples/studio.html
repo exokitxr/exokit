@@ -985,7 +985,7 @@ const {
         }
         case 'setting': {
           const {key, value} = m.data;
-          window.settings.setSetting(key, value);
+          window.browser.setSetting(key, value);
           break;
         }
         case 'fakeVrMetrics': {

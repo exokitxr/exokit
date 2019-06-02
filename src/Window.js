@@ -749,12 +749,10 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
       RequestCamera: nativeMl.RequestCamera,
     } : null,
     monitors: new MonitorManager(),
-    inspect: util.inspect,
-  };
-  window.settings = {
     setSetting(key, value) {
       args[key] = value;
     },
+    inspect: util.inspect,
   };
   window.DOMParser = class DOMParser {
     parseFromString(htmlString, type) {
