@@ -162,7 +162,7 @@
                   }
                 };
 
-                const pose = frame.getInputPose(inputSource);
+                const pose = frame.getPose(inputSource.targetRaySpace);
                 const {wrist, fingers} = inputSource;
                 const allFingers = [wrist].concat(fingers);
                 for (let j = 0; j < allFingers.length; j++) {
@@ -239,7 +239,7 @@
                 indexAttribute.needsUpdate = true;
                 geometry.setDrawRange(0, indexIndex);
 
-                mesh.matrix.fromArray(pose.targetRay.transformMatrix);
+                mesh.matrix.fromArray(pose.transform.inverse.matrix);
                 mesh.matrix.decompose(mesh.position, mesh.quaternion, mesh.scale);
                 mesh.updateMatrixWorld(true);
                 
