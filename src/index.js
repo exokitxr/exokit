@@ -1076,6 +1076,8 @@ const _startTopRenderLoop = () => {
               localVector.set(x, 0, y).multiplyScalar(0.03*k)/*.applyMatrix4(localMatrix)*/.toArray(bone);
             }
           }
+
+          hand.connected[0] = 1;
         }
       }
     };
@@ -1103,6 +1105,8 @@ const _startTopRenderLoop = () => {
 
         eye.axes[0] = blinkAxis;
         eye.axes[1] = blinkAxis;
+
+        eye.connected[0] = 1;
       }
     };
     _updateEyeTracking();
