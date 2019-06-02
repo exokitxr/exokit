@@ -1248,6 +1248,24 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
       vrPresentState.glContext = null;
       GlobalContext.clearGamepads();
     };
+    const _onrequesthittest = (origin, direction, coordinateSystem) => new Promise((accept, reject) => {
+      vrPresentState.responseAccepts.push(({error, result}) => {
+        if (!error) {
+          accept(result);
+        } else {
+          reject(error);
+        }
+      });
+
+      parentPort.postMessage({
+        method: 'request',
+        type: 'requestHitTest',
+        keypath: [],
+        origin,
+        direction,
+        coordinateSystem,
+      });
+    });
 
     const vrDisplay = new VRDisplay('OpenVR', window);
     vrDisplay.onrequestanimationframe = _makeRequestAnimationFrame(window);
@@ -1276,6 +1294,7 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
     xrSession.onexitpresent = _onexitpresent;
     xrSession.onrequestanimationframe = _makeRequestAnimationFrame(window);
     xrSession.oncancelanimationframe = window.cancelAnimationFrame;
+    xrSession.onrequesthittest = _onrequesthittest;
     xrSession.onlayers = layers => {
       vrPresentState.layers = layers;
     };

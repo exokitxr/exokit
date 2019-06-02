@@ -188,9 +188,9 @@ class XRSession extends EventTarget {
   requestHitTest(origin, direction, coordinateSystem) {
     return new Promise((accept, reject) => {
       if (this.onrequesthittest)  {
-        this.onrequesthittest(origin, direction, result => {
-          accept(result);
-        });
+        this.onrequesthittest(origin, direction, coordinateSystem)
+          .then(accept)
+          .catch(reject);
       } else {
         reject(new Error('api not supported'));
       }

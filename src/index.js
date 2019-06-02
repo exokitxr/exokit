@@ -340,48 +340,50 @@ const handleRequest = req => {
 };
 GlobalContext.handleRequest = handleRequest;
 const _handleRequestImmediate = req => {
-  const {type} = req.type;
+  const {type, keypath} = req.type;
+
+  const _respond = (err, result) => {
+    const windowId = keypath.pop();
+    const window = windows.find(window => window.id === windowId);
+    if (window) {
+      window.runAsync({
+        method: 'response',
+        keypath,
+        error,
+        result,
+      });
+    } else {
+      console.warn('cannot find window to respond request to', windowId, windows.map(window => window.id));
+    }
+  };
 
   switch (type) {
     case 'requestHitTest': {
+      const {origin, direction, coordinateSystem} = req;
+
       if (topVrPresentState.hmdType === 'fake') {
         if (!topVrPresentState.mesher) {
           _startFakeMesher();
         }
-        return topVrPresentState.mesher.requestHitTest(origin, direction, coordinateSystem);
+        topVrPresentState.mesher.requestHitTest(origin, direction, coordinateSystem)
+          .then(result => {
+            _respond(null, result);
+          })
+          .catch(err => {
+            _respond(err);
+          });
       } else if (topVrPresentState.hmdType === 'magicleap') {
-        return topVrPresentState.vrContext.requestHitTest(origin, direction, coordinateSystem);
+        topVrPresentState.vrContext.requestHitTest(origin, direction, coordinateSystem)
+          .then(result => {
+            _respond(null, result);
+          })
+          .catch(err => {
+            _respond(err);
+          });
       } else {
-        return Promise.resolve([]);
+        _respond(null, []);
       }
 
-      return true;
-
-      /* const _respond = (error, result) => {
-        const targetWindowId = m.windowIdPath[0];
-        const targetWindow = GlobalContext.windows.find(window => window.id === targetWindowId);
-
-        if (targetWindow) {
-          targetWindow.runAsync({
-            method: 'response',
-            result,
-            error,
-            windowIdPath: m.windowIdPath.slice(1),
-            requestKey: m.requestKey,
-          });
-        } else {
-          console.warn(`unknown response window id: ${targetWindowId}`);
-        }
-      };
-
-      const {origin, direction, coordinateSystem} = req;
-      GlobalContext.requestHitTest(origin, direction, coordinateSystem)
-        .then(result => {
-          _respond(null, result);
-        })
-        .catch(err => {
-          console.warn(err.stack);
-        }); */
       return true;
     }
     default:
