@@ -141,6 +141,9 @@ class XRSession extends EventTarget {
       return result;
     })();
     this._eyeInputSource = new XRInputSource('', 'gaze', GlobalContext.xrState.eye);
+    this._inputSources = this._gamepadInputSources
+      .concat(this._handInputSources)
+      .concat(this._eyeInputSource);
     this._lastPresseds = [false, false];
     this._rafs = [];
     this._layers = [];
@@ -160,14 +163,7 @@ class XRSession extends EventTarget {
     return this.requestReferenceSpace.apply(this, arguments);
   } */
   getInputSources() {
-    const inputSources = this._gamepadInputSources.filter(inputSource => inputSource.connected);
-    if (GlobalContext.xrState.handTracking[0]) {
-      inputSources.push.apply(inputSources, this._handInputSources);
-    }
-    if (GlobalContext.xrState.eyeTracking[0]) {
-      inputSources.push(this._eyeInputSource);
-    }
-    return inputSources;
+    return this._inputSources.filter(inputSource => inputSource.connected);
   }
   requestAnimationFrame(fn) {
     if (this.onrequestanimationframe) {
