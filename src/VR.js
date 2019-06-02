@@ -645,12 +645,6 @@ class FakeXRDisplay {
     };
   }
   set texture(texture) {}
-  get hidden() {
-    return GlobalContext.xrState.hidden[0] != 0;
-  }
-  set hidden(hidden) {
-    GlobalContext.xrState.hidden[0] = hidden ? 1 : 0;
-  }
 }
 
 const getHMDType = () => {

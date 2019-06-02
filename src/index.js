@@ -306,7 +306,6 @@ const xrState = (() => {
   result.msTex = _makeTypedArray(Uint32Array, 1);
   result.msDepthTex = _makeTypedArray(Uint32Array, 1);
   result.aaEnabled = _makeTypedArray(Uint32Array, 1);
-  result.hidden = _makeTypedArray(Uint32Array, 1); // XXX is this used?
   result.fakeVrDisplayEnabled = _makeTypedArray(Uint32Array, 1);
   result.meshing = _makeTypedArray(Uint32Array, 1);
   result.planeTracking = _makeTypedArray(Uint32Array, 1);
