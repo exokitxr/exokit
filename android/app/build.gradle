@@ -1,19 +1,12 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 21
-    // Sceneform libraries use language constructs from Java 8.
-    // Add these compile options if targeting minSdkVersion < 26.
-    compileOptions {
-        sourceCompatibility 1.8
-        targetCompatibility 1.8
-    }
-
+    compileSdkVersion 25
 
     defaultConfig {
         applicationId = 'com.webmr.exokit'
-        minSdkVersion 21
-        targetSdkVersion 21
+        minSdkVersion 25
+        targetSdkVersion 25
         externalNativeBuild {
             cmake {
                 arguments '-DANDROID_STL=c++_static'
