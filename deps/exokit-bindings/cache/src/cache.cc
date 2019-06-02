@@ -80,7 +80,7 @@ Local<Object> Initialize(Isolate *isolate) {
   result->Set(JS_STR("set"), setFn);
   Local<FunctionTemplate> deleteFnTemplate = Nan::New<FunctionTemplate>(Delete);
   Local<Function> deleteFn = Nan::GetFunction(deleteFnTemplate).ToLocalChecked();
-  result->Set(JS_STR("delete"), setFn);
+  result->Set(JS_STR("delete"), deleteFn);
 
   return scope.Escape(result);
 }
