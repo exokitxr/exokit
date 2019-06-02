@@ -595,9 +595,11 @@ class FakeXRDisplay {
     GlobalContext.xrState.rightViewMatrix.set(GlobalContext.xrState.leftViewMatrix);
 
     // update gamepads
-    const gamepads = getGamepads();
-    for (let i = 0; i < 2 && i < gamepads.length; i++) {
-      const gamepad = gamepads[i];
+    if (!globalGamepads) {
+      globalGamepads = _makeGlobalGamepads();
+    }
+    for (let i = 0; i < globalGamepads.main.length; i++) {
+      const gamepad = globalGamepads.main[i];
       localVector.copy(this.position)
         .add(
           localVector2.set(-0.3 + i*0.6, -0.3, -0.35)
