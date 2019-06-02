@@ -539,7 +539,6 @@ class XRInputSource {
     this.targetRayMode = targetRayMode;
     this._xrStateGamepad = xrStateGamepad;
 
-    this.targetRayMode = 'hand';
     this.targetRaySpace = new XRSpace();
     this.targetRaySpace._pose._realViewMatrix = xrStateGamepad.transformMatrix;
     this.targetRaySpace._pose._localViewMatrix = this.targetRaySpace._pose.transform.inverse.matrix;
