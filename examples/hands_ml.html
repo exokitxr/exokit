@@ -135,6 +135,10 @@
         const positionAttribute = new THREE.BufferAttribute(positions, 3);
         geometry.addAttribute('position', positionAttribute);
 
+        const normals = new Float32Array(boneGeometry.attributes.normal.array.length * 2 * 6 * 4 + pointerGeometry.attributes.normal.array.length * 2);
+        const normalAttribute = new THREE.BufferAttribute(normals, 3);
+        geometry.addAttribute('normal', normalAttribute);
+
         const indices = new Uint16Array(boneGeometry.index.array.length * 2 * 6 * 4 + pointerGeometry.index.array.length * 2);
         const indexAttribute = new THREE.BufferAttribute(indices, 1);
         geometry.setIndex(indexAttribute);
@@ -143,11 +147,13 @@
         mesh.update = frame => {
           if (session && frame) {
             const handInputSources = session.getInputSources().filter(inputSource => inputSource.targetRayMode === 'hand');
+            // console.log('got hand input sources', handInputSources.length);
             if (handInputSources.length > 0) {
               const inputSource = handInputSources[i];
 
               if (inputSource.connected) {
                 let positionIndex = 0;
+                let normalIndex = 0;
                 let indexIndex = 0;
 
                 const _shiftIndex = array => {
@@ -174,6 +180,9 @@
                       positions.set(newGeometry.attributes.position.array, positionIndex);
                       positionIndex += newGeometry.attributes.position.array.length;
 
+                      normals.set(newGeometry.attributes.normal.array, normalIndex);
+                      normalIndex += newGeometry.attributes.normal.array.length;
+
                       indices.set(newGeometry.index.array, indexIndex);
                       indexIndex += newGeometry.index.array.length;
                     }
@@ -196,6 +205,9 @@
                   positions.set(newGeometry.attributes.position.array, positionIndex);
                   positionIndex += newGeometry.attributes.position.array.length;
 
+                  normals.set(newGeometry.attributes.normal.array, normalIndex);
+                  normalIndex += newGeometry.attributes.normal.array.length;
+
                   indices.set(newGeometry.index.array, indexIndex);
                   indexIndex += newGeometry.index.array.length;
                 }
@@ -215,6 +227,9 @@
 
                   positions.set(newGeometry.attributes.position.array, positionIndex);
                   positionIndex += newGeometry.attributes.position.array.length;
+
+                  normals.set(newGeometry.attributes.normal.array, normalIndex);
+                  normalIndex += newGeometry.attributes.normal.array.length;
 
                   indices.set(newGeometry.index.array, indexIndex);
                   indexIndex += newGeometry.index.array.length;
