@@ -1303,16 +1303,11 @@ global.onrunasync = req => {
 
       const {xrOffset} = global.document;
 
-      const presentingVrDisplays = [
-        global[symbols.mrDisplaysSymbol].fakeVrDisplay,
-        global[symbols.mrDisplaysSymbol].vrDevice,
-      ].filter(vrDisplay => !!vrDisplay.session);
-      if (presentingVrDisplays.length > 0) {
-        const presentingVrDisplay = presentingVrDisplays[0];
-        for (let i = 0; i < request.updates.length; i++) {
-          const update = request.updates[i];
+      if (window[symbols.mrDisplaysSymbol].xrSession.isPresenting) {
+        for (let i = 0; i < req.updates.length; i++) {
+          const update = req.updates[i];
 
-          if (xrOffset) { // XXX
+          if (update.transformMatrix && xrOffset) {
             localMatrix
               .fromArray(update.transformMatrix)
               .premultiply(
@@ -1330,7 +1325,7 @@ global.onrunasync = req => {
               update,
             },
           });
-          presentingVrDisplay.session.dispatchEvent(e);
+          window[symbols.mrDisplaysSymbol].xrSession.dispatchEvent(e);
         }
       }
       break;
@@ -1349,15 +1344,10 @@ global.onrunasync = req => {
         ).getInverse(localMatrix);
       }
       
-      const presentingVrDisplays = [
-        global[symbols.mrDisplaysSymbol].fakeVrDisplay,
-        global[symbols.mrDisplaysSymbol].vrDevice,
-      ].filter(vrDisplay => !!vrDisplay.session);
-      if (presentingVrDisplays.length > 0) {
-        const presentingVrDisplay = presentingVrDisplays[0];
-        for (let i = 0; i < request.updates.length; i++) {
-          const update = request.updates[i];
-          if (update.position && xrOffset) { // XXX
+      if (window[symbols.mrDisplaysSymbol].xrSession.isPresenting) {
+        for (let i = 0; i < req.updates.length; i++) {
+          const update = req.updates[i];
+          if (update.position && xrOffset) {
             localVector.fromArray(update.position).applyMatrix4(localMatrix).toArray(update.position);
             localVector.fromArray(update.normal).applyQuaternion(localQuaternion).toArray(update.normal);
           }
