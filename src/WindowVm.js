@@ -1,6 +1,6 @@
 const {EventEmitter} = require('events');
 const path = require('path');
-const {parentPort, Worker} = require('worker_threads');
+const {Worker} = require('worker_threads');
 const GlobalContext = require('./GlobalContext');
 const {process} = global;
 
