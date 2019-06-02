@@ -1190,7 +1190,7 @@ class Element extends Node {
 
         if (!isAutoClosingTag) {
           let childrenResult = '';
-          const childNodes = el.childNodes.concat(el.contentDocument ? [el.contentDocument] : []); // XXX request asynchronously from iframe
+          const childNodes = el.childNodes.concat(el.contentDocument ? [el.contentDocument] : []);
           for (let i = 0; i < childNodes.length; i++) {
             const childResult = _recurse(childNodes[i], depth + 1);
             if (childResult && !childrenResult) {
