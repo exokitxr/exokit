@@ -1298,7 +1298,7 @@ global.onrunasync = req => {
     }
     case 'meshes': {
       for (let i = 0; i < windows.length; i++) {
-        windows[i].runAsync(request);
+        windows[i].runAsync(req);
       }
 
       const {xrOffset} = global.document;
@@ -1337,7 +1337,7 @@ global.onrunasync = req => {
     }
     case 'planes': {
       for (let i = 0; i < windows.length; i++) {
-        windows[i].runAsync(request);
+        windows[i].runAsync(req);
       }
       
       const {xrOffset} = global.document;
@@ -1367,13 +1367,13 @@ global.onrunasync = req => {
               update,
             },
           });
-          presentingVrDisplay.session.dispatchEvent(e);
+          window[symbols.mrDisplaysSymbol].xrSession.dispatchEvent(e);
         }
       }
       break;
     }
     /* case 'eval':
-      return Promise.resolve(eval(request.scriptString)); */
+      return Promise.resolve(eval(req.scriptString)); */
     default:
       return Promise.reject(new Error(`invalid window async request: ${JSON.stringify(request)}`));
   }
