@@ -1341,7 +1341,6 @@ global.onrunasync = req => {
       }
       
       const {xrOffset} = global.document;
-      const transformMatrix = new Float32Array(16);
       if (xrOffset) {
         localMatrix.compose(
           localVector.fromArray(xrOffset.position),
