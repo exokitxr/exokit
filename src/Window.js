@@ -752,6 +752,68 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
       args[key] = value;
     },
     inspect: util.inspect,
+    requestDomExport(el) {
+      const promises = [];
+      const _getExport = el => {
+        if (el.nodeType === Node.ELEMENT_NODE && el.tagName === 'IFRAME' && el.contentWindow) {
+          if (el.contentWindow.evalAsync) {
+            const promise = el.contentWindow.evalAsync(`browser.requestDomExport(document.body.parentNode)`)
+              .then(iframeResult => {
+                result.childNodes = [iframeResult];
+              });
+            promises.push(promise);
+          }
+        }
+
+        const result = {
+          nodeType: el.nodeType || 0,
+          tagName: el.tagName || '',
+          value: el.value || '',
+          attrs: el.attrs || [],
+          childNodes: el.childNodes.map(_getExport),
+        };
+        return result;
+      };
+      const result = _getExport(el);
+      return Promise.all(promises).then(() => result);
+    },
+    async applyDomEdit(rootEl, keypath, edit) {
+      const _getDomNode = (el, i = 0) => {
+        if (i < keypath.length) {
+          const key = keypath[i];
+          const childNode = el.childNodes[key];
+          if (childNode) {
+            return _getDomNode(childNode, i+1);
+          } else {
+            return [el, keypath.slice(i)];
+          }
+        } else {
+          return [el, []];
+        }
+      };
+      const [el, remainingKeypath] = _getDomNode(rootEl);
+      if (remainingKeypath.length === 0) {
+        const {type} = edit;
+        if (type === 'name') {
+          const {oldName, oldValue, newName} = edit;
+          el.removeAttribute(oldName);
+          el.setAttribute(newName, oldValue);
+        } else if (type === 'value') {
+          const {name, newValue} = edit;
+          el.setAttribute(name, newValue);
+        } else if (type === 'remove') {
+          el.parentNode.removeChild(el);
+        } else {
+          throw new Error(`unknown dom edit type: ${type}`);
+        }
+      } else {
+        if (el.tagName === 'IFRAME' && el.contentWindow) {
+          await el.contentWindow.evalAsync(`browser.applyDomEdit(document, ${JSON.stringify(remainingKeypath)}, ${JSON.stringify(edit)})`);
+        } else {
+          console.warn('unresolved dom edit', el, remainingKeypath);
+        }
+      }
+    },
   };
   window.DOMParser = class DOMParser {
     parseFromString(htmlString, type) {
