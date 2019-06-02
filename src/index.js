@@ -1100,7 +1100,11 @@ const _startTopRenderLoop = () => {
               .applyQuaternion(localQuaternion)
           )
           .toArray(eye.position);
-        localQuaternion.toArray(eye.orientation);
+        // localQuaternion.toArray(eye.orientation);
+        localQuaternion.set(0, 0, 0, 1).toArray(eye.orientation);
+        /* localMatrix
+          .compose(localQuaternion, localQuaternion, localVector2)
+          .toArray(eye.transformMatrix); */
         // localVector.set(0, 0, -1).toArray(eye.position);
         // localQuaternion.set(0, 0, 0, 1).toArray(eye.orientation);
 
@@ -1132,10 +1136,10 @@ const _startTopRenderLoop = () => {
       for (let i = 0; i < xrState.hands.length; i++) {
         _deriveGamepadData(xrState.hands[i]);
       }
-    }
+    } */
     if (xrState.eyeTracking[0]) {
       _deriveGamepadData(xrState.eye);
-    } */
+    }
   };
   const _clearPrevSyncs = () => {
     for (let i = 0; i < prevSyncs.length; i++) {
