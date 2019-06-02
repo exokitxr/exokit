@@ -1132,7 +1132,7 @@ const _bindEventTarget = target => {
         };
 
         const x = e.clientX/window.innerWidth;
-        const y = 1-e.clientY/window.innerHeight;
+        const y = e.clientY/window.innerHeight;
         const minX = viewport.x;
         const minY = viewport.y;
         const maxX = viewport.x + viewport.z;
