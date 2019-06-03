@@ -1249,9 +1249,36 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
       GlobalContext.clearGamepads();
     };
     const _onrequesthittest = (origin, direction, coordinateSystem) => new Promise((accept, reject) => {
+      localQuaternion.setFromUnitVectors(
+        localVector.set(0, 0, -1),
+        localVector2.fromArray(direction)
+      );
+      localMatrix.compose(
+        localVector.fromArray(origin),
+        localQuaternion,
+        localVector2.set(1, 1, 1)
+      ).premultiply(
+        localMatrix2.fromArray(GlobalContext.xrState.xrOffset.matrix)
+      ).decompose(
+        localVector,
+        localQuaternion,
+        localVector2
+      );
+      localVector.toArray(origin);
+      localVector2.set(0, 0, -1).applyQuaternion(localQuaternion).toArray(direction);
       vrPresentState.responseAccepts.push(res => {
         const {error, result} = res;
         if (!error) {
+          localMatrix.fromArray(GlobalContext.xrState.xrOffset.matrixInverse);
+
+          for (let i = 0; i < result.length; i++) {
+            const {hitMatrix} = result[i];
+            localMatrix2
+              .fromArray(hitMatrix)
+              .premultiply(localMatrix)
+              .toArray(hitMatrix);
+          }
+
           accept(result);
         } else {
           reject(error);
