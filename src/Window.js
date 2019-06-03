@@ -1258,7 +1258,7 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
         localQuaternion,
         localVector2.set(1, 1, 1)
       ).premultiply(
-        localMatrix2.fromArray(GlobalContext.xrState.xrOffset.matrix)
+        localMatrix2.fromArray(window.document.xrOffset.matrix)
       ).decompose(
         localVector,
         localQuaternion,
@@ -1269,7 +1269,7 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
       vrPresentState.responseAccepts.push(res => {
         const {error, result} = res;
         if (!error) {
-          localMatrix.fromArray(GlobalContext.xrState.xrOffset.matrixInverse);
+          localMatrix.fromArray(window.document.xrOffset.matrixInverse);
 
           for (let i = 0; i < result.length; i++) {
             const {hitMatrix} = result[i];
