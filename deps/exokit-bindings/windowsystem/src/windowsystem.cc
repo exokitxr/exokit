@@ -1210,7 +1210,7 @@ NAN_METHOD(ComposeLayers) {
             } else {
               layerType = LayerType::IFRAME_3D_REPROJECT;
             }
-          } else */if (TO_UINT32(elementObj->Get(JS_STR("d")) == 2) && elementObj->Get(JS_STR("browser"))->IsObject()) {
+          } else */if (TO_UINT32(elementObj->Get(JS_STR("d"))) == 2 && elementObj->Get(JS_STR("browser"))->IsObject()) {
             layerType = LayerType::IFRAME_2D;
           }
         } /* else if (JS_OBJ(elementObj->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLCanvasElement"))) {
