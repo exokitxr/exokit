@@ -1032,7 +1032,7 @@ const _startTopRenderLoop = () => {
 
         const now = Date.now();
         const timeDiff = now - lastFrameTime;
-        const waitTime = Math.max(expectedTimeDiff - timeDiff, 0);
+        const waitTime = Math.max(expectedTimeDiff - timeDiff, 0) / 2;
 
         setTimeout(accept, waitTime);
       });
