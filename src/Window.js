@@ -421,7 +421,6 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
   rafCbs.sort((a, b) => (b ? b[symbols.prioritySymbol] : 0) - (a ? a[symbols.prioritySymbol] : 0));
   return id;
 };
-// const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.RequestHitTest(origin, direction, cb, window);
 
 (window => {
   for (const k in EventEmitter.prototype) {
@@ -1382,10 +1381,6 @@ global.onrunasync = req => {
         }
       }
     }
-    /* case 'vrdisplayactivate': {
-      global.vrdisplayactivate();
-      break;
-    } */
     case 'keyEvent': {
       const {event} = request;
       switch (event.type) {
