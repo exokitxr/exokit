@@ -5002,7 +5002,6 @@ NAN_METHOD(WebGLRenderingContext::GetSupportedExtensions) {
         }
     }
   }
-  int numResults = result->Length();
   for (GLint i = 0; i < numExtensions; i++) {
     string currentExtension = string(webglExtensions[i]);
     bool hasWebGL = currentExtension.find("WEBGL");
