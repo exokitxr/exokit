@@ -475,6 +475,8 @@ class FakeMesher extends EventEmitter {
         color: 0xFF0000,
       });
       const mesh = new THREE.Mesh(geometry, material);
+      mesh.matrix.fromArray(meshSpec.transformMatrix);
+      mesh.matrixWorld.copy(mesh.matrix);
 
       const raycaster = new THREE.Raycaster();
       raycaster.set(localVector.fromArray(origin), localVector2.fromArray(direction));
