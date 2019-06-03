@@ -19,6 +19,15 @@ using namespace std;
 #if defined(ANDROID) || defined(LUMIN)
 PFNGLFRAMEBUFFERTEXTUREMULTIVIEWOVR glFramebufferTextureMultiviewOVRExt;
 PFNGLFRAMEBUFFERTEXTUREMULTISAMPLEMULTIVIEWOVR glFramebufferTextureMultisampleMultiviewOVRExt;
+
+glFramebufferTextureMultiviewOVRExt = (PFNGLFRAMEBUFFERTEXTUREMULTIVIEWOVR)eglGetProcAddress("glFramebufferTextureMultiviewOVR");
+if (!glFramebufferTextureMultiviewOVRExt) {
+    std::cerr << "Can not get proc address for glFramebufferTextureMultiviewOVR." << std::endl;
+}
+glFramebufferTextureMultisampleMultiviewOVRExt = (PFNGLFRAMEBUFFERTEXTUREMULTISAMPLEMULTIVIEWOVR)eglGetProcAddress("glFramebufferTextureMultisampleMultiviewOVR");
+if (!glFramebufferTextureMultisampleMultiviewOVRExt) {
+    std::cerr << "Can not get proc address for glFramebufferTextureMultisampleMultiviewOVRExt." << std::endl;
+}
 #endif
 
 // forward declarations
@@ -934,17 +943,6 @@ ColorMaskState &ColorMaskState::operator=(const ColorMaskState &colorMaskState) 
 
 std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initialize(Isolate *isolate) {
   // Nan::EscapableHandleScope scope;
-
-#if defined(ANDROID) || defined(LUMIN)
-  glFramebufferTextureMultiviewOVRExt = (PFNGLFRAMEBUFFERTEXTUREMULTIVIEWOVR)eglGetProcAddress("glFramebufferTextureMultiviewOVR");
-  if (!glFramebufferTextureMultiviewOVRExt) {
-      std::cerr << "Can not get proc address for glFramebufferTextureMultiviewOVR." << std::endl;
-  }
-  glFramebufferTextureMultisampleMultiviewOVRExt = (PFNGLFRAMEBUFFERTEXTUREMULTISAMPLEMULTIVIEWOVR)eglGetProcAddress("glFramebufferTextureMultisampleMultiviewOVR");
-  if (!glFramebufferTextureMultisampleMultiviewOVRExt) {
-      std::cerr << "Can not get proc address for glFramebufferTextureMultisampleMultiviewOVRExt." << std::endl;
-  }
-#endif
 
   // constructor
   Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(WebGLRenderingContext::New);
