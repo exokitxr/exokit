@@ -2519,7 +2519,7 @@ NAN_METHOD(WebGLRenderingContext::FramebufferTextureMultiviewOVR) {
 #if defined(ANDROID) || defined(LUMIN)
   glFramebufferTextureMultiviewOVRExt(target, attachment, texture, level, baseViewIndex, numViews);
 #endif
-  
+
 }
 
 NAN_METHOD(WebGLRenderingContext::FramebufferTextureMultisampleMultiviewOVR) {
@@ -5000,14 +5000,17 @@ NAN_METHOD(WebGLRenderingContext::GetSupportedExtensions) {
   for (GLint i = 0; i < numExtensions; i++) {
     char *extension = (char *)glGetStringi(GL_EXTENSIONS, i);
     if(extension == webglExtensions[i]){
-      result->Set(i, JS_STR(webglExtensions[i]));
+      int numResults = result->Length();
+      result->Set(numResults+1, JS_STR(webglExtensions[i]));
     }
   }
+  int numResults = result->Length();
   for (GLint i = 0; i < numExtensions; i++) {
     string currentExtension = string(webglExtensions[i]);
     bool hasWebGL = currentExtension.find("WEBGL");
       if(hasWebGL) {
-        result->Set(i, JS_STR(webglExtensions[i]));
+        int numResults = result->Length();
+        result->Set(numResults+1, JS_STR(webglExtensions[i]));
       }
   }
   /* for (GLint i = 0; i < numExtensions; i++) {
