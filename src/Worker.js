@@ -1,5 +1,3 @@
-(() => {
-
 const path = require('path');
 const fs = require('fs');
 const url = require('url');
@@ -61,6 +59,6 @@ process.on('unhandledRejection', _handleError);
 vm.runInThisContext(exp, {
   filename: /^https?:/.test(filename) ? filename : 'data-url://',
 }); */
-importScripts(filename);
-
-})();
+process.nexTick(() => { // importScripts will block, so make sure we are done setup first
+  importScripts(filename);
+});
