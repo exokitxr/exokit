@@ -1069,6 +1069,10 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
     }
   };
   const _composeXrContext = (context, windowHandle) => {
+    if (vrPresentState.glContext) {
+      nativeWindow.composeLayers(vrPresentState.glContext, vrPresentState.layers, GlobalContext.xrState);
+    }
+
     if (vrPresentState.hmdType === 'fake' || vrPresentState.hmdType === 'oculus' || vrPresentState.hmdType === 'openvr') {
       // NOTE: we blit from fbo instead of msFbo, so this will be lagged by a frame in the multisample case
       if (GlobalContext.xrState.aaEnabled[0]) { // fbo will not be bound by default in the aaEnabled case
