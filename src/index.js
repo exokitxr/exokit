@@ -101,6 +101,7 @@ const args = (() => {
         'require',
         'nogl',
         'headless',
+        'uncapped',
       ],
       string: [
         'webgl',
@@ -126,6 +127,7 @@ const args = (() => {
         u: 'require',
         n: 'nogl',
         e: 'headless',
+        c: 'uncapped',
       },
     });
     return {
@@ -146,6 +148,7 @@ const args = (() => {
       require: minimistArgs.require,
       nogl: minimistArgs.nogl,
       headless: minimistArgs.headless,
+      uncapped: minimistArgs.uncapped,
     };
   } else {
     return {};
@@ -598,6 +601,7 @@ const _startTopRenderLoop = () => {
     total: 0,
   };
   const TIMESTAMP_FRAMES = 100;
+  let lastFrameTime = Date.now();
   const prevSyncs = [];
 
   if (nativeBindings.nativeWindow.pollEvents) {
@@ -1021,12 +1025,18 @@ const _startTopRenderLoop = () => {
     _waitExtensions();
   };
   const _waitGetPosesFake = async () => {
-    /* await new Promise((accept, reject) => {
-      const now = Date.now();
-      const timeDiff = now - lastFrameTime;
-      const waitTime = Math.max(8 - timeDiff, 0);
-      setTimeout(accept, waitTime);
-    }); */
+    if (!args.uncapped) {
+      await new Promise((accept, reject) => {
+        const fps = nativeBindings.nativeWindow.getRefreshRate();
+        const expectedTimeDiff = 1000 / fps;
+
+        const now = Date.now();
+        const timeDiff = now - lastFrameTime;
+        const waitTime = Math.max(expectedTimeDiff - timeDiff, 0);
+
+        setTimeout(accept, waitTime);
+      });
+    }
 
     const _updateMeshing = () => {
       if (xrState.meshing[0] && !topVrPresentState.mesher) {
@@ -1296,7 +1306,7 @@ const _startTopRenderLoop = () => {
 
     await _submitFrame();
 
-    // lastFrameTime = Date.now()
+    lastFrameTime = Date.now()
 
     if (args.performance) {
       const now = Date.now();
