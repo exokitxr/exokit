@@ -1451,7 +1451,7 @@ const _start = () => {
     }
     u = u.replace(/^exokit:/, '');
     if (args.tab) {
-      u = u.replace(/\/?$/, '/');
+      // u = u.replace(/\/?$/, '/');
       u = `${realityTabsUrl}?t=${encodeURIComponent(u)}`
     }
     if (u && !url.parse(u).protocol) {
