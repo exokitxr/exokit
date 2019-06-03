@@ -1132,12 +1132,12 @@ void ComposeLayer(WebGLRenderingContext *gl, const LayerSpec &layer) {
   }
 }
 
-void ComposeLayers(WebGLRenderingContext *gl, GLuint fbo, const std::vector<LayerSpec> &layers) {
+void ComposeLayers(WebGLRenderingContext *gl, const std::vector<LayerSpec> &layers) {
   for (size_t i = 0; i < layers.size(); i++) {
     BlitLayer(gl, layers[i]);
   }
 
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gl->defaultFramebuffer);
   glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
   for (size_t i = 0; i < layers.size(); i++) {
     ComposeLayer(gl, layers[i]);
@@ -1184,9 +1184,8 @@ void ComposeLayers(WebGLRenderingContext *gl, GLuint fbo, const std::vector<Laye
 }
 
 NAN_METHOD(ComposeLayers) {
-  if (info[0]->IsObject() && info[1]->IsNumber() && info[2]->IsArray() && info[3]->IsObject()) {
+  if (info[0]->IsObject() && info[1]->IsArray() && info[2]->IsObject()) {
     WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
-    GLuint fbo = TO_UINT32(info[1]);
     Local<Array> array = Local<Array>::Cast(info[2]);
     Local<Object> xrStateObj = Local<Array>::Cast(info[3]);
 
@@ -1200,7 +1199,7 @@ NAN_METHOD(ComposeLayers) {
 
         LayerType layerType = LayerType::NONE;
         if (JS_OBJ(elementObj->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLIFrameElement"))) {
-          if (
+          /* if (
             elementObj->Get(JS_STR("contentWindow"))->IsObject() &&
             elementObj->Get(JS_STR("contentDocument"))->IsObject() &&
             JS_OBJ(elementObj->Get(JS_STR("contentDocument")))->Get(JS_STR("framebuffer"))->IsObject()
@@ -1212,17 +1211,17 @@ NAN_METHOD(ComposeLayers) {
             } else {
               layerType = LayerType::IFRAME_3D_REPROJECT;
             }
-          } else if (elementObj->Get(JS_STR("browser"))->IsObject()) {
+          } else */if (TO_UINT32(elementObj->Get(JS_STR("d")) == 2) && elementObj->Get(JS_STR("browser"))->IsObject()) {
             layerType = LayerType::IFRAME_2D;
           }
-        } else if (JS_OBJ(elementObj->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLCanvasElement"))) {
+        } /* else if (JS_OBJ(elementObj->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("HTMLCanvasElement"))) {
           if (elementObj->Get(JS_STR("framebuffer"))->IsObject()) {
             layerType = LayerType::RAW_CANVAS;
           }
-        }
+        } */
 
         switch (layerType) {
-          case LayerType::IFRAME_3D: {
+          /* case LayerType::IFRAME_3D: {
             Local<Object> windowObj = Local<Object>::Cast(elementObj->Get(JS_STR("contentWindow")));
             int width = TO_INT32(windowObj->Get(JS_STR("width")));
             int height = TO_INT32(windowObj->Get(JS_STR("height")));
@@ -1267,7 +1266,7 @@ NAN_METHOD(ComposeLayers) {
               {nullptr,nullptr}
             });
             break;
-          }
+          } */
           case LayerType::IFRAME_2D: {
             Local<Object> browserObj = Local<Object>::Cast(elementObj->Get(JS_STR("browser")));
             int width = TO_INT32(browserObj->Get(JS_STR("width")));
@@ -1339,7 +1338,7 @@ NAN_METHOD(ComposeLayers) {
             });
             break;
           }
-          case LayerType::RAW_CANVAS: {
+          /* case LayerType::RAW_CANVAS: {
             Local<Object> framebufferObj = Local<Object>::Cast(elementObj->Get(JS_STR("framebuffer")));
             GLuint tex = TO_UINT32(framebufferObj->Get(JS_STR("tex")));
             GLuint depthTex = TO_UINT32(framebufferObj->Get(JS_STR("depthTex")));
@@ -1361,7 +1360,7 @@ NAN_METHOD(ComposeLayers) {
               {nullptr,nullptr}
             });
             break;
-          }
+          } */
           default: {
             // layer cannot be composed
             break;
@@ -1373,7 +1372,7 @@ NAN_METHOD(ComposeLayers) {
     }
 
     if (layers.size() > 0) {
-      ComposeLayers(gl, fbo, layers);
+      ComposeLayers(gl, layers);
     }
   } else {
     Nan::ThrowError("WindowSystem::ComposeLayers: invalid arguments");
