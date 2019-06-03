@@ -1185,8 +1185,8 @@ void ComposeLayers(WebGLRenderingContext *gl, const std::vector<LayerSpec> &laye
 NAN_METHOD(ComposeLayers) {
   if (info[0]->IsObject() && info[1]->IsArray() && info[2]->IsObject()) {
     WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
-    Local<Array> array = Local<Array>::Cast(info[2]);
-    Local<Object> xrStateObj = Local<Array>::Cast(info[3]);
+    Local<Array> array = Local<Array>::Cast(info[1]);
+    Local<Object> xrStateObj = Local<Array>::Cast(info[2]);
 
     std::vector<LayerSpec> layers;
     layers.reserve(8);
