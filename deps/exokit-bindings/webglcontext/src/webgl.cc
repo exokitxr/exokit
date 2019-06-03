@@ -4990,7 +4990,7 @@ NAN_METHOD(WebGLRenderingContext::GetSupportedExtensions) {
   // glGetIntegerv(GL_NUM_EXTENSIONS, &numExtensions);
 
   int numExtensions = sizeof(webglExtensions)/sizeof(webglExtensions[0]);
-  Local<Array> result = Nan::New<Array>(numExtensions);
+  Local<Array> result = Nan::New<Array>(0);
   for (GLint i = 0; i < numExtensions; i++) {
     char *extension = (char *)glGetStringi(GL_EXTENSIONS, i);
     if(extension == webglExtensions[i]){
