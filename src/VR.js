@@ -4,7 +4,8 @@ const {parentPort} = require('worker_threads');
 const {Event} = require('./Event');
 
 const symbols = require('./symbols');
-const THREE = require('../lib/three-min.js');
+// const THREE = require('../lib/three-min.js');
+const THREE = require('../lib/three.js');
 const {
   nativeWindow,
   nativeOculusVR,
@@ -420,20 +421,6 @@ class FakeMesher extends EventEmitter {
         localVector.set(0, 0.5+i, 0)
         localVector2.set(0.5+Math.random()*0.5, 1+Math.random(), 0.5+Math.random()*0.5);
 
-        const box = new THREE.Box3().setFromCenterAndSize(localVector3.set(0, 0, 0), localVector2);
-        box.quaternion = localQuaternion.clone();
-        box.matrix = localMatrix
-          .compose(
-            localVector,
-            localQuaternion,
-            localVector3.set(1, 1, 1)
-          )
-          .clone();
-        box.matrixInverse = localMatrix
-          .getInverse(localMatrix)
-          .clone();
-        mesh.box = box;
-
         localMatrix.compose(
           localVector,
           localQuaternion,
@@ -480,9 +467,35 @@ class FakeMesher extends EventEmitter {
 
   async requestHitTest(origin, direction, coordinateSystem) {
     for (let i = 0; i < this.meshes.length; i++) {
-      const mesh = this.meshes[i];
+      const meshSpec = this.meshes[i];
 
-      localVector.fromArray(origin).applyMatrix4(mesh.box.matrixInverse);
+      const geometry = new THREE.BufferGeometry();
+      geometry.addAttribute('position', new THREE.BufferAttribute(meshSpec.positionArray, 3));
+      geometry.setIndex(new THREE.BufferAttribute(meshSpec.indexArray, 1));
+      const material = new THREE.MeshBasicMaterial({
+        color: 0xFF0000,
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+
+      const raycaster = new THREE.Raycaster();
+      raycaster.set(localVector.fromArray(origin), localVector2.fromArray(direction));
+      const intersects = raycaster.intersectObjects(scene.children);
+      if (intersects.length > 0) {
+        const [intersect] = intersects;
+        const {point} = intersect;
+        return [{
+          hitMatrix: localMatrix
+            .compose(
+              point,
+              localQuaternion.set(0, 0, 0, 1),
+              // localQuaternion.setFromUnitVectors(localVector2.set(0, 0, -1), normal),
+              localVector2.set(1, 1, 1)
+            )
+            .toArray(new Float32Array(16)),
+        }];
+      }
+
+      /* localVector.fromArray(origin).applyMatrix4(mesh.box.matrixInverse);
       localVector2.fromArray(origin).add(localVector3.fromArray(direction)).applyMatrix4(mesh.box.matrixInverse).sub(localVector);
       localRay.set(localVector, localVector2);
       const intersection = localRay.intersectBox(mesh.box, localVector3);
@@ -507,7 +520,7 @@ class FakeMesher extends EventEmitter {
             )
             .toArray(new Float32Array(16))
         }];
-      }
+      } */
     }
     return [];
   }
