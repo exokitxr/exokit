@@ -939,14 +939,10 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
   glFramebufferTextureMultiviewOVRExt = (PFNGLFRAMEBUFFERTEXTUREMULTIVIEWOVR)eglGetProcAddress("glFramebufferTextureMultiviewOVR");
   if (!glFramebufferTextureMultiviewOVRExt) {
       std::cerr << "Can not get proc address for glFramebufferTextureMultiviewOVR." << std::endl;
-      sleep(1);
-      abort();
   }
   glFramebufferTextureMultisampleMultiviewOVRExt = (PFNGLFRAMEBUFFERTEXTUREMULTISAMPLEMULTIVIEWOVR)eglGetProcAddress("glFramebufferTextureMultisampleMultiviewOVR");
   if (!glFramebufferTextureMultisampleMultiviewOVRExt) {
       std::cerr << "Can not get proc address for glFramebufferTextureMultisampleMultiviewOVRExt." << std::endl;
-      sleep(1);
-      abort();
   }
 #endif
 
