@@ -17,7 +17,6 @@ const GlobalContext = require('./GlobalContext');
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
-const localVector3 = new THREE.Vector3();
 const localQuaternion = new THREE.Quaternion();
 const localMatrix = new THREE.Matrix4();
 const localMatrix2 = new THREE.Matrix4();
@@ -495,33 +494,6 @@ class FakeMesher extends EventEmitter {
             .toArray(new Float32Array(16)),
         }];
       }
-
-      /* localVector.fromArray(origin).applyMatrix4(mesh.box.matrixInverse);
-      localVector2.fromArray(origin).add(localVector3.fromArray(direction)).applyMatrix4(mesh.box.matrixInverse).sub(localVector);
-      localRay.set(localVector, localVector2);
-      const intersection = localRay.intersectBox(mesh.box, localVector3);
-      if (intersection) {
-        const normal = localVector;
-        if (intersection.x >= mesh.box.max.x - 0.001) normal.set(1, 0, 0);
-        else if (intersection.x <= mesh.box.min.x + 0.001) normal.set(-1, 0, 0);
-        else if (intersection.y >= mesh.box.max.y - 0.001) normal.set(0, 1, 0);
-        else if (intersection.y <= mesh.box.min.y + 0.001) normal.set(0, -1, 0);
-        else if (intersection.z >= mesh.box.max.z - 0.001) normal.set(0, 0, 1);
-        else if (intersection.z <= mesh.box.min.z + 0.001) normal.set(0, 0, -1);
-        normal.applyQuaternion(mesh.box.quaternion);
-
-        intersection.applyMatrix4(mesh.box.matrix);
-
-        return [{
-          hitMatrix: localMatrix
-            .compose(
-              intersection,
-              localQuaternion.setFromUnitVectors(localVector2.set(0, 0, -1), normal),
-              localVector2.set(1, 1, 1)
-            )
-            .toArray(new Float32Array(16))
-        }];
-      } */
     }
     return [];
   }
