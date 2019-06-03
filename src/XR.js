@@ -27,7 +27,7 @@ class XR extends EventEmitter {
   supportsSessionMode(mode) { // non-standard
     return this.supportsSession(mode);
   }
-  async requestSession({exclusive = false, outputContext = null} = {}) {
+  async requestSession({exclusive = false, outputContext = null, extensions = {}} = {}) {
     if (!this.session) {
       const hmdType = getHMDType();
 
@@ -45,6 +45,20 @@ class XR extends EventEmitter {
         this.session = session;
       } else {
         return Promise.reject(null);
+      }
+    }
+    if (this.session) {
+      if (extensions.meshing) {
+        GlobalContext.xrState.meshing[0] = 1;
+      }
+      if (extensions.planeTracking) {
+        GlobalContext.xrState.planeTracking[0] = 1;
+      }
+      if (extensions.handTracking) {
+        GlobalContext.xrState.handTracking[0] = 1;
+      }
+      if (extensions.eyeTracking) {
+        GlobalContext.xrState.eyeTracking[0] = 1;
       }
     }
     return Promise.resolve(this.session);
@@ -96,24 +110,40 @@ class XRSession extends EventTarget {
 
     this._frame = new XRFrame(this);
     this._referenceSpace = new XRReferenceSpace();
-    this._inputSources = (() => {
+    this._gamepadInputSources = (() => {
       const result = Array(2 + maxNumTrackers);
       for (let i = 0; i < maxNumTrackers; i++) {
-        let hand, pointerOrigin;
+        let hand, targetRayMode;
         if (i === 0) {
           hand = 'left';
-          pointerOrigin = 'hand';
+          targetRayMode = 'tracked-pointer';
         } else if (i === 1) {
           hand = 'right';
-          pointerOrigin = 'hand';
+          targetRayMode = 'tracked-pointer';
         } else {
           hand = null;
-          pointerOrigin = 'tracker';
+          targetRayMode = 'tracker';
         }
-        result[i] = new XRInputSource(hand, pointerOrigin, i);
+        result[i] = new XRInputSource(hand, targetRayMode, GlobalContext.xrState.gamepads[i]);
       }
       return result;
     })();
+    this._handInputSources = (() => {
+      const result = [
+        new XRInputSource('left', 'hand', GlobalContext.xrState.hands[0]),
+        new XRInputSource('right', 'hand', GlobalContext.xrState.hands[1]),
+      ];
+      for (let i = 0; i < result.length; i++) {
+        const inputSource = result[i];
+        inputSource.wrist = inputSource._xrStateGamepad.wrist;
+        inputSource.fingers = inputSource._xrStateGamepad.fingers;
+      }
+      return result;
+    })();
+    this._eyeInputSource = new XRInputSource('', 'gaze', GlobalContext.xrState.eye);
+    this._inputSources = this._gamepadInputSources
+      .concat(this._handInputSources)
+      .concat(this._eyeInputSource);
     this._lastPresseds = [false, false];
     this._rafs = [];
     this._layers = [];
@@ -158,9 +188,9 @@ class XRSession extends EventTarget {
   requestHitTest(origin, direction, coordinateSystem) {
     return new Promise((accept, reject) => {
       if (this.onrequesthittest)  {
-        this.onrequesthittest(origin, direction, result => {
-          accept(result);
-        });
+        this.onrequesthittest(origin, direction, coordinateSystem)
+          .then(accept)
+          .catch(reject);
       } else {
         reject(new Error('api not supported'));
       }
@@ -180,12 +210,13 @@ class XRSession extends EventTarget {
     return Promise.resolve();
   }
   update() {
-    const gamepads = GlobalContext.getGamepads(this.window);
-    
-    for (let i = 0; i < gamepads.length; i++) {
+    const inputSources = this.getInputSources();
+    const gamepads = GlobalContext.getGamepads();
+
+    for (let i = 0; i < inputSources.length; i++) {
+      const inputSource = inputSources[i];
       const gamepad = gamepads[i];
-      const inputSource = this._inputSources[i];
-      
+
       const pressed = gamepad.buttons[1].pressed;
       const lastPressed = this._lastPresseds[i];
       if (pressed && !lastPressed) {
@@ -206,6 +237,7 @@ class XRSession extends EventTarget {
       this._lastPresseds[i] = pressed;
     }
   }
+
   get layers() {
     return this._layers;
   }
@@ -216,6 +248,13 @@ class XRSession extends EventTarget {
       this.onlayers(layers);
     }
   }
+  get texture() {
+    return {
+      id: GlobalContext.xrState.tex[0],
+    };
+  }
+  set texture(texture) {}
+
   get onblur() {
     return _elementGetter(this, 'blur');
   }
@@ -354,13 +393,17 @@ class XRWebGLLayer {
 }
 module.exports.XRWebGLLayer = XRWebGLLayer;
 
-const _applyXrOffsetToPose = (pose, xrOffset, inverse) => {
+const _applyXrOffsetToPose = (pose, xrOffset, inverse, premultiply) => {
   if (xrOffset) {
     localMatrix
-      .fromArray(pose._realViewMatrix)
-      .multiply(
-        localMatrix2.fromArray(inverse ? xrOffset.matrixInverse : xrOffset.matrix)
-      )
+      .fromArray(pose._realViewMatrix);
+    localMatrix2.fromArray(inverse ? xrOffset.matrixInverse : xrOffset.matrix);
+    if (premultiply) {
+      localMatrix.premultiply(localMatrix2);
+    } else {
+      localMatrix.multiply(localMatrix2);
+    }
+    localMatrix
       .toArray(pose._localViewMatrix);
   } else {
     pose._localViewMatrix.set(pose._realViewMatrix);
@@ -376,7 +419,7 @@ class XRFrame {
   getViewerPose(coordinateSystem) {
     const xrOffset = this.session.renderState.baseLayer && this.session.renderState.baseLayer.context.canvas.ownerDocument.xrOffset;
     for (let i = 0; i < this._viewerPose.views.length; i++) {
-      _applyXrOffsetToPose(this._viewerPose.views[i], xrOffset, false);
+      _applyXrOffsetToPose(this._viewerPose.views[i], xrOffset, false, false);
     }
 
     return this._viewerPose;
@@ -385,12 +428,12 @@ class XRFrame {
     return this.getViewerPose.apply(this, arguments);
   } */
   getPose(sourceSpace, destinationSpace) {
-    _applyXrOffsetToPose(sourceSpace._pose, this.session.renderState.baseLayer && this.session.renderState.baseLayer.context.canvas.ownerDocument.xrOffset, true);
+    _applyXrOffsetToPose(sourceSpace._pose, this.session.renderState.baseLayer && this.session.renderState.baseLayer.context.canvas.ownerDocument.xrOffset, true, true);
 
     return sourceSpace._pose;
   }
   getInputPose(inputSource, coordinateSystem) { // non-standard
-    _applyXrOffsetToPose(inputSource._inputPose, this.session.renderState.baseLayer && this.session.renderState.baseLayer.context.canvas.ownerDocument.xrOffset, true);
+    _applyXrOffsetToPose(inputSource._inputPose, this.session.renderState.baseLayer && this.session.renderState.baseLayer.context.canvas.ownerDocument.xrOffset, true, true);
     inputSource._inputPose.targetRay.transformMatrix.set(inputSource._inputPose._localViewMatrix);
     inputSource._inputPose.gripTransform.matrix.set(inputSource._inputPose._localViewMatrix);
 
@@ -485,31 +528,30 @@ class XRViewerPose extends XRPose {
 module.exports.XRViewerPose = XRViewerPose;
 
 class XRInputSource {
-  constructor(handedness = 'left', pointerOrigin = 'hand', index = 0) {
+  constructor(handedness, targetRayMode, xrStateGamepad) {
     this.handedness = handedness;
-    this.pointerOrigin = pointerOrigin;
-    this._index = index;
+    this.targetRayMode = targetRayMode;
+    this._xrStateGamepad = xrStateGamepad;
 
-    const gamepad = GlobalContext.xrState.gamepads[index];
-
-    this.targetRayMode = 'hand';
     this.targetRaySpace = new XRSpace();
-    this.targetRaySpace._pose._realViewMatrix = gamepad.transformMatrix;
+    this.targetRaySpace._pose._realViewMatrix = xrStateGamepad.transformMatrix;
     this.targetRaySpace._pose._localViewMatrix = this.targetRaySpace._pose.transform.inverse.matrix;
     this.gripSpace = new XRSpace();
-    this.gripSpace._pose._realViewMatrix = gamepad.transformMatrix;
+    this.gripSpace._pose._realViewMatrix = xrStateGamepad.transformMatrix;
     this.gripSpace._pose._localViewMatrix = this.targetRaySpace._pose.transform.inverse.matrix;
 
     this._inputPose = new XRInputPose();
-    this._inputPose.targetRay.origin.values = gamepad.position;
-    this._inputPose.targetRay.direction.values = gamepad.direction;
-    this._inputPose._realViewMatrix = gamepad.transformMatrix;
+    this._inputPose.targetRay.origin.values = xrStateGamepad.position;
+    this._inputPose.targetRay.direction.values = xrStateGamepad.direction;
+    this._inputPose._realViewMatrix = xrStateGamepad.transformMatrix;
     this._inputPose._localViewMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
   }
   get connected() {
-    return GlobalContext.xrState.gamepads[this._index].connected[0] !== 0;
+    return this._xrStateGamepad.connected[0] !== 0;
   }
-  set connected(connected) {}
+  set connected(connected) {
+    this._xrStateGamepad.connected[0] = connected ? 1 : 0;
+  }
 }
 module.exports.XRInputSource = XRInputSource;
 

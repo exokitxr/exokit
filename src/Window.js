@@ -8,7 +8,6 @@ const os = require('os');
 const {parentPort} = require('worker_threads');
 const util = require('util');
 const {TextEncoder, TextDecoder} = util;
-const {XRRigidTransform} = require('./XR.js');
 const {performance} = require('perf_hooks');
 const {
   workerData: {
@@ -20,6 +19,9 @@ const {
     },
   },
 } = require('worker_threads');
+
+const {SpatialEvent} = require('./Event.js');
+const {XRRigidTransform} = require('./XR.js');
 
 const mkdirp = require('mkdirp');
 const ws = require('ws');
@@ -50,12 +52,11 @@ const indexedDB = require('fake-indexeddb');
 const parseXml = require('@rgrove/parse-xml');
 const THREE = require('../lib/three-min.js');
 const {
-  MRDisplay,
   VRDisplay,
-  FakeXRDisplay,
   VRFrameData,
   VRPose,
   VRStageParameters,
+  FakeXRDisplay,
   Gamepad,
   GamepadButton,
   getGamepads,
@@ -420,7 +421,6 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
   rafCbs.sort((a, b) => (b ? b[symbols.prioritySymbol] : 0) - (a ? a[symbols.prioritySymbol] : 0));
   return id;
 };
-const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.RequestHitTest(origin, direction, cb, window);
 
 (window => {
   for (const k in EventEmitter.prototype) {
@@ -519,17 +519,7 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
     getVRDisplaysSync() {
       return getHMDType() ? [window[symbols.mrDisplaysSymbol].vrDisplay] : [];
     },
-    createFakeXRDisplay(width, height) {
-      GlobalContext.xrState.fakeVrDisplayEnabled[0] = 1;
-      if (width !== undefined) {
-        GlobalContext.xrState.renderWidth[0] = width;
-      }
-      if (height !== undefined) {
-        GlobalContext.xrState.renderHeight[0] = height;
-      }
-      return new FakeXRDisplay();
-    },
-    getGamepads: getGamepads.bind(null, window),
+    getGamepads,
     clipboard: {
       read: () => Promise.resolve(), // Not implemented yet
       readText: () => new Promise(resolve => {
@@ -757,6 +747,72 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
       RequestCamera: nativeMl.RequestCamera,
     } : null,
     monitors: new MonitorManager(),
+    setSetting(key, value) {
+      args[key] = value;
+    },
+    inspect: util.inspect,
+    requestDomExport(el) {
+      const promises = [];
+      const _getExport = el => {
+        if (el.nodeType === Node.ELEMENT_NODE && el.tagName === 'IFRAME' && el.contentWindow) {
+          if (el.contentWindow.evalAsync) {
+            const promise = el.contentWindow.evalAsync(`browser.requestDomExport(document.body.parentNode)`)
+              .then(iframeResult => {
+                result.childNodes = [iframeResult];
+              });
+            promises.push(promise);
+          }
+        }
+
+        const result = {
+          nodeType: el.nodeType || 0,
+          tagName: el.tagName || '',
+          value: el.value || '',
+          attrs: el.attrs || [],
+          childNodes: el.childNodes.map(_getExport),
+        };
+        return result;
+      };
+      const result = _getExport(el);
+      return Promise.all(promises).then(() => result);
+    },
+    async applyDomEdit(rootEl, keypath, edit) {
+      const _getDomNode = (el, i = 0) => {
+        if (i < keypath.length) {
+          const key = keypath[i];
+          const childNode = el.childNodes[key];
+          if (childNode) {
+            return _getDomNode(childNode, i+1);
+          } else {
+            return [el, keypath.slice(i)];
+          }
+        } else {
+          return [el, []];
+        }
+      };
+      const [el, remainingKeypath] = _getDomNode(rootEl);
+      if (remainingKeypath.length === 0) {
+        const {type} = edit;
+        if (type === 'name') {
+          const {oldName, oldValue, newName} = edit;
+          el.removeAttribute(oldName);
+          el.setAttribute(newName, oldValue);
+        } else if (type === 'value') {
+          const {name, newValue} = edit;
+          el.setAttribute(name, newValue);
+        } else if (type === 'remove') {
+          el.parentNode.removeChild(el);
+        } else {
+          throw new Error(`unknown dom edit type: ${type}`);
+        }
+      } else {
+        if (el.tagName === 'IFRAME' && el.contentWindow) {
+          await el.contentWindow.evalAsync(`browser.applyDomEdit(document, ${JSON.stringify(remainingKeypath)}, ${JSON.stringify(edit)})`);
+        } else {
+          console.warn('unresolved dom edit', el, remainingKeypath);
+        }
+      }
+    },
   };
   window.DOMParser = class DOMParser {
     parseFromString(htmlString, type) {
@@ -843,6 +899,7 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
     window.XRReferenceSpace = XR.XRReferenceSpace;
     window.XRBoundedReferenceSpace = XR.XRBoundedReferenceSpace;
   }
+  window.FakeXRDisplay = FakeXRDisplay;
   window.TextEncoder = TextEncoder;
   window.TextDecoder = TextDecoder;
   window.AudioContext = AudioContext;
@@ -1104,11 +1161,11 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
     _tickLocalRafs();
     return _composeLocalLayers(layered);
   };
-  const _makeRenderChild = window => (syncs, layered) => window.runAsync(JSON.stringify({
+  const _makeRenderChild = window => (syncs, layered) => window.runAsync({
     method: 'tickAnimationFrame',
     syncs,
     layered: layered && vrPresentState.layers.some(layer => layer.contentWindow === window),
-  }));
+  });
   const _collectRenders = () => windows.map(_makeRenderChild).concat([_renderLocal]);
   const _render = (syncs, layered) => new Promise((accept, reject) => {
     const renders = _collectRenders();
@@ -1190,6 +1247,52 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
       vrPresentState.glContext = null;
       GlobalContext.clearGamepads();
     };
+    const _onrequesthittest = (origin, direction, coordinateSystem) => new Promise((accept, reject) => {
+      localQuaternion.setFromUnitVectors(
+        localVector.set(0, 0, -1),
+        localVector2.fromArray(direction)
+      );
+      localMatrix.compose(
+        localVector.fromArray(origin),
+        localQuaternion,
+        localVector2.set(1, 1, 1)
+      ).premultiply(
+        localMatrix2.fromArray(window.document.xrOffset.matrix)
+      ).decompose(
+        localVector,
+        localQuaternion,
+        localVector2
+      );
+      localVector.toArray(origin);
+      localVector2.set(0, 0, -1).applyQuaternion(localQuaternion).toArray(direction);
+      vrPresentState.responseAccepts.push(res => {
+        const {error, result} = res;
+        if (!error) {
+          localMatrix.fromArray(window.document.xrOffset.matrixInverse);
+
+          for (let i = 0; i < result.length; i++) {
+            const {hitMatrix} = result[i];
+            localMatrix2
+              .fromArray(hitMatrix)
+              .premultiply(localMatrix)
+              .toArray(hitMatrix);
+          }
+
+          accept(result);
+        } else {
+          reject(error);
+        }
+      });
+
+      parentPort.postMessage({
+        method: 'request',
+        type: 'requestHitTest',
+        keypath: [],
+        origin,
+        direction,
+        coordinateSystem,
+      });
+    });
 
     const vrDisplay = new VRDisplay('OpenVR', window);
     vrDisplay.onrequestanimationframe = _makeRequestAnimationFrame(window);
@@ -1218,6 +1321,7 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
     xrSession.onexitpresent = _onexitpresent;
     xrSession.onrequestanimationframe = _makeRequestAnimationFrame(window);
     xrSession.oncancelanimationframe = window.cancelAnimationFrame;
+    xrSession.onrequesthittest = _onrequesthittest;
     xrSession.onlayers = layers => {
       vrPresentState.layers = layers;
     };
@@ -1242,43 +1346,119 @@ const _makeOnRequestHitTest = window => (origin, direction, cb) => nativeMl.Requ
   window.document.xrOffset = options.xrOffsetBuffer ? new XRRigidTransform(options.xrOffsetBuffer) : new XRRigidTransform();
 })(global);
 
-global.onrunasync = method => {
-  if (/^\{"method":"tickAnimationFrame"/.test(method)) {
-    const res = JSON.parse(method);
-    return global.tickAnimationFrame(res);
-  } else if (/^\{"method":"response"/.test(method)) {
-    const res = JSON.parse(method);
-    const {keypath} = res;
+global.onrunasync = req => {
+  const {method} = req;
 
-    if (keypath.length === 0) {
-      if (vrPresentState.responseAccepts.length > 0) {
-        const res = JSON.parse(method);
+  switch (method) {
+    case 'tickAnimationFrame':
+      return global.tickAnimationFrame(req);
+    case 'response': {
+      const {keypath} = req;
 
-        vrPresentState.responseAccepts.shift()(res);
+      if (keypath.length === 0) {
+        if (vrPresentState.responseAccepts.length > 0) {
+          vrPresentState.responseAccepts.shift()(req);
 
-        return Promise.resolve();
+          return Promise.resolve();
+        } else {
+          return Promise.reject(new Error(`unexpected response at window ${method}`));
+        }
       } else {
-        return Promise.reject(new Error(`unexpected response at window ${method}`));
-      }
-    } else {
-      const windowId = keypath.pop();
-      const window = windows.find(window => window.id === windowId);
+        const windowId = keypath.pop();
+        const window = windows.find(window => window.id === windowId);
 
-      if (window) {
-        window.runAsync(JSON.stringify({
-          method: 'response',
-          keypath,
-        }));
+        if (window) {
+          window.runAsync({
+            method: 'response',
+            keypath,
+            error: req.error,
+            result: req.result,
+          });
 
-        return Promise.resolve();
-      } else {
-        return Promise.reject(new Error(`response for unknown window ${method} ${JSON.stringify(windows.map(window => window.id))}`));
+          return Promise.resolve();
+        } else {
+          return Promise.reject(new Error(`response for unknown window ${method} ${JSON.stringify(windows.map(window => window.id))}`));
+        }
       }
     }
-  } else if (/^\{"method":"eval"/.test(method)) {
-    return Promise.resolve(eval(JSON.parse(method).scriptString));
-  } else {
-    return Promise.reject(new Error(`invalid window async method: ${method}`));
+    case 'keyEvent': {
+      const {event} = request;
+      switch (event.type) {
+        case 'keydown':
+        case 'keypress':
+        case 'keyup': {
+          if (vrPresentState.glContext) {
+            const {canvas} = vrPresentState.glContext;
+            canvas.dispatchEvent(new global.KeyboardEvent(event.type, event));
+          }
+          break;
+        }
+        default: {
+          break;
+        }
+      }
+      break;
+    }
+    case 'meshes': {
+      for (let i = 0; i < windows.length; i++) {
+        windows[i].runAsync(req);
+      }
+
+      const {xrOffset} = global.document;
+
+      if (window[symbols.mrDisplaysSymbol].xrSession.isPresenting) {
+        for (let i = 0; i < req.updates.length; i++) {
+          const update = req.updates[i];
+
+          if (update.transformMatrix && xrOffset) {
+            localMatrix
+              .fromArray(update.transformMatrix)
+              .premultiply(
+                localMatrix2.fromArray(xrOffset.matrixInverse)
+              )
+              .toArray(update.transformMatrix);          
+          }
+          const e = new SpatialEvent(update.type, {
+            detail: {
+              update,
+            },
+          });
+          window[symbols.mrDisplaysSymbol].xrSession.dispatchEvent(e);
+        }
+      }
+      break;
+    }
+    case 'planes': {
+      for (let i = 0; i < windows.length; i++) {
+        windows[i].runAsync(req);
+      }
+      
+      const {xrOffset} = global.document;
+      if (xrOffset) {
+        localMatrix.fromArray(xrOffset.matrixInverse);
+      }
+      
+      if (window[symbols.mrDisplaysSymbol].xrSession.isPresenting) {
+        for (let i = 0; i < req.updates.length; i++) {
+          const update = req.updates[i];
+          if (update.position && xrOffset) {
+            localVector.fromArray(update.position).applyMatrix4(localMatrix).toArray(update.position);
+            localVector.fromArray(update.normal).applyQuaternion(localQuaternion).toArray(update.normal);
+          }
+          const e = new SpatialEvent(update.type, {
+            detail: {
+              update,
+            },
+          });
+          window[symbols.mrDisplaysSymbol].xrSession.dispatchEvent(e);
+        }
+      }
+      break;
+    }
+    case 'eval': // used in tests
+      return Promise.resolve(eval(req.scriptString));
+    default:
+      return Promise.reject(new Error(`invalid window async request: ${JSON.stringify(req)}`));
   }
 };
 global.onexit = () => {

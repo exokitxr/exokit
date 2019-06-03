@@ -83,7 +83,7 @@ class WorkerVm extends EventEmitter {
       }, transferList);
     });
   }
-  runAsync(jsString, arg, transferList) {
+  runAsync(request, transferList) {
     return new Promise((accept, reject) => {
       const requestKey = this.queueRequest((err, result) => {
         if (!err) {
@@ -94,8 +94,7 @@ class WorkerVm extends EventEmitter {
       });
       this.worker.postMessage({
         method: 'runAsync',
-        jsString,
-        arg,
+        request,
         requestKey,
       }, transferList);
     });
@@ -167,7 +166,7 @@ const _makeWindow = (options = {}, handlers = {}) => {
   // window.promise = null;
   // window.syncs = null;
 
-  window.evalAsync = scriptString => window.runAsync(JSON.stringify({method: 'eval', scriptString}));
+  window.evalAsync = scriptString => window.runAsync({method: 'eval', scriptString});
 
   /* window.on('resize', ({width, height}) => {
     // console.log('got resize', width, height);

@@ -1752,6 +1752,8 @@ const intersectionSpecs = [
 ];
 window.addEventListener('keydown', e => {
   if (window.document.pointerLockElement) {
+    const gamepads = navigator.getGamepads();
+
     switch (e.which) {
       case 87: { // W
         keys.up = true;
@@ -1782,12 +1784,10 @@ window.addEventListener('keydown', e => {
         break;
       }
       case 69: { // E
-        const gamepads = navigator.getGamepads();
         gamepads[1].buttons[2].pressed = true;
         break;
       }
       case 81: { // Q
-        const gamepads = navigator.getGamepads();
         gamepads[1].buttons[0].pressed = true;
         break;
       }
@@ -1816,6 +1816,8 @@ window.addEventListener('keydown', e => {
 });
 window.addEventListener('keyup', e => {
   if (window.document.pointerLockElement) {
+    const gamepads = navigator.getGamepads();
+
     switch (e.which) {
       case 87: { // W
         keys.up = false;
@@ -1834,12 +1836,10 @@ window.addEventListener('keyup', e => {
         break;
       }
       case 69: { // E
-        const gamepads = navigator.getGamepads();
         gamepads[1].buttons[2].pressed = false;
         break;
       }
       case 81: { // Q
-        const gamepads = navigator.getGamepads();
         gamepads[1].buttons[0].pressed = false;
         break;
       }

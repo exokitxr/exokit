@@ -2,6 +2,7 @@ const {EventEmitter} = require('events');
 const {parentPort} = require('worker_threads');
 
 const {Event} = require('./Event');
+
 const symbols = require('./symbols');
 const THREE = require('../lib/three-min.js');
 const {
@@ -19,7 +20,6 @@ const localVector2 = new THREE.Vector3();
 const localQuaternion = new THREE.Quaternion();
 const localMatrix = new THREE.Matrix4();
 const localMatrix2 = new THREE.Matrix4();
-const localViewMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
 
 class VRPose {
   constructor() {
@@ -127,30 +127,30 @@ class GamepadHapticActuator {
   }
 }
 class Gamepad {
-  constructor(hand, index, id) {
+  constructor(id, hand, xrGamepad, hapticActuator) {
     this.id = id;
     this.hand = hand;
-    this.index = index;
-
-    const gamepad = GlobalContext.xrState.gamepads[index];
+    this._xrGamepad = xrGamepad;
 
     this.mapping = 'standard';
     this.buttons = (() => {
       const result = Array(5);
       for (let i = 0; i < result.length; i++) {
-        result[i] = new GamepadButton(gamepad.buttons[i].value, gamepad.buttons[i].pressed, gamepad.buttons[i].touched);
+        result[i] = new GamepadButton(xrGamepad.buttons[i].value, xrGamepad.buttons[i].pressed, xrGamepad.buttons[i].touched);
       }
       return result;
     })();
-    this.pose = new GamepadPose(gamepad.position, gamepad.orientation);
-    this.axes = gamepad.axes;
-    this.hapticActuators = [new GamepadHapticActuator(index)];
+    this.pose = new GamepadPose(xrGamepad.position, xrGamepad.orientation);
+    this.axes = xrGamepad.axes;
+    this.hapticActuators = hapticActuator ? [hapticActuator] : [];
   }
 
   get connected() {
-    return GlobalContext.xrState.gamepads[this.index].connected[0] !== 0;
+    return this._xrGamepad.connected[0] !== 0;
   }
-  set connected(connected) {}
+  set connected(connected) {
+    this._xrGamepad.connected[0] = connected ? 1 : 0;
+  }
 
   /* copy(gamepad) {
     this.connected = gamepad.connected;
@@ -303,7 +303,7 @@ class VRDisplay extends EventEmitter {
       this.cancelAnimationFrame(this._rafs[i]);
     }
     this._rafs.length = 0;
-    
+
     await this.onexitpresent();
 
     if (this.onvrdisplaypresentchange && this.isPresenting) {
@@ -358,10 +358,212 @@ class VRDisplay extends EventEmitter {
   }
 }
 
+class FakeMesher extends EventEmitter {
+  constructor() {
+    super();
+
+    this.meshes = [];
+
+    const boxBufferGeometry = {
+      position: Float32Array.from([0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, -0.5]),
+      normal: Float32Array.from([1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1]),
+      index: Uint16Array.from([0, 2, 1, 2, 3, 1, 4, 6, 5, 6, 7, 5, 8, 10, 9, 10, 11, 9, 12, 14, 13, 14, 15, 13, 16, 18, 17, 18, 19, 17, 20, 22, 21, 22, 23, 21]),
+    };
+
+    const lastMeshPosition = new THREE.Vector3();
+
+    this.interval = setInterval(() => {
+      localMatrix
+        .fromArray(GlobalContext.xrState.leftViewMatrix)
+        .getInverse(localMatrix)
+        .decompose(localVector, localQuaternion, localVector2);
+      const currentMeshPosition = new THREE.Vector3(Math.floor(localVector.x/10+0.5)*10, 0, Math.floor(localVector.z/10+0.5)*10);
+
+      const updates = [];
+      if (this.meshes.length > 0 && !currentMeshPosition.equals(lastMeshPosition)) {
+        for (let i = 0; i < this.meshes.length; i++) {
+          const mesh = this.meshes[i];
+          updates.push({
+            id: mesh.id,
+            type: 'meshremove',
+          });
+        }
+      }
+
+      this.meshes = (this.meshes.length > 0 && currentMeshPosition.equals(lastMeshPosition)) ?
+        this.meshes.map(({id}) => ({type: 'meshupdate', id, positionArray: null, normalArray: null, indexArray: null, transformMatrix: null}))
+      :
+        (() => {
+          const result = Array(3);
+          for (let i = 0; i < result.length; i++) {
+            result[i] = {
+              type: 'meshadd',
+              id: Math.random() + '',
+              positionArray: null,
+              normalArray: null,
+              indexArray: null,
+              transformMatrix: null,
+            };
+          }
+          return result;
+        })();
+      for (let i = 0; i < this.meshes.length; i++) {
+        const mesh = this.meshes[i];
+
+        localQuaternion.setFromUnitVectors(
+          localVector.set(0, 1, 0),
+          localVector2.set(-0.5+Math.random(), 1, -0.5+Math.random()).normalize()
+        );
+        localVector.set(0, 0.5+i, 0)
+        localVector2.set(0.5+Math.random()*0.5, 1+Math.random(), 0.5+Math.random()*0.5);
+
+        localMatrix.compose(
+          localVector,
+          localQuaternion,
+          localVector2
+        );
+
+        const positionArray = new Float32Array(new SharedArrayBuffer(boxBufferGeometry.position.byteLength));
+        positionArray.set(boxBufferGeometry.position);
+        const normalArray = new Float32Array(new SharedArrayBuffer(boxBufferGeometry.normal.byteLength));
+        normalArray.set(boxBufferGeometry.normal);
+        for (let j = 0; j < positionArray.length; j += 3) {
+          localVector.fromArray(positionArray, j);
+          localVector.applyMatrix4(localMatrix);
+          localVector.toArray(positionArray, j);
+
+          localVector.fromArray(normalArray, j);
+          localVector.applyMatrix4(localMatrix);
+          localVector.toArray(normalArray, j);
+        }
+
+        const indexArray = new Uint16Array(new SharedArrayBuffer(boxBufferGeometry.index.byteLength));
+        indexArray.set(boxBufferGeometry.index);
+
+        mesh.positionArray = positionArray;
+        mesh.normalArray = normalArray;
+        mesh.indexArray = indexArray;
+        mesh.transformMatrix = localMatrix
+          .compose(
+            localVector.set(currentMeshPosition.x, 0, currentMeshPosition.z),
+            localQuaternion.set(0, 0, 0, 1),
+            localVector2.set(1, 1, 1)
+          )
+          .toArray(new Float32Array(16));
+      };
+      updates.push.apply(updates, this.meshes);
+
+      if (updates.length > 0) {
+        this.emit('meshes', updates);
+      }
+
+      lastMeshPosition.copy(currentMeshPosition);
+    }, 1000);
+  }
+
+  async requestHitTest(origin, direction, coordinateSystem) {
+    const THREE = require('../lib/three.js'); // load full version
+
+    for (let i = 0; i < this.meshes.length; i++) {
+      const meshSpec = this.meshes[i];
+
+      const geometry = new THREE.BufferGeometry();
+      geometry.addAttribute('position', new THREE.BufferAttribute(meshSpec.positionArray, 3));
+      geometry.setIndex(new THREE.BufferAttribute(meshSpec.indexArray, 1));
+      const material = new THREE.MeshBasicMaterial({
+        color: 0xFF0000,
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.matrix.fromArray(meshSpec.transformMatrix);
+      mesh.matrixWorld.copy(mesh.matrix);
+
+      const raycaster = new THREE.Raycaster();
+      raycaster.set(localVector.fromArray(origin), localVector2.fromArray(direction));
+      const intersects = raycaster.intersectObject(mesh);
+      if (intersects.length > 0) {
+        const [intersect] = intersects;
+        const {point} = intersect;
+        return [{
+          hitMatrix: localMatrix
+            .compose(
+              point,
+              localQuaternion.set(0, 0, 0, 1),
+              // localQuaternion.setFromUnitVectors(localVector2.set(0, 0, -1), normal),
+              localVector2.set(1, 1, 1)
+            )
+            .toArray(new Float32Array(16)),
+        }];
+      }
+    }
+    return [];
+  }
+
+  destroy() {
+    clearInterval(this.interval);
+  }
+}
+
+class FakePlaneTracker extends EventEmitter {
+  constructor() {
+    super();
+
+    let planes = [];
+    const lastMeshPosition = new THREE.Vector3();
+
+    this.interval = setInterval(() => {
+      localMatrix
+        .fromArray(GlobalContext.xrState.leftViewMatrix)
+        .getInverse(localMatrix)
+        .decompose(localVector, localQuaternion, localVector2);
+      const currentMeshPosition = new THREE.Vector3(Math.floor(localVector.x/10+0.5)*10, 0, Math.floor(localVector.z/10+0.5)*10);
+
+      const updates = [];
+      if (planes.length > 0 && !currentMeshPosition.equals(lastMeshPosition)) {
+        for (let i = 0; i < planes.length; i++) {
+          const plane = planes[i];
+          updates.push({
+            id: plane.id,
+            type: 'planeremove',
+          });
+        }
+      }
+
+      if (planes.length === 0 || !currentMeshPosition.equals(lastMeshPosition)) {
+        planes = Array(Math.floor(2 + Math.random()*5));
+
+        for (let i = 0; i < planes.length; i++) {
+          planes[i] = {
+            id: Math.random() + '',
+            type: 'planeadd',
+            position: localVector.copy(currentMeshPosition)
+              .add(localVector2.set(-5 + Math.random()*10, Math.random()*0.5, -5 + Math.random()*10))
+              .toArray(new Float32Array(3)),
+            normal: Float32Array.from([0, 1, 0]),
+            scale: Float32Array.from([1, 1, 1]),
+          };
+        }
+        updates.push.apply(updates, planes);
+      }
+
+      if (updates.length > 0) {
+        this.emit('planes', updates);
+      }
+
+      lastMeshPosition.copy(currentMeshPosition);
+    }, 1000);
+  }
+
+  destroy() {
+    clearInterval(this.interval);
+  }
+}
+
 class FakeXRDisplay {
   constructor() {
     this.position = new THREE.Vector3();
     this.quaternion = new THREE.Quaternion();
+
+    GlobalContext.xrState.fakeVrDisplayEnabled[0] = 1;
   }
 
   pushUpdate() {
@@ -379,12 +581,14 @@ class FakeXRDisplay {
     GlobalContext.xrState.rightViewMatrix.set(GlobalContext.xrState.leftViewMatrix);
 
     // update gamepads
-    const gamepads = navigator.getGamepads();
-    for (let i = 0; i < 2 && i < gamepads.length; i++) {
-      const gamepad = gamepads[i];
+    if (!globalGamepads) {
+      globalGamepads = _makeGlobalGamepads();
+    }
+    for (let i = 0; i < globalGamepads.main.length; i++) {
+      const gamepad = globalGamepads.main[i];
       localVector.copy(this.position)
         .add(
-          localVector2.set(-0.3 + i*0.6, -0.3, 0)
+          localVector2.set(-0.3 + i*0.6, -0.3, -0.35)
             .applyQuaternion(this.quaternion)
         ).toArray(gamepad.pose.position);
       this.quaternion.toArray(gamepad.pose.orientation); // XXX updates xrState
@@ -397,9 +601,36 @@ class FakeXRDisplay {
         )
         .toArray(gamepad.pose._localPointerMatrix);
 
-      GlobalContext.xrState.gamepads[i].connected[0] = 1;
+      gamepad.connected = true;
     }
   }
+
+  get width() {
+    return GlobalContext.xrState.renderWidth[0]*2;
+  }
+  set width(width) {
+    GlobalContext.xrState.renderWidth[0] = width/2;
+  }
+  get height() {
+    return GlobalContext.xrState.renderHeight[0];
+  }
+  set height(height) {
+    GlobalContext.xrState.renderHeight[0] = height;
+  }
+  get projectionMatrix() {
+    return GlobalContext.xrState.leftProjectionMatrix;
+  }
+  set projectionMatrix(projectionMatrix) {}
+  get viewMatrix() {
+    return GlobalContext.xrState.leftViewMatrix;
+  }
+  set viewMatrix(viewMatrix) {}
+  get texture() {
+    return {
+      id: GlobalContext.xrState.tex[0],
+    };
+  }
+  set texture(texture) {}
 }
 
 const getHMDType = () => {
@@ -443,47 +674,79 @@ const lookupHMDTypeString = i => hmdTypeStringMap[i];
 
 const createFakeXRDisplay = () => new FakeXRDisplay();
 
+let globalGamepads = null;
+const _makeGlobalGamepads = () => ({
+  main: [
+    new Gamepad('gamepad', 'left', GlobalContext.xrState.gamepads[0], new GamepadHapticActuator(0)),
+    new Gamepad('gamepad', 'right', GlobalContext.xrState.gamepads[1], new GamepadHapticActuator(1)),
+  ],
+  tracker: (() => {
+    const result = Array(maxNumTrackers);
+    for (let i = 0; i < result.length; i++) {
+      result[i] = new Gamepad('tracker', '', GlobalContext.xrState.gamepads[2+i], null);
+    }
+    return result;
+  })(),
+  hand: (() => {
+    const result = [
+      new Gamepad('hand', 'left', GlobalContext.xrState.hands[0], null),
+      new Gamepad('hand', 'right', GlobalContext.xrState.hands[1], null),
+    ];
+    for (let i = 0; i < result.length; i++) {
+      const handGamepad = result[i];
+      const hand = handGamepad._xrGamepad;
+
+      handGamepad.wrist = hand.wrist;
+      handGamepad.fingers = hand.fingers;
+    }
+    return result;
+  })(),
+  eye: new Gamepad('eye', '', GlobalContext.xrState.eye, null),
+});
+
 const controllerIDs = {
   fake: 'OpenVR Gamepad',
   openvr: 'OpenVR Gamepad',
-  // oculusMobile: 'Oculus Go',
   openvrTracker: 'OpenVR Tracker',
   oculusLeft: 'Oculus Touch (Left)',
   oculusRight: 'Oculus Touch (Right)',
+  // oculusMobile: 'Oculus Go',
   oculusMobileLeft: 'Oculus Touch (Left)',
   oculusMobileRight: 'Oculus Touch (Right)',
+  oculusGoLeft: 'Oculus Touch (Left)',
+  oculusGoRight: 'Oculus Touch (Right)',
+  oculusQuestLeft: 'Oculus Touch (Left)',
+  oculusQuestRight: 'Oculus Touch (Right)',
 };
-
 function getControllerID(hmdType, hand) {
   return controllerIDs[hmdType] || controllerIDs[hmdType + hand.charAt(0).toUpperCase() + hand.slice(1)];
 }
-
-let gamepads = null;
-function getGamepads(window) {
+function getGamepads() {
   if (GlobalContext.xrState.isPresenting[0]) {
-    if (!gamepads) {
-      const hmdType = getHMDType();
-
-      let numGamepads = 2;
-      if (hmdType === 'openvr') {
-        numGamepads += maxNumTrackers;
-      }
-      gamepads = Array(numGamepads);
-      for (let i = 0; i < gamepads.length; i++) {
-        let hand, id;
-        if (i === 0) {
-          hand = 'left';
-          id = getControllerID(hmdType, hand);
-        } else if (i === 1) {
-          hand = 'right';
-          id = getControllerID(hmdType, hand);
-        } else {
-          hand = null;
-          id = controllerIDs['openvrTracker'];
-        }
-        gamepads[i] = new Gamepad(hand, i, id);
-      }
+    const hmdType = getHMDType();
+    if (!globalGamepads) {
+      globalGamepads = _makeGlobalGamepads();
     }
+
+    globalGamepads.main[0].id = getControllerID(hmdType, 'left');
+    globalGamepads.main[1].id = getControllerID(hmdType, 'right');
+
+    const gamepads = globalGamepads.main.slice();
+
+    if (hmdType === 'openvr') {
+      for (let i = 0; i < globalGamepads.tracker.length; i++) {
+        globalGamepads.tracker[i].id = getControllerID('openvr', 'tracker');
+      }
+      gamepads.push.apply(gamepads, globalGamepads.tracker);
+    }
+
+    if (GlobalContext.xrState.handTracking[0]) {
+      gamepads.push.apply(gamepads, globalGamepads.hand);
+    }
+    if (GlobalContext.xrState.eyeTracking[0]) {
+      gamepads.push(globalGamepads.eye);
+    }
+
     return gamepads;
   } else {
     return [];
@@ -497,12 +760,14 @@ GlobalContext.clearGamepads = clearGamepads;
 
 module.exports = {
   VRDisplay,
-  FakeXRDisplay,
   VRFrameData,
   VRPose,
   VRStageParameters,
   Gamepad,
   GamepadButton,
+  FakeXRDisplay,
+  FakeMesher,
+  FakePlaneTracker,
   getHMDType,
   lookupHMDTypeString,
   lookupHMDTypeIndex,

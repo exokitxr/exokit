@@ -62,9 +62,9 @@ const _makeControllerMesh = (x = 0, y = 0, z = 0, qx = 0, qy = 0, qz = 0, qw = 1
   mesh.position.set(x, y, z);
   mesh.quaternion.set(qx, qy, qz, qw);
   // mesh.matrix.compose(mesh.position, mesh.quaternion, mesh.scale);
-  mesh.updateMatrix();
-  mesh.updateMatrixWorld();
-  mesh.matrixAutoUpdate = false;
+  // mesh.updateMatrix();
+  // mesh.updateMatrixWorld();
+  // mesh.matrixAutoUpdate = false;
   mesh.frustumCulled = false;
   return mesh;
 };
@@ -331,7 +331,7 @@ function init() {
     scene.add(controllerMesh);
   });
 
-  const cubeGeometry = new THREE.BoxBufferGeometry(0.02, 0.02, 0.001);
+  const cubeGeometry = new THREE.BoxBufferGeometry(0.05, 0.05, 0.05);
   const hitMeshMaterial = new THREE.MeshPhongMaterial({
     color: 0x673ab7,
   });
@@ -471,6 +471,9 @@ init();
   console.log('request session');
   session = await navigator.xr.requestSession({
     exclusive: true,
+    extensions: {
+      meshing: true,
+    },
   }).catch(err => Promise.resolve(null));
 
   if (session) {

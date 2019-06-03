@@ -27,7 +27,7 @@ const {defaultEyeSeparation, maxNumTrackers} = require('./constants.js');
 const symbols = require('./symbols');
 const THREE = require('../lib/three-min.js');
 
-const {getHMDType, lookupHMDTypeIndex} = require('./VR.js');
+const {getHMDType, lookupHMDTypeIndex, FakeMesher, FakePlaneTracker} = require('./VR.js');
 
 const nativeBindings = require(path.join(__dirname, 'native-bindings.js'));
 
@@ -194,7 +194,7 @@ const xrState = (() => {
       return result;
     };
   };
-  const _makeTypedArray = _makeSab(4*1024);
+  const _makeTypedArray = _makeSab(8*1024);
 
   const result = {};
   result.isPresenting = _makeTypedArray(Uint32Array, 1);
@@ -270,6 +270,35 @@ const xrState = (() => {
     }
     return result;
   })();
+  result.hands = (() => {
+    const result = Array(2);
+    for (let i = 0; i < result.length; i++) {
+      const hand = _makeGamepad();
+      hand.wrist = (() => {
+        const result = Array(4);
+        for (let i = 0; i < result.length; i++) {
+          result[i] = _makeTypedArray(Float32Array, 3);
+        }
+        return result;
+      })();
+      hand.fingers = (() => {
+        const result = Array(5);
+        for (let i = 0; i < result.length; i++) {
+          result[i] = (() => {
+            const result = Array(4);
+            for (let i = 0; i < result.length; i++) {
+              result[i] = _makeTypedArray(Float32Array, 3);
+            }
+            return result;
+          })();
+        }
+        return result;
+      })();
+      result[i] = hand;
+    }
+    return result;
+  })();
+  result.eye = _makeGamepad();
   result.id = _makeTypedArray(Uint32Array, 1);
   result.hmdType = _makeTypedArray(Uint32Array, 1);
   result.tex = _makeTypedArray(Uint32Array, 1);
@@ -278,6 +307,10 @@ const xrState = (() => {
   result.msDepthTex = _makeTypedArray(Uint32Array, 1);
   result.aaEnabled = _makeTypedArray(Uint32Array, 1);
   result.fakeVrDisplayEnabled = _makeTypedArray(Uint32Array, 1);
+  result.meshing = _makeTypedArray(Uint32Array, 1);
+  result.planeTracking = _makeTypedArray(Uint32Array, 1);
+  result.handTracking = _makeTypedArray(Uint32Array, 1);
+  result.eyeTracking = _makeTypedArray(Uint32Array, 1);
   result.blobId = _makeTypedArray(Uint32Array, 1);
 
   return result;
@@ -293,20 +326,77 @@ const topVrPresentState = {
   vrSystem: null,
   vrCompositor: null,
   hasPose: false,
+  mesher: null,
+  planeTracker: null,
+  handTracker: null,
+  eyeTracker: null,
 };
 
 const requests = [];
 const handleRequest = req => {
-  requests.push(req);
+  if (!_handleRequestImmediate(req)) {
+    requests.push(req);
+  }
 };
 GlobalContext.handleRequest = handleRequest;
-const _handleRequests = () => {
+const _handleRequestImmediate = req => {
+  const {type, keypath} = req;
+
+  const _respond = (error, result) => {
+    const windowId = keypath.pop();
+    const window = windows.find(window => window.id === windowId);
+    if (window) {
+      window.runAsync({
+        method: 'response',
+        keypath,
+        error,
+        result,
+      });
+    } else {
+      console.warn('cannot find window to respond request to', windowId, windows.map(window => window.id));
+    }
+  };
+
+  switch (type) {
+    case 'requestHitTest': {
+      const {origin, direction, coordinateSystem} = req;
+
+      if (topVrPresentState.hmdType === 'fake') {
+        if (!topVrPresentState.mesher) {
+          _startFakeMesher();
+        }
+        topVrPresentState.mesher.requestHitTest(origin, direction, coordinateSystem)
+          .then(result => {
+            _respond(null, result);
+          })
+          .catch(err => {
+            _respond(err);
+          });
+      } else if (topVrPresentState.hmdType === 'magicleap') {
+        topVrPresentState.vrContext.requestHitTest(origin, direction, coordinateSystem)
+          .then(result => {
+            _respond(null, result);
+          })
+          .catch(err => {
+            _respond(err);
+          });
+      } else {
+        _respond(null, []);
+      }
+
+      return true;
+    }
+    default:
+      return false;
+  }
+};
+const _waitHandleRequests = () => {
   for (let i = 0; i < requests.length; i++) {
-    _handleRequest(requests[i]);
+    _waitHandleRequest(requests[i]);
   }
   requests.length = 0;
 };
-const _handleRequest = ({type, keypath}) => {
+const _waitHandleRequest = ({type, keypath}) => {
   if (type === 'requestPresent' && topVrPresentState.hmdType === null) {
     const hmdType = getHMDType();
     // console.log('request present', hmdType);
@@ -405,6 +495,44 @@ const _handleRequest = ({type, keypath}) => {
       xrState.msDepthTex[0] = msDepthTex;
       xrState.renderWidth[0] = halfWidth;
       xrState.renderHeight[0] = height;
+
+      nativeBindings.nativeMl.SetEventHandler(e => {
+        console.log('got ml event', e);
+
+        // const window = canvas.ownerDocument.defaultView;
+
+        switch (e.type) {
+          case 'newInitArg':
+          case 'resume':
+          case 'unloadResources': {
+            break;
+          }
+          case 'stop':
+          case 'pause': {
+            if (mlPresentState.mlContext) {
+              mlPresentState.mlContext.Exit();
+            }
+            nativeBindings.nativeMl.DeinitLifecycle();
+            process.exit();
+            break;
+          }
+          case 'keydown':
+          case 'keypress':
+          case 'keyup': {
+            const request = {
+              method: 'keyEvent',
+              event: e,
+            };
+            for (let i = 0; i < windows.length; i++) {
+              windows[i].runAsync(request);
+            }
+            break;
+          }
+          default: {
+            break;
+          }
+        }
+      });
     } else {
       throw new Error('unknown hmd type');
     }
@@ -430,10 +558,10 @@ const _handleRequest = ({type, keypath}) => {
   const windowId = keypath.pop();
   const window = windows.find(window => window.id === windowId);
   if (window) {
-    window.runAsync(JSON.stringify({
+    window.runAsync({
       method: 'response',
       keypath,
-    }));
+    });
   } else {
     console.warn('cannot find window to respond request to', windowId, windows.map(window => window.id));
   }
@@ -488,13 +616,7 @@ const _startTopRenderLoop = () => {
     } else if (topVrPresentState.hmdType === 'magicleap') {
       return _waitGetPosesMagicLeap();
     } else {
-      return Promise.resolve();
-      /* await new Promise((accept, reject) => {
-        const now = Date.now();
-        const timeDiff = now - lastFrameTime;
-        const waitTime = Math.max(8 - timeDiff, 0);
-        setTimeout(accept, waitTime);
-      }); */
+      return _waitGetPosesFake();
     }
   };
   const _waitGetPosesOculus = async () => {
@@ -846,20 +968,157 @@ const _startTopRenderLoop = () => {
       _loadGamepad(1);
     }
 
-    // queue magic leap state updates
-    nativeBindings.nativeMl.Update(topVrPresentState.vrContext);
+    const _loadExtensions = () => {
+      if (xrState.meshing[0] && !topVrPresentState.mesher) {
+        topVrPresentState.mesher = topVrPresentState.vrContext.requestMeshing(5, 2);
+      }
+      if (xrState.planeTracking[0] && !topVrPresentState.planeTracker) {
+        topVrPresentState.planeTracker = topVrPresentState.vrContext.requestPlaneTracking(10);
+      }
+      if (xrState.handTracking[0] && !topVrPresentState.handTracker) {
+        topVrPresentState.handTracker = topVrPresentState.vrContext.requestHandTracking();
+      }
+      if (xrState.eyeTracking[0] && !topVrPresentState.eyeTracker) {
+        topVrPresentState.eyeTracker = topVrPresentState.vrContext.requestEyeTracking();
+      }
+    };
+    _loadExtensions();
 
-    /* // prepare magic leap frame
-    topVrPresentState.vrContext.PrepareFrame(
-      mlGlContext, // gl context for depth population
-      topVrPresentState.mlFbo,
-      xrState.renderWidth[0]*2,
-      xrState.renderHeight[0],
-    ); */
+    topVrPresentState.vrContext.update();
+
+    const _waitExtensions = () => {
+      if (topVrPresentState.mesher) {
+        const updates = topVrPresentState.mesher.waitGetPoses();
+        if (updates) {
+          const request = {
+            method: 'meshes',
+            updates,
+          };
+          for (let i = 0; i < windows.length; i++) {
+            windows[i].runAsync(request);
+          }
+        }
+      }
+      if (topVrPresentState.planeTracker) {
+        const updates = topVrPresentState.planeTracker.waitGetPoses();
+        if (updates) {
+          const request = {
+            method: 'planes',
+            updates,
+          };
+          for (let i = 0; i < windows.length; i++) {
+            windows[i].runAsync(request);
+          }
+        }
+      }
+      if (topVrPresentState.handTracker) {
+        topVrPresentState.handTracker.waitGetPoses(xrState.hands);
+      }
+      if (topVrPresentState.eyeTracker) {
+        topVrPresentState.eyeTracker.waitGetPoses(xrState.eye);
+      }
+    };
+    _waitExtensions();
+  };
+  const _waitGetPosesFake = async () => {
+    /* await new Promise((accept, reject) => {
+      const now = Date.now();
+      const timeDiff = now - lastFrameTime;
+      const waitTime = Math.max(8 - timeDiff, 0);
+      setTimeout(accept, waitTime);
+    }); */
+
+    const _updateMeshing = () => {
+      if (xrState.meshing[0] && !topVrPresentState.mesher) {
+        _startFakeMesher();
+      }
+    };
+    _updateMeshing();
+    
+    const _updatePlanes = () => {
+      if (xrState.planeTracking[0] && !topVrPresentState.planeTracker) {
+        _startFakePlaneTracker();
+      }
+    };
+    _updatePlanes();
+
+    const _updateHandTracking = () => {
+      if (xrState.handTracking[0]) {
+        for (let i = 0; i < xrState.hands.length; i++) {
+          // const gamepad = this.session.device.gamepads[i];
+          const hand = xrState.hands[i];
+          const xrGamepad = xrState.gamepads[i];
+          /* hand.position.set(xrGamepad.position);
+          hand.orientation.set(xrGamepad.orientation);
+          hand.direction.set(xrGamepad.direction);
+          hand.transformMatrix.set(xrGamepad.transformMatrix); */
+
+          localMatrix.compose(
+            localVector.fromArray(xrGamepad.position),
+            localQuaternion.fromArray(xrGamepad.orientation),
+            localVector2.set(1, 1, 1)
+          );
+
+          // wrist
+          {
+            localVector.set(0, 0, 0).applyMatrix4(localMatrix).toArray(hand.wrist[0]);
+            localVector.set(-0.02, 0, -0.02).applyMatrix4(localMatrix).toArray(hand.wrist[1]);
+            localVector.set(0.02, 0, -0.02).applyMatrix4(localMatrix).toArray(hand.wrist[2]);
+          }
+
+          // fingers
+          for (let j = 0; j < hand.fingers.length; j++) {
+            const finger = hand.fingers[j];
+            const angle = j/(hand.fingers.length-1)*Math.PI;
+            const x = -Math.cos(angle);
+            const y = -Math.sin(angle);
+
+            for (let k = 0; k < finger.length; k++) {
+              const bone = finger[k];
+              localVector.set(x, 0, y).multiplyScalar(0.03*k).applyMatrix4(localMatrix).toArray(bone);
+            }
+          }
+
+          hand.connected[0] = 1;
+        }
+      }
+    };
+    _updateHandTracking();
+    
+    const _updateEyeTracking = () => {
+      if (xrState.eyeTracking[0]) {
+        const blink = (Date.now() % 2000) < 200;
+        const blinkAxis = blink ? -1 : 1;
+
+        const eye = xrState.eye;
+        localMatrix
+          .fromArray(GlobalContext.xrState.leftViewMatrix)
+          .getInverse(localMatrix)
+          .decompose(localVector, localQuaternion, localVector2);
+        localVector
+          .add(
+            localVector2.set(0, 0, -1)
+              .applyQuaternion(localQuaternion)
+          )
+          .toArray(eye.position);
+        localQuaternion.toArray(eye.orientation);
+        // localQuaternion.set(0, 0, 0, 1).toArray(eye.orientation);
+        /* localMatrix
+          .compose(localQuaternion, localQuaternion, localVector2)
+          .toArray(eye.transformMatrix); */
+        // localVector.set(0, 0, -1).toArray(eye.position);
+        // localQuaternion.set(0, 0, 0, 1).toArray(eye.orientation);
+
+        eye.axes[0] = blinkAxis;
+        eye.axes[1] = blinkAxis;
+
+        eye.connected[0] = 1;
+      }
+    };
+    _updateEyeTracking();
   };
   const _computeDerivedGamepadsData = () => {
-    for (let i = 0; i < xrState.gamepads.length; i++) {
-      const gamepad = xrState.gamepads[i];
+    const _deriveGamepadData = gamepad => {
       localQuaternion.fromArray(gamepad.orientation);
       localVector
         .set(0, 0, -1)
@@ -870,6 +1129,17 @@ const _startTopRenderLoop = () => {
       localMatrix
         .compose(localVector, localQuaternion, localVector2)
         .toArray(gamepad.transformMatrix);
+    };
+    for (let i = 0; i < xrState.gamepads.length; i++) {
+      _deriveGamepadData(xrState.gamepads[i]);
+    }
+    /* if (xrState.handTracking[0]) {
+      for (let i = 0; i < xrState.hands.length; i++) {
+        _deriveGamepadData(xrState.hands[i]);
+      }
+    } */
+    if (xrState.eyeTracking[0]) {
+      _deriveGamepadData(xrState.eye);
     }
   };
   const _clearPrevSyncs = () => {
@@ -883,14 +1153,14 @@ const _startTopRenderLoop = () => {
       nativeBindings.nativeWindow.clearFramebuffer(xrState.aaEnabled[0] ? topVrPresentState.msFbo : topVrPresentState.fbo);
     }
   };
-  const _tickAnimationFrame = window => window.runAsync(JSON.stringify({
+  const _tickAnimationFrame = window => window.runAsync({
     method: 'tickAnimationFrame',
     syncs: topVrPresentState.hmdType !== null ? [nativeBindings.nativeWindow.getSync()] : [],
     layered: true,
-  }))
+  })
     .catch(err => {
       if (err.code !== 'ECANCEL') {
-        console.warn(err.stack);
+        console.warn(err);
       }
       return Promise.resolve([]);
     })
@@ -974,7 +1244,7 @@ const _startTopRenderLoop = () => {
       timestamps.last = now;
     }
 
-    _handleRequests();
+    _waitHandleRequests();
     await _waitGetPoses();
 
     _computeDerivedGamepadsData();
@@ -1053,6 +1323,33 @@ const _startTopRenderLoop = () => {
   };
 };
 _startTopRenderLoop();
+
+const _startFakeMesher = () => {
+  const mesher = new FakeMesher();
+  mesher.on('meshes', updates => {
+    const request = {
+      method: 'meshes',
+      updates,
+    };
+    for (let i = 0; i < windows.length; i++) {
+      windows[i].runAsync(request);
+    }
+  });
+  topVrPresentState.mesher = mesher;
+};
+const _startFakePlaneTracker = () => {
+  const planeTracker = new FakePlaneTracker();
+  planeTracker.on('planes', updates => {
+    const request = {
+      method: 'planes',
+      updates,
+    };
+    for (let i = 0; i < windows.length; i++) {
+      windows[i].runAsync(request);
+    }
+  });
+  topVrPresentState.planeTracker = planeTracker;
+};
 
 const _prepare = () => Promise.all([
   (() => {

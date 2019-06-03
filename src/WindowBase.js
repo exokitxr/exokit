@@ -315,7 +315,7 @@ parentPort.on('message', m => {
     case 'runAsync': {
       let result, err;
       try {
-        result = global.onrunasync ? global.onrunasync(m.jsString) : null;
+        result = global.onrunasync ? global.onrunasync(m.request) : null;
       } catch(e) {
         err = e.stack;
       }
