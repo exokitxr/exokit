@@ -478,7 +478,7 @@ class FakeMesher extends EventEmitter {
 
       const raycaster = new THREE.Raycaster();
       raycaster.set(localVector.fromArray(origin), localVector2.fromArray(direction));
-      const intersects = raycaster.intersectObjects(scene.children);
+      const intersects = raycaster.intersectObject(mesh);
       if (intersects.length > 0) {
         const [intersect] = intersects;
         const {point} = intersect;
