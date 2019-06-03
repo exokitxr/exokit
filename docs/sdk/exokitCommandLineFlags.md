@@ -30,4 +30,4 @@ An example of how to use these flags:
 |`-u`|`--require`|Expose node require() on `window`|
 |`-n`|`--nogl`|Do not create GL contexts|
 |`-e`|`--headless`|Run in headless mode; do not create OS windows|
-|`-d <downloadDirectory>`|`--download`|Download site to `downloadDirectory`|
+|`-c`|`--uncapped`|Do not cap FPS to refresh rate of monitor in non-XR mode|
