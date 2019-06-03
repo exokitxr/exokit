@@ -5000,8 +5000,12 @@ NAN_METHOD(WebGLRenderingContext::GetSupportedExtensions) {
   for (GLint i = 0; i < numExtensions; i++) {
     char *extension = (char *)glGetStringi(GL_EXTENSIONS, i);
     if(extension == webglExtensions[i]){
-      int numResults = result->Length();
-      result->Set(numResults+1, JS_STR(webglExtensions[i]));
+      string currentExtension = string(webglExtensions[i]);
+      bool hasWebGL = currentExtension.find("WEBGL");
+        if(!hasWebGL) {
+          int numResults = result->Length();
+          result->Set(numResults+1, JS_STR(webglExtensions[i]));
+        }
     }
   }
   int numResults = result->Length();
