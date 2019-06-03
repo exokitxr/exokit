@@ -4,8 +4,7 @@ const {parentPort} = require('worker_threads');
 const {Event} = require('./Event');
 
 const symbols = require('./symbols');
-// const THREE = require('../lib/three-min.js');
-const THREE = require('../lib/three.js');
+const THREE = require('../lib/three-min.js');
 const {
   nativeWindow,
   nativeOculusVR,
@@ -466,6 +465,8 @@ class FakeMesher extends EventEmitter {
   }
 
   async requestHitTest(origin, direction, coordinateSystem) {
+    const THREE = require('../lib/three.js'); // load full version
+
     for (let i = 0; i < this.meshes.length; i++) {
       const meshSpec = this.meshes[i];
 
