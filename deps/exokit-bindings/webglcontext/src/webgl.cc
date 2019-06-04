@@ -5002,11 +5002,11 @@ NAN_METHOD(WebGLRenderingContext::GetSupportedExtensions) {
   GLint n=0;
   glGetIntegerv(GL_NUM_EXTENSIONS, &n);
 
-  for (GLint i=0; i<n; i++)
+  for (int i=0; i<n; i++)
   {
     const char* extension = (const char*)glGetStringi(GL_EXTENSIONS, i);
 
-    for (GLint j = 0; j < numExtensions; j++) {
+    for (int j = 0; j < numExtensions; j++) {
       bool matchesSupportedExtension = (strcmp(extension+3,webglExtensions[j]) == 0);
       if(matchesSupportedExtension){
         bool hasWebGL = (strncmp(webglExtensions[j], "WEBGL", 5) == 0);
@@ -5017,7 +5017,7 @@ NAN_METHOD(WebGLRenderingContext::GetSupportedExtensions) {
       }
     }
   }
-  for (GLint i = 0; i < numExtensions; i++) {
+  for (int i = 0; i < numExtensions; i++) {
     bool hasWebGL = (strncmp(webglExtensions[i], "WEBGL", 5) == 0);
       if(hasWebGL) {
         int numResults = result->Length();
