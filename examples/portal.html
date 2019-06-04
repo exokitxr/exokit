@@ -44,7 +44,7 @@ function init() {
   tutorialIframe.src = 'tutorial.html';
   const _planeToFloat32Array = plane => {
     const result = new Float32Array(4);
-    plane.normal.toArray(result, 0);
+    plane.normal.toArray(result);
     result[3] = plane.constant;
     return result;
   };
