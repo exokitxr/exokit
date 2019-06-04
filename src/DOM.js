@@ -2194,7 +2194,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
       for (let i = 0; i < clipPlanes.length; i++) {
         const clipPlane = clipPlanes[i];
         if (clipPlane instanceof Float32Array && clipPlane.length === 4) {
-          new Float32Array(this._clipPlanesBuffer.buffer, this._clipPlanesBuffer.byteOffset + Float32Array.BYTES_PER_ELEMENT*4*numClipPlanes).set(clipPlane);
+          new Float32Array(this._clipPlanesBuffer.buffer, this._clipPlanesBuffer.byteOffset + Uint32Array.BYTES_PER_ELEMENT + i*Float32Array.BYTES_PER_ELEMENT*4).set(clipPlane);
           numClipPlanes++;
         }
       }
