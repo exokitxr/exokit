@@ -4961,7 +4961,7 @@ NAN_METHOD(WebGLRenderingContext::GetVertexAttrib) {
   //info.GetReturnValue().Set(Nan::Undefined());
 }
 
-const char *webglExtensions[] = {
+const char *nonWebglExtensions[] = {
   "ANGLE_instanced_arrays",
   "EXT_blend_minmax",
   "EXT_color_buffer_float",
@@ -4978,6 +4978,8 @@ const char *webglExtensions[] = {
   "OES_texture_half_float",
   "OES_texture_half_float_linear",
   "OES_vertex_array_object",
+};
+const char *webglExtensions[] = {
   "WEBGL_color_buffer_float",
   "WEBGL_compressed_texture_astc",
   "WEBGL_compressed_texture_atc",
@@ -4996,7 +4998,8 @@ NAN_METHOD(WebGLRenderingContext::GetSupportedExtensions) {
   // GLint numExtensions;
   // glGetIntegerv(GL_NUM_EXTENSIONS, &numExtensions);
 
-  int numExtensions = sizeof(webglExtensions)/sizeof(webglExtensions[0]);
+  int numNonWebglExtensions = sizeof(nonWebglExtensions)/sizeof(nonWebglExtensions[0]);
+  int numWebglExtensions = sizeof(webglExtensions)/sizeof(webglExtensions[0]);
   Local<Array> result = Nan::New<Array>(0);
 
   GLint n=0;
@@ -5006,23 +5009,17 @@ NAN_METHOD(WebGLRenderingContext::GetSupportedExtensions) {
   {
     const char* extension = (const char*)glGetStringi(GL_EXTENSIONS, i);
 
-    for (int j = 0; j < numExtensions; j++) {
-      bool matchesSupportedExtension = (strcmp(extension+3,webglExtensions[j]) == 0);
+    for (int j = 0; j < numNonWebglExtensions; j++) {
+      bool matchesSupportedExtension = (strcmp(extension+3,nonWebglExtensions[j]) == 0);
       if(matchesSupportedExtension){
-        bool hasWebGL = (strncmp(webglExtensions[j], "WEBGL", 5) == 0);
-          if(!hasWebGL) {
-            int numResults = result->Length();
-            result->Set(numResults, JS_STR(webglExtensions[j]));
-          }
+        int numResults = result->Length();
+        result->Set(numResults, JS_STR(nonWebglExtensions[j]));
       }
     }
   }
-  for (int i = 0; i < numExtensions; i++) {
-    bool hasWebGL = (strncmp(webglExtensions[i], "WEBGL", 5) == 0);
-      if(hasWebGL) {
-        int numResults = result->Length();
-        result->Set(numResults, JS_STR(webglExtensions[i]));
-      }
+  for (int i = 0; i < numWebglExtensions; i++) {
+    int numResults = result->Length();
+    result->Set(numResults, JS_STR(webglExtensions[i]));
   }
   /* for (GLint i = 0; i < numExtensions; i++) {
     char *extension = (char *)glGetStringi(GL_EXTENSIONS, i);
