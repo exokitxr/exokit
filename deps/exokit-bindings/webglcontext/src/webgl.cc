@@ -70,7 +70,7 @@ const char *stencilFsh = ""
 out vec4 fragColor;\n\
 \n\
 void main() {\n\
-  fragColor = vec4(1.0, 0.0, 0.0, 1.0);\n\
+  fragColor = vec4(0.0, 0.0, 0.0, 1.0);\n\
 }\n\
 ";
 
