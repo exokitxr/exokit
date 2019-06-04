@@ -1314,6 +1314,8 @@ WebGLRenderingContext::WebGLRenderingContext() :
   defaultVao(0),
   defaultFramebuffer(0),
   topLevel(true),
+  topStencilGeometry(false),
+  topClipPlanes(false),
   dirty(false),
   flipY(false),
   premultiplyAlpha(true),
@@ -2714,6 +2716,8 @@ NAN_METHOD(WebGLRenderingContext::SetTopStencilGeometry) {
     glEnable(GL_STENCIL_TEST);
     glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
+    gl->topStencilGeometry = true;
+
     if (gl->HasVertexArrayBinding()) {
       glBindVertexArray(gl->GetVertexArrayBinding());
     } else {
@@ -2739,6 +2743,8 @@ NAN_METHOD(WebGLRenderingContext::SetTopStencilGeometry) {
     } else {
       glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
+  } else {
+    gl->topStencilGeometry = false;
   }
 }
 
@@ -2761,6 +2767,10 @@ NAN_METHOD(WebGLRenderingContext::SetTopClipPlanes) {
       glClipPlane(GL_CLIP_PLANE0 + i, planeEquation);
       glEnable(GL_CLIP_PLANE0 + i);
     }
+
+    gl->topClipPlanes = true;
+  } else {
+    gl->topClipPlanes = false;
   }
 
   for (; i < 6; i++) {
@@ -2904,17 +2914,32 @@ NAN_METHOD(WebGLRenderingContext::ClearDepth) {
 }
 
 NAN_METHOD(WebGLRenderingContext::Disable) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
   GLint arg = TO_INT32(info[0]);
-  glDisable(arg);
+  
+  if (gl->topStencilGeometry && arg == GL_STENCIL_TEST) {
+    return;
+  }
 
-  // info.GetReturnValue().Set(Nan::Undefined());
+  glDisable(arg);
 }
 
 NAN_METHOD(WebGLRenderingContext::Enable) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
   GLint arg = TO_INT32(info[0]);
-  glEnable(arg);
+  
+  if (gl->topStencilGeometry && arg == GL_STENCIL_TEST) {
+    return;
+  }
+  if (gl->topClipPlanes) {
+    for (GLint i = 0; i < 6; i++) {
+      if (arg == (GL_CLIP_PLANE0 + i)) {
+        return;
+      }
+    }
+  }
 
-  // info.GetReturnValue().Set(Nan::Undefined());
+  glEnable(arg);
 }
 
 
@@ -4178,62 +4203,86 @@ NAN_METHOD(WebGLRenderingContext::Scissor) {
 }
 
 NAN_METHOD(WebGLRenderingContext::StencilFunc) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
+  if (gl->topStencilGeometry) {
+    return;
+  }
+
   GLenum func = TO_INT32(info[0]);
   GLint ref = TO_INT32(info[1]);
   GLuint mask = TO_INT32(info[2]);
 
   glStencilFunc(func, ref, mask);
-
-  // info.GetReturnValue().Set(Nan::Undefined());
 }
 
 NAN_METHOD(WebGLRenderingContext::StencilFuncSeparate) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
+  if (gl->topStencilGeometry) {
+    return;
+  }
+  
   GLenum face = TO_INT32(info[0]);
   GLenum func = TO_INT32(info[1]);
   GLint ref = TO_INT32(info[2]);
   GLuint mask = TO_INT32(info[3]);
 
   glStencilFuncSeparate(face, func, ref, mask);
-
-  // info.GetReturnValue().Set(Nan::Undefined());
 }
 
 NAN_METHOD(WebGLRenderingContext::StencilMask) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
+  if (gl->topStencilGeometry) {
+    return;
+  }
+  
   GLuint mask = TO_UINT32(info[0]);
 
   glStencilMask(mask);
-
-  // info.GetReturnValue().Set(Nan::Undefined());
 }
 
 NAN_METHOD(WebGLRenderingContext::StencilMaskSeparate) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
+  if (gl->topStencilGeometry) {
+    return;
+  }
+  
   GLenum face = TO_INT32(info[0]);
   GLuint mask = TO_UINT32(info[1]);
 
   glStencilMaskSeparate(face, mask);
-
-  // info.GetReturnValue().Set(Nan::Undefined());
 }
 
 NAN_METHOD(WebGLRenderingContext::StencilOp) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
+  if (gl->topStencilGeometry) {
+    return;
+  }
+  
   GLenum fail = TO_INT32(info[0]);
   GLenum zfail = TO_INT32(info[1]);
   GLenum zpass = TO_INT32(info[2]);
 
   glStencilOp(fail, zfail, zpass);
-
-  // info.GetReturnValue().Set(Nan::Undefined());
 }
 
 NAN_METHOD(WebGLRenderingContext::StencilOpSeparate) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
+  if (gl->topStencilGeometry) {
+    return;
+  }
+  
   GLenum face = TO_INT32(info[0]);
   GLenum fail = TO_INT32(info[1]);
   GLenum zfail = TO_INT32(info[2]);
   GLenum zpass = TO_INT32(info[3]);
 
   glStencilOpSeparate(face, fail, zfail, zpass);
-
-  // info.GetReturnValue().Set(Nan::Undefined());
 }
 
 NAN_METHOD(WebGLRenderingContext::BindRenderbuffer) {

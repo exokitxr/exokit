@@ -472,6 +472,8 @@ public:
   GLuint defaultFramebuffer;
   GlObjectCache objectCache;
   bool topLevel;
+  bool topStencilGeometry;
+  bool topClipPlanes;
   bool dirty;
   bool flipY;
   bool premultiplyAlpha;
