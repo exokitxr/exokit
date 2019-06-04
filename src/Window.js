@@ -1046,6 +1046,21 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
       window[symbols.mrDisplaysSymbol].xrSession.update();
     }
   };
+  const _waitLocalSyncs = () => {
+    if (vrPresentState.glContext) {
+      nativeWindow.setCurrentWindowContext(vrPresentState.glContext.getWindowHandle());
+
+      for (let i = 0; i < syncs.length; i++) {
+        const sync = syncs[i];
+        nativeWindow.waitSync(sync);
+        prevSyncs.push(sync);
+      }
+    } else {
+      for (let i = 0; i < syncs.length; i++) {
+        nativeWindow.deleteSync(syncs[i]);
+      }
+    }
+  };
   const _tickLocalRafs = () => {
     if (rafCbs.length > 0) {
       _cacheLocalCbs(rafCbs);
@@ -1148,20 +1163,7 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
     return Promise.resolve(syncs);
   };
   const _renderLocal = (syncs, layered) => {
-    if (vrPresentState.glContext) {
-      nativeWindow.setCurrentWindowContext(vrPresentState.glContext.getWindowHandle());
-
-      for (let i = 0; i < syncs.length; i++) {
-        const sync = syncs[i];
-        nativeWindow.waitSync(sync);
-        prevSyncs.push(sync);
-      }
-    } else {
-      for (let i = 0; i < syncs.length; i++) {
-        nativeWindow.deleteSync(syncs[i]);
-      }
-    }
-
+    _waitLocalSyncs();
     _tickLocalRafs();
     return _composeLocalLayers(layered);
   };
