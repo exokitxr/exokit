@@ -2927,13 +2927,6 @@ NAN_METHOD(WebGLRenderingContext::Enable) {
   if (gl->topStencilGeometry && arg == GL_STENCIL_TEST) {
     return;
   }
-  if (gl->topClipPlanes) {
-    for (GLint i = 0; i < 6; i++) {
-      if (arg == (GL_CLIP_PLANE0 + i)) {
-        return;
-      }
-    }
-  }
 
   glEnable(arg);
 }
