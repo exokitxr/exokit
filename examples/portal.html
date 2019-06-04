@@ -39,11 +39,6 @@ function init() {
   directionalLight.position.set(1, 1, 1);
   scene.add(directionalLight);
 
-  const webxrSampleIframe = document.createElement('iframe');
-  // webxrSampleIframe.d = 3;
-  webxrSampleIframe.src = 'https://rawcdn.githack.com/exokitxr/webxr-samples/a8e2c94eba0ee5c9215f20d13057b6c25675d9b0/xr-presentation.html';
-  webxrSampleIframe.stencilGeometry = new THREE.PlaneBufferGeometry(2, 1).toNonIndexed().attributes.position.array;
-
   const tutorialIframe = document.createElement('iframe');
   // tutorialIframe.d = 3;
   tutorialIframe.src = 'tutorial.html';
@@ -62,9 +57,14 @@ function init() {
     _planeToFloat32Array(new THREE.Plane(new THREE.Vector3(0, 0, -1), -1)),
   ];
 
+  const webxrSampleIframe = document.createElement('iframe');
+  // webxrSampleIframe.d = 3;
+  webxrSampleIframe.src = 'https://rawcdn.githack.com/exokitxr/webxr-samples/a8e2c94eba0ee5c9215f20d13057b6c25675d9b0/xr-presentation.html';
+  webxrSampleIframe.stencilGeometry = new THREE.PlaneBufferGeometry(1, 2).toNonIndexed().attributes.position.array;
+
   layers = [
-    webxrSampleIframe,
     tutorialIframe,
+    webxrSampleIframe,
   ];
 
   renderer = new THREE.WebGLRenderer({
