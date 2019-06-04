@@ -1282,6 +1282,7 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
   Nan::SetMethod(proto, "setDefaultFramebuffer", glCallWrap<SetDefaultFramebuffer>);
 
   Nan::SetMethod(proto, "setTopLevel", SetTopLevel);
+  Nan::SetMethod(proto, "setTopStencilGeometry", SetTopStencilGeometry);
 
   // OVR_multiview2
   Nan::SetMethod(proto, "framebufferTextureMultiviewOVR", glCallWrap<FramebufferTextureMultiviewOVR>);
@@ -2642,6 +2643,95 @@ NAN_METHOD(WebGLRenderingContext::FramebufferTextureMultisampleMultiviewOVR) {
 #if defined(ANDROID) || defined(LUMIN)
   glFramebufferTextureMultisampleMultiviewOVRExt(target, attachment, texture, level, samples, baseViewIndex, numViews);
 #endif
+}
+
+NAN_METHOD(WebGLRenderingContext::SetTopStencilGeometry) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
+  glDisable(GL_STENCIL_TEST);
+
+  if (info[0]->IsFloat32Array()) {
+    Local<Float32Array> stencilGeometry = Local<Float32Array>::Cast(info[0]);
+
+    Local<Array> modelViewMatrices = Local<Array>::Cast(info[1]);
+    Local<Float32Array> leftModelViewMatrix = Local<Float32Array>::Cast(modelViewMatrices->Get(0));
+    Local<Float32Array> rightModelViewMatrix = Local<Float32Array>::Cast(modelViewMatrices->Get(1));
+
+    Local<Array> projectionMatrices = Local<Array>::Cast(info[2]);
+    Local<Float32Array> leftProjectionMatrix = Local<Float32Array>::Cast(projectionMatrices->Get(0));
+    Local<Float32Array> rightProjectionMatrix = Local<Float32Array>::Cast(projectionMatrices->Get(1));
+
+    uint32_t renderWidth = TO_UINT32(info[3]);
+    uint32_t renderHeight = TO_UINT32(info[4]);
+
+    float *stencilGeometryData = (float *)((char *)stencilGeometry->Buffer()->GetContents().Data() + stencilGeometry->ByteOffset());
+    int stencilGeometrySize = stencilGeometry->Length();
+    float *leftModelViewMatrixData = (float *)((char *)leftModelViewMatrix->Buffer()->GetContents().Data() + leftModelViewMatrix->ByteOffset());
+    float *rightModelViewMatrixData = (float *)((char *)rightModelViewMatrix->Buffer()->GetContents().Data() + rightModelViewMatrix->ByteOffset());
+    float *leftProjectionMatrixData = (float *)((char *)leftProjectionMatrix->Buffer()->GetContents().Data() + leftProjectionMatrix->ByteOffset());
+    float *rightProjectionMatrixData = (float *)((char *)rightProjectionMatrix->Buffer()->GetContents().Data() + rightProjectionMatrix->ByteOffset());
+
+    StencilGlShader *stencilGlShader = getGlShader<StencilGlShader>(gl);
+
+    glBindVertexArray(stencilGlShader->stencilVao);
+    glUseProgram(stencilGlShader->stencilProgram);
+
+    glBindBuffer(GL_ARRAY_BUFFER, stencilGlShader->positionBuffer);
+    glBufferData(GL_ARRAY_BUFFER, stencilGeometrySize*sizeof(float), stencilGeometryData, GL_DYNAMIC_DRAW);
+
+    glClear(GL_STENCIL_BUFFER_BIT);
+
+    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+    glDepthMask(GL_FALSE);
+    glStencilFunc(GL_EQUAL, 1, 0xFF);
+    glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
+
+    {
+      glUniformMatrix4fv(planeGlShader->modelViewMatrixLocation, 1, false, leftModelViewMatrixData);
+      glUniformMatrix4fv(planeGlShader->projectionMatrixLocation, 1, false, leftProjectionMatrixData);
+
+      glViewport(0, 0, renderWidth, renderHeight);
+      glDrawArrays(GL_TRIANGLES, 0, stencilGeometrySize);
+    }
+    {
+      glUniformMatrix4fv(planeGlShader->modelViewMatrixLocation, 1, false, rightModelViewMatrixData);
+      glUniformMatrix4fv(planeGlShader->projectionMatrixLocation, 1, false, rightProjectionMatrixData);
+
+      glViewport(renderWidth, 0, renderWidth, renderHeight);
+      glDrawArrays(GL_TRIANGLES, 0, stencilGeometrySize);
+    }
+
+    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+    glDepthMask(GL_TRUE);
+    glEnable(GL_STENCIL_TEST);
+    glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+
+    if (gl->HasVertexArrayBinding()) {
+      glBindVertexArray(gl->GetVertexArrayBinding());
+    } else {
+      glBindVertexArray(gl->defaultVao);
+    }
+    if (gl->HasProgramBinding()) {
+      glUseProgram(gl->GetProgramBinding());
+    } else {
+      glUseProgram(0);
+    }
+    if (gl->HasProgramBinding()) {
+      glUseProgram(gl->GetProgramBinding());
+    } else {
+      glUseProgram(0);
+    }
+    if (gl->viewportState.valid) {
+      glViewport(gl->viewportState.x, gl->viewportState.y, gl->viewportState.w, gl->viewportState.h);
+    } else {
+      glViewport(0, 0, 1280, 1024);
+    }
+    if (gl->HasBufferBinding(GL_ARRAY_BUFFER)) {
+      glBindBuffer(GL_ARRAY_BUFFER, gl->GetBufferBinding(GL_ARRAY_BUFFER));
+    } else {
+      glBindBuffer(GL_ARRAY_BUFFER, 0);
+    }
+  }
 }
 
 NAN_METHOD(WebGLRenderingContext::GetShaderParameter) {
