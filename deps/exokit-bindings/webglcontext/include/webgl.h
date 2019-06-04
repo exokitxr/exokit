@@ -92,11 +92,25 @@ using namespace node;
 enum GlKey {
   GL_KEY_COMPOSE,
   GL_KEY_PLANE,
+  GL_KEY_STENCIL,
 };
 
 class GlShader {
 public:
   virtual ~GlShader() = 0;
+};
+
+class StencilGlShader : public GlShader {
+public:
+  StencilGlShader();
+  virtual ~StencilGlShader();
+
+  static GlKey key;
+
+  GLuint stencilVao;
+  GLuint stencilProgram;
+  GLint positionLocation;
+  GLuint positionBuffer;
 };
 
 class GlObjectCache {
