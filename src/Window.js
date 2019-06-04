@@ -1061,6 +1061,23 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
       }
     }
   };
+  const _prepareLocalFrame = () => {
+    const {stencilGeometryBuffer} = window.document;
+    const stencilGeometrySize = stencilGeometryBuffer ? new Uint32Array(stencilGeometryBuffer, stencilGeometryBuffer.byteOffset, 1)[0] : 0;
+    if (stencilGeometrySize > 0) {
+      nativeWindow.setTopStencilGeometry(stencilGeometryBuffer.slice(1, 1 + stencilGeometrySize));
+    } else {
+      nativeWindow.setTopStencilGeometry(null);
+    }
+
+    const {clipPlanesBuffer} = window.document;
+    const numClipPlanes = clipPlanesBuffer ? new Uint32Array(clipPlanesBuffer, clipPlanesBuffer.byteOffset, 1)[0] : 0;
+    if (numClipPlanes > 0) {
+      nativeWindow.setTopClipPlanes(clipPlanesBuffer.slice(1, 1 + numClipPlanes*4));
+    } else {
+      nativeWindow.setTopClipPlanes(null);
+    }
+  };
   const _tickLocalRafs = () => {
     if (rafCbs.length > 0) {
       _cacheLocalCbs(rafCbs);
@@ -1164,6 +1181,7 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
   };
   const _renderLocal = (syncs, layered) => {
     _waitLocalSyncs();
+    _prepareLocalFrame();
     _tickLocalRafs();
     return _composeLocalLayers(layered);
   };
