@@ -1063,18 +1063,21 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
   };
   const _prepareLocalFrame = () => {
     if (vrPresentState.glContext) {
-      const {stencilGeometryBuffer} = window.document;
-      const stencilGeometrySize = stencilGeometryBuffer ? new Uint32Array(stencilGeometryBuffer, stencilGeometryBuffer.byteOffset, 1)[0] : 0;
+      const {stencilGeometry} = window.document;
+      const stencilGeometrySize = stencilGeometry ? new Uint32Array(stencilGeometry.buffer, stencilGeometry.byteOffset, 1)[0] : 0;
       if (stencilGeometrySize > 0) {
-        vrPresentState.glContext.setTopStencilGeometry(stencilGeometryBuffer.slice(1, 1 + stencilGeometrySize));
+        vrPresentState.glContext.setTopStencilGeometry(
+          stencilGeometry.slice(1, 1 + stencilGeometrySize),
+          GlobalContext.xrState
+        );
       } else {
         vrPresentState.glContext.setTopStencilGeometry(null);
       }
 
-      const {clipPlanesBuffer} = window.document;
-      const numClipPlanes = clipPlanesBuffer ? new Uint32Array(clipPlanesBuffer, clipPlanesBuffer.byteOffset, 1)[0] : 0;
+      const {clipPlanes} = window.document;
+      const numClipPlanes = clipPlanes ? new Uint32Array(clipPlanes.buffer, clipPlanes.byteOffset, 1)[0] : 0;
       if (numClipPlanes > 0) {
-        vrPresentState.glContext.setTopClipPlanes(clipPlanesBuffer.slice(1, 1 + numClipPlanes*4));
+        vrPresentState.glContext.setTopClipPlanes(clipPlanes.slice(1, 1 + numClipPlanes*4));
       } else {
         vrPresentState.glContext.setTopClipPlanes(null);
       }
@@ -1370,8 +1373,8 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
   window.document = _parseDocument(options.htmlString, window);
   window.document.hidden = options.hidden || false;
   window.document.xrOffset = options.xrOffsetBuffer ? new XRRigidTransform(options.xrOffsetBuffer) : new XRRigidTransform();
-  window.document.stencilGeometryBuffer = options.stencilGeometryBuffer || null;
-  window.document.clipPlanesBuffer = options.clipPlanesBuffer || null;
+  window.document.stencilGeometry = options.stencilGeometryBuffer || null;
+  window.document.clipPlanes = options.clipPlanesBuffer || null;
 })(global);
 
 global.onrunasync = req => {
