@@ -2688,15 +2688,15 @@ NAN_METHOD(WebGLRenderingContext::SetTopStencilGeometry) {
     glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
 
     {
-      glUniformMatrix4fv(planeGlShader->modelViewMatrixLocation, 1, false, leftModelViewMatrixData);
-      glUniformMatrix4fv(planeGlShader->projectionMatrixLocation, 1, false, leftProjectionMatrixData);
+      glUniformMatrix4fv(stencilGlShader->modelViewMatrixLocation, 1, false, leftModelViewMatrixData);
+      glUniformMatrix4fv(stencilGlShader->projectionMatrixLocation, 1, false, leftProjectionMatrixData);
 
       glViewport(0, 0, renderWidth, renderHeight);
       glDrawArrays(GL_TRIANGLES, 0, stencilGeometrySize);
     }
     {
-      glUniformMatrix4fv(planeGlShader->modelViewMatrixLocation, 1, false, rightModelViewMatrixData);
-      glUniformMatrix4fv(planeGlShader->projectionMatrixLocation, 1, false, rightProjectionMatrixData);
+      glUniformMatrix4fv(stencilGlShader->modelViewMatrixLocation, 1, false, rightModelViewMatrixData);
+      glUniformMatrix4fv(stencilGlShader->projectionMatrixLocation, 1, false, rightProjectionMatrixData);
 
       glViewport(renderWidth, 0, renderWidth, renderHeight);
       glDrawArrays(GL_TRIANGLES, 0, stencilGeometrySize);
