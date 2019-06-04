@@ -2729,11 +2729,6 @@ NAN_METHOD(WebGLRenderingContext::SetTopStencilGeometry) {
     } else {
       glUseProgram(0);
     }
-    if (gl->HasProgramBinding()) {
-      glUseProgram(gl->GetProgramBinding());
-    } else {
-      glUseProgram(0);
-    }
     if (gl->viewportState.valid) {
       glViewport(gl->viewportState.x, gl->viewportState.y, gl->viewportState.w, gl->viewportState.h);
     } else {
