@@ -16,6 +16,13 @@
 using namespace v8;
 using namespace std;
 
+#if defined(ANDROID) || defined(LUMIN)
+PFNGLFRAMEBUFFERTEXTUREMULTIVIEWOVR glFramebufferTextureMultiviewOVRExt;
+PFNGLFRAMEBUFFERTEXTUREMULTISAMPLEMULTIVIEWOVR glFramebufferTextureMultisampleMultiviewOVRExt;
+
+bool extensionFunctionsInitialized = false;
+#endif
+
 // forward declarations
 /* enum GLObjectType {
   GLOBJECT_TYPE_BUFFER,
@@ -930,6 +937,20 @@ ColorMaskState &ColorMaskState::operator=(const ColorMaskState &colorMaskState) 
 std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initialize(Isolate *isolate) {
   // Nan::EscapableHandleScope scope;
 
+  #if defined(ANDROID) || defined(LUMIN)
+  if(!extensionFunctionsInitialized){
+    glFramebufferTextureMultiviewOVRExt = (PFNGLFRAMEBUFFERTEXTUREMULTIVIEWOVR)eglGetProcAddress("glFramebufferTextureMultiviewOVR");
+    if (!glFramebufferTextureMultiviewOVRExt) {
+        std::cerr << "Can not get proc address for glFramebufferTextureMultiviewOVR." << std::endl;
+    }
+    glFramebufferTextureMultisampleMultiviewOVRExt = (PFNGLFRAMEBUFFERTEXTUREMULTISAMPLEMULTIVIEWOVR)eglGetProcAddress("glFramebufferTextureMultisampleMultiviewOVR");
+    if (!glFramebufferTextureMultisampleMultiviewOVRExt) {
+        std::cerr << "Can not get proc address for glFramebufferTextureMultisampleMultiviewOVRExt." << std::endl;
+    }
+    extensionFunctionsInitialized = true;
+  }
+  #endif
+
   // constructor
   Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(WebGLRenderingContext::New);
 
@@ -1157,6 +1178,10 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
   Nan::SetMethod(proto, "setDefaultFramebuffer", glCallWrap<SetDefaultFramebuffer>);
 
   Nan::SetMethod(proto, "setTopLevel", SetTopLevel);
+
+  // OVR_multiview2
+  Nan::SetMethod(proto, "framebufferTextureMultiviewOVR", glCallWrap<FramebufferTextureMultiviewOVR>);
+  Nan::SetMethod(proto, "framebufferTextureMultisampleMultiviewOVR", glCallWrap<FramebufferTextureMultisampleMultiviewOVR>);
 
   setGlConstants(proto);
 
@@ -2479,6 +2504,40 @@ NAN_METHOD(WebGLRenderingContext::SetTopLevel) {
   bool topLevel = TO_BOOL(info[0]);
 
   gl->topLevel = topLevel;
+}
+
+NAN_METHOD(WebGLRenderingContext::FramebufferTextureMultiviewOVR) {
+  GLenum target = TO_UINT32(info[0]);
+  GLenum attachment = TO_UINT32(info[1]);
+  GLuint texture = info[2]->IsObject() ? TO_UINT32(JS_OBJ(info[2])->Get(JS_STR("id"))) : 0;
+  GLint level = TO_INT32(info[3]);
+  GLint baseViewIndex = TO_INT32(info[4]);
+  GLsizei numViews = TO_UINT32(info[5]);
+
+#if !defined(ANDROID) && !defined(LUMIN)
+  glFramebufferTextureMultiviewOVR(target, attachment, texture, level, baseViewIndex, numViews);
+#endif
+#if defined(ANDROID) || defined(LUMIN)
+  glFramebufferTextureMultiviewOVRExt(target, attachment, texture, level, baseViewIndex, numViews);
+#endif
+
+}
+
+NAN_METHOD(WebGLRenderingContext::FramebufferTextureMultisampleMultiviewOVR) {
+  GLenum target = TO_UINT32(info[0]);
+  GLenum attachment = TO_UINT32(info[1]);
+  GLuint texture = info[2]->IsObject() ? TO_UINT32(JS_OBJ(info[2])->Get(JS_STR("id"))) : 0;
+  GLint level = TO_INT32(info[3]);
+  GLsizei samples = TO_UINT32(info[4]);
+  GLint baseViewIndex = TO_INT32(info[5]);
+  GLsizei numViews = TO_UINT32(info[6]);
+
+#if !defined(ANDROID) && !defined(LUMIN)
+  glFramebufferTextureMultisampleMultiviewOVR(target, attachment, texture, level, samples, baseViewIndex, numViews);
+#endif
+#if defined(ANDROID) || defined(LUMIN)
+  glFramebufferTextureMultisampleMultiviewOVRExt(target, attachment, texture, level, samples, baseViewIndex, numViews);
+#endif
 }
 
 NAN_METHOD(WebGLRenderingContext::GetShaderParameter) {
@@ -4919,6 +4978,8 @@ const char *webglExtensions[] = {
   "OES_texture_half_float",
   "OES_texture_half_float_linear",
   "OES_vertex_array_object",
+  "OVR_multiview_multisampled_render_to_texture",
+  "OVR_multiview2",
   "WEBGL_color_buffer_float",
   "WEBGL_compressed_texture_astc",
   "WEBGL_compressed_texture_atc",
@@ -4934,8 +4995,6 @@ const char *webglExtensions[] = {
   "WEBGL_lose_context",
 };
 NAN_METHOD(WebGLRenderingContext::GetSupportedExtensions) {
-  // GLint numExtensions;
-  // glGetIntegerv(GL_NUM_EXTENSIONS, &numExtensions);
 
   int numExtensions = sizeof(webglExtensions)/sizeof(webglExtensions[0]);
   Local<Array> result = Nan::New<Array>(numExtensions);
@@ -4943,11 +5002,6 @@ NAN_METHOD(WebGLRenderingContext::GetSupportedExtensions) {
     // char *extension = (char *)glGetStringi(GL_EXTENSIONS, i);
     result->Set(i, JS_STR(webglExtensions[i]));
   }
-
-  /* for (GLint i = 0; i < numExtensions; i++) {
-    char *extension = (char *)glGetStringi(GL_EXTENSIONS, i);
-    result->Set(i, JS_STR(extension));
-  } */
 
   info.GetReturnValue().Set(result);
 }
@@ -5067,6 +5121,19 @@ NAN_METHOD(WebGLRenderingContext::GetExtension) {
     result->Set(JS_STR("RGB16F_EXT"), JS_INT(GL_RGB16F_EXT));
     result->Set(JS_STR("RGBA16F_EXT"), JS_INT(GL_RGBA16F_EXT));
     result->Set(JS_STR("UNSIGNED_NORMALIZED_EXT"), JS_INT(GL_UNSIGNED_NORMALIZED_EXT));
+    info.GetReturnValue().Set(result);
+  } else if (strcmp(sname, "OVR_multiview2") == 0) {
+    // Add constants: khronos.org/registry/webgl/extensions/OVR_multiview2/
+    Local<Object> result = Object::New(Isolate::GetCurrent());
+    result->Set(JS_STR("FRAMEBUFFER_ATTACHMENT_TEXTURE_NUM_VIEWS_OVR"), JS_INT(0x9630));
+    result->Set(JS_STR("FRAMEBUFFER_ATTACHMENT_TEXTURE_BASE_VIEW_INDEX_OVR"), JS_INT(0x9632));
+    result->Set(JS_STR("MAX_VIEWS_OVR"), JS_INT(0x9631));
+    result->Set(JS_STR("FRAMEBUFFER_INCOMPLETE_VIEW_TARGETS_OVR"), JS_INT(0x9633));
+    Nan::SetMethod(result, "framebufferTextureMultiviewOVR", FramebufferTextureMultiviewOVR);
+    info.GetReturnValue().Set(result);
+  } else if (strcmp(sname, "OVR_multiview_multisampled_render_to_texture") == 0) {
+    Local<Object> result = Object::New(Isolate::GetCurrent());
+    Nan::SetMethod(result, "FramebufferTextureMultisampleMultiviewOVR", FramebufferTextureMultisampleMultiviewOVR);
     info.GetReturnValue().Set(result);
   } else if (strcmp(sname, "EXT_blend_minmax") == 0) {
     // Adds two constants: developer.mozilla.org/docs/Web/API/EXT_blend_minmax
