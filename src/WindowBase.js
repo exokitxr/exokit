@@ -366,10 +366,10 @@ parentPort.on('close', close);
 } */
 
 process.on('uncaughtException', err => {
-  console.warn(err.stack);
+  console.warn('uncaught exception:', (err && err.stack) || err);
 });
 process.on('unhandledRejection', err => {
-  console.warn(err.stack);
+  console.warn('unhandled rejection:', (err && err.stack) || err);
 });
 
 if (initModule) {
