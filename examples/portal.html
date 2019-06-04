@@ -82,52 +82,6 @@ function init() {
   renderer.setAnimationLoop(animate);
 }
 function animate(time, frame) {
-  if (renderer.vr.enabled) {
-    for (let i = 0; i < controllerMeshes.length; i++) {
-      controllerMeshes[i].visible = false;
-    }
-
-    const inputSources = session.getInputSources();
-    for (let i = 0; i < inputSources.length; i++) {
-      const inputSource = inputSources[i];
-      const pose = frame.getInputPose(inputSource);
-      
-      const controllerIndex = _getControllerIndex(inputSource);
-      const controllerMesh = controllerMeshes[controllerIndex];
-      controllerMesh.matrix.fromArray(pose.targetRay.transformMatrix);
-      controllerMesh.matrix.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
-      // controllerMesh.updateMatrixWorld(true);
-      controllerMesh.visible = true;
-
-      if (!controllerHitTesting[controllerIndex]) {
-        const hitMesh = hitMeshes[controllerIndex];
-
-        session.requestHitTest(
-          controllerMesh.position
-            .toArray(localVectorFloat32Array),
-          localVector.set(0, 0, -1)
-            .applyQuaternion(controllerMesh.quaternion)
-            .toArray(localVectorFloat32Array2)
-        )
-          .then(result => {
-            if (result.length) {
-              const [{hitMatrix}] = result;
-              localMatrix
-                .fromArray(hitMatrix)
-                .decompose(hitMesh.position, hitMesh.quaternion, localVector2);
-              hitMesh.visible = true;
-            } else {
-              hitMesh.visible = false;
-            }
-
-            controllerHitTesting[controllerIndex] = false;
-          });
-
-        controllerHitTesting[controllerIndex] = true;
-      }
-    }
-  }
-
   renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
 }
 
