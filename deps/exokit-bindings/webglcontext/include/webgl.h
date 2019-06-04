@@ -70,6 +70,7 @@
 #define MAX_CLIENT_WAIT_TIMEOUT_WEBGL ((uint32_t)2e7)
 
 #include <defines.h>
+#include <exout>
 #include <map>
 #include <set>
 
