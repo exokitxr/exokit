@@ -111,6 +111,8 @@ public:
   GLuint stencilVao;
   GLuint stencilProgram;
   GLint positionLocation;
+  GLint modelViewMatrixLocation;
+  GLint projectionMatrixLocation;
   GLuint positionBuffer;
 };
 

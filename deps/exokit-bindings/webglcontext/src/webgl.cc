@@ -129,6 +129,16 @@ StencilGlShader::StencilGlShader() {
     exout << "stencil program failed to get attrib location for 'position'" << std::endl;
     return;
   }
+  this->modelViewMatrixLocation = glGetUniformLocation(this->stencilProgram, "modelViewMatrix");
+  if (this->modelViewMatrixLocation == -1) {
+    exout << "stencil program failed to get uniform location for 'modelViewMatrix'" << std::endl;
+    return;
+  }
+  this->projectionMatrixLocation = glGetUniformLocation(this->stencilProgram, "projectionMatrix");
+  if (this->projectionMatrixLocation == -1) {
+    exout << "stencil program failed to get uniform location for 'projectionMatrix'" << std::endl;
+    return;
+  }
 
   // delete the shaders as they're linked into our program now and no longer necessary
   glDeleteShader(stencilVertex);
