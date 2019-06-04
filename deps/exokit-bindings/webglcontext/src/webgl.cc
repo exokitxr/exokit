@@ -20,7 +20,7 @@ using namespace std;
 PFNGLFRAMEBUFFERTEXTUREMULTIVIEWOVR glFramebufferTextureMultiviewOVRExt;
 PFNGLFRAMEBUFFERTEXTUREMULTISAMPLEMULTIVIEWOVR glFramebufferTextureMultisampleMultiviewOVRExt;
 
-bool extensionInitialized = false;
+bool extensionFunctionsInitialized = false;
 #endif
 
 // forward declarations
@@ -938,7 +938,7 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
   // Nan::EscapableHandleScope scope;
 
   #if defined(ANDROID) || defined(LUMIN)
-  if(!extensionInitialized){
+  if(!extensionFunctionsInitialized){
     glFramebufferTextureMultiviewOVRExt = (PFNGLFRAMEBUFFERTEXTUREMULTIVIEWOVR)eglGetProcAddress("glFramebufferTextureMultiviewOVR");
     if (!glFramebufferTextureMultiviewOVRExt) {
         std::cerr << "Can not get proc address for glFramebufferTextureMultiviewOVR." << std::endl;
@@ -947,7 +947,7 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
     if (!glFramebufferTextureMultisampleMultiviewOVRExt) {
         std::cerr << "Can not get proc address for glFramebufferTextureMultisampleMultiviewOVRExt." << std::endl;
     }
-    extensionInitialized = true;
+    extensionFunctionsInitialized = true;
   }
   #endif
 
