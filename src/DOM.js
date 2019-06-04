@@ -2176,16 +2176,16 @@ class HTMLIFrameElement extends HTMLSrcableElement {
   }
 
   get stencilGeometry() {
-    return this._stencilGeometry;
+    return this._stencilGeometryBuffer;
   }
   set stencilGeometry(stencilGeometry) {
-    if (stencilGeometry instanceof Float32Array && stencilGeometry.length <= (this._stencilGeometry.length-1)) {
-      new Uint32Array(this._stencilGeometry.buffer, this._stencilGeometry.byteOffset, 1)[0] = stencilGeometry.length;
-      new Float32Array(this._stencilGeometry.buffer, this._stencilGeometry.byteOffset + Uint32Array.BYTES_PER_ELEMENT).set(stencilGeometry);
+    if (stencilGeometry instanceof Float32Array && stencilGeometry.length <= (this._stencilGeometryBuffer.length-1)) {
+      new Uint32Array(this._stencilGeometryBuffer.buffer, this._stencilGeometryBuffer.byteOffset, 1)[0] = stencilGeometry.length;
+      new Float32Array(this._stencilGeometryBuffer.buffer, this._stencilGeometryBuffer.byteOffset + Uint32Array.BYTES_PER_ELEMENT).set(stencilGeometry);
     }
   }
   get clipPlanes() {
-    return this._clipPlanes;
+    return this._clipPlanesBuffer;
   }
   set clipPlanes(clipPlanes) {
     if (Array.isArray(clipPlanes)) {
@@ -2199,7 +2199,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
         }
       }
 
-      new Uint32Array(this._clipPlanes.buffer, this._clipPlanes.byteOffset, 1)[0] = numClipPlanes;
+      new Uint32Array(this._clipPlanesBuffer.buffer, this._clipPlanesBuffer.byteOffset, 1)[0] = numClipPlanes;
     }
   }
 
