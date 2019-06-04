@@ -4961,7 +4961,7 @@ NAN_METHOD(WebGLRenderingContext::GetVertexAttrib) {
   //info.GetReturnValue().Set(Nan::Undefined());
 }
 
-const char *nonWebglExtensions[] = {
+const char *webglExtensions[] = {
   "ANGLE_instanced_arrays",
   "EXT_blend_minmax",
   "EXT_color_buffer_float",
@@ -4978,8 +4978,8 @@ const char *nonWebglExtensions[] = {
   "OES_texture_half_float",
   "OES_texture_half_float_linear",
   "OES_vertex_array_object",
-};
-const char *webglExtensions[] = {
+  "OVR_multiview_multisampled_render_to_texture",
+  "OVR_multiview2",
   "WEBGL_color_buffer_float",
   "WEBGL_compressed_texture_astc",
   "WEBGL_compressed_texture_atc",
@@ -4996,28 +4996,11 @@ const char *webglExtensions[] = {
 };
 NAN_METHOD(WebGLRenderingContext::GetSupportedExtensions) {
 
-  int numNonWebglExtensions = sizeof(nonWebglExtensions)/sizeof(nonWebglExtensions[0]);
-  int numWebglExtensions = sizeof(webglExtensions)/sizeof(webglExtensions[0]);
-  Local<Array> result = Nan::New<Array>(0);
-
-  GLint n=0;
-  glGetIntegerv(GL_NUM_EXTENSIONS, &n);
-
-  for (int i=0; i<n; i++)
-  {
-    const char* extension = (const char*)glGetStringi(GL_EXTENSIONS, i);
-
-    for (int j = 0; j < numNonWebglExtensions; j++) {
-      bool matchesSupportedExtension = (strcmp(extension+3,nonWebglExtensions[j]) == 0);
-      if(matchesSupportedExtension){
-        int numResults = result->Length();
-        result->Set(numResults, JS_STR(nonWebglExtensions[j]));
-      }
-    }
-  }
-  for (int i = 0; i < numWebglExtensions; i++) {
-    int numResults = result->Length();
-    result->Set(numResults, JS_STR(webglExtensions[i]));
+  int numExtensions = sizeof(webglExtensions)/sizeof(webglExtensions[0]);
+  Local<Array> result = Nan::New<Array>(numExtensions);
+  for (GLint i = 0; i < numExtensions; i++) {
+    // char *extension = (char *)glGetStringi(GL_EXTENSIONS, i);
+    result->Set(i, JS_STR(webglExtensions[i]));
   }
 
   info.GetReturnValue().Set(result);
