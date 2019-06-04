@@ -1350,6 +1350,8 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
   window.document = _parseDocument(options.htmlString, window);
   window.document.hidden = options.hidden || false;
   window.document.xrOffset = options.xrOffsetBuffer ? new XRRigidTransform(options.xrOffsetBuffer) : new XRRigidTransform();
+  window.document.stencilGeometryBuffer = options.stencilGeometryBuffer || null;
+  window.document.clipPlanesBuffer = options.clipPlanesBuffer || null;
 })(global);
 
 global.onrunasync = req => {

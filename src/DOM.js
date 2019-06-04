@@ -1937,6 +1937,8 @@ class HTMLIFrameElement extends HTMLSrcableElement {
     this.browser = null;
     this.onconsole = null;
     this.xrOffset = new XRRigidTransform();
+    this._stencilGeometryBuffer = new Float32Array(new SharedArrayBuffer((1 + 64) * Float32Array.BYTES_PER_ELEMENT));
+    this._clipPlanesBuffer = new Float32Array(new SharedArrayBuffer((1 + 6*4) * Float32Array.BYTES_PER_ELEMENT));
 
     this.on('attribute', (name, value) => {
       if (name === 'src' && value) {
@@ -2055,6 +2057,8 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   htmlString,
                   hidden: true,
                   xrOffsetBuffer: this.xrOffset._buffer,
+                  stencilGeometryBuffer: this._stencilGeometryBuffer,
+                  clipPlanesBuffer: this._clipPlanesBuffer,
                   onnavigate(href) {
                     this.readyState = null;
                     this.contentWindow = null;
@@ -2168,6 +2172,34 @@ class HTMLIFrameElement extends HTMLSrcableElement {
   set d(value) {
     if (typeof value === 'number' && isFinite(value)) {
       this.setAttribute('d', value);
+    }
+  }
+
+  get stencilGeometry() {
+    return this._stencilGeometry;
+  }
+  set stencilGeometry(stencilGeometry) {
+    if (stencilGeometry instanceof Float32Array && stencilGeometry.length <= (this._stencilGeometry.length-1)) {
+      new Uint32Array(this._stencilGeometry.buffer, this._stencilGeometry.byteOffset, 1)[0] = stencilGeometry.length;
+      new Float32Array(this._stencilGeometry.buffer, this._stencilGeometry.byteOffset + Uint32Array.BYTES_PER_ELEMENT).set(stencilGeometry);
+    }
+  }
+  get clipPlanes() {
+    return this._clipPlanes;
+  }
+  set clipPlanes(clipPlanes) {
+    if (Array.isArray(clipPlanes)) {
+      let numClipPlanes = 0;
+
+      for (let i = 0; i < clipPlanes.length; i++) {
+        const clipPlane = clipPlanes[i];
+        if (clipPlane instanceof Float32Array && clipPlane.length === 4) {
+          new Float32Array(this._clipPlanesBuffer.buffer, this._clipPlanesBuffer.byteOffset + Float32Array.BYTES_PER_ELEMENT*4*numClipPlanes).set(clipPlane);
+          numClipPlanes++;
+        }
+      }
+
+      new Uint32Array(this._clipPlanes.buffer, this._clipPlanes.byteOffset, 1)[0] = numClipPlanes;
     }
   }
 
