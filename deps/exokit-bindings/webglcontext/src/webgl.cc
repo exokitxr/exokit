@@ -145,8 +145,8 @@ StencilGlShader::StencilGlShader() {
   glDeleteShader(stencilFragment);
 
   glGenBuffers(1, &this->positionBuffer);
-  /* glBindBuffer(GL_ARRAY_BUFFER, this->positionBuffer);
-  static const float positions[] = {
+  glBindBuffer(GL_ARRAY_BUFFER, this->positionBuffer);
+  /* static const float positions[] = {
     -1.0f, 1.0f,
     1.0f, 1.0f,
     -1.0f, -1.0f,
