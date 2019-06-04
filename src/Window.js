@@ -1046,7 +1046,7 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
       window[symbols.mrDisplaysSymbol].xrSession.update();
     }
   };
-  const _waitLocalSyncs = () => {
+  const _waitLocalSyncs = syncs => {
     if (vrPresentState.glContext) {
       nativeWindow.setCurrentWindowContext(vrPresentState.glContext.getWindowHandle());
 
@@ -1182,7 +1182,7 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
     return Promise.resolve(syncs);
   };
   const _renderLocal = (syncs, layered) => {
-    _waitLocalSyncs();
+    _waitLocalSyncs(syncs);
     _prepareLocalFrame();
     _tickLocalRafs();
     return _composeLocalLayers(layered);
