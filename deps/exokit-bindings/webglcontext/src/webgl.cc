@@ -1283,6 +1283,7 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
 
   Nan::SetMethod(proto, "setTopLevel", SetTopLevel);
   Nan::SetMethod(proto, "setTopStencilGeometry", SetTopStencilGeometry);
+  Nan::SetMethod(proto, "setTopClipPlanes", SetTopClipPlanes);
 
   // OVR_multiview2
   Nan::SetMethod(proto, "framebufferTextureMultiviewOVR", glCallWrap<FramebufferTextureMultiviewOVR>);
@@ -2731,6 +2732,32 @@ NAN_METHOD(WebGLRenderingContext::SetTopStencilGeometry) {
     } else {
       glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
+  }
+}
+
+NAN_METHOD(WebGLRenderingContext::SetTopClipPlanes) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+  int i = 0;
+
+  if (info[0]->IsFloat32Array()) {
+    Local<Float32Array> clipPlanes = Local<Float32Array>::Cast(info[0]);
+    float *clipPlanesData = (float *)((char *)clipPlanes->Buffer()->GetContents().Data() + clipPlanes->ByteOffset());
+    int numClipPlanes = clipPlanes->Length()/4;
+
+    for (; i < numClipPlanes && i < 6; i++) {
+      GLdouble planeEquation[] = {
+        clipPlanesData[i*4+0],
+        clipPlanesData[i*4+1],
+        clipPlanesData[i*4+2],
+        clipPlanesData[i*4+3],
+      };
+      glClipPlane(GL_CLIP_PLANE0 + i, planeEquation);
+      glEnable(GL_CLIP_PLANE0 + i);
+    }
+  }
+
+  for (; i < 6; i++) {
+    glDisable(GL_CLIP_PLANE0 + i);
   }
 }
 
