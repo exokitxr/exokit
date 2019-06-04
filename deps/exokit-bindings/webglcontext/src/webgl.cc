@@ -20,7 +20,7 @@ using namespace std;
 PFNGLFRAMEBUFFERTEXTUREMULTIVIEWOVR glFramebufferTextureMultiviewOVRExt;
 PFNGLFRAMEBUFFERTEXTUREMULTISAMPLEMULTIVIEWOVR glFramebufferTextureMultisampleMultiviewOVRExt;
 
-bool extensionFunctionsInitialized = false;
+bool extensionInitialized = false;
 #endif
 
 // forward declarations
@@ -938,7 +938,7 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
   // Nan::EscapableHandleScope scope;
 
   #if defined(ANDROID) || defined(LUMIN)
-  if(!extensionFunctionsInitialized){
+  if(!extensionInitialized){
     glFramebufferTextureMultiviewOVRExt = (PFNGLFRAMEBUFFERTEXTUREMULTIVIEWOVR)eglGetProcAddress("glFramebufferTextureMultiviewOVR");
     if (!glFramebufferTextureMultiviewOVRExt) {
         std::cerr << "Can not get proc address for glFramebufferTextureMultiviewOVR." << std::endl;
@@ -947,7 +947,7 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
     if (!glFramebufferTextureMultisampleMultiviewOVRExt) {
         std::cerr << "Can not get proc address for glFramebufferTextureMultisampleMultiviewOVRExt." << std::endl;
     }
-    extensionFunctionsInitialized = true;
+    extensionInitialized = true;
   }
   #endif
 
@@ -4998,23 +4998,30 @@ NAN_METHOD(WebGLRenderingContext::GetSupportedExtensions) {
 
   int numExtensions = sizeof(webglExtensions)/sizeof(webglExtensions[0]);
   Local<Array> result = Nan::New<Array>(0);
-  for (GLint i = 0; i < numExtensions; i++) {
-    char *extension = (char *)glGetStringi(GL_EXTENSIONS, i);
-    if(extension == webglExtensions[i]){
-      string currentExtension = string(webglExtensions[i]);
-      bool hasWebGL = currentExtension.find("WEBGL");
-        if(!hasWebGL) {
-          int numResults = result->Length();
-          result->Set(numResults+1, JS_STR(webglExtensions[i]));
-        }
+
+  GLint n=0;
+  glGetIntegerv(GL_NUM_EXTENSIONS, &n);
+
+  for (GLint i=0; i<n; i++)
+  {
+    const char* extension = (const char*)glGetStringi(GL_EXTENSIONS, i);
+
+    for (GLint j = 0; j < numExtensions; j++) {
+      bool matchesSupportedExtension = (strcmp(extension+3,webglExtensions[j]) == 0);
+      if(matchesSupportedExtension){
+        bool hasWebGL = (strncmp(webglExtensions[j], "WEBGL", 5) == 0);
+          if(!hasWebGL) {
+            int numResults = result->Length();
+            result->Set(numResults, JS_STR(webglExtensions[j]));
+          }
+      }
     }
   }
   for (GLint i = 0; i < numExtensions; i++) {
-    string currentExtension = string(webglExtensions[i]);
-    bool hasWebGL = currentExtension.find("WEBGL");
+    bool hasWebGL = (strncmp(webglExtensions[i], "WEBGL", 5) == 0);
       if(hasWebGL) {
         int numResults = result->Length();
-        result->Set(numResults+1, JS_STR(webglExtensions[i]));
+        result->Set(numResults, JS_STR(webglExtensions[i]));
       }
   }
   /* for (GLint i = 0; i < numExtensions; i++) {
