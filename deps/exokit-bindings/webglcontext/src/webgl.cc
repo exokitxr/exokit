@@ -2661,7 +2661,7 @@ NAN_METHOD(WebGLRenderingContext::FramebufferTextureMultisampleMultiviewOVR) {
 NAN_METHOD(WebGLRenderingContext::SetTopStencilGeometry) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
 
-  glDisable(GL_STENCIL_TEST);
+  glEnable(GL_STENCIL_TEST);
 
   if (info[0]->IsFloat32Array() && info[1]->IsObject()) {
     Local<Float32Array> stencilGeometry = Local<Float32Array>::Cast(info[0]);
@@ -2689,12 +2689,12 @@ NAN_METHOD(WebGLRenderingContext::SetTopStencilGeometry) {
     glBindBuffer(GL_ARRAY_BUFFER, stencilGlShader->positionBuffer);
     glBufferData(GL_ARRAY_BUFFER, stencilGeometrySize*sizeof(float), stencilGeometryData, GL_DYNAMIC_DRAW);
 
-    glClear(GL_STENCIL_BUFFER_BIT);
-
-    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
     glDepthMask(GL_FALSE);
-    glStencilFunc(GL_EQUAL, 1, 0xFF);
+    glStencilFunc(GL_ALWAYS, 1, 0xFF);
     glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
+    glStencilMask(0xFF);
+    glClear(GL_STENCIL_BUFFER_BIT);
 
     {
       glUniformMatrix4fv(stencilGlShader->modelViewMatrixLocation, 1, false, leftModelViewMatrixData);
@@ -2711,10 +2711,11 @@ NAN_METHOD(WebGLRenderingContext::SetTopStencilGeometry) {
       glDrawArrays(GL_TRIANGLES, 0, stencilGeometrySize);
     }
 
-    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+    // glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
     glDepthMask(GL_TRUE);
-    glEnable(GL_STENCIL_TEST);
-    glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+    glStencilMask(0x00);
+    // glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+    glStencilFunc(GL_EQUAL, 1, 0xFF);
 
     gl->topStencilGeometry = true;
 
