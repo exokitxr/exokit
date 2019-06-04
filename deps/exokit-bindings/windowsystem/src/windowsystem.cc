@@ -761,33 +761,6 @@ NAN_METHOD(ResizeRenderTarget) {
   info.GetReturnValue().Set(result);
 }
 
-template <typename T>
-T *getGlShader(WebGLRenderingContext *gl) {
-  const GlKey &key = T::key;
-  auto iter = gl->keys.find(key);
-  if (iter != gl->keys.end()) {
-    return (T *)iter->second;
-  } else {
-    T *t = new T();
-
-    {
-      if (gl->HasVertexArrayBinding()) {
-        glBindVertexArray(gl->GetVertexArrayBinding());
-      } else {
-        glBindVertexArray(gl->defaultVao);
-      }
-      if (gl->HasBufferBinding(GL_ARRAY_BUFFER)) {
-        glBindBuffer(GL_ARRAY_BUFFER, gl->GetBufferBinding(GL_ARRAY_BUFFER));
-      } else {
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-      }
-    }
-
-    gl->keys[key] = t;
-    return t;
-  }
-}
-
 NAN_METHOD(DestroyRenderTarget) {
   if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber()) {
     GLuint fbo = TO_UINT32(info[0]);

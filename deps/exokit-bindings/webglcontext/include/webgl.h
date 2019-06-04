@@ -122,6 +122,33 @@ public:
   std::set<GLuint> textures;
 };
 
+template <typename T>
+T *getGlShader(WebGLRenderingContext *gl) {
+  const GlKey &key = T::key;
+  auto iter = gl->keys.find(key);
+  if (iter != gl->keys.end()) {
+    return (T *)iter->second;
+  } else {
+    T *t = new T();
+
+    {
+      if (gl->HasVertexArrayBinding()) {
+        glBindVertexArray(gl->GetVertexArrayBinding());
+      } else {
+        glBindVertexArray(gl->defaultVao);
+      }
+      if (gl->HasBufferBinding(GL_ARRAY_BUFFER)) {
+        glBindBuffer(GL_ARRAY_BUFFER, gl->GetBufferBinding(GL_ARRAY_BUFFER));
+      } else {
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+      }
+    }
+
+    gl->keys[key] = t;
+    return t;
+  }
+}
+
 void flipImageData(char *dstData, char *srcData, size_t width, size_t height, size_t pixelSize);
 
 class ViewportState {
