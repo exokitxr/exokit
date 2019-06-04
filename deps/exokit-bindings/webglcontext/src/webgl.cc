@@ -4995,8 +4995,6 @@ const char *webglExtensions[] = {
   "WEBGL_lose_context",
 };
 NAN_METHOD(WebGLRenderingContext::GetSupportedExtensions) {
-  // GLint numExtensions;
-  // glGetIntegerv(GL_NUM_EXTENSIONS, &numExtensions);
 
   int numNonWebglExtensions = sizeof(nonWebglExtensions)/sizeof(nonWebglExtensions[0]);
   int numWebglExtensions = sizeof(webglExtensions)/sizeof(webglExtensions[0]);
@@ -5021,10 +5019,6 @@ NAN_METHOD(WebGLRenderingContext::GetSupportedExtensions) {
     int numResults = result->Length();
     result->Set(numResults, JS_STR(webglExtensions[i]));
   }
-  /* for (GLint i = 0; i < numExtensions; i++) {
-    char *extension = (char *)glGetStringi(GL_EXTENSIONS, i);
-    result->Set(i, JS_STR(extension));
-  } */
 
   info.GetReturnValue().Set(result);
 }
