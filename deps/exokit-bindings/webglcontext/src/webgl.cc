@@ -2768,12 +2768,12 @@ NAN_METHOD(WebGLRenderingContext::SetTopStencilGeometry) {
   if (info[0]->IsFloat32Array() && info[1]->IsObject()) {
     Local<Float32Array> stencilGeometry = Local<Float32Array>::Cast(info[0]);
     Local<Object> xrStateObj = Local<Object>::Cast(info[1]);
+    Local<Object> portalOffsetObj = Local<Object>::Cast(info[2]);
 
     Local<Float32Array> leftModelViewMatrixObj = Local<Float32Array>::Cast(xrStateObj->Get(JS_STR("leftViewMatrix")));
     Local<Float32Array> rightModelViewMatrixObj = Local<Float32Array>::Cast(xrStateObj->Get(JS_STR("rightViewMatrix")));
     Local<Float32Array> leftProjectionMatrixObj = Local<Float32Array>::Cast(xrStateObj->Get(JS_STR("leftProjectionMatrix")));
     Local<Float32Array> rightProjectionMatrixObj = Local<Float32Array>::Cast(xrStateObj->Get(JS_STR("rightProjectionMatrix")));
-    Local<Object> portalOffsetObj = Local<Object>::Cast(xrStateObj->Get(JS_STR("portalOffset")));
     Local<Float32Array> portalOffsetMatrixObj = Local<Float32Array>::Cast(portalOffsetObj->Get(JS_STR("matrix")));
     uint32_t renderWidth = TO_UINT32(Local<Float32Array>::Cast(xrStateObj->Get(JS_STR("renderWidth")))->Get(0));
     uint32_t renderHeight = TO_UINT32(Local<Float32Array>::Cast(xrStateObj->Get(JS_STR("renderHeight")))->Get(0));
