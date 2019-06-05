@@ -2808,7 +2808,6 @@ NAN_METHOD(WebGLRenderingContext::SetTopStencilGeometry) {
     /* glBindBuffer(GL_ARRAY_BUFFER, stencilGlShader->positionBuffer);
     glBufferData(GL_ARRAY_BUFFER, stencilGeometrySize*sizeof(float), stencilGeometryData, GL_DYNAMIC_DRAW); */
 
-    glDisable(GL_DEPTH_TEST);
     glEnable(GL_STENCIL_TEST);
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
     glDepthMask(GL_TRUE);
@@ -2834,7 +2833,6 @@ NAN_METHOD(WebGLRenderingContext::SetTopStencilGeometry) {
 
     // glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
     // glDepthMask(GL_TRUE);
-    glEnable(GL_DEPTH_TEST);
     glStencilMask(0x00);
     // glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
     glStencilFunc(GL_EQUAL, 1, 0xFF);
