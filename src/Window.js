@@ -1068,7 +1068,8 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
       if (stencilGeometrySize > 0) {
         vrPresentState.glContext.setTopStencilGeometry(
           stencilGeometry.slice(1, 1 + stencilGeometrySize),
-          GlobalContext.xrState
+          GlobalContext.xrState,
+          window.document.portalOffset
         );
       } else {
         vrPresentState.glContext.setTopStencilGeometry(null);
