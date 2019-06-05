@@ -1073,14 +1073,6 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
       } else {
         vrPresentState.glContext.setTopStencilGeometry(null);
       }
-
-      const {clipPlanes} = window.document;
-      const numClipPlanes = clipPlanes ? new Uint32Array(clipPlanes.buffer, clipPlanes.byteOffset, 1)[0] : 0;
-      if (numClipPlanes > 0) {
-        vrPresentState.glContext.setTopClipPlanes(clipPlanes.slice(1, 1 + numClipPlanes*4));
-      } else {
-        vrPresentState.glContext.setTopClipPlanes(null);
-      }
     }
   };
   const _tickLocalRafs = () => {
@@ -1373,8 +1365,7 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
   window.document = _parseDocument(options.htmlString, window);
   window.document.hidden = options.hidden || false;
   window.document.xrOffset = options.xrOffsetBuffer ? new XRRigidTransform(options.xrOffsetBuffer) : new XRRigidTransform();
-  window.document.stencilGeometry = options.stencilGeometryBuffer || null;
-  window.document.clipPlanes = options.clipPlanesBuffer || null;
+  window.document.portalOffset = options.portalOffsetBuffer ? new XRRigidTransform(options.portalOffsetBuffer) : new XRRigidTransform();
 })(global);
 
 global.onrunasync = req => {

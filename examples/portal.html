@@ -42,25 +42,12 @@ function init() {
   const tutorialIframe = document.createElement('iframe');
   // tutorialIframe.d = 3;
   tutorialIframe.src = 'tutorial.html';
-  const _planeToFloat32Array = plane => {
-    const result = new Float32Array(4);
-    plane.normal.toArray(result);
-    result[3] = plane.constant;
-    return result;
-  };
-  tutorialIframe.clipPlanes = [
-    _planeToFloat32Array(new THREE.Plane(new THREE.Vector3(1, 0, 0), -1)),
-    _planeToFloat32Array(new THREE.Plane(new THREE.Vector3(-1, 0, 0), 0)),
-    _planeToFloat32Array(new THREE.Plane(new THREE.Vector3(0, 1, 0), -1)),
-    _planeToFloat32Array(new THREE.Plane(new THREE.Vector3(0, -1, 0), -1)),
-    _planeToFloat32Array(new THREE.Plane(new THREE.Vector3(0, 0, 1), -1)),
-    _planeToFloat32Array(new THREE.Plane(new THREE.Vector3(0, 0, -1), -1)),
-  ];
 
   const webxrSampleIframe = document.createElement('iframe');
   // webxrSampleIframe.d = 3;
   webxrSampleIframe.src = 'https://rawcdn.githack.com/exokitxr/webxr-samples/a8e2c94eba0ee5c9215f20d13057b6c25675d9b0/xr-presentation.html';
-  webxrSampleIframe.stencilGeometry = new THREE.PlaneBufferGeometry(1, 2).toNonIndexed().attributes.position.array;
+  webxrSampleIframe.portalOffset.position.set(Float32Array.from([0, 1, 0]));
+  webxrSampleIframe.portalOffset.scale.set(Float32Array.from([1, 2, 1]));
 
   layers = [
     tutorialIframe,

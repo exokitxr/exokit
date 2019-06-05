@@ -71,6 +71,7 @@
 
 #include <defines.h>
 #include <exout>
+#include <vector>
 #include <map>
 #include <set>
 
@@ -90,31 +91,8 @@ extern PFNGLFRAMEBUFFERTEXTUREMULTISAMPLEMULTIVIEWOVR glFramebufferTextureMultis
 using namespace v8;
 using namespace node;
 
-enum GlKey {
-  GL_KEY_COMPOSE,
-  GL_KEY_PLANE,
-  GL_KEY_STENCIL,
-};
-
-class GlShader {
-public:
-  virtual ~GlShader() = 0;
-};
-
-class StencilGlShader : public GlShader {
-public:
-  StencilGlShader();
-  virtual ~StencilGlShader();
-
-  static GlKey key;
-
-  GLuint stencilVao;
-  GLuint stencilProgram;
-  GLint positionLocation;
-  GLint modelViewMatrixLocation;
-  GLint projectionMatrixLocation;
-  GLuint positionBuffer;
-};
+std::vector<float> multiplyMatrices(const std::vector<float> &a, const std::vector<float> &b);
+// std::vector<float> composeMatrix(float *positon, float *quaternion, float *scale);
 
 class GlObjectCache {
 public:
@@ -125,32 +103,16 @@ public:
   std::set<GLuint> textures;
 };
 
-template <typename T>
-T *getGlShader(WebGLRenderingContext *gl) {
-  const GlKey &key = T::key;
-  auto iter = gl->keys.find(key);
-  if (iter != gl->keys.end()) {
-    return (T *)iter->second;
-  } else {
-    T *t = new T();
+enum GlKey {
+  GL_KEY_COMPOSE,
+  GL_KEY_PLANE,
+  GL_KEY_STENCIL,
+};
 
-    {
-      if (gl->HasVertexArrayBinding()) {
-        glBindVertexArray(gl->GetVertexArrayBinding());
-      } else {
-        glBindVertexArray(gl->defaultVao);
-      }
-      if (gl->HasBufferBinding(GL_ARRAY_BUFFER)) {
-        glBindBuffer(GL_ARRAY_BUFFER, gl->GetBufferBinding(GL_ARRAY_BUFFER));
-      } else {
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-      }
-    }
-
-    gl->keys[key] = t;
-    return t;
-  }
-}
+class GlShader {
+public:
+  virtual ~GlShader() = 0;
+};
 
 void flipImageData(char *dstData, char *srcData, size_t width, size_t height, size_t pixelSize);
 
@@ -527,5 +489,47 @@ public:
   static NAN_METHOD(SamplerParameterf);
   static NAN_METHOD(GetSamplerParameter);
 };
+
+class StencilGlShader : public GlShader {
+public:
+  StencilGlShader();
+  virtual ~StencilGlShader();
+
+  static GlKey key;
+
+  GLuint stencilVao;
+  GLuint stencilProgram;
+  GLint positionLocation;
+  GLint modelViewMatrixLocation;
+  GLint projectionMatrixLocation;
+  GLuint positionBuffer;
+};
+
+template <typename T>
+T *getGlShader(WebGLRenderingContext *gl) {
+  const GlKey &key = T::key;
+  auto iter = gl->keys.find(key);
+  if (iter != gl->keys.end()) {
+    return (T *)iter->second;
+  } else {
+    T *t = new T();
+
+    {
+      if (gl->HasVertexArrayBinding()) {
+        glBindVertexArray(gl->GetVertexArrayBinding());
+      } else {
+        glBindVertexArray(gl->defaultVao);
+      }
+      if (gl->HasBufferBinding(GL_ARRAY_BUFFER)) {
+        glBindBuffer(GL_ARRAY_BUFFER, gl->GetBufferBinding(GL_ARRAY_BUFFER));
+      } else {
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+      }
+    }
+
+    gl->keys[key] = t;
+    return t;
+  }
+}
 
 #endif

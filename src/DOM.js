@@ -1937,8 +1937,8 @@ class HTMLIFrameElement extends HTMLSrcableElement {
     this.browser = null;
     this.onconsole = null;
     this.xrOffset = new XRRigidTransform();
-    this._stencilGeometryBuffer = new Float32Array(new SharedArrayBuffer((1 + 64) * Float32Array.BYTES_PER_ELEMENT));
-    this._clipPlanesBuffer = new Float32Array(new SharedArrayBuffer((1 + 6*4) * Float32Array.BYTES_PER_ELEMENT));
+    this.portalOffset = new XRRigidTransform();
+    this.portalOffset.scale.set(Float32Array.from([Infinity, Infinity, Infinity]));
 
     this.on('attribute', (name, value) => {
       if (name === 'src' && value) {
@@ -2057,8 +2057,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   htmlString,
                   hidden: true,
                   xrOffsetBuffer: this.xrOffset._buffer,
-                  stencilGeometryBuffer: this._stencilGeometryBuffer,
-                  clipPlanesBuffer: this._clipPlanesBuffer,
+                  portalOffset: this.portalOffset._buffer,
                   onnavigate(href) {
                     this.readyState = null;
                     this.contentWindow = null;
@@ -2172,34 +2171,6 @@ class HTMLIFrameElement extends HTMLSrcableElement {
   set d(value) {
     if (typeof value === 'number' && isFinite(value)) {
       this.setAttribute('d', value);
-    }
-  }
-
-  get stencilGeometry() {
-    return this._stencilGeometryBuffer;
-  }
-  set stencilGeometry(stencilGeometry) {
-    if (stencilGeometry instanceof Float32Array && stencilGeometry.length <= (this._stencilGeometryBuffer.length-1)) {
-      new Uint32Array(this._stencilGeometryBuffer.buffer, this._stencilGeometryBuffer.byteOffset, 1)[0] = stencilGeometry.length;
-      new Float32Array(this._stencilGeometryBuffer.buffer, this._stencilGeometryBuffer.byteOffset + Uint32Array.BYTES_PER_ELEMENT).set(stencilGeometry);
-    }
-  }
-  get clipPlanes() {
-    return this._clipPlanesBuffer;
-  }
-  set clipPlanes(clipPlanes) {
-    if (Array.isArray(clipPlanes)) {
-      let numClipPlanes = 0;
-
-      for (let i = 0; i < clipPlanes.length; i++) {
-        const clipPlane = clipPlanes[i];
-        if (clipPlane instanceof Float32Array && clipPlane.length === 4) {
-          new Float32Array(this._clipPlanesBuffer.buffer, this._clipPlanesBuffer.byteOffset + Uint32Array.BYTES_PER_ELEMENT + i*Float32Array.BYTES_PER_ELEMENT*4).set(clipPlane);
-          numClipPlanes++;
-        }
-      }
-
-      new Uint32Array(this._clipPlanesBuffer.buffer, this._clipPlanesBuffer.byteOffset, 1)[0] = numClipPlanes;
     }
   }
 

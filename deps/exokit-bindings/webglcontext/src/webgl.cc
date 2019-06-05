@@ -43,6 +43,82 @@ void unregisterGLObj(GLuint obj); */
 
 #define JS_GL_CONSTANT(name) JS_GL_SET_CONSTANT(#name, GL_ ## name)
 
+std::vector<float> multiplyMatrices(const std::vector<float> &a, const std::vector<float> &b) {
+  std::vector<float> result(16);
+  
+  const float *ae = a.data();
+  const float *be = b.data();
+  float *te = result.data();
+
+  float a11 = ae[ 0 ], a12 = ae[ 4 ], a13 = ae[ 8 ], a14 = ae[ 12 ];
+  float a21 = ae[ 1 ], a22 = ae[ 5 ], a23 = ae[ 9 ], a24 = ae[ 13 ];
+  float a31 = ae[ 2 ], a32 = ae[ 6 ], a33 = ae[ 10 ], a34 = ae[ 14 ];
+  float a41 = ae[ 3 ], a42 = ae[ 7 ], a43 = ae[ 11 ], a44 = ae[ 15 ];
+
+  float b11 = be[ 0 ], b12 = be[ 4 ], b13 = be[ 8 ], b14 = be[ 12 ];
+  float b21 = be[ 1 ], b22 = be[ 5 ], b23 = be[ 9 ], b24 = be[ 13 ];
+  float b31 = be[ 2 ], b32 = be[ 6 ], b33 = be[ 10 ], b34 = be[ 14 ];
+  float b41 = be[ 3 ], b42 = be[ 7 ], b43 = be[ 11 ], b44 = be[ 15 ];
+
+  te[ 0 ] = a11 * b11 + a12 * b21 + a13 * b31 + a14 * b41;
+  te[ 4 ] = a11 * b12 + a12 * b22 + a13 * b32 + a14 * b42;
+  te[ 8 ] = a11 * b13 + a12 * b23 + a13 * b33 + a14 * b43;
+  te[ 12 ] = a11 * b14 + a12 * b24 + a13 * b34 + a14 * b44;
+
+  te[ 1 ] = a21 * b11 + a22 * b21 + a23 * b31 + a24 * b41;
+  te[ 5 ] = a21 * b12 + a22 * b22 + a23 * b32 + a24 * b42;
+  te[ 9 ] = a21 * b13 + a22 * b23 + a23 * b33 + a24 * b43;
+  te[ 13 ] = a21 * b14 + a22 * b24 + a23 * b34 + a24 * b44;
+
+  te[ 2 ] = a31 * b11 + a32 * b21 + a33 * b31 + a34 * b41;
+  te[ 6 ] = a31 * b12 + a32 * b22 + a33 * b32 + a34 * b42;
+  te[ 10 ] = a31 * b13 + a32 * b23 + a33 * b33 + a34 * b43;
+  te[ 14 ] = a31 * b14 + a32 * b24 + a33 * b34 + a34 * b44;
+
+  te[ 3 ] = a41 * b11 + a42 * b21 + a43 * b31 + a44 * b41;
+  te[ 7 ] = a41 * b12 + a42 * b22 + a43 * b32 + a44 * b42;
+  te[ 11 ] = a41 * b13 + a42 * b23 + a43 * b33 + a44 * b43;
+  te[ 15 ] = a41 * b14 + a42 * b24 + a43 * b34 + a44 * b44;
+  
+  return result;
+}
+
+/* std::vector<float> composeMatrix(float *positon, float *quaternion, float *scale) {
+  std::vector<float> result;
+
+  float *te = result.data();
+
+  float x = quaternion[0], y = quaternion[1], z = quaternion[2], w = quaternion[3];
+  float x2 = x + x,     y2 = y + y, z2 = z + z;
+  float xx = x * x2, xy = x * y2, xz = x * z2;
+  float yy = y * y2, yz = y * z2, zz = z * z2;
+  float wx = w * x2, wy = w * y2, wz = w * z2;
+
+  float sx = scale[0], sy = scale[1], sz = scale[2];
+
+  te[ 0 ] = ( 1 - ( yy + zz ) ) * sx;
+  te[ 1 ] = ( xy + wz ) * sx;
+  te[ 2 ] = ( xz - wy ) * sx;
+  te[ 3 ] = 0;
+
+  te[ 4 ] = ( xy - wz ) * sy;
+  te[ 5 ] = ( 1 - ( xx + zz ) ) * sy;
+  te[ 6 ] = ( yz + wx ) * sy;
+  te[ 7 ] = 0;
+
+  te[ 8 ] = ( xz + wy ) * sz;
+  te[ 9 ] = ( yz - wx ) * sz;
+  te[ 10 ] = ( 1 - ( xx + yy ) ) * sz;
+  te[ 11 ] = 0;
+
+  te[ 12 ] = position.x;
+  te[ 13 ] = position.y;
+  te[ 14 ] = position.z;
+  te[ 15 ] = 1;
+
+  return result;
+} */
+
 GlShader::~GlShader() {}
 
 const char *stencilVsh = ""
@@ -54,10 +130,10 @@ const char *stencilVsh = ""
 "\n\
 uniform mat4 modelViewMatrix;\n\
 uniform mat4 projectionMatrix;\n\
-in vec3 position;\n\
+in vec2 position;\n\
 \n\
 void main() {\n\
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.);\n\
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 0., 1.);\n\
 }\n\
 ";
 const char *stencilFsh = ""
@@ -71,8 +147,42 @@ out vec4 fragColor;\n\
 \n\
 void main() {\n\
   fragColor = vec4(0.0, 0.0, 0.0, 1.0);\n\
+  gl_fragDepth = 1.0;\n\
 }\n\
 ";
+
+static const float PORTAL_POSITIONS[] = {
+  0.5f, 0.0f, 0.5f,
+  0.5f, 0.0f, -0.5f,
+  0.5f, -1.0f, 0.5f,
+  0.5f, 0.0f, -0.5f,
+  0.5f, -1.0f, -0.5f,
+  0.5f, -1.0f, 0.5f,
+  -0.5f, -1.0f, 0.5f,
+  -0.5f, -1.0f, -0.5f,
+  -0.5f, 0.0f, 0.5f,
+  -0.5f, -1.0f, -0.5f,
+  -0.5f, 0.0f, -0.5f,
+  -0.5f, 0.0f, 0.5f,
+  -0.5f, -1.0f, 0.5f,
+  -0.5f, 0.0f, 0.5f,
+  0.5f, -1.0f, 0.5f,
+  -0.5f, 0.0f, 0.5f,
+  0.5f, 0.0f, 0.5f,
+  0.5f, -1.0f, 0.5f,
+  -0.5f, 0.0f, -0.5f,
+  -0.5f, -1.0f, -0.5f,
+  0.5f, 0.0f, -0.5f,
+  -0.5f, -1.0f, -0.5f,
+  0.5f, -1.0f, -0.5f,
+  0.5f, 0.0f, -0.5f,
+  0.5f, -1.0f, 0.5f,
+  0.5f, -1.0f, -0.5f,
+  -0.5f, -1.0f, 0.5f,
+  0.5f, -1.0f, -0.5f,
+  -0.5f, -1.0f, -0.5f,
+  -0.5f, -1.0f, 0.5f,
+};
 
 StencilGlShader::StencilGlShader() {
   glGenVertexArrays(1, &this->stencilVao);
@@ -146,13 +256,7 @@ StencilGlShader::StencilGlShader() {
 
   glGenBuffers(1, &this->positionBuffer);
   glBindBuffer(GL_ARRAY_BUFFER, this->positionBuffer);
-  /* static const float positions[] = {
-    -1.0f, 1.0f,
-    1.0f, 1.0f,
-    -1.0f, -1.0f,
-    1.0f, -1.0f,
-  };
-  glBufferData(GL_ARRAY_BUFFER, sizeof(positions), positions, GL_STATIC_DRAW); */
+  glBufferData(GL_ARRAY_BUFFER, sizeof(PORTAL_POSITIONS), PORTAL_POSITIONS, GL_STATIC_DRAW);
   glEnableVertexAttribArray(this->positionLocation);
   glVertexAttribPointer(this->positionLocation, 3, GL_FLOAT, false, 0, 0);
 }
@@ -2661,61 +2765,80 @@ NAN_METHOD(WebGLRenderingContext::FramebufferTextureMultisampleMultiviewOVR) {
 NAN_METHOD(WebGLRenderingContext::SetTopStencilGeometry) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
 
-  glEnable(GL_STENCIL_TEST);
-
   if (info[0]->IsFloat32Array() && info[1]->IsObject()) {
     Local<Float32Array> stencilGeometry = Local<Float32Array>::Cast(info[0]);
     Local<Object> xrStateObj = Local<Object>::Cast(info[1]);
 
-    Local<Float32Array> leftModelViewMatrix = Local<Float32Array>::Cast(xrStateObj->Get(JS_STR("leftViewMatrix")));
-    Local<Float32Array> rightModelViewMatrix = Local<Float32Array>::Cast(xrStateObj->Get(JS_STR("rightViewMatrix")));
-    Local<Float32Array> leftProjectionMatrix = Local<Float32Array>::Cast(xrStateObj->Get(JS_STR("leftProjectionMatrix")));
-    Local<Float32Array> rightProjectionMatrix = Local<Float32Array>::Cast(xrStateObj->Get(JS_STR("rightProjectionMatrix")));
+    Local<Float32Array> leftModelViewMatrixObj = Local<Float32Array>::Cast(xrStateObj->Get(JS_STR("leftViewMatrix")));
+    Local<Float32Array> rightModelViewMatrixObj = Local<Float32Array>::Cast(xrStateObj->Get(JS_STR("rightViewMatrix")));
+    Local<Float32Array> leftProjectionMatrixObj = Local<Float32Array>::Cast(xrStateObj->Get(JS_STR("leftProjectionMatrix")));
+    Local<Float32Array> rightProjectionMatrixObj = Local<Float32Array>::Cast(xrStateObj->Get(JS_STR("rightProjectionMatrix")));
+    Local<Object> portalOffsetObj = Local<Object>::Cast(xrStateObj->Get(JS_STR("portalOffset")));
+    Local<Float32Array> portalOffsetMatrixObj = Local<Float32Array>::Cast(portalOffsetObj->Get(JS_STR("matrix")));
     uint32_t renderWidth = TO_UINT32(Local<Float32Array>::Cast(xrStateObj->Get(JS_STR("renderWidth")))->Get(0));
     uint32_t renderHeight = TO_UINT32(Local<Float32Array>::Cast(xrStateObj->Get(JS_STR("renderHeight")))->Get(0));
 
-    float *stencilGeometryData = (float *)((char *)stencilGeometry->Buffer()->GetContents().Data() + stencilGeometry->ByteOffset());
-    int stencilGeometrySize = stencilGeometry->Length();
-    float *leftModelViewMatrixData = (float *)((char *)leftModelViewMatrix->Buffer()->GetContents().Data() + leftModelViewMatrix->ByteOffset());
-    float *rightModelViewMatrixData = (float *)((char *)rightModelViewMatrix->Buffer()->GetContents().Data() + rightModelViewMatrix->ByteOffset());
-    float *leftProjectionMatrixData = (float *)((char *)leftProjectionMatrix->Buffer()->GetContents().Data() + leftProjectionMatrix->ByteOffset());
-    float *rightProjectionMatrixData = (float *)((char *)rightProjectionMatrix->Buffer()->GetContents().Data() + rightProjectionMatrix->ByteOffset());
+    float *portalOffsetMatrixData = (float *)((char *)portalOffsetMatrixObj->Buffer()->GetContents().Data() + portalOffsetMatrixObj->ByteOffset());
+    std::vector<float> portalOffsetMatrix(16);
+    memcpy(portalOffsetMatrix.data(), portalOffsetMatrixData, portalOffsetMatrix.size() * sizeof(portalOffsetMatrix[0]));
+
+    float *leftModelViewMatrixData = (float *)((char *)leftModelViewMatrixObj->Buffer()->GetContents().Data() + leftModelViewMatrixObj->ByteOffset());
+    std::vector<float> leftModelViewMatrix(16);
+    memcpy(leftModelViewMatrix.data(), leftModelViewMatrixData, leftModelViewMatrix.size() * sizeof(leftModelViewMatrix[0]));
+    leftModelViewMatrix = multiplyMatrices(portalOffsetMatrix, leftModelViewMatrix);
+
+    float *rightModelViewMatrixData = (float *)((char *)rightModelViewMatrixObj->Buffer()->GetContents().Data() + rightModelViewMatrixObj->ByteOffset());
+    std::vector<float> rightModelViewMatrix(16);
+    memcpy(rightModelViewMatrix.data(), rightModelViewMatrixData, rightModelViewMatrix.size() * sizeof(rightModelViewMatrix[0]));
+    rightModelViewMatrix = multiplyMatrices(portalOffsetMatrix, rightModelViewMatrix);
+
+    float *leftProjectionMatrixData = (float *)((char *)leftProjectionMatrixObj->Buffer()->GetContents().Data() + leftProjectionMatrixObj->ByteOffset());
+    std::vector<float> leftProjectionMatrix(16);
+    memcpy(leftProjectionMatrix.data(), leftProjectionMatrixData, leftProjectionMatrix.size() * sizeof(leftProjectionMatrix[0]));
+
+    float *rightProjectionMatrixData = (float *)((char *)rightProjectionMatrixObj->Buffer()->GetContents().Data() + rightProjectionMatrixObj->ByteOffset());
+    std::vector<float> rightProjectionMatrix(16);
+    memcpy(rightProjectionMatrix.data(), rightProjectionMatrixData, rightProjectionMatrix.size() * sizeof(rightProjectionMatrix[0]));
 
     StencilGlShader *stencilGlShader = getGlShader<StencilGlShader>(gl);
 
     glBindVertexArray(stencilGlShader->stencilVao);
     glUseProgram(stencilGlShader->stencilProgram);
 
-    glBindBuffer(GL_ARRAY_BUFFER, stencilGlShader->positionBuffer);
-    glBufferData(GL_ARRAY_BUFFER, stencilGeometrySize*sizeof(float), stencilGeometryData, GL_DYNAMIC_DRAW);
+    /* glBindBuffer(GL_ARRAY_BUFFER, stencilGlShader->positionBuffer);
+    glBufferData(GL_ARRAY_BUFFER, stencilGeometrySize*sizeof(float), stencilGeometryData, GL_DYNAMIC_DRAW); */
 
+    glDisable(GL_DEPTH_TEST);
+    glEnable(GL_STENCIL_TEST);
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-    glDepthMask(GL_FALSE);
+    glDepthMask(GL_TRUE);
+    glStencilMask(0xFF);
     glStencilFunc(GL_ALWAYS, 1, 0xFF);
     glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
-    glStencilMask(0xFF);
     glClear(GL_STENCIL_BUFFER_BIT);
 
     {
-      glUniformMatrix4fv(stencilGlShader->modelViewMatrixLocation, 1, false, leftModelViewMatrixData);
-      glUniformMatrix4fv(stencilGlShader->projectionMatrixLocation, 1, false, leftProjectionMatrixData);
+      glUniformMatrix4fv(stencilGlShader->modelViewMatrixLocation, 1, false, leftModelViewMatrix.data());
+      glUniformMatrix4fv(stencilGlShader->projectionMatrixLocation, 1, false, leftProjectionMatrix.data());
 
       glViewport(0, 0, renderWidth, renderHeight);
-      glDrawArrays(GL_TRIANGLES, 0, stencilGeometrySize);
+      glDrawArrays(GL_TRIANGLES, 0, sizeof(PORTAL_POSITIONS)/sizeof(PORTAL_POSITIONS[0]));
     }
     {
-      glUniformMatrix4fv(stencilGlShader->modelViewMatrixLocation, 1, false, rightModelViewMatrixData);
-      glUniformMatrix4fv(stencilGlShader->projectionMatrixLocation, 1, false, rightProjectionMatrixData);
+      glUniformMatrix4fv(stencilGlShader->modelViewMatrixLocation, 1, false, rightModelViewMatrix.data());
+      glUniformMatrix4fv(stencilGlShader->projectionMatrixLocation, 1, false, rightProjectionMatrix.data());
 
       glViewport(renderWidth, 0, renderWidth, renderHeight);
-      glDrawArrays(GL_TRIANGLES, 0, stencilGeometrySize);
+      glDrawArrays(GL_TRIANGLES, 0, sizeof(PORTAL_POSITIONS)/sizeof(PORTAL_POSITIONS[0]));
     }
 
     // glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-    glDepthMask(GL_TRUE);
+    // glDepthMask(GL_TRUE);
+    glEnable(GL_DEPTH_TEST);
     glStencilMask(0x00);
     // glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
     glStencilFunc(GL_EQUAL, 1, 0xFF);
+    // glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
     gl->topStencilGeometry = true;
 
@@ -2733,11 +2856,6 @@ NAN_METHOD(WebGLRenderingContext::SetTopStencilGeometry) {
       glViewport(gl->viewportState.x, gl->viewportState.y, gl->viewportState.w, gl->viewportState.h);
     } else {
       glViewport(0, 0, 1280, 1024);
-    }
-    if (gl->HasBufferBinding(GL_ARRAY_BUFFER)) {
-      glBindBuffer(GL_ARRAY_BUFFER, gl->GetBufferBinding(GL_ARRAY_BUFFER));
-    } else {
-      glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
   } else {
     gl->topStencilGeometry = false;
