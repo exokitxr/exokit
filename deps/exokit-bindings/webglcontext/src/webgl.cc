@@ -2765,7 +2765,7 @@ NAN_METHOD(WebGLRenderingContext::FramebufferTextureMultisampleMultiviewOVR) {
 NAN_METHOD(WebGLRenderingContext::SetTopStencilGeometry) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
 
-  if (info[0]->IsFloat32Array() && info[1]->IsObject()) {
+  if (info[0]->IsFloat32Array() && info[1]->IsObject() && info[2]->IsObject()) {
     Local<Float32Array> stencilGeometry = Local<Float32Array>::Cast(info[0]);
     Local<Object> xrStateObj = Local<Object>::Cast(info[1]);
     Local<Object> portalOffsetObj = Local<Object>::Cast(info[2]);
