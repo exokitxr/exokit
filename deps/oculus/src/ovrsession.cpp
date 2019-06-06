@@ -517,6 +517,8 @@ void OVRSession::ResetSession() {
     return;
   }
 
+  ovr_SetTrackingOriginType(session, ovrTrackingOrigin_EyeLevel);
+
   this->session = session;
   this->hmdDesc = ovr_GetHmdDesc(*this->session);
   Matrix4f projectionMatrix = ovrMatrix4f_Projection(this->hmdDesc.DefaultEyeFov[0], NEAR_CLIP, FAR_CLIP, ovrProjection_None);
