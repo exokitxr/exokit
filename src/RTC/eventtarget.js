@@ -1,5 +1,7 @@
 'use strict';
 
+const process = require('process');
+
 /**
  * @author mrdoob / http://mrdoob.com/
  * @author Jesús Leganés Combarro "Piranna" <piranna@gmail.com>
