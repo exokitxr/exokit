@@ -517,7 +517,7 @@ void OVRSession::ResetSession() {
     return;
   }
 
-  ovr_SetTrackingOriginType(session, ovrTrackingOrigin_EyeLevel);
+  ovr_SetTrackingOriginType(*session, ovrTrackingOrigin_EyeLevel);
 
   this->session = session;
   this->hmdDesc = ovr_GetHmdDesc(*this->session);
