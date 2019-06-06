@@ -1,6 +1,6 @@
 'use strict';
 
-const process = require('process');
+const {process} = global;
 
 /**
  * @author mrdoob / http://mrdoob.com/
