@@ -130,10 +130,10 @@ const char *stencilVsh = ""
 "\n\
 uniform mat4 modelViewMatrix;\n\
 uniform mat4 projectionMatrix;\n\
-in vec2 position;\n\
+in vec3 position;\n\
 \n\
 void main() {\n\
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 0., 1.);\n\
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.);\n\
 }\n\
 ";
 const char *stencilFsh = ""
