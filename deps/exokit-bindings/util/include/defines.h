@@ -29,8 +29,8 @@ private:
 };
 
 Local<Array> pointerToArray(void *ptr);
-void *arrayToPointer(Local<Array> array);
-void *arrayToPointer(Local<Uint32Array> array);
+uintptr_t arrayToPointer(Local<Array> array);
+uintptr_t arrayToPointer(Local<Uint32Array> array);
 
 template <typename T> struct V8TypedArrayTraits;
 template<> struct V8TypedArrayTraits<Float32Array> { typedef float value_type; };
