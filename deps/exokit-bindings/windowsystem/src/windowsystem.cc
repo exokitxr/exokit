@@ -1045,7 +1045,7 @@ NAN_METHOD(GetSync) {
 }
 
 NAN_METHOD(WaitSync) {
-  if (info[0]->IsArray()) {
+  // if (info[0]->IsArray()) {
     Local<Array> syncArray = Local<Array>::Cast(info[0]);
     uintptr_t syncPtr = arrayToPointer(syncArray);
     if (syncPtr > 0) { // macOS returns GLsync zero and crashes when used
@@ -1053,22 +1053,22 @@ NAN_METHOD(WaitSync) {
       glWaitSync(sync, 0, GL_TIMEOUT_IGNORED);
     }
     // glDeleteSync(sync);
-  } else {
+  /* } else {
     Nan::ThrowError("WaitSync: invalid arguments");
-  }
+  } */
 }
 
 NAN_METHOD(DeleteSync) {
-  if (info[0]->IsArray()) {
+  // if (info[0]->IsArray()) {
     Local<Array> syncArray = Local<Array>::Cast(info[0]);
     uintptr_t syncPtr = arrayToPointer(syncArray);
     if (syncPtr > 0) { // macOS returns GLsync zero and crashes when used
       GLsync sync = reinterpret_cast<GLsync>(syncPtr);
       glDeleteSync(sync);
     }
-  } else {
+  /* } else {
     Nan::ThrowError("DeleteSync: invalid arguments");
-  }
+  } */
 }
 
 void BlitLayer(WebGLRenderingContext *gl, const LayerSpec &layer) {
