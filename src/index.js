@@ -108,6 +108,7 @@ const args = (() => {
         'xr',
         'size',
         'replace',
+        'onbeforeload'
       ],
       alias: {
         v: 'version',
@@ -149,6 +150,7 @@ const args = (() => {
       nogl: minimistArgs.nogl,
       headless: minimistArgs.headless,
       uncapped: minimistArgs.uncapped,
+      onBeforeLoad: minimistArgs.onbeforeload || false
     };
   } else {
     return {};
@@ -1044,7 +1046,7 @@ const _startTopRenderLoop = () => {
       }
     };
     _updateMeshing();
-    
+
     const _updatePlanes = () => {
       if (xrState.planeTracking[0] && !topVrPresentState.planeTracker) {
         _startFakePlaneTracker();
@@ -1094,7 +1096,7 @@ const _startTopRenderLoop = () => {
       }
     };
     _updateHandTracking();
-    
+
     const _updateEyeTracking = () => {
       if (xrState.eyeTracking[0]) {
         const blink = (Date.now() % 2000) < 200;

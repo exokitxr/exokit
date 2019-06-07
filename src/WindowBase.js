@@ -78,7 +78,7 @@ EventEmitter.call(global);
 class Worker extends EventTarget {
   constructor(src) {
     super();
-    
+
     if (src instanceof Blob) {
       src = 'data:application/javascript,' + src.buffer.toString('utf8');
     } else {
@@ -133,7 +133,7 @@ class Worker extends EventTarget {
 (self => {
   self.btoa = btoa;
   self.atob = atob;
-  
+
   self.Event = Event;
   self.KeyboardEvent = KeyboardEvent;
   self.MouseEvent = MouseEvent;
@@ -143,7 +143,7 @@ class Worker extends EventTarget {
   self.PromiseRejectionEvent = PromiseRejectionEvent;
   self.CustomEvent = CustomEvent;
   self.EventTarget = EventTarget;
-  
+
   self.URL = URL;
 
   self.fetch = (u, options) => {
@@ -226,9 +226,9 @@ class Worker extends EventTarget {
       },
     },
   };
-  
+
   self.Worker = Worker;
-  
+
   self.postMessage = (message, transferList) => parentPort.postMessage({
     method: 'postMessage',
     message,
@@ -374,6 +374,13 @@ process.on('unhandledRejection', err => {
 
 if (initModule) {
   require(initModule);
+}
+
+// Run a script for each new JS context before the page/worker JS loads
+const onBeforeLoad = args.args.onBeforeLoad
+if(onBeforeLoad) {
+  const finalScript = path.resolve(process.cwd(), onBeforeLoad)
+  require(finalScript)
 }
 
 if (!args.require) {
