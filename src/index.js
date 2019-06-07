@@ -150,7 +150,7 @@ const args = (() => {
       nogl: minimistArgs.nogl,
       headless: minimistArgs.headless,
       uncapped: minimistArgs.uncapped,
-      onBeforeLoad: minimistArgs.onbeforeload || false
+      onbeforeload: minimistArgs.onbeforeload
     };
   } else {
     return {};

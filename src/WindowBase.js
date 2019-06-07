@@ -377,9 +377,9 @@ if (initModule) {
 }
 
 // Run a script for each new JS context before the page/worker JS loads
-const onBeforeLoad = args.args.onBeforeLoad
-if(onBeforeLoad) {
-  const finalScript = path.resolve(process.cwd(), onBeforeLoad)
+const onbeforeload = args.args.onbeforeload
+if(onbeforeload) {
+  const finalScript = path.resolve(process.cwd(), onbeforeload)
   require(finalScript)
 }
 
