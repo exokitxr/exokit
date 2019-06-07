@@ -106,7 +106,7 @@ exokit https://aframe.io/a-painter/ # start A-Painter in Exokit
 ```sh
 mldb connect 192.168.0.10:1131 # mldb needs to be connected; see MLDB documentation
 mldb install -u exokit.mpk # downloaded or built package
-mldb launch com.webmr.exokit -v "ARGS=node --experimental-worker . file:///package/examples/hello_ml.html" # or URL to load
+mldb launch com.webmr.exokit -v "ARGS=node . file:///package/examples/hello_ml.html" # or URL to load
 mldb log exokit:*
 ```
 
@@ -159,7 +159,7 @@ See full building instructions in [BUILDING.md](https://github.com/exokitxr/exok
 git clone https://github.com/exokitxr/exokit.git
 cd exokit
 npm install
-node --experimental-worker . <url> # or node --experimental-worker . -h for home
+node . <url> # or node . -h for home
 ```
 
 ## Debugging
