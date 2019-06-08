@@ -3950,8 +3950,6 @@ NAN_METHOD(WebGLRenderingContext::Scissor) {
 }
 
 NAN_METHOD(WebGLRenderingContext::StencilFunc) {
-  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
-
   GLenum func = TO_INT32(info[0]);
   GLint ref = TO_INT32(info[1]);
   GLuint mask = TO_INT32(info[2]);
@@ -3960,8 +3958,6 @@ NAN_METHOD(WebGLRenderingContext::StencilFunc) {
 }
 
 NAN_METHOD(WebGLRenderingContext::StencilFuncSeparate) {
-  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
-  
   GLenum face = TO_INT32(info[0]);
   GLenum func = TO_INT32(info[1]);
   GLint ref = TO_INT32(info[2]);
@@ -3971,16 +3967,12 @@ NAN_METHOD(WebGLRenderingContext::StencilFuncSeparate) {
 }
 
 NAN_METHOD(WebGLRenderingContext::StencilMask) {
-  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
-  
   GLuint mask = TO_UINT32(info[0]);
 
   glStencilMask(mask);
 }
 
 NAN_METHOD(WebGLRenderingContext::StencilMaskSeparate) {
-  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
-
   GLenum face = TO_INT32(info[0]);
   GLuint mask = TO_UINT32(info[1]);
 
@@ -3988,8 +3980,6 @@ NAN_METHOD(WebGLRenderingContext::StencilMaskSeparate) {
 }
 
 NAN_METHOD(WebGLRenderingContext::StencilOp) {
-  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
-  
   GLenum fail = TO_INT32(info[0]);
   GLenum zfail = TO_INT32(info[1]);
   GLenum zpass = TO_INT32(info[2]);
@@ -3998,8 +3988,6 @@ NAN_METHOD(WebGLRenderingContext::StencilOp) {
 }
 
 NAN_METHOD(WebGLRenderingContext::StencilOpSeparate) {
-  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
-
   GLenum face = TO_INT32(info[0]);
   GLenum fail = TO_INT32(info[1]);
   GLenum zfail = TO_INT32(info[2]);
