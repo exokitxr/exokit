@@ -2057,7 +2057,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   htmlString,
                   hidden: true,
                   xrOffsetBuffer: this.xrOffset._buffer,
-                  portalOffset: this.portalOffset._buffer,
+                  portalOffsetBuffer: this.portalOffset._buffer,
                   onnavigate(href) {
                     this.readyState = null;
                     this.contentWindow = null;
