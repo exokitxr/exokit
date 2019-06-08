@@ -1036,8 +1036,12 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
           vrPresentState.glContext.setDefaultFramebuffer(vrPresentState.fbo);
           nativeWindow.bindVrChildFbo(vrPresentState.glContext, vrPresentState.fbo, GlobalContext.xrState.tex[0], GlobalContext.xrState.depthTex[0]);
         }
+        
+        vrPresentState.glContext.setTopLevel(false);
       } else {
         vrPresentState.glContext.setDefaultFramebuffer(vrPresentState.glContext.framebuffer.msFbo);
+
+        vrPresentState.glContext.setTopLevel(true);
       }
     }
   };
