@@ -46,9 +46,17 @@ const portalFsh = `
   float checkPlane(vec4 worldPos, vec4 uPlane) {
     return dot(worldPos.xyz, uPlane.xyz) - uPlane.w;
   }
+  // from https://gamedev.stackexchange.com/questions/108856/fast-position-reconstruction-from-depth/111885#111885
   vec4 calculate_view_position(vec2 texture_coordinate, float depth_from_depth_buffer) {
-    return pmi * vec4(vec3(texture_coordinate, depth_from_depth_buffer) * 2.0 - 1.0, 1.0);
+    vec3 clip_space_position = vec3(texture_coordinate, depth_from_depth_buffer) * 2.0 - vec3(1.0);
+    vec4 view_position = vec4(vec2(pmi[0][0], pmi[1][1]) * clip_space_position.xy,
+      -1.0,
+      pmi[2][3] * clip_space_position.z + pmi[3][3]);
+    return view_position;
   }
+  /* vec4 calculate_view_position(vec2 texture_coordinate, float depth_from_depth_buffer) {
+    return pmi * vec4(vec3(texture_coordinate, depth_from_depth_buffer) * 2.0 - 1.0, 1.0);
+  } */
   void main() {
     vec2 texCoord = gl_FragCoord.xy / uViewport;
     vec2 texCoordFull = vec2(mod(texCoord.x, 0.5) * 2.0, texCoord.y);
@@ -107,9 +115,17 @@ const volumeFsh = `
   bool checkPlane(vec4 worldPos, vec4 uPlane) {
     return dot(worldPos.xyz, uPlane.xyz) >= uPlane.w;
   }
+  // from https://gamedev.stackexchange.com/questions/108856/fast-position-reconstruction-from-depth/111885#111885
   vec4 calculate_view_position(vec2 texture_coordinate, float depth_from_depth_buffer) {
-    return pmi * vec4(vec3(texture_coordinate, depth_from_depth_buffer) * 2.0 - 1.0, 1.0);
+    vec3 clip_space_position = vec3(texture_coordinate, depth_from_depth_buffer) * 2.0 - vec3(1.0);
+    vec4 view_position = vec4(vec2(pmi[0][0], pmi[1][1]) * clip_space_position.xy,
+      -1.0,
+      pmi[2][3] * clip_space_position.z + pmi[3][3]);
+    return view_position;
   }
+  /* vec4 calculate_view_position(vec2 texture_coordinate, float depth_from_depth_buffer) {
+    return pmi * vec4(vec3(texture_coordinate, depth_from_depth_buffer) * 2.0 - 1.0, 1.0);
+  } */
   void main() {
     vec2 texCoord = gl_FragCoord.xy / uViewport;
     vec2 texCoordFull = vec2(mod(texCoord.x, 0.5) * 2.0, texCoord.y);
