@@ -88,12 +88,14 @@ const portalFsh = `
       gl_FragDepth = min(gl_FragCoord.z, z_b);
     } else {
       if (p >= -0.05) {
-        gl_FragColor = vec4(1.0, 50.0/255.0, 50.0/255.0, 1.0);
+        gl_FragColor = texture2D(uXTex, vec2(0., 0.));
       } else {
         gl_FragColor = texture2D(uXTex, vWorldPos.xy * 10.0);
       }
       gl_FragDepth = gl_FragCoord.z;
     }
+    
+    gl_FragColor.rgb += vec3(texCoord, 1.0) * 0.2;
   }
 `;
 
@@ -161,15 +163,12 @@ const volumeFsh = `
     } else {
       discard;
       /* if (p >= -0.05) {
-        gl_FragColor = vec4(1.0, 50.0/255.0, 50.0/255.0, 1.0);
+        gl_FragColor = texture2D(uXTex, vec2(0., 0.));
       } else {
         gl_FragColor = texture2D(uXTex, vWorldPos.xy * 10.0);
       }
       gl_FragDepth = gl_FragCoord.z; */
     }
-    
-    /* gl_FragColor.rgb += 0.2;
-    gl_FragColor.a += 0.5; */
   }
 `;
 
