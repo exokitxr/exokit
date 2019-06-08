@@ -91,9 +91,6 @@ extern PFNGLFRAMEBUFFERTEXTUREMULTISAMPLEMULTIVIEWOVR glFramebufferTextureMultis
 using namespace v8;
 using namespace node;
 
-std::vector<float> multiplyMatrices(const std::vector<float> &a, const std::vector<float> &b);
-// std::vector<float> composeMatrix(float *positon, float *quaternion, float *scale);
-
 class GlObjectCache {
 public:
   std::set<GLuint> buffers;
