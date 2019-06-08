@@ -212,7 +212,8 @@ EmbeddedBrowser createEmbedded(
 // #endif
       }
       
-      glFinish();
+      glFlush();
+      // glFinish();
 
       /* glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
       glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
