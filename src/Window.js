@@ -1138,7 +1138,7 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
       const context = contexts[i];
       const isDirty = (!!context.isDirty && context.isDirty()) || context === vrPresentState.glContext;
       if (isDirty) {
-        if (layered) {
+        // if (layered) {
           const windowHandle = context.getWindowHandle();
 
           nativeWindow.setCurrentWindowContext(windowHandle);
@@ -1163,14 +1163,12 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
               context.bindFramebuffer(context.READ_FRAMEBUFFER, readFramebuffer);
             }
           } */
+        // }
+        
+        context.clearDirty();
 
-          context.clearDirty();
-
-          if (context.finish) {
-            syncs.push(nativeWindow.getSync());
-          }
-        } else {
-          context.clearDirty();
+        if (context.finish) {
+          syncs.push(nativeWindow.getSync());
         }
       }
     }
