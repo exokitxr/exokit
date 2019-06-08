@@ -103,7 +103,6 @@ public:
 enum GlKey {
   GL_KEY_COMPOSE,
   GL_KEY_PLANE,
-  GL_KEY_STENCIL,
 };
 
 class GlShader {
@@ -481,21 +480,6 @@ public:
   static NAN_METHOD(SamplerParameteri);
   static NAN_METHOD(SamplerParameterf);
   static NAN_METHOD(GetSamplerParameter);
-};
-
-class StencilGlShader : public GlShader {
-public:
-  StencilGlShader();
-  virtual ~StencilGlShader();
-
-  static GlKey key;
-
-  GLuint stencilVao;
-  GLuint stencilProgram;
-  GLint positionLocation;
-  GLint modelViewMatrixLocation;
-  GLint projectionMatrixLocation;
-  GLuint positionBuffer;
 };
 
 template <typename T>
