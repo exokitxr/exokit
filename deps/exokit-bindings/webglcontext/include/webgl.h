@@ -362,8 +362,6 @@ public:
   static NAN_METHOD(SetDefaultFramebuffer);
 
   static NAN_METHOD(SetTopLevel);
-  static NAN_METHOD(SetTopStencilGeometry);
-  static NAN_METHOD(SetTopClipPlanes);
 
   static NAN_METHOD(FramebufferTextureMultiviewOVR);
   static NAN_METHOD(FramebufferTextureMultisampleMultiviewOVR);
@@ -434,8 +432,6 @@ public:
   GLuint defaultFramebuffer;
   GlObjectCache objectCache;
   bool topLevel;
-  bool topStencilGeometry;
-  bool topClipPlanes;
   bool dirty;
   bool flipY;
   bool premultiplyAlpha;

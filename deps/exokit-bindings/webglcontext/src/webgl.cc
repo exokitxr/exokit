@@ -1367,8 +1367,6 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
   Nan::SetMethod(proto, "setDefaultFramebuffer", glCallWrap<SetDefaultFramebuffer>);
 
   Nan::SetMethod(proto, "setTopLevel", SetTopLevel);
-  Nan::SetMethod(proto, "setTopStencilGeometry", SetTopStencilGeometry);
-  Nan::SetMethod(proto, "setTopClipPlanes", SetTopClipPlanes);
 
   // OVR_multiview2
   Nan::SetMethod(proto, "framebufferTextureMultiviewOVR", glCallWrap<FramebufferTextureMultiviewOVR>);
@@ -1389,8 +1387,6 @@ WebGLRenderingContext::WebGLRenderingContext() :
   defaultVao(0),
   defaultFramebuffer(0),
   topLevel(true),
-  topStencilGeometry(false),
-  topClipPlanes(false),
   dirty(false),
   flipY(false),
   premultiplyAlpha(true),
@@ -2733,133 +2729,6 @@ NAN_METHOD(WebGLRenderingContext::FramebufferTextureMultisampleMultiviewOVR) {
 #endif
 }
 
-NAN_METHOD(WebGLRenderingContext::SetTopStencilGeometry) {
-  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
-
-  if (TO_BOOL(info[0]) && info[0]->IsObject() && info[1]->IsObject()) {
-    Local<Object> xrStateObj = Local<Object>::Cast(info[0]);
-    Local<Object> portalOffsetObj = Local<Object>::Cast(info[1]);
-
-    Local<Float32Array> leftModelViewMatrixObj = Local<Float32Array>::Cast(xrStateObj->Get(JS_STR("leftViewMatrix")));
-    Local<Float32Array> rightModelViewMatrixObj = Local<Float32Array>::Cast(xrStateObj->Get(JS_STR("rightViewMatrix")));
-    Local<Float32Array> leftProjectionMatrixObj = Local<Float32Array>::Cast(xrStateObj->Get(JS_STR("leftProjectionMatrix")));
-    Local<Float32Array> rightProjectionMatrixObj = Local<Float32Array>::Cast(xrStateObj->Get(JS_STR("rightProjectionMatrix")));
-    Local<Float32Array> portalOffsetMatrixObj = Local<Float32Array>::Cast(portalOffsetObj->Get(JS_STR("matrix")));
-    uint32_t renderWidth = TO_UINT32(Local<Float32Array>::Cast(xrStateObj->Get(JS_STR("renderWidth")))->Get(0));
-    uint32_t renderHeight = TO_UINT32(Local<Float32Array>::Cast(xrStateObj->Get(JS_STR("renderHeight")))->Get(0));
-
-    float *portalOffsetMatrixData = (float *)((char *)portalOffsetMatrixObj->Buffer()->GetContents().Data() + portalOffsetMatrixObj->ByteOffset());
-    std::vector<float> portalOffsetMatrix(16);
-    memcpy(portalOffsetMatrix.data(), portalOffsetMatrixData, portalOffsetMatrix.size() * sizeof(portalOffsetMatrix[0]));
-
-    float *leftModelViewMatrixData = (float *)((char *)leftModelViewMatrixObj->Buffer()->GetContents().Data() + leftModelViewMatrixObj->ByteOffset());
-    std::vector<float> leftModelViewMatrix(16);
-    memcpy(leftModelViewMatrix.data(), leftModelViewMatrixData, leftModelViewMatrix.size() * sizeof(leftModelViewMatrix[0]));
-    leftModelViewMatrix = multiplyMatrices(portalOffsetMatrix, leftModelViewMatrix);
-
-    float *rightModelViewMatrixData = (float *)((char *)rightModelViewMatrixObj->Buffer()->GetContents().Data() + rightModelViewMatrixObj->ByteOffset());
-    std::vector<float> rightModelViewMatrix(16);
-    memcpy(rightModelViewMatrix.data(), rightModelViewMatrixData, rightModelViewMatrix.size() * sizeof(rightModelViewMatrix[0]));
-    rightModelViewMatrix = multiplyMatrices(portalOffsetMatrix, rightModelViewMatrix);
-
-    float *leftProjectionMatrixData = (float *)((char *)leftProjectionMatrixObj->Buffer()->GetContents().Data() + leftProjectionMatrixObj->ByteOffset());
-    std::vector<float> leftProjectionMatrix(16);
-    memcpy(leftProjectionMatrix.data(), leftProjectionMatrixData, leftProjectionMatrix.size() * sizeof(leftProjectionMatrix[0]));
-
-    float *rightProjectionMatrixData = (float *)((char *)rightProjectionMatrixObj->Buffer()->GetContents().Data() + rightProjectionMatrixObj->ByteOffset());
-    std::vector<float> rightProjectionMatrix(16);
-    memcpy(rightProjectionMatrix.data(), rightProjectionMatrixData, rightProjectionMatrix.size() * sizeof(rightProjectionMatrix[0]));
-
-    StencilGlShader *stencilGlShader = getGlShader<StencilGlShader>(gl);
-
-    glBindVertexArray(stencilGlShader->stencilVao);
-    glUseProgram(stencilGlShader->stencilProgram);
-
-    /* glBindBuffer(GL_ARRAY_BUFFER, stencilGlShader->positionBuffer);
-    glBufferData(GL_ARRAY_BUFFER, stencilGeometrySize*sizeof(float), stencilGeometryData, GL_DYNAMIC_DRAW); */
-
-    glEnable(GL_STENCIL_TEST);
-    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-    glDepthMask(GL_TRUE);
-    glStencilMask(0xFF);
-    glStencilFunc(GL_ALWAYS, 1, 0xFF);
-    glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
-    glClear(GL_STENCIL_BUFFER_BIT);
-
-    {
-      glUniformMatrix4fv(stencilGlShader->modelViewMatrixLocation, 1, false, leftModelViewMatrix.data());
-      glUniformMatrix4fv(stencilGlShader->projectionMatrixLocation, 1, false, leftProjectionMatrix.data());
-
-      glViewport(0, 0, renderWidth, renderHeight);
-      glDrawArrays(GL_TRIANGLES, 0, sizeof(PORTAL_POSITIONS)/sizeof(PORTAL_POSITIONS[0]));
-    }
-    {
-      glUniformMatrix4fv(stencilGlShader->modelViewMatrixLocation, 1, false, rightModelViewMatrix.data());
-      glUniformMatrix4fv(stencilGlShader->projectionMatrixLocation, 1, false, rightProjectionMatrix.data());
-
-      glViewport(renderWidth, 0, renderWidth, renderHeight);
-      glDrawArrays(GL_TRIANGLES, 0, sizeof(PORTAL_POSITIONS)/sizeof(PORTAL_POSITIONS[0]));
-    }
-
-    // glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-    // glDepthMask(GL_TRUE);
-    glStencilMask(0x00);
-    // glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-    glStencilFunc(GL_EQUAL, 1, 0xFF);
-    // glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-
-    gl->topStencilGeometry = true;
-
-    if (gl->HasVertexArrayBinding()) {
-      glBindVertexArray(gl->GetVertexArrayBinding());
-    } else {
-      glBindVertexArray(gl->defaultVao);
-    }
-    if (gl->HasProgramBinding()) {
-      glUseProgram(gl->GetProgramBinding());
-    } else {
-      glUseProgram(0);
-    }
-    if (gl->viewportState.valid) {
-      glViewport(gl->viewportState.x, gl->viewportState.y, gl->viewportState.w, gl->viewportState.h);
-    } else {
-      glViewport(0, 0, 1280, 1024);
-    }
-  } else {
-    gl->topStencilGeometry = false;
-  }
-}
-
-NAN_METHOD(WebGLRenderingContext::SetTopClipPlanes) {
-  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
-  int i = 0;
-
-  if (info[0]->IsFloat32Array()) {
-    Local<Float32Array> clipPlanes = Local<Float32Array>::Cast(info[0]);
-    float *clipPlanesData = (float *)((char *)clipPlanes->Buffer()->GetContents().Data() + clipPlanes->ByteOffset());
-    int numClipPlanes = clipPlanes->Length()/4;
-
-    for (; i < numClipPlanes && i < 6; i++) {
-      GLdouble planeEquation[] = {
-        clipPlanesData[i*4+0],
-        clipPlanesData[i*4+1],
-        clipPlanesData[i*4+2],
-        clipPlanesData[i*4+3],
-      };
-      glClipPlane(GL_CLIP_PLANE0 + i, planeEquation);
-      glEnable(GL_CLIP_PLANE0 + i);
-    }
-
-    gl->topClipPlanes = true;
-  } else {
-    gl->topClipPlanes = false;
-  }
-
-  for (; i < 6; i++) {
-    glDisable(GL_CLIP_PLANE0 + i);
-  }
-}
-
 NAN_METHOD(WebGLRenderingContext::GetShaderParameter) {
   GLint shaderId = TO_INT32(JS_OBJ(info[0])->Get(JS_STR("id")));
   GLint pname = TO_INT32(info[1]);
@@ -2998,10 +2867,6 @@ NAN_METHOD(WebGLRenderingContext::ClearDepth) {
 NAN_METHOD(WebGLRenderingContext::Disable) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
   GLint arg = TO_INT32(info[0]);
-  
-  if (gl->topStencilGeometry && arg == GL_STENCIL_TEST) {
-    return;
-  }
 
   glDisable(arg);
 }
@@ -3009,10 +2874,6 @@ NAN_METHOD(WebGLRenderingContext::Disable) {
 NAN_METHOD(WebGLRenderingContext::Enable) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
   GLint arg = TO_INT32(info[0]);
-  
-  if (gl->topStencilGeometry && arg == GL_STENCIL_TEST) {
-    return;
-  }
 
   glEnable(arg);
 }
@@ -4280,10 +4141,6 @@ NAN_METHOD(WebGLRenderingContext::Scissor) {
 NAN_METHOD(WebGLRenderingContext::StencilFunc) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
 
-  if (gl->topStencilGeometry) {
-    return;
-  }
-
   GLenum func = TO_INT32(info[0]);
   GLint ref = TO_INT32(info[1]);
   GLuint mask = TO_INT32(info[2]);
@@ -4293,10 +4150,6 @@ NAN_METHOD(WebGLRenderingContext::StencilFunc) {
 
 NAN_METHOD(WebGLRenderingContext::StencilFuncSeparate) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
-
-  if (gl->topStencilGeometry) {
-    return;
-  }
   
   GLenum face = TO_INT32(info[0]);
   GLenum func = TO_INT32(info[1]);
@@ -4308,10 +4161,6 @@ NAN_METHOD(WebGLRenderingContext::StencilFuncSeparate) {
 
 NAN_METHOD(WebGLRenderingContext::StencilMask) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
-
-  if (gl->topStencilGeometry) {
-    return;
-  }
   
   GLuint mask = TO_UINT32(info[0]);
 
@@ -4321,10 +4170,6 @@ NAN_METHOD(WebGLRenderingContext::StencilMask) {
 NAN_METHOD(WebGLRenderingContext::StencilMaskSeparate) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
 
-  if (gl->topStencilGeometry) {
-    return;
-  }
-  
   GLenum face = TO_INT32(info[0]);
   GLuint mask = TO_UINT32(info[1]);
 
@@ -4333,10 +4178,6 @@ NAN_METHOD(WebGLRenderingContext::StencilMaskSeparate) {
 
 NAN_METHOD(WebGLRenderingContext::StencilOp) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
-
-  if (gl->topStencilGeometry) {
-    return;
-  }
   
   GLenum fail = TO_INT32(info[0]);
   GLenum zfail = TO_INT32(info[1]);
@@ -4348,10 +4189,6 @@ NAN_METHOD(WebGLRenderingContext::StencilOp) {
 NAN_METHOD(WebGLRenderingContext::StencilOpSeparate) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
 
-  if (gl->topStencilGeometry) {
-    return;
-  }
-  
   GLenum face = TO_INT32(info[0]);
   GLenum fail = TO_INT32(info[1]);
   GLenum zfail = TO_INT32(info[2]);
