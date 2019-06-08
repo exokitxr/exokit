@@ -1093,12 +1093,12 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
     }
   };
   const _composeXrContext = (context, windowHandle, layered) => {
-    // compose non-user layers
+    // compose non-window layers
     if (vrPresentState.glContext) {
       nativeWindow.composeLayers(vrPresentState.glContext, vrPresentState.layers, GlobalContext.xrState);
     }
 
-    // downsample out-of-band framebuffers
+    // downsample unlayered framebuffers
     if (!layered && GlobalContext.xrState.aaEnabled[0]) {
       const width = GlobalContext.xrState.renderWidth[0]*2;
       const height = GlobalContext.xrState.renderHeight[0];
