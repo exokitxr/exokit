@@ -856,7 +856,6 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
       return _parseDocumentAst(htmlAst, window, false);
     }
   };
-  // window.Buffer = Buffer; // XXX non-standard
   window.addEventListener = EventTarget.prototype.addEventListener.bind(window);
   window.removeEventListener = EventTarget.prototype.removeEventListener.bind(window);
   window.dispatchEvent = EventTarget.prototype.dispatchEvent.bind(window);
