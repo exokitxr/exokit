@@ -31,3 +31,4 @@ An example of how to use these flags:
 |`-n`|`--nogl`|Do not create GL contexts|
 |`-e`|`--headless`|Run in headless mode; do not create OS windows|
 |`-c`|`--uncapped`|Do not cap FPS to refresh rate of monitor in non-XR mode|
+|    |`--onbeforeload`|Run a script before each JS context loads|

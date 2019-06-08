@@ -1134,9 +1134,9 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
     }
   };
   const _swapBuffers = (context, windowHandle) => {
-    /* if (isMac) {
+    if (isMac) {
       context.bindFramebufferRaw(context.FRAMEBUFFER, null);
-    } */
+    }
     nativeWindow.swapBuffers(windowHandle);
   };
   const _composeLocalLayers = layered => {
@@ -1150,9 +1150,9 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
           const windowHandle = context.getWindowHandle();
 
           nativeWindow.setCurrentWindowContext(windowHandle);
-          /* if (isMac) {
+          if (isMac) {
             context.flush();
-          } */
+          }
 
           if (context === vrPresentState.glContext) {
             _composeXrContext(context, windowHandle, layered);
@@ -1160,7 +1160,7 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
             _composeNormalContext(context, windowHandle);
           }
 
-          /* if (isMac) {
+          if (isMac) {
             const drawFramebuffer = context.getBoundFramebuffer(context.DRAW_FRAMEBUFFER);
             if (drawFramebuffer) {
               context.bindFramebuffer(context.DRAW_FRAMEBUFFER, drawFramebuffer);
@@ -1170,7 +1170,7 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
             if (readFramebuffer) {
               context.bindFramebuffer(context.READ_FRAMEBUFFER, readFramebuffer);
             }
-          } */
+          }
         // }
         
         context.clearDirty();
