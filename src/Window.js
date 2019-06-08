@@ -1039,7 +1039,13 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
         
         vrPresentState.glContext.setTopLevel(false);
       } else {
-        vrPresentState.glContext.setDefaultFramebuffer(vrPresentState.glContext.framebuffer.msFbo);
+        if (GlobalContext.xrState.aaEnabled[0]) {
+          vrPresentState.glContext.setDefaultFramebuffer(vrPresentState.glContext.framebuffer.msFbo);
+          nativeWindow.bindVrChildFbo(vrPresentState.glContext, vrPresentState.glContext.framebuffer.msFbo, vrPresentState.glContext.framebuffer.msTex, vrPresentState.glContext.framebuffer.msDepthTex);
+        } else {
+          vrPresentState.glContext.setDefaultFramebuffer(vrPresentState.glContext.framebuffer.fbo);
+          nativeWindow.bindVrChildFbo(vrPresentState.glContext, vrPresentState.glContext.framebuffer.fbo, vrPresentState.glContext.framebuffer.tex, vrPresentState.glContext.framebuffer.depthTex);
+        }
 
         vrPresentState.glContext.setTopLevel(true);
       }
@@ -1087,21 +1093,34 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
       _clearLocalCbs(); // release garbage
     }
   };
-  const _composeXrContext = (context, windowHandle) => {
+  const _composeXrContext = (context, windowHandle, layered) => {
+    // compose non-user layers
     if (vrPresentState.glContext) {
       nativeWindow.composeLayers(vrPresentState.glContext, vrPresentState.layers, GlobalContext.xrState);
     }
 
-    if (vrPresentState.hmdType === 'fake' || vrPresentState.hmdType === 'oculus' || vrPresentState.hmdType === 'openvr') {
-      // NOTE: we blit from fbo instead of msFbo, so this will be lagged by a frame in the multisample case
-      if (GlobalContext.xrState.aaEnabled[0]) { // fbo will not be bound by default in the aaEnabled case
-        nativeWindow.bindVrChildFbo(vrPresentState.glContext, vrPresentState.fbo, GlobalContext.xrState.tex[0], GlobalContext.xrState.depthTex[0]);
-      }
+    // downsample out-of-band framebuffers
+    if (!layered && GlobalContext.xrState.aaEnabled[0]) {
       const width = GlobalContext.xrState.renderWidth[0]*2;
       const height = GlobalContext.xrState.renderHeight[0];
-      const {width: dWidth, height: dHeight} = nativeWindow.getFramebufferSize(windowHandle);
-      nativeWindow.blitChildFrameBuffer(context, vrPresentState.fbo, 0, width, height, dWidth, dHeight, true, false, false);
 
+      nativeWindow.blitChildFrameBuffer(context, vrPresentState.glContext.framebuffer.msFbo, vrPresentState.glContext.framebuffer.fbo, width, height, width, height, true, false, false);
+      nativeWindow.blitChildFrameBuffer(context, vrPresentState.glContext.framebuffer.msFbo, vrPresentState.glContext.framebuffer.fbo, width, height, width, height, false, true, true);
+    }
+
+    // blit to window
+    if (!context.canvas.ownerDocument.hidden) {
+      if (vrPresentState.hmdType === 'fake' || vrPresentState.hmdType === 'oculus' || vrPresentState.hmdType === 'openvr') {
+        // NOTE: we blit from fbo instead of msFbo, so this will be lagged by a frame in the multisample case
+        if (GlobalContext.xrState.aaEnabled[0]) { // fbo will not be bound by default in the aaEnabled case
+          nativeWindow.bindVrChildFbo(vrPresentState.glContext, vrPresentState.fbo, GlobalContext.xrState.tex[0], GlobalContext.xrState.depthTex[0]);
+        }
+        const width = GlobalContext.xrState.renderWidth[0]*2;
+        const height = GlobalContext.xrState.renderHeight[0];
+        const {width: dWidth, height: dHeight} = nativeWindow.getFramebufferSize(windowHandle);
+        nativeWindow.blitChildFrameBuffer(context, vrPresentState.fbo, 0, width, height, dWidth, dHeight, true, false, false);
+      }
+      
       _swapBuffers(context, windowHandle);
     }
   };
@@ -1136,7 +1155,7 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
           } */
 
           if (context === vrPresentState.glContext) {
-            _composeXrContext(context, windowHandle);
+            _composeXrContext(context, windowHandle, layered);
           } else {
             _composeNormalContext(context, windowHandle);
           }
