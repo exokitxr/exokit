@@ -1937,8 +1937,6 @@ class HTMLIFrameElement extends HTMLSrcableElement {
     this.browser = null;
     this.onconsole = null;
     this.xrOffset = new XRRigidTransform();
-    this.portalOffset = new XRRigidTransform();
-    this.portalOffset.scale.set(Float32Array.from([Infinity, Infinity, Infinity]));
 
     this.on('attribute', (name, value) => {
       if (name === 'src' && value) {
@@ -2057,7 +2055,6 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   htmlString,
                   hidden: true,
                   xrOffsetBuffer: this.xrOffset._buffer,
-                  portalOffsetBuffer: this.portalOffset._buffer,
                   onnavigate(href) {
                     this.readyState = null;
                     this.contentWindow = null;

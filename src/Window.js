@@ -1370,11 +1370,6 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
   window.document = _parseDocument(options.htmlString, window);
   window.document.hidden = options.hidden || false;
   window.document.xrOffset = options.xrOffsetBuffer ? new XRRigidTransform(options.xrOffsetBuffer) : new XRRigidTransform();
-  window.document.portalOffset = options.portalOffsetBuffer ? new XRRigidTransform(options.portalOffsetBuffer) : (() => {
-    const portalOffset = new XRRigidTransform();
-    portalOffset.scale.set(Float32Array.from([Infinity, Infinity, Infinity]));
-    return portalOffset;
-  })();
 })(global);
 
 global.onrunasync = req => {
