@@ -500,6 +500,63 @@ function init() {
         
       mesh.numRenders++;
     };
+    const wrapMesh = (() => {
+      const geometry = new THREE.BoxBufferGeometry(1, 1, 1);
+      const material = new THREE.MeshBasicMaterial({
+        color: 0xFFFFFF,
+        transparent: true,
+        opacity: 0.1,
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      return mesh;
+    })();
+    mesh.add(wrapMesh);
+    const targetMesh = (() => {
+      const targetGeometry = THREE.BufferGeometryUtils.mergeBufferGeometries([
+        new THREE.BoxBufferGeometry(0.03, 0.2, 0.03)
+          .applyMatrix(new THREE.Matrix4().makeTranslation(0, -0.1, 0)),
+        new THREE.BoxBufferGeometry(0.03, 0.2, 0.03)
+          .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, -1, 0), new THREE.Vector3(0, 0, 1))))
+          .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, 0.1)),
+        new THREE.BoxBufferGeometry(0.03, 0.2, 0.03)
+          .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, -1, 0), new THREE.Vector3(1, 0, 0))))
+          .applyMatrix(new THREE.Matrix4().makeTranslation(0.1, 0, 0)),
+      ]);
+      const geometry = THREE.BufferGeometryUtils.mergeBufferGeometries([
+        targetGeometry.clone()
+          .applyMatrix(new THREE.Matrix4().makeTranslation(-0.5, 0.5, -0.5)),
+        targetGeometry.clone()
+          .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, -1), new THREE.Vector3(0, -1, 0))))
+          .applyMatrix(new THREE.Matrix4().makeTranslation(-0.5, -0.5, -0.5)),
+        targetGeometry.clone()
+          .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 1))))
+          .applyMatrix(new THREE.Matrix4().makeTranslation(-0.5, 0.5, 0.5)),
+        targetGeometry.clone()
+          .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(1, 0, 0))))
+          .applyMatrix(new THREE.Matrix4().makeTranslation(0.5, 0.5, -0.5)),
+        targetGeometry.clone()
+          .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(1, 0, 0))))
+          .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 1))))
+          .applyMatrix(new THREE.Matrix4().makeTranslation(0.5, 0.5, 0.5)),
+        targetGeometry.clone()
+          .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 1))))
+          .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(-1, 0, 0), new THREE.Vector3(0, -1, 0))))
+          .applyMatrix(new THREE.Matrix4().makeTranslation(-0.5, -0.5, 0.5)),
+        targetGeometry.clone()
+          .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(1, 0, 0))))
+          .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, -1, 0))))
+          .applyMatrix(new THREE.Matrix4().makeTranslation(0.5, -0.5, -0.5)),
+        targetGeometry.clone()
+          .applyMatrix(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(-1, 1, 0).normalize(), new THREE.Vector3(1, -1, 0).normalize())))
+          .applyMatrix(new THREE.Matrix4().makeTranslation(0.5, -0.5, 0.5)),
+      ]);
+      const material = new THREE.MeshBasicMaterial({
+        color: 0x222222,
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      return mesh;
+    })();
+    mesh.add(targetMesh);
     return mesh;
   };
 
