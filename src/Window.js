@@ -1061,21 +1061,6 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
       }
     }
   };
-  const _prepareLocalFrame = () => {
-    if (vrPresentState.glContext) {
-      const {stencilGeometry} = window.document;
-      const stencilGeometrySize = stencilGeometry ? new Uint32Array(stencilGeometry.buffer, stencilGeometry.byteOffset, 1)[0] : 0;
-      if (stencilGeometrySize > 0) {
-        vrPresentState.glContext.setTopStencilGeometry(
-          stencilGeometry.slice(1, 1 + stencilGeometrySize),
-          GlobalContext.xrState,
-          window.document.portalOffset
-        );
-      } else {
-        vrPresentState.glContext.setTopStencilGeometry(null);
-      }
-    }
-  };
   const _tickLocalRafs = () => {
     if (rafCbs.length > 0) {
       _cacheLocalCbs(rafCbs);
@@ -1177,7 +1162,6 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
   };
   const _renderLocal = (syncs, layered) => {
     _waitLocalSyncs(syncs);
-    _prepareLocalFrame();
     _tickLocalRafs();
     return _composeLocalLayers(layered);
   };
