@@ -183,8 +183,6 @@ EmbeddedBrowser createEmbedded(
       glBindTexture(GL_TEXTURE_2D, tex);
 
       if (*textureWidth != width || *textureHeight != height) {
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); // XXX save/restore these
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
         glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
         glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
