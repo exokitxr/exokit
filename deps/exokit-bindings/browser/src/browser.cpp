@@ -15,11 +15,13 @@ namespace browser {
 // Browser
 
 Browser::Browser(WebGLRenderingContext *gl, int width, int height, float scale) : gl(gl), window(nullptr), width(width), height(height), scale(scale), tex(0), textureWidth(0), textureHeight(0) {
-  windowsystem::SetCurrentWindowContext(gl->windowHandle);
+  window = windowsystem::CreateWindowHandle(1, 1, false);
+  windowsystem::SetCurrentWindowContext(window);
 
   glGenTextures(1, &tex);
-  
-  window = windowsystem::CreateWindowHandle(1, 1, false);
+  glBindTexture(GL_TEXTURE_2D, tex);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); // XXX save/restore these
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 }
 
 Browser::~Browser() {}
