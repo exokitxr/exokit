@@ -1,5 +1,5 @@
 const path = require('path');
-const {isMainThread} = require('worker_threads');
+const {isMainThread, parentPort} = require('worker_threads');
 const {process} = global;
 
 const exokitNode = require(path.join(__dirname, '..', 'build', 'Release', 'exokit.node'));
@@ -252,6 +252,11 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
       tex,
       depthTex,
     };
+    parentPort.postMessage({
+      method: 'emit',
+      type: 'framebuffer',
+      event: gl.framebuffer,
+    });
     gl.resize = (width, height) => {
       if (!gl.attrs.desynchronized && gl.framebuffer.type === 'canvas') {
         nativeWindow.setCurrentWindowContext(windowHandle);
@@ -266,6 +271,11 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
           tex: newTex,
           depthTex: newDepthTex,
         };
+        parentPort.postMessage({
+          method: 'emit',
+          type: 'framebuffer',
+          event: gl.framebuffer,
+        });
       }
     };
 
