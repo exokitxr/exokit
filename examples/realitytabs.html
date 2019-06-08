@@ -2748,10 +2748,10 @@ const _bootFakeXrDisplay = async () => {
           renderer.vr.enabled = true;
           renderer.vr.setAnimationLoop(animate);
 
-          if (window.browser && window.browser.magicleap) {
+          /* if (window.browser && window.browser.magicleap) {
             window.browser.magicleap.RequestDepthPopulation(true);
             // renderer.autoClearDepth = false;
-          }
+          } */
 
           _openUrl('tutorial.html');
           _updateRigLists();

@@ -70,6 +70,8 @@
 #define MAX_CLIENT_WAIT_TIMEOUT_WEBGL ((uint32_t)2e7)
 
 #include <defines.h>
+#include <exout>
+#include <vector>
 #include <map>
 #include <set>
 
@@ -89,6 +91,15 @@ extern PFNGLFRAMEBUFFERTEXTUREMULTISAMPLEMULTIVIEWOVR glFramebufferTextureMultis
 using namespace v8;
 using namespace node;
 
+class GlObjectCache {
+public:
+  std::set<GLuint> buffers;
+  std::set<GLuint> queries;
+  std::set<GLuint> renderbuffers;
+  std::set<GLuint> samplers;
+  std::set<GLuint> textures;
+};
+
 enum GlKey {
   GL_KEY_COMPOSE,
   GL_KEY_PLANE,
@@ -97,15 +108,6 @@ enum GlKey {
 class GlShader {
 public:
   virtual ~GlShader() = 0;
-};
-
-class GlObjectCache {
-public:
-  std::set<GLuint> buffers;
-  std::set<GLuint> queries;
-  std::set<GLuint> renderbuffers;
-  std::set<GLuint> samplers;
-  std::set<GLuint> textures;
 };
 
 void flipImageData(char *dstData, char *srcData, size_t width, size_t height, size_t pixelSize);
@@ -355,7 +357,7 @@ public:
   static NAN_METHOD(GetDefaultFramebuffer);
   static NAN_METHOD(SetDefaultFramebuffer);
 
-  static NAN_METHOD(SetTopLevel);
+  static NAN_METHOD(SetClearEnabled);
 
   static NAN_METHOD(FramebufferTextureMultiviewOVR);
   static NAN_METHOD(FramebufferTextureMultisampleMultiviewOVR);
@@ -425,7 +427,7 @@ public:
   GLuint defaultVao;
   GLuint defaultFramebuffer;
   GlObjectCache objectCache;
-  bool topLevel;
+  bool clearEnabled;
   bool dirty;
   bool flipY;
   bool premultiplyAlpha;
@@ -479,5 +481,32 @@ public:
   static NAN_METHOD(SamplerParameterf);
   static NAN_METHOD(GetSamplerParameter);
 };
+
+template <typename T>
+T *getGlShader(WebGLRenderingContext *gl) {
+  const GlKey &key = T::key;
+  auto iter = gl->keys.find(key);
+  if (iter != gl->keys.end()) {
+    return (T *)iter->second;
+  } else {
+    T *t = new T();
+
+    {
+      if (gl->HasVertexArrayBinding()) {
+        glBindVertexArray(gl->GetVertexArrayBinding());
+      } else {
+        glBindVertexArray(gl->defaultVao);
+      }
+      if (gl->HasBufferBinding(GL_ARRAY_BUFFER)) {
+        glBindBuffer(GL_ARRAY_BUFFER, gl->GetBufferBinding(GL_ARRAY_BUFFER));
+      } else {
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+      }
+    }
+
+    gl->keys[key] = t;
+    return t;
+  }
+}
 
 #endif

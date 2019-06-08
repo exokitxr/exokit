@@ -97,7 +97,7 @@ ComposeGlShader::ComposeGlShader() {
     GLsizei length;
     glGetShaderInfoLog(composeVertex, sizeof(infoLog), &length, infoLog);
     infoLog[length] = '\0';
-    exout << "ML compose vertex shader compilation failed:\n" << infoLog << std::endl;
+    exout << "compose vertex shader compilation failed:\n" << infoLog << std::endl;
     return;
   };
 
@@ -111,7 +111,7 @@ ComposeGlShader::ComposeGlShader() {
     GLsizei length;
     glGetShaderInfoLog(composeFragment, sizeof(infoLog), &length, infoLog);
     infoLog[length] = '\0';
-    exout << "ML compose fragment shader compilation failed:\n" << infoLog << std::endl;
+    exout << "compose fragment shader compilation failed:\n" << infoLog << std::endl;
     return;
   };
 
@@ -126,32 +126,32 @@ ComposeGlShader::ComposeGlShader() {
     GLsizei length;
     glGetShaderInfoLog(this->composeProgram, sizeof(infoLog), &length, infoLog);
     infoLog[length] = '\0';
-    exout << "ML compose program linking failed\n" << infoLog << std::endl;
+    exout << "compose program linking failed\n" << infoLog << std::endl;
     return;
   }
 
   this->positionLocation = glGetAttribLocation(this->composeProgram, "position");
   if (this->positionLocation == -1) {
-    exout << "ML compose program failed to get attrib location for 'position'" << std::endl;
+    exout << "compose program failed to get attrib location for 'position'" << std::endl;
     return;
   }
   this->uvLocation = glGetAttribLocation(this->composeProgram, "uv");
   if (this->uvLocation == -1) {
-    exout << "ML compose program failed to get attrib location for 'uv'" << std::endl;
+    exout << "compose program failed to get attrib location for 'uv'" << std::endl;
     return;
   }
   this->texLocation = glGetUniformLocation(this->composeProgram, "tex");
   if (this->texLocation == -1) {
-    exout << "ML compose program failed to get uniform location for 'tex'" << std::endl;
+    exout << "compose program failed to get uniform location for 'tex'" << std::endl;
     return;
   }
   this->depthTexLocation = glGetUniformLocation(this->composeProgram, "depthTex");
   if (this->depthTexLocation == -1) {
-    exout << "ML compose program failed to get uniform location for 'depthTex'" << std::endl;
+    exout << "compose program failed to get uniform location for 'depthTex'" << std::endl;
     return;
   }
 
-  // delete the shaders as they're linked into our program now and no longer necessery
+  // delete the shaders as they're linked into our program now and no longer necessary
   glDeleteShader(composeVertex);
   glDeleteShader(composeFragment);
 
@@ -356,7 +356,7 @@ GlKey PlaneGlShader::key = GlKey::GL_KEY_PLANE;
       GLsizei length;
       glGetShaderInfoLog(composeVertex, sizeof(infoLog), &length, infoLog);
       infoLog[length] = '\0';
-      exout << "ML compose vertex shader compilation failed:\n" << infoLog << std::endl;
+      exout << "compose vertex shader compilation failed:\n" << infoLog << std::endl;
       return;
     };
 
@@ -370,7 +370,7 @@ GlKey PlaneGlShader::key = GlKey::GL_KEY_PLANE;
       GLsizei length;
       glGetShaderInfoLog(composeFragment, sizeof(infoLog), &length, infoLog);
       infoLog[length] = '\0';
-      exout << "ML compose fragment shader compilation failed:\n" << infoLog << std::endl;
+      exout << "compose fragment shader compilation failed:\n" << infoLog << std::endl;
       return;
     };
 
@@ -385,28 +385,28 @@ GlKey PlaneGlShader::key = GlKey::GL_KEY_PLANE;
       GLsizei length;
       glGetShaderInfoLog(composeSpec->composeProgram, sizeof(infoLog), &length, infoLog);
       infoLog[length] = '\0';
-      exout << "ML compose program linking failed\n" << infoLog << std::endl;
+      exout << "compose program linking failed\n" << infoLog << std::endl;
       return;
     }
 
     composeSpec->positionLocation = glGetAttribLocation(composeSpec->composeProgram, "position");
     if (composeSpec->positionLocation == -1) {
-      exout << "ML compose program failed to get attrib location for 'position'" << std::endl;
+      exout << "compose program failed to get attrib location for 'position'" << std::endl;
       return;
     }
     composeSpec->uvLocation = glGetAttribLocation(composeSpec->composeProgram, "uv");
     if (composeSpec->uvLocation == -1) {
-      exout << "ML compose program failed to get attrib location for 'uv'" << std::endl;
+      exout << "compose program failed to get attrib location for 'uv'" << std::endl;
       return;
     }
     composeSpec->texLocation = glGetUniformLocation(composeSpec->composeProgram, "tex");
     if (composeSpec->texLocation == -1) {
-      exout << "ML compose program failed to get uniform location for 'tex'" << std::endl;
+      exout << "compose program failed to get uniform location for 'tex'" << std::endl;
       return;
     }
     composeSpec->depthTexLocation = glGetUniformLocation(composeSpec->composeProgram, "depthTex");
     if (composeSpec->depthTexLocation == -1) {
-      exout << "ML compose program failed to get uniform location for 'depthTex'" << std::endl;
+      exout << "compose program failed to get uniform location for 'depthTex'" << std::endl;
       return;
     }
 
@@ -759,33 +759,6 @@ NAN_METHOD(ResizeRenderTarget) {
   result->Set(4, JS_INT(msColorTex));
   result->Set(5, JS_INT(msDepthStencilTex));
   info.GetReturnValue().Set(result);
-}
-
-template <typename T>
-T *getGlShader(WebGLRenderingContext *gl) {
-  const GlKey &key = T::key;
-  auto iter = gl->keys.find(key);
-  if (iter != gl->keys.end()) {
-    return (T *)iter->second;
-  } else {
-    T *t = new T();
-
-    {
-      if (gl->HasVertexArrayBinding()) {
-        glBindVertexArray(gl->GetVertexArrayBinding());
-      } else {
-        glBindVertexArray(gl->defaultVao);
-      }
-      if (gl->HasBufferBinding(GL_ARRAY_BUFFER)) {
-        glBindBuffer(GL_ARRAY_BUFFER, gl->GetBufferBinding(GL_ARRAY_BUFFER));
-      } else {
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-      }
-    }
-
-    gl->keys[key] = t;
-    return t;
-  }
 }
 
 NAN_METHOD(DestroyRenderTarget) {
@@ -1387,9 +1360,6 @@ NAN_METHOD(ComposeLayers) {
 uv_loop_t *GetEventLoop() {
   return node::GetCurrentEventLoop(Isolate::GetCurrent());
 }
-/* NAN_METHOD(GetEventLoop) {
-  info.GetReturnValue().Set(pointerToArray(GetEventLoop()));
-} */
 
 NAN_METHOD(ClearFramebuffer) {
   GLuint fbo = TO_UINT32(info[0]);
@@ -1410,7 +1380,6 @@ void Decorate(Local<Object> target) {
   Nan::SetMethod(target, "waitSync", WaitSync);
   Nan::SetMethod(target, "deleteSync", DeleteSync);
   Nan::SetMethod(target, "composeLayers", ComposeLayers);
-  // Nan::SetMethod(target, "getEventLoop", GetEventLoop);
   Nan::SetMethod(target, "clearFramebuffer", ClearFramebuffer);
 }
 

@@ -1177,7 +1177,7 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
   Nan::SetMethod(proto, "getDefaultFramebuffer", GetDefaultFramebuffer);
   Nan::SetMethod(proto, "setDefaultFramebuffer", glCallWrap<SetDefaultFramebuffer>);
 
-  Nan::SetMethod(proto, "setTopLevel", SetTopLevel);
+  Nan::SetMethod(proto, "setClearEnabled", SetClearEnabled);
 
   // OVR_multiview2
   Nan::SetMethod(proto, "framebufferTextureMultiviewOVR", glCallWrap<FramebufferTextureMultiviewOVR>);
@@ -1197,7 +1197,7 @@ WebGLRenderingContext::WebGLRenderingContext() :
   windowHandle(nullptr),
   defaultVao(0),
   defaultFramebuffer(0),
-  topLevel(true),
+  clearEnabled(true),
   dirty(false),
   flipY(false),
   premultiplyAlpha(true),
@@ -2499,11 +2499,11 @@ NAN_METHOD(WebGLRenderingContext::SetDefaultFramebuffer) {
   gl->defaultFramebuffer = framebuffer;
 }
 
-NAN_METHOD(WebGLRenderingContext::SetTopLevel) {
+NAN_METHOD(WebGLRenderingContext::SetClearEnabled) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
-  bool topLevel = TO_BOOL(info[0]);
+  bool clearEnabled = TO_BOOL(info[0]);
 
-  gl->topLevel = topLevel;
+  gl->clearEnabled = clearEnabled;
 }
 
 NAN_METHOD(WebGLRenderingContext::FramebufferTextureMultiviewOVR) {
@@ -2676,17 +2676,17 @@ NAN_METHOD(WebGLRenderingContext::ClearDepth) {
 }
 
 NAN_METHOD(WebGLRenderingContext::Disable) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
   GLint arg = TO_INT32(info[0]);
-  glDisable(arg);
 
-  // info.GetReturnValue().Set(Nan::Undefined());
+  glDisable(arg);
 }
 
 NAN_METHOD(WebGLRenderingContext::Enable) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
   GLint arg = TO_INT32(info[0]);
-  glEnable(arg);
 
-  // info.GetReturnValue().Set(Nan::Undefined());
+  glEnable(arg);
 }
 
 
@@ -3209,7 +3209,7 @@ NAN_METHOD(WebGLRenderingContext::TexParameterf) {
 
 NAN_METHOD(WebGLRenderingContext::Clear) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
-  if (gl->topLevel || (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER) && gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER) != gl->defaultFramebuffer)) {
+  if (gl->clearEnabled || (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER) && gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER) != gl->defaultFramebuffer)) {
     GLint arg = TO_INT32(info[0]);
 
     glClear(arg);
@@ -3955,8 +3955,6 @@ NAN_METHOD(WebGLRenderingContext::StencilFunc) {
   GLuint mask = TO_INT32(info[2]);
 
   glStencilFunc(func, ref, mask);
-
-  // info.GetReturnValue().Set(Nan::Undefined());
 }
 
 NAN_METHOD(WebGLRenderingContext::StencilFuncSeparate) {
@@ -3966,16 +3964,12 @@ NAN_METHOD(WebGLRenderingContext::StencilFuncSeparate) {
   GLuint mask = TO_INT32(info[3]);
 
   glStencilFuncSeparate(face, func, ref, mask);
-
-  // info.GetReturnValue().Set(Nan::Undefined());
 }
 
 NAN_METHOD(WebGLRenderingContext::StencilMask) {
   GLuint mask = TO_UINT32(info[0]);
 
   glStencilMask(mask);
-
-  // info.GetReturnValue().Set(Nan::Undefined());
 }
 
 NAN_METHOD(WebGLRenderingContext::StencilMaskSeparate) {
@@ -3983,8 +3977,6 @@ NAN_METHOD(WebGLRenderingContext::StencilMaskSeparate) {
   GLuint mask = TO_UINT32(info[1]);
 
   glStencilMaskSeparate(face, mask);
-
-  // info.GetReturnValue().Set(Nan::Undefined());
 }
 
 NAN_METHOD(WebGLRenderingContext::StencilOp) {
@@ -3993,8 +3985,6 @@ NAN_METHOD(WebGLRenderingContext::StencilOp) {
   GLenum zpass = TO_INT32(info[2]);
 
   glStencilOp(fail, zfail, zpass);
-
-  // info.GetReturnValue().Set(Nan::Undefined());
 }
 
 NAN_METHOD(WebGLRenderingContext::StencilOpSeparate) {
@@ -4004,8 +3994,6 @@ NAN_METHOD(WebGLRenderingContext::StencilOpSeparate) {
   GLenum zpass = TO_INT32(info[3]);
 
   glStencilOpSeparate(face, fail, zfail, zpass);
-
-  // info.GetReturnValue().Set(Nan::Undefined());
 }
 
 NAN_METHOD(WebGLRenderingContext::BindRenderbuffer) {

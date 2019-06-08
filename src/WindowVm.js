@@ -161,6 +161,7 @@ const _makeWindow = (options = {}, handlers = {}) => {
     },
   });
   window.id = id;
+  window.framebuffer = null;
   // window.phase = 0; // XXX
   // window.rendered = false;
   // window.promise = null;
@@ -189,6 +190,9 @@ const _makeWindow = (options = {}, handlers = {}) => {
   window.on('request', req => {
     req.keypath.push(id);
     options.onrequest && options.onrequest(req);
+  });
+  window.on('framebuffer', e => {
+    window.framebuffer = e;
   });
   window.on('hapticPulse', e => {
     options.onhapticpulse && options.onhapticpulse(e);

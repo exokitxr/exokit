@@ -1,0 +1,156 @@
+<html>
+  <head>
+   <meta charset="utf-8">
+   <meta http-equiv="X-UA-Compatible" content="IE=edge">
+   <meta name="viewport" content="width=device-width, initial-scale=1">
+   <meta name="theme-color" content="#008000"/>
+   <title>portal</title>
+    <style>
+      body {
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+  <h1>portal</h1>
+  <script src="three.js"></script>
+<script>
+(() => {
+
+let container, scene, camera, session;
+const localVector = new THREE.Vector3();
+const localVector2 = new THREE.Vector3();
+const localQuaternion = new THREE.Quaternion();
+const localMatrix = new THREE.Matrix4();
+
+const NUM_CUBES = 64;
+const cubeMeshGeometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1);
+const _makeCubeMesh = () => {
+  const geometry = cubeMeshGeometry;
+  const material = new THREE.MeshPhongMaterial({
+    color: 0x00FFFF,
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.update = timeDiff => {
+    mesh.position.y -= timeDiff * 0.001;
+    mesh.rotation.x += timeDiff * Math.PI*2 * 0.0001;
+  };
+  return mesh;
+};
+const cubeMeshes = [];
+
+function init() {
+  container = document.createElement('div');
+  document.body.appendChild(container);
+
+  scene = new THREE.Scene();
+  scene.matrixAutoUpdate = false;
+  // scene.background = new THREE.Color(0x3B3961);<F2>
+
+  camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+  // camera.position.set(0, 1, 0);
+  // camera.lookAt(new THREE.Vector3());
+  scene.add(camera);
+
+  const ambientLight = new THREE.AmbientLight(0x808080);
+  scene.add(ambientLight);
+
+  const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
+  directionalLight.position.set(1, 1, 1);
+  scene.add(directionalLight);
+  
+  /* const geometry = new THREE.BoxBufferGeometry(100, 100, 100);
+  geometry.applyMatrix(new THREE.Matrix4().makeScale(-1, -1, -1));
+  const material = new THREE.MeshPhongMaterial({
+    color: 0x0000FF,
+    // side: THREE.DoubleSide,
+  });
+  const skyboxMesh = new THREE.Mesh(geometry, material);
+  scene.add(skyboxMesh); */
+
+  renderer = new THREE.WebGLRenderer({
+    antialias: true,
+    alpha: true,
+  });
+  // renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+
+  // window.browser.magicleap.RequestDepthPopulation(true);
+  // renderer.autoClear = false;
+
+  container.appendChild(renderer.domElement);
+
+  renderer.setAnimationLoop(animate);
+}
+let lastUpdateTime = Date.now();
+function animate(time, frame) {
+  const now = Date.now();
+  const timeDiff = now - lastUpdateTime;
+
+  const localCubeMeshes = cubeMeshes.slice();
+  for (let i = 0; i < localCubeMeshes.length; i++) {
+    const cubeMesh = localCubeMeshes[i];
+    if (cubeMesh.position.y >= -1) {
+      cubeMesh.update(timeDiff);
+    } else {
+      cubeMesh.material.dispose();
+      scene.remove(cubeMesh);
+      cubeMeshes.splice(cubeMeshes.indexOf(cubeMesh), 1);
+    }
+  }
+  while (cubeMeshes.length < NUM_CUBES) {
+    const cubeMesh = _makeCubeMesh();
+    cubeMesh.position.set(-1 + Math.random() * 2, 1 + Math.random() * 2, -1 + Math.random() * 2);
+    scene.add(cubeMesh);
+    cubeMeshes.push(cubeMesh);
+  }
+
+  renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
+  
+  lastUpdateTime = now;
+}
+
+init();
+
+(async () => {
+  console.log('request session');
+  session = await navigator.xr.requestSession({
+    exclusive: true,
+    extensions: {
+      meshing: true,
+    },
+  }).catch(err => Promise.resolve(null));
+
+  if (session) {
+    session.requestAnimationFrame((timestamp, frame) => {
+      renderer.vr.setSession(session, {
+        frameOfReferenceType: 'stage',
+      });
+
+      const {views} = frame.getViewerPose();
+      const viewport = session.renderState.baseLayer.getViewport(views[0]);
+      const height = viewport.height;
+      const fullWidth = (() => {
+        let result = 0;
+        for (let i = 0; i < views.length; i++) {
+          result += session.renderState.baseLayer.getViewport(views[i]).width;
+        }
+        return result;
+      })();
+
+      renderer.setSize(fullWidth, height);
+
+      renderer.setAnimationLoop(null);
+
+      renderer.vr.enabled = true;
+      renderer.vr.setAnimationLoop(animate);
+    });
+  } else {
+    console.log('no xr devices');
+  }
+})();
+
+})();
+</script>
+  </body>
+</html>

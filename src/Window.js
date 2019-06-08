@@ -856,7 +856,6 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
       return _parseDocumentAst(htmlAst, window, false);
     }
   };
-  // window.Buffer = Buffer; // XXX non-standard
   window.addEventListener = EventTarget.prototype.addEventListener.bind(window);
   window.removeEventListener = EventTarget.prototype.removeEventListener.bind(window);
   window.dispatchEvent = EventTarget.prototype.dispatchEvent.bind(window);
@@ -1036,14 +1035,39 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
           vrPresentState.glContext.setDefaultFramebuffer(vrPresentState.fbo);
           nativeWindow.bindVrChildFbo(vrPresentState.glContext, vrPresentState.fbo, GlobalContext.xrState.tex[0], GlobalContext.xrState.depthTex[0]);
         }
+        
+        vrPresentState.glContext.setClearEnabled(false);
       } else {
-        vrPresentState.glContext.setDefaultFramebuffer(vrPresentState.glContext.framebuffer.msFbo);
+        if (GlobalContext.xrState.aaEnabled[0]) {
+          vrPresentState.glContext.setDefaultFramebuffer(vrPresentState.glContext.framebuffer.msFbo);
+          nativeWindow.bindVrChildFbo(vrPresentState.glContext, vrPresentState.glContext.framebuffer.msFbo, vrPresentState.glContext.framebuffer.msTex, vrPresentState.glContext.framebuffer.msDepthTex);
+        } else {
+          vrPresentState.glContext.setDefaultFramebuffer(vrPresentState.glContext.framebuffer.fbo);
+          nativeWindow.bindVrChildFbo(vrPresentState.glContext, vrPresentState.glContext.framebuffer.fbo, vrPresentState.glContext.framebuffer.tex, vrPresentState.glContext.framebuffer.depthTex);
+        }
+
+        vrPresentState.glContext.setClearEnabled(true);
       }
     }
   };
   const _emitXrEvents = () => {
     if (window[symbols.mrDisplaysSymbol].xrSession.isPresenting) {
       window[symbols.mrDisplaysSymbol].xrSession.update();
+    }
+  };
+  const _waitLocalSyncs = syncs => {
+    if (vrPresentState.glContext) {
+      nativeWindow.setCurrentWindowContext(vrPresentState.glContext.getWindowHandle());
+
+      for (let i = 0; i < syncs.length; i++) {
+        const sync = syncs[i];
+        nativeWindow.waitSync(sync);
+        prevSyncs.push(sync);
+      }
+    } else {
+      for (let i = 0; i < syncs.length; i++) {
+        nativeWindow.deleteSync(syncs[i]);
+      }
     }
   };
   const _tickLocalRafs = () => {
@@ -1068,21 +1092,34 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
       _clearLocalCbs(); // release garbage
     }
   };
-  const _composeXrContext = (context, windowHandle) => {
+  const _composeXrContext = (context, windowHandle, layered) => {
+    // compose non-window layers
     if (vrPresentState.glContext) {
       nativeWindow.composeLayers(vrPresentState.glContext, vrPresentState.layers, GlobalContext.xrState);
     }
 
-    if (vrPresentState.hmdType === 'fake' || vrPresentState.hmdType === 'oculus' || vrPresentState.hmdType === 'openvr') {
-      // NOTE: we blit from fbo instead of msFbo, so this will be lagged by a frame in the multisample case
-      if (GlobalContext.xrState.aaEnabled[0]) { // fbo will not be bound by default in the aaEnabled case
-        nativeWindow.bindVrChildFbo(vrPresentState.glContext, vrPresentState.fbo, GlobalContext.xrState.tex[0], GlobalContext.xrState.depthTex[0]);
-      }
+    // downsample unlayered framebuffers
+    if (!layered && GlobalContext.xrState.aaEnabled[0]) {
       const width = GlobalContext.xrState.renderWidth[0]*2;
       const height = GlobalContext.xrState.renderHeight[0];
-      const {width: dWidth, height: dHeight} = nativeWindow.getFramebufferSize(windowHandle);
-      nativeWindow.blitChildFrameBuffer(context, vrPresentState.fbo, 0, width, height, dWidth, dHeight, true, false, false);
 
+      nativeWindow.blitChildFrameBuffer(context, vrPresentState.glContext.framebuffer.msFbo, vrPresentState.glContext.framebuffer.fbo, width, height, width, height, true, false, false);
+      nativeWindow.blitChildFrameBuffer(context, vrPresentState.glContext.framebuffer.msFbo, vrPresentState.glContext.framebuffer.fbo, width, height, width, height, false, true, true);
+    }
+
+    // blit to window
+    if (!context.canvas.ownerDocument.hidden) {
+      if (vrPresentState.hmdType === 'fake' || vrPresentState.hmdType === 'oculus' || vrPresentState.hmdType === 'openvr') {
+        // NOTE: we blit from fbo instead of msFbo, so this will be lagged by a frame in the multisample case
+        if (GlobalContext.xrState.aaEnabled[0]) { // fbo will not be bound by default in the aaEnabled case
+          nativeWindow.bindVrChildFbo(vrPresentState.glContext, vrPresentState.fbo, GlobalContext.xrState.tex[0], GlobalContext.xrState.depthTex[0]);
+        }
+        const width = GlobalContext.xrState.renderWidth[0]*2;
+        const height = GlobalContext.xrState.renderHeight[0];
+        const {width: dWidth, height: dHeight} = nativeWindow.getFramebufferSize(windowHandle);
+        nativeWindow.blitChildFrameBuffer(context, vrPresentState.fbo, 0, width, height, dWidth, dHeight, true, false, false);
+      }
+      
       _swapBuffers(context, windowHandle);
     }
   };
@@ -1108,7 +1145,7 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
       const context = contexts[i];
       const isDirty = (!!context.isDirty && context.isDirty()) || context === vrPresentState.glContext;
       if (isDirty) {
-        if (layered) {
+        // if (layered) {
           const windowHandle = context.getWindowHandle();
 
           nativeWindow.setCurrentWindowContext(windowHandle);
@@ -1117,7 +1154,7 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
           }
 
           if (context === vrPresentState.glContext) {
-            _composeXrContext(context, windowHandle);
+            _composeXrContext(context, windowHandle, layered);
           } else {
             _composeNormalContext(context, windowHandle);
           }
@@ -1133,14 +1170,12 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
               context.bindFramebuffer(context.READ_FRAMEBUFFER, readFramebuffer);
             }
           }
+        // }
+        
+        context.clearDirty();
 
-          context.clearDirty();
-
-          if (context.finish) {
-            syncs.push(nativeWindow.getSync());
-          }
-        } else {
-          context.clearDirty();
+        if (context.finish) {
+          syncs.push(nativeWindow.getSync());
         }
       }
     }
@@ -1148,20 +1183,7 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
     return Promise.resolve(syncs);
   };
   const _renderLocal = (syncs, layered) => {
-    if (vrPresentState.glContext) {
-      nativeWindow.setCurrentWindowContext(vrPresentState.glContext.getWindowHandle());
-
-      for (let i = 0; i < syncs.length; i++) {
-        const sync = syncs[i];
-        nativeWindow.waitSync(sync);
-        prevSyncs.push(sync);
-      }
-    } else {
-      for (let i = 0; i < syncs.length; i++) {
-        nativeWindow.deleteSync(syncs[i]);
-      }
-    }
-
+    _waitLocalSyncs(syncs);
     _tickLocalRafs();
     return _composeLocalLayers(layered);
   };
@@ -1217,15 +1239,15 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
     };
     const _onmakeswapchain = context => {
       if (context !== vrPresentState.glContext) {
-        if (vrPresentState.glContext) {
-          vrPresentState.glContext.setTopLevel(true);
-        }
+        /* if (vrPresentState.glContext) {
+          vrPresentState.glContext.setClearEnabled(true);
+        } */
 
         vrPresentState.glContext = context;
         vrPresentState.fbo = context.createFramebuffer().id;
         vrPresentState.msFbo = context.createFramebuffer().id;
-        vrPresentState.glContext.setTopLevel(false);
-        
+        // vrPresentState.glContext.setClearEnabled(false);
+
         window.document.emit('domchange'); // open mirror window
       }
 
@@ -1247,7 +1269,7 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
       // }
 
       vrPresentState.hmdType = null;
-      vrPresentState.glContext.setTopLevel(true);
+      // vrPresentState.glContext.setClearEnabled(true);
       vrPresentState.glContext = null;
       GlobalContext.clearGamepads();
     };
