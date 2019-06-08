@@ -1366,7 +1366,7 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
   Nan::SetMethod(proto, "getDefaultFramebuffer", GetDefaultFramebuffer);
   Nan::SetMethod(proto, "setDefaultFramebuffer", glCallWrap<SetDefaultFramebuffer>);
 
-  Nan::SetMethod(proto, "setTopLevel", SetTopLevel);
+  Nan::SetMethod(proto, "setClearEnabled", SetClearEnabled);
 
   // OVR_multiview2
   Nan::SetMethod(proto, "framebufferTextureMultiviewOVR", glCallWrap<FramebufferTextureMultiviewOVR>);
@@ -1386,7 +1386,7 @@ WebGLRenderingContext::WebGLRenderingContext() :
   windowHandle(nullptr),
   defaultVao(0),
   defaultFramebuffer(0),
-  topLevel(true),
+  clearEnabled(true),
   dirty(false),
   flipY(false),
   premultiplyAlpha(true),
@@ -2688,11 +2688,11 @@ NAN_METHOD(WebGLRenderingContext::SetDefaultFramebuffer) {
   gl->defaultFramebuffer = framebuffer;
 }
 
-NAN_METHOD(WebGLRenderingContext::SetTopLevel) {
+NAN_METHOD(WebGLRenderingContext::SetClearEnabled) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
-  bool topLevel = TO_BOOL(info[0]);
+  bool clearEnabled = TO_BOOL(info[0]);
 
-  gl->topLevel = topLevel;
+  gl->clearEnabled = clearEnabled;
 }
 
 NAN_METHOD(WebGLRenderingContext::FramebufferTextureMultiviewOVR) {
@@ -3398,7 +3398,7 @@ NAN_METHOD(WebGLRenderingContext::TexParameterf) {
 
 NAN_METHOD(WebGLRenderingContext::Clear) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
-  if (gl->topLevel || (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER) && gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER) != gl->defaultFramebuffer)) {
+  if (gl->clearEnabled || (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER) && gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER) != gl->defaultFramebuffer)) {
     GLint arg = TO_INT32(info[0]);
 
     glClear(arg);

@@ -1036,7 +1036,7 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
           nativeWindow.bindVrChildFbo(vrPresentState.glContext, vrPresentState.fbo, GlobalContext.xrState.tex[0], GlobalContext.xrState.depthTex[0]);
         }
         
-        vrPresentState.glContext.setTopLevel(false);
+        vrPresentState.glContext.setClearEnabled(false);
       } else {
         if (GlobalContext.xrState.aaEnabled[0]) {
           vrPresentState.glContext.setDefaultFramebuffer(vrPresentState.glContext.framebuffer.msFbo);
@@ -1046,7 +1046,7 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
           nativeWindow.bindVrChildFbo(vrPresentState.glContext, vrPresentState.glContext.framebuffer.fbo, vrPresentState.glContext.framebuffer.tex, vrPresentState.glContext.framebuffer.depthTex);
         }
 
-        vrPresentState.glContext.setTopLevel(true);
+        vrPresentState.glContext.setClearEnabled(true);
       }
     }
   };
@@ -1240,13 +1240,13 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
     const _onmakeswapchain = context => {
       if (context !== vrPresentState.glContext) {
         /* if (vrPresentState.glContext) {
-          vrPresentState.glContext.setTopLevel(true);
+          vrPresentState.glContext.setClearEnabled(true);
         } */
 
         vrPresentState.glContext = context;
         vrPresentState.fbo = context.createFramebuffer().id;
         vrPresentState.msFbo = context.createFramebuffer().id;
-        // vrPresentState.glContext.setTopLevel(false);
+        // vrPresentState.glContext.setClearEnabled(false);
 
         window.document.emit('domchange'); // open mirror window
       }
@@ -1269,7 +1269,7 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
       // }
 
       vrPresentState.hmdType = null;
-      // vrPresentState.glContext.setTopLevel(true);
+      // vrPresentState.glContext.setClearEnabled(true);
       vrPresentState.glContext = null;
       GlobalContext.clearGamepads();
     };

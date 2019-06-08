@@ -361,7 +361,7 @@ public:
   static NAN_METHOD(GetDefaultFramebuffer);
   static NAN_METHOD(SetDefaultFramebuffer);
 
-  static NAN_METHOD(SetTopLevel);
+  static NAN_METHOD(SetClearEnabled);
 
   static NAN_METHOD(FramebufferTextureMultiviewOVR);
   static NAN_METHOD(FramebufferTextureMultisampleMultiviewOVR);
@@ -431,7 +431,7 @@ public:
   GLuint defaultVao;
   GLuint defaultFramebuffer;
   GlObjectCache objectCache;
-  bool topLevel;
+  bool clearEnabled;
   bool dirty;
   bool flipY;
   bool premultiplyAlpha;
