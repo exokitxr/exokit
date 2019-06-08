@@ -1217,15 +1217,15 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
     };
     const _onmakeswapchain = context => {
       if (context !== vrPresentState.glContext) {
-        if (vrPresentState.glContext) {
+        /* if (vrPresentState.glContext) {
           vrPresentState.glContext.setTopLevel(true);
-        }
+        } */
 
         vrPresentState.glContext = context;
         vrPresentState.fbo = context.createFramebuffer().id;
         vrPresentState.msFbo = context.createFramebuffer().id;
-        vrPresentState.glContext.setTopLevel(false);
-        
+        // vrPresentState.glContext.setTopLevel(false);
+
         window.document.emit('domchange'); // open mirror window
       }
 
@@ -1247,7 +1247,7 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
       // }
 
       vrPresentState.hmdType = null;
-      vrPresentState.glContext.setTopLevel(true);
+      // vrPresentState.glContext.setTopLevel(true);
       vrPresentState.glContext = null;
       GlobalContext.clearGamepads();
     };
