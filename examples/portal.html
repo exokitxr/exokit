@@ -18,7 +18,16 @@
 <script>
 (() => {
 
-let container, scene, camera, session, controllerMeshes, layers, tutorialIframe, rainIframe, webxrSampleIframe, portalMesh, portalMesh2;
+let container, scene, camera, session, controllerMeshes, layers, tutorialIframe, rainIframe, webxrSampleIframe, portalMesh, portalMesh2, volumeMesh;
+const viewMatrices = [
+  new THREE.Matrix4(),
+  new THREE.Matrix4(),
+];
+const projectionMatrices = [
+  new THREE.Matrix4(),
+  new THREE.Matrix4(),
+];
+
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
 const localQuaternion = new THREE.Quaternion();
@@ -308,18 +317,22 @@ function init() {
       position.clone().add(new THREE.Vector3(0, 0, scale.z/2).applyQuaternion(quaternion))
     );
     mesh.material.uniforms.uPlane.value.set(plane.normal.x, plane.normal.y, plane.normal.z, plane.constant);
+    mesh.numRenders = 0;
     mesh.onBeforeRender = function(renderer, scene, camera, geometry, material, group) {
-      /* if (renderer.vr.enabled) {
-        camera = renderer.vr.getCamera(camera).cameras[0];
-      } */
-      material.uniforms.pmi.value
+      material.uniforms.mwi.value = viewMatrices[mesh.numRenders];
+      material.uniforms.pmi.value = projectionMatrices[mesh.numRenders];
+
+      /* material.uniforms.pmi.value
         .fromArray(GlobalContext.xrState.leftProjectionMatrix)
+        // .multiply(localMatrix.fromArray(iframe.xrOffset.matrix))
         .getInverse(material.uniforms.pmi.value);
 
       material.uniforms.mwi.value
         .fromArray(GlobalContext.xrState.leftViewMatrix)
         // .multiply(localMatrix.fromArray(iframe.xrOffset.matrix))
-        .getInverse(material.uniforms.mwi.value);
+        .getInverse(material.uniforms.mwi.value); */
+
+      mesh.numRenders++;
     };
     const image = new Image();
     image.src = 'x.png';
@@ -479,22 +492,14 @@ function init() {
         new THREE.Vector3(0, 0, -1).applyQuaternion(quaternion),
         position.clone().add(new THREE.Vector3(0, 0, scale.z/2).applyQuaternion(quaternion))
       );
-      console.log('get plane 5', plane.normal.x, plane.normal.y, plane.normal.z, plane.constant);
       mesh.material.uniforms.uPlane5.value.set(plane.normal.x, plane.normal.y, plane.normal.z, -plane.constant);
     }
+    mesh.numRenders = 0;
     mesh.onBeforeRender = function(renderer, scene, camera, geometry, material, group) {
-      /* if (renderer.vr.enabled) {
-        camera = renderer.vr.getCamera(camera).cameras[0];
-      } */
-      material.uniforms.pmi.value
-        .fromArray(GlobalContext.xrState.leftProjectionMatrix)
-        // .multiply(localMatrix.fromArray(iframe.xrOffset.matrix))
-        .getInverse(material.uniforms.pmi.value);
-
-      material.uniforms.mwi.value
-        .fromArray(GlobalContext.xrState.leftViewMatrix)
-        // .multiply(localMatrix.fromArray(iframe.xrOffset.matrix))
-        .getInverse(material.uniforms.mwi.value);
+      material.uniforms.mwi.value = viewMatrices[mesh.numRenders];
+      material.uniforms.pmi.value = projectionMatrices[mesh.numRenders];
+        
+      mesh.numRenders++;
     };
     return mesh;
   };
@@ -529,6 +534,23 @@ function init() {
   renderer.setAnimationLoop(animate);
 }
 function animate(time, frame) {
+  if (frame) {
+    const pose = frame.getViewerPose();
+    const {views} = pose;
+    for (let i = 0; i < views.length; i++) {
+      const view = views[i];
+      viewMatrices[i]
+        .fromArray(pose.getViewMatrix(view))
+        .getInverse(viewMatrices[i]);
+      projectionMatrices[i]
+        .fromArray(view.projectionMatrix)
+        .getInverse(projectionMatrices[i]);
+    }
+  }
+  [portalMesh, portalMesh2, volumeMesh].forEach(m => {
+    m.numRenders = 0;
+  });
+
   if (webxrSampleIframe.contentWindow && webxrSampleIframe.contentWindow.framebuffer) {
     const {tex/*, width, height*/} = webxrSampleIframe.contentWindow.framebuffer;
     if (!portalMesh.material.uniforms.uTex.value) {
