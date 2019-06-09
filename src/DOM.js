@@ -2106,14 +2106,6 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   height: this.height || context.canvas.ownerDocument.defaultView.innerHeight,
                   context,
                 });
-                browser.on('message', m => {
-                  if (onMessage) {
-                    m = new MessageEvent('messaage', {
-                      data: m,
-                    });
-                    onMessage(m);
-                  }
-                });
                 this.browser = browser;
 
                 let onmessage = null;
@@ -2139,8 +2131,22 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   _emit() {},
                 };
 
-                this.readyState = 'complete';
+                browser.on('message', data => {
+                  console.log('emit message', data, !!onmessage);
+                  if (onmessage) {
+                    const e = new MessageEvent('messaage', {
+                      data,
+                    });
+                    onmessage(e);
+                  }
+                });
+
+                await new Promise((accept, reject) => {
+                  browser.once('load', accept);
+                });
                 
+                this.readyState = 'complete';
+
                 this.dispatchEvent(new Event('load', {target: this}));
 
                 cb();
