@@ -12,8 +12,7 @@ app.commandLine.appendSwitch('force-device-scale-factor', '1');
 
 let {console} = global;
 
-const PIPE_NAME = 'mypipe';
-const PIPE_PATH = '\\\\.\\pipe\\' + PIPE_NAME;
+const PIPE_PATH = process.argv[2];
 const TYPES = (() => {
   let iota = 0;
   return {
@@ -54,7 +53,7 @@ const _pull  = l => {
 };
 const _consumeInput = () => {
   while (bsLength >= Uint32Array.BYTES_PER_ELEMENT) {
-    console.log('tick');
+    // console.log('tick');
     let [b] = bs;
     if ((b.byteOffset % Uint32Array.BYTES_PER_ELEMENT) !== 0) {
       const oldB = b;
@@ -69,7 +68,7 @@ const _consumeInput = () => {
       b = Buffer.from(b.buffer, b.byteOffset + Uint32Array.BYTES_PER_ELEMENT, size);
       const s = new TextDecoder().decode(b);
       const e = JSON.parse(s);
-      console.warn('child got message', e);
+      // console.warn('child got message', e);
       
       switch (e.method) {
         case 'initialize': {
@@ -88,11 +87,11 @@ const _consumeInput = () => {
           })
           mainWindow.loadURL(url)
             .then(() => {
-              console.log('child loaded');
+              // console.log('child loaded');
             });
           
           mainWindow.webContents.on('paint', (event, dirty, image) => {
-            console.warn('child got paint', dirty);
+            // console.warn('child got paint', dirty);
             {
               const b = Uint32Array.from([TYPES.IMAGEDATA, dirty.x, dirty.y, dirty.width, dirty.height]);
               const b2 = new Buffer(b.buffer, b.byteOffset, b.byteLength);
@@ -100,11 +99,17 @@ const _consumeInput = () => {
               // process.stdout.write(b2);
             }
             {
-              const i = image.crop(dirty);
-              const i2 = i.getBitmap();
-              client.write(i2);
+              const {width, height} = image.getSize();
+              const bitmap = image.getBitmap();
+              const clippedBitmap = Buffer.allocUnsafe(dirty.width * dirty.height * 4);
+              for (let y = 0; y < dirty.height; y++) {
+                const srcY = dirty.y + y;
+                const dstY = y;
+                bitmap.copy(clippedBitmap, dstY * dirty.width, (srcY * width) + dirty.x, dirty.width);
+              }
+              client.write(clippedBitmap);
               // process.stdout.write(i2);
-              console.warn('electron child got dirty', dirty, i2.byteLength);
+              // console.warn('electron child got dirty', dirty, i2.byteLength);
             }
           });
           mainWindow.webContents.setFrameRate(30);
