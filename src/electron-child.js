@@ -152,9 +152,7 @@ const _consumeInput = () => {
           break;
         }
         case 'runJs': {
-          const {jsString} = e;
-          // console.log('child run js', jsString);
-          mainWindow.webContents.executeJavaScript(jsString);
+          mainWindow.webContents.executeJavaScript(e.jsString);
           break;
         }
         case 'postMessage': {
