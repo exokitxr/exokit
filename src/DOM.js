@@ -2132,7 +2132,6 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                 };
 
                 browser.on('message', data => {
-                  console.log('emit message', data, !!onmessage);
                   if (onmessage) {
                     const e = new MessageEvent('messaage', {
                       data,
