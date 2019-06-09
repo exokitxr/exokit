@@ -427,7 +427,7 @@ public:
     pixelStoreiBindings[pname] = param;
   }
   GLuint GetPixelStoreiBinding(GLenum pname) {
-    return pixelStoreiBindings[GL_VERTEX_SHADER];
+    return pixelStoreiBindings[pname];
   }
   bool HasPixelStoreiBinding(GLenum pname) {
     return pixelStoreiBindings.find(pname) != pixelStoreiBindings.end();
