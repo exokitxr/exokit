@@ -2104,6 +2104,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   url,
                   width: this.width || context.canvas.ownerDocument.defaultView.innerWidth,
                   height: this.height || context.canvas.ownerDocument.defaultView.innerHeight,
+                  context,
                 });
                 browser.on('message', m => {
                   if (onMessage) {
