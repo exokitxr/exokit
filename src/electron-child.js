@@ -21,6 +21,8 @@ const TYPES = (() => {
   };
 })();
 
+let mainWindow = null;
+
 const bs = [];
 let bsLength = 0;
 const _pull  = l => {
@@ -74,7 +76,7 @@ const _consumeInput = () => {
         case 'initialize': {
           const {url, width, height} = e;
 
-          const mainWindow = new BrowserWindow({
+          mainWindow = new BrowserWindow({
             width,
             height,
             show: false,
@@ -92,20 +94,21 @@ const _consumeInput = () => {
           
           mainWindow.webContents.on('paint', (event, dirty, image) => {
             // console.warn('child got paint', dirty);
+            const {width, height} = image.getSize();
             {
-              const b = Uint32Array.from([TYPES.IMAGEDATA, dirty.x, dirty.y, dirty.width, dirty.height]);
+              const b = Uint32Array.from([TYPES.IMAGEDATA, dirty.x, dirty.y, dirty.width, dirty.height, width, height]);
               const b2 = new Buffer(b.buffer, b.byteOffset, b.byteLength);
               client.write(b2);
               // process.stdout.write(b2);
             }
             {
-              const {width, height} = image.getSize();
               const bitmap = image.getBitmap();
               const clippedBitmap = Buffer.allocUnsafe(dirty.width * dirty.height * 4);
+              // clippedBitmap.fill(0xFF);
               for (let y = 0; y < dirty.height; y++) {
                 const srcY = dirty.y + y;
                 const dstY = y;
-                bitmap.copy(clippedBitmap, dstY * dirty.width, (srcY * width) + dirty.x, dirty.width);
+                bitmap.copy(clippedBitmap, (dstY * dirty.width)*4, ((srcY * width) + dirty.x)*4, ((srcY * width) + dirty.x + dirty.width)*4);
               }
               client.write(clippedBitmap);
               // process.stdout.write(i2);
@@ -126,6 +129,9 @@ const _consumeInput = () => {
           break;
         }
         case 'sendInputEvent': {
+          if (mainWindow) {
+            mainWindow.webContents.sendInputEvent(e.event);
+          }
           break;
         }
         default: {

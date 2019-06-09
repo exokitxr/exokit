@@ -20,7 +20,7 @@ const TYPES = (() => {
 let numVms = 0;
 
 class ElectronVm extends EventEmitter {
-  constructor({url = 'http://google.com', width = 1280, height = 1024} = {}) {
+  constructor({url = 'http://google.com', width = 1280, height = 1024, context = null} = {}) {
     super();
     
     const server = net.createServer(stream => {
@@ -34,6 +34,12 @@ class ElectronVm extends EventEmitter {
     const cp = child_process.spawn(electron, [path.join(__dirname, 'electron-child.js'), pipePath]);
     cp.stdin = new stream.PassThrough();
     cp.stdout = new stream.PassThrough();
+    this.childProcess = cp;
+    
+    const texture = context.createTexture();
+    this.texture = texture;
+    let textureWidth = 0;
+    let textureHeight = 0;
 
     const bs = [];
     let bsLength = 0;
@@ -99,16 +105,19 @@ class ElectronVm extends EventEmitter {
             break;
           }
           case TYPES.IMAGEDATA: {
-            if (b.length < (1+4)*Uint32Array.BYTES_PER_ELEMENT) {
+            if (b.length < (1+6)*Uint32Array.BYTES_PER_ELEMENT) {
               console.warn(new Error('did not get full header from electron pipe').stack);
             }
-            const header = new Uint32Array(b.buffer, b.byteOffset + Uint32Array.BYTES_PER_ELEMENT, 4);
-            const [x, y, width, height] = header;
+            const header = new Uint32Array(b.buffer, b.byteOffset + Uint32Array.BYTES_PER_ELEMENT, 6);
+            const [x, y, width, height, newTextureWidth, newTextureHeight] = header;
             // console.log('got header', x, y, width, height);
-            b = _pull((1+4)*Uint32Array.BYTES_PER_ELEMENT + width*height*4);
+            b = _pull((1+6)*Uint32Array.BYTES_PER_ELEMENT + width*height*4);
             if (b) {
-              const imageData = new Buffer(b.buffer, b.byteOffset + (1+4)*Uint32Array.BYTES_PER_ELEMENT, width*height*4);
-              console.log('got frame', x, y, width, height, imageData.byteLength);
+              const imageData = new Uint8Array(b.buffer, b.byteOffset + (1+6)*Uint32Array.BYTES_PER_ELEMENT, width*height*4);
+              // console.log('got frame', new Buffer(b.buffer, b.byteOffset + (1+6)*Uint32Array.BYTES_PER_ELEMENT, width*height*4).slice(width*height*4/2, width*height*4/2+20).toString('hex'));
+              context.loadSubTexture(texture.id, x, y, width, height, imageData, textureWidth, textureHeight, newTextureWidth, newTextureHeight);
+              textureWidth = newTextureWidth;
+              textureHeight = newTextureHeight;
             } else {
               return;
             }
@@ -116,7 +125,6 @@ class ElectronVm extends EventEmitter {
           }
           default: {
             console.warn('electron parent got invalid type', type);
-            throw new Error('fail');
             return;
           }
         }
@@ -134,8 +142,7 @@ class ElectronVm extends EventEmitter {
     cp.on('exit', () => {
       console.log('child process exit');
     });
-    
-    this.childProcess = cp;
+
     this.runAsync({
       method: 'initialize',
       url,
@@ -181,9 +188,34 @@ class ElectronVm extends EventEmitter {
 
   sendMouseMove(x, y) {
     this.sendInputEvent({
-      type: 'mousemove',
+      type: 'mouseMove',
       x,
       y,
+    });
+  }
+  sendMouseDown(x, y, button) {
+    this.sendInputEvent({
+      type: 'mouseDown',
+      x,
+      y,
+      button,
+    });
+  }
+  sendMouseUp(x, y, button) {
+    this.sendInputEvent({
+      type: 'mouseUp',
+      x,
+      y,
+      button,
+    });
+  }
+  sendMouseWheel(x, y, deltaX, deltaY) {
+    this.sendInputEvent({
+      type: 'mouseWheel',
+      x,
+      y,
+      deltaX,
+      deltaY,
     });
   }
 
