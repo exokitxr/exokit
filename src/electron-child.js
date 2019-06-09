@@ -120,8 +120,6 @@ const _consumeInput = () => {
           mainWindow.on('closed', function () {
             console.warn('electron child  window closed');
           });
-
-          console.log('child loading...', ready, {width, height, url});
           
           break;
         }
@@ -148,35 +146,6 @@ const _consumeInput = () => {
 let ready = false;
 app.once('ready', () => {
   ready = true;
-  
-  /* const mainWindow = new BrowserWindow({
-    show: false,
-    webPreferences: {
-      offscreen: true,
-    },
-  })
-  mainWindow.loadURL('https://google.com')
-    .then(() => {
-      console.log('child loaded 2');
-    });
-  mainWindow.webContents.on('paint', (event, dirty, image) => {
-    console.warn('child got paint 2', dirty);
-    {
-      const b = Uint32Array.from([TYPES.IMAGEDATA, dirty.x, dirty.y, dirty.width, dirty.height]);
-      const b2 = new Buffer(b.buffer, b.byteOffset, b.byteLength);
-      // process.stdout.write(b2);
-    }
-    {
-      const i = image.crop(dirty);
-      const i2 = i.getBitmap();
-      // process.stdout.write(i2);
-      console.warn('electron child got dirty 2', dirty, i2.byteLength);
-    }
-  });
-  mainWindow.webContents.setFrameRate(30);
-  mainWindow.on('closed', function () {
-    console.warn('electron child  window closed 2');
-  }); */
   
   _consumeInput();
 });
@@ -224,6 +193,4 @@ const client = net.connect(PIPE_PATH, err => {
       _consumeInput();
     }
   });
-
-  console.warn('child started');
 });
