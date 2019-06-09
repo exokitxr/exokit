@@ -156,6 +156,7 @@ const _consumeInput = () => {
           break;
         }
         case 'postMessage': {
+          mainWindow.webContents.executeJavaScript(`window.dispatchEvent(new MessageEvent('message', {data: ${JSON.stringify(e.message)}}));`);
           break;
         }
         case 'sendInputEvent': {
