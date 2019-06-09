@@ -292,66 +292,68 @@ function animate(timestamp, frame) {
     controllerMeshes[i].visible = false;
   }
 
-  const inputSources = session.getInputSources();
-  for (let i = 0; i < inputSources.length; i++) {
-    const inputSource = inputSources[i];
-    const pose = frame.getInputPose(inputSource);
+  if (session) {
+    const inputSources = session.getInputSources();
+    for (let i = 0; i < inputSources.length; i++) {
+      const inputSource = inputSources[i];
+      const pose = frame.getInputPose(inputSource);
 
-    const controllerIndex = _getControllerIndex(inputSource);
-    const controllerMesh = controllerMeshes[controllerIndex];
-    controllerMesh.matrix.fromArray(pose.targetRay.transformMatrix);
-    controllerMesh.matrix.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
-    controllerMesh.updateMatrixWorld(true);
-    controllerMesh.visible = true;
+      const controllerIndex = _getControllerIndex(inputSource);
+      const controllerMesh = controllerMeshes[controllerIndex];
+      controllerMesh.matrix.fromArray(pose.targetRay.transformMatrix);
+      controllerMesh.matrix.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
+      controllerMesh.updateMatrixWorld(true);
+      controllerMesh.visible = true;
 
-    const leftLine = localLine;
-    const topLine = localLine2;
-    const plane = localPlane;
-    const raycaster = localRaycaster;
+      const leftLine = localLine;
+      const topLine = localLine2;
+      const plane = localPlane;
+      const raycaster = localRaycaster;
 
-    leftLine.start
-      .set(-planeWorldWidth/2, planeWorldHeight/2, 0)
-      .applyMatrix4(planeMesh.matrixWorld);
-    leftLine.end
-      .set(-planeWorldWidth/2, -planeWorldHeight/2, 0)
-      .applyMatrix4(planeMesh.matrixWorld);
+      leftLine.start
+        .set(-planeWorldWidth/2, planeWorldHeight/2, 0)
+        .applyMatrix4(planeMesh.matrixWorld);
+      leftLine.end
+        .set(-planeWorldWidth/2, -planeWorldHeight/2, 0)
+        .applyMatrix4(planeMesh.matrixWorld);
 
-    topLine.start
-      .set(-planeWorldWidth/2, planeWorldHeight/2, 0)
-      .applyMatrix4(planeMesh.matrixWorld);
-    topLine.end
-      .set(planeWorldWidth/2, planeWorldHeight / 2, 0)
-      .applyMatrix4(planeMesh.matrixWorld);
-
-    plane.setFromCoplanarPoints(
-      leftLine.start,
-      leftLine.end,
+      topLine.start
+        .set(-planeWorldWidth/2, planeWorldHeight/2, 0)
+        .applyMatrix4(planeMesh.matrixWorld);
       topLine.end
-    );
+        .set(planeWorldWidth/2, planeWorldHeight / 2, 0)
+        .applyMatrix4(planeMesh.matrixWorld);
 
-    raycaster.set(controllerMesh.position, localVector.set(0, 0, -1).applyQuaternion(controllerMesh.quaternion));
-    const intersectionPoint = raycaster.ray.intersectPlane(plane, localVector);
-    if (intersectionPoint) {
-      const leftIntersectionPoint = leftLine.closestPointToPoint(intersectionPoint, true, localVector2);
+      plane.setFromCoplanarPoints(
+        leftLine.start,
+        leftLine.end,
+        topLine.end
+      );
 
-      const topIntersectionPoint = topLine.closestPointToPoint(intersectionPoint, true, localVector3);
+      raycaster.set(controllerMesh.position, localVector.set(0, 0, -1).applyQuaternion(controllerMesh.quaternion));
+      const intersectionPoint = raycaster.ray.intersectPlane(plane, localVector);
+      if (intersectionPoint) {
+        const leftIntersectionPoint = leftLine.closestPointToPoint(intersectionPoint, true, localVector2);
 
-      const xFactor = topIntersectionPoint.distanceTo(topLine.start) / planeWorldWidth;
-      const yFactor = leftIntersectionPoint.distanceTo(leftLine.start) / planeWorldHeight;
-      const distance = raycaster.ray.origin.distanceTo(intersectionPoint);
+        const topIntersectionPoint = topLine.closestPointToPoint(intersectionPoint, true, localVector3);
 
-      if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < 3) {
-        const SCROLL_SCALE = 3; // constant in libmlservo
-        const x = (xFactor * planeWidth)/SCROLL_SCALE;
-        const y = (yFactor * planeHeight)/SCROLL_SCALE;
+        const xFactor = topIntersectionPoint.distanceTo(topLine.start) / planeWorldWidth;
+        const yFactor = leftIntersectionPoint.distanceTo(leftLine.start) / planeWorldHeight;
+        const distance = raycaster.ray.origin.distanceTo(intersectionPoint);
 
-        controllerCoords[controllerIndex][0] = x;
-        controllerCoords[controllerIndex][1] = y;
+        if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < 3) {
+          const SCROLL_SCALE = 3; // constant in libmlservo
+          const x = (xFactor * planeWidth)/SCROLL_SCALE;
+          const y = (yFactor * planeHeight)/SCROLL_SCALE;
 
-        iframe.sendMouseMove(x, y);
+          controllerCoords[controllerIndex][0] = x;
+          controllerCoords[controllerIndex][1] = y;
 
-        boxMeshes[controllerIndex].position.copy(intersectionPoint);
-        boxMeshes[controllerIndex].updateMatrixWorld();
+          iframe.sendMouseMove(x, y);
+
+          boxMeshes[controllerIndex].position.copy(intersectionPoint);
+          boxMeshes[controllerIndex].updateMatrixWorld();
+        }
       }
     }
   }
