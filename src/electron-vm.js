@@ -6,6 +6,7 @@ const child_process = require('child_process');
 const {TextEncoder} = require('util');
 
 const electron = require('electron');
+const keycode = require('keycode');
 
 const {process} = global;
 
@@ -19,6 +20,19 @@ const TYPES = (() => {
 
 let numVms = 0;
 
+const _arrayifyModifiers = modifiers => {
+  const result = [];
+  if (modifiers && modifiers.shiftKey) {
+    result.push('shift');
+  }
+  if (modifiers && modifiers.ctrlKey) {
+    result.push('control');
+  }
+  if (modifiers && modifiers.altKey) {
+    result.push('alt');
+  }
+  return result;
+};
 class ElectronVm extends EventEmitter {
   constructor({url = 'http://google.com', width = 1280, height = 1024, context = null} = {}) {
     super();
@@ -216,6 +230,75 @@ class ElectronVm extends EventEmitter {
       y,
       deltaX,
       deltaY,
+    });
+  }
+  sendKeyDown(keyCode, modifiers) {
+    this.sendInputEvent({
+      type: 'keyDown',
+      keyCode: keycode(keyCode),
+      modifiers: _arrayifyModifiers(modifiers),
+    });
+  }
+  sendKeyUp(keyCode, modifiers) {
+    this.sendInputEvent({
+      type: 'keyUp',
+      keyCode: keycode(keyCode),
+      modifiers: _arrayifyModifiers(modifiers),
+    });
+  }
+  sendKeyPress(keyCode, modifiers) {
+    keyCode = String.fromCharCode(keyCode);
+    if (modifiers && modifiers.shiftKey) {
+      if (/^[a-z]$/.test(keyCode)) {
+        keyCode = keyCode.toUpperCase();
+      } else if (keyCode === '1') {
+        keyCode = '!';
+      } else if (keyCode === '2') {
+        keyCode = '@';
+      } else if (keyCode === '3') {
+        keyCode = '#';
+      } else if (keyCode === '4') {
+        keyCode = '$';
+      } else if (keyCode === '5') {
+        keyCode = '%';
+      } else if (keyCode === '6') {
+        keyCode = '^';
+      } else if (keyCode === '7') {
+        keyCode = '&';
+      } else if (keyCode === '8') {
+        keyCode = '*';
+      } else if (keyCode === '9') {
+        keyCode = '(';
+      } else if (keyCode === '0') {
+        keyCode = ')';
+      } else if (keyCode === '-') {
+        keyCode = '_';
+      } else if (keyCode === '=') {
+        keyCode = '+';
+      } else if (keyCode === '`') {
+        keyCode = '~';
+      } else if (keyCode === '[') {
+        keyCode = '{';
+      } else if (keyCode === ']') {
+        keyCode = '}';
+      } else if (keyCode === '\\') {
+        keyCode = '|';
+      } else if (keyCode === ';') {
+        keyCode = ':';
+      } else if (keyCode === '\'') {
+        keyCode = '"';
+      } else if (keyCode === ',') {
+        keyCode = '<';
+      } else if (keyCode === '.') {
+        keyCode = '>';
+      } else if (keyCode === '/') {
+        keyCode = '?';
+      }
+    }
+    this.sendInputEvent({
+      type: 'char',
+      keyCode,
+      modifiers: _arrayifyModifiers(modifiers),
     });
   }
 
