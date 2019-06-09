@@ -3217,9 +3217,13 @@ NAN_METHOD(WebGLRenderingContext::TexImage2D) {
 
     if (gl->HasPixelStoreiBinding(GL_PACK_ALIGNMENT)) {
       glPixelStorei(GL_PACK_ALIGNMENT, gl->GetPixelStoreiBinding(GL_PACK_ALIGNMENT));
+    } else {
+      glPixelStorei(GL_PACK_ALIGNMENT, 4);
     }
     if (gl->HasPixelStoreiBinding(GL_UNPACK_ALIGNMENT)) {
       glPixelStorei(GL_UNPACK_ALIGNMENT, gl->GetPixelStoreiBinding(GL_UNPACK_ALIGNMENT));
+    } else {
+      glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
     }
   } else {
     Nan::ThrowError("WebGLRenderingContext::TexImage2D: invalid texture argument");
