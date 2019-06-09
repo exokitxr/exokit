@@ -2519,19 +2519,11 @@ NAN_METHOD(WebGLRenderingContext::LoadSubTexture) {
     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
     glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
     glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
-// #ifndef LUMIN
-    // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, newTextureWidth, newTextureHeight, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
-    // std::cout << "init texture " << newTextureWidth << " " << newTextureHeight << std::endl;
+#if !defined(LUMIN) && !defined(ANDROID)
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, newTextureWidth, newTextureHeight, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
-/* {
-  GLenum error = glGetError();
-  if (error) {
-    std::cout << "error 1 " << error << std::endl;
-  }
-} */
-// #else
-    // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, newTextureWidth, newTextureHeight, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
-// #endif
+#else
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, newTextureWidth, newTextureHeight, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
+#endif
   }
 
   glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
@@ -2539,20 +2531,12 @@ NAN_METHOD(WebGLRenderingContext::LoadSubTexture) {
   glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
   /* glPixelStorei(GL_UNPACK_SKIP_PIXELS, x);
   glPixelStorei(GL_UNPACK_SKIP_ROWS, y); */
-// #ifndef LUMIN
+#if !defined(LUMIN) && !defined(ANDROID)
   uint8_t *buffer = (uint8_t *)bufferUint8Array->Buffer()->GetContents().Data() + bufferUint8Array->ByteOffset();
-  // std::cout << "write texture 1 " << x << " " << y << " " << width << " " << height << " " << oldTextureWidth << " " << oldTextureHeight << " " << newTextureWidth << " " << newTextureHeight << std::endl;
   glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, width, height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, buffer);
-  /* std::cout << "write texture 2" << std::endl;
-{
-  GLenum error = glGetError();
-  if (error) {
-    std::cout << "error 2 " << error << std::endl;
-  }
-} */
-// #else
-  // glTexSubImage2D(GL_TEXTURE_2D, 0, rect.x, rect.y, rect.width, rect.height, GL_BGRA_EXT, GL_UNSIGNED_BYTE, buffer);
-// #endif
+#else
+  glTexSubImage2D(GL_TEXTURE_2D, 0, rect.x, rect.y, rect.width, rect.height, GL_BGRA_EXT, GL_UNSIGNED_BYTE, buffer);
+#endif
   
   // glFlush();
   
