@@ -1199,10 +1199,10 @@ WebGLRenderingContext::WebGLRenderingContext() :
   defaultFramebuffer(0),
   clearEnabled(true),
   dirty(false),
-  flipY(false),
+  /* flipY(false),
   premultiplyAlpha(true),
   packAlignment(4),
-  unpackAlignment(4),
+  unpackAlignment(4), */
   activeTexture(GL_TEXTURE0)
   {}
 
@@ -2266,28 +2266,17 @@ NAN_METHOD(WebGLRenderingContext::UniformMatrix3x4fv) {
 }
 
 NAN_METHOD(WebGLRenderingContext::PixelStorei) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
   int pname = TO_INT32(info[0]);
   int param = TO_INT32(info[1]);
 
-  if (pname == UNPACK_FLIP_Y_WEBGL) {
-    WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
-    gl->flipY = (bool)param;
-  } else if (pname == UNPACK_PREMULTIPLY_ALPHA_WEBGL) {
-    WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
-    gl->premultiplyAlpha = (bool)param;
-  } else if (pname == GL_PACK_ALIGNMENT) {
-    WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
-    gl->packAlignment = param;
-    glPixelStorei(pname, param);
-  } else if (pname == GL_UNPACK_ALIGNMENT) {
-    WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
-    gl->unpackAlignment = param;
-    glPixelStorei(pname, param);
+  if (pname == UNPACK_FLIP_Y_WEBGL || pname == UNPACK_PREMULTIPLY_ALPHA_WEBGL) {
+    // nothing; tracked internally
   } else {
     glPixelStorei(pname, param);
   }
-
-  // info.GetReturnValue().Set(Nan::Undefined());
+  
+  gl->SetPixelStoreiBinding(pname, param);
 }
 
 NAN_METHOD(WebGLRenderingContext::BindAttribLocation) {
@@ -3041,7 +3030,8 @@ NAN_METHOD(WebGLRenderingContext::TexImage2D) {
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbos[1]);
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, targetV, gl->HasTextureBinding(gl->activeTexture, targetV) ? gl->GetTextureBinding(gl->activeTexture, targetV) : 0, 0);
 
-    if (gl->flipY) {
+    const bool flipY = gl->HasPixelStoreiBinding(UNPACK_FLIP_Y_WEBGL) ? (bool)gl->GetPixelStoreiBinding(UNPACK_FLIP_Y_WEBGL) : false;
+    if (flipY) {
       glBlitFramebuffer(
         0, 0, widthV, heightV,
         0, 0, widthV, heightV,
@@ -3091,7 +3081,8 @@ NAN_METHOD(WebGLRenderingContext::TexImage2D) {
       pixelsV2 = pixelsV;
     }
 
-    if (gl->flipY && !pixels->IsArrayBufferView()) {
+    const bool flipY = gl->HasPixelStoreiBinding(UNPACK_FLIP_Y_WEBGL) ? (bool)gl->GetPixelStoreiBinding(UNPACK_FLIP_Y_WEBGL) : false;
+    if (flipY && !pixels->IsArrayBufferView()) {
       unique_ptr<char[]> pixelsV3Buffer(new char[widthV * heightV * pixelSize]);
 
       flipImageData(pixelsV3Buffer.get(), pixelsV2, widthV, heightV, pixelSize);
@@ -3141,9 +3132,11 @@ NAN_METHOD(WebGLRenderingContext::TexImage2D) {
       glTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, formatV, typeV, pixelsV2);
     }
 
-    if (needsReformat) {
-      glPixelStorei(GL_PACK_ALIGNMENT, gl->packAlignment);
-      glPixelStorei(GL_UNPACK_ALIGNMENT, gl->unpackAlignment);
+    if (gl->HasPixelStoreiBinding(GL_PACK_ALIGNMENT)) {
+      glPixelStorei(GL_PACK_ALIGNMENT, gl->GetPixelStoreiBinding(GL_PACK_ALIGNMENT));
+    }
+    if (gl->HasPixelStoreiBinding(GL_UNPACK_ALIGNMENT)) {
+      glPixelStorei(GL_UNPACK_ALIGNMENT, gl->GetPixelStoreiBinding(GL_UNPACK_ALIGNMENT));
     }
   } else {
     Nan::ThrowError("WebGLRenderingContext::TexImage2D: invalid texture argument");
@@ -4290,7 +4283,8 @@ NAN_METHOD(WebGLRenderingContext::TexSubImage2D) {
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbos[1]);
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, targetV, gl->HasTextureBinding(gl->activeTexture, targetV) ? gl->GetTextureBinding(gl->activeTexture, targetV) : 0, 0);
 
-    if (gl->flipY) {
+    const bool flipY = gl->HasPixelStoreiBinding(UNPACK_FLIP_Y_WEBGL) ? (bool)gl->GetPixelStoreiBinding(UNPACK_FLIP_Y_WEBGL) : false;
+    if (flipY) {
       glBlitFramebuffer(
         0, 0, widthV, heightV,
         xoffsetV, yoffsetV, xoffsetV + widthV, yoffsetV + heightV,
@@ -4334,7 +4328,8 @@ NAN_METHOD(WebGLRenderingContext::TexSubImage2D) {
       pixelsV2 = pixelsV;
     }
 
-    if (gl->flipY && !pixels->IsArrayBufferView()) {
+    const bool flipY = gl->HasPixelStoreiBinding(UNPACK_FLIP_Y_WEBGL) ? (bool)gl->GetPixelStoreiBinding(UNPACK_FLIP_Y_WEBGL) : false;
+    if (flipY && !pixels->IsArrayBufferView()) {
       unique_ptr<char[]> pixelsV3Buffer(new char[widthV * heightV * pixelSize]);
       flipImageData(pixelsV3Buffer.get(), pixelsV2, widthV, heightV, pixelSize);
 
@@ -4714,17 +4709,15 @@ NAN_METHOD(WebGLRenderingContext::GetParameter) {
     case UNPACK_FLIP_Y_WEBGL: {
       WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
       // return a boolean
-      GLboolean params;
-      glGetBooleanv(name, &params);
-      info.GetReturnValue().Set(JS_BOOL(gl->flipY));
+      const bool flipY = gl->HasPixelStoreiBinding(UNPACK_FLIP_Y_WEBGL) ? (bool)gl->GetPixelStoreiBinding(UNPACK_FLIP_Y_WEBGL) : false;
+      info.GetReturnValue().Set(JS_BOOL(flipY));
       break;
     }
     case UNPACK_PREMULTIPLY_ALPHA_WEBGL: {
       WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
       // return a boolean
-      GLboolean params;
-      glGetBooleanv(name, &params);
-      info.GetReturnValue().Set(JS_BOOL(gl->premultiplyAlpha));
+      const bool premultiplyAlpha = gl->HasPixelStoreiBinding(UNPACK_PREMULTIPLY_ALPHA_WEBGL) ? (bool)gl->GetPixelStoreiBinding(UNPACK_PREMULTIPLY_ALPHA_WEBGL) : true;
+      info.GetReturnValue().Set(JS_BOOL(premultiplyAlpha));
       break;
     }
     case MAX_CLIENT_WAIT_TIMEOUT_WEBGL:
