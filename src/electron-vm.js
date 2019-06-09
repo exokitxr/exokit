@@ -33,6 +33,14 @@ const _arrayifyModifiers = modifiers => {
   }
   return result;
 };
+const _stringifyButton = button => {
+  switch (button) {
+    case 0: return 'left';
+    case 1: return 'middle';
+    case 2: return 'right';
+    default: return '';
+  }
+};
 class ElectronVm extends EventEmitter {
   constructor({url = 'http://google.com', width = 1280, height = 1024, context = null} = {}) {
     super();
@@ -212,7 +220,8 @@ class ElectronVm extends EventEmitter {
       type: 'mouseDown',
       x,
       y,
-      button,
+      button: _stringifyButton(button),
+      clickCount: 1,
     });
   }
   sendMouseUp(x, y, button) {
@@ -220,7 +229,8 @@ class ElectronVm extends EventEmitter {
       type: 'mouseUp',
       x,
       y,
-      button,
+      button: _stringifyButton(button),
+      clickCount: 1,
     });
   }
   sendMouseWheel(x, y, deltaX, deltaY) {
