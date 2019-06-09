@@ -65,6 +65,9 @@ class ElectronVm extends EventEmitter {
     let textureWidth = 0;
     let textureHeight = 0;
 
+    this._width = width;
+    this._height = height;
+
     const bs = [];
     let bsLength = 0;
     const _pull  = l => {
@@ -206,7 +209,32 @@ class ElectronVm extends EventEmitter {
       height,
     });
   }
-  
+
+  get width() {
+    return this._width;
+  }
+  set width(width) {
+    this._width = width;
+
+    this.runAsync({
+      method: 'resize',
+      width: this._width,
+      height: this._height,
+    });
+  }
+  get height() {
+    return this._height;
+  }
+  set height(height) {
+    this._height = height;
+
+    this.runAsync({
+      method: 'resize',
+      width: this._width,
+      height: this._height,
+    });
+  }
+
   runAsync(e) {
     const s = JSON.stringify(e);
     const uint8Array = new TextEncoder().encode(s);

@@ -145,6 +145,11 @@ const _consumeInput = () => {
           
           break;
         }
+        case 'resize': {
+          const {width, height} = e;
+          mainWindow.setSize(width, height);
+          break;
+        }
         case 'runJs': {
           const {jsString} = e;
           // console.log('child run js', jsString);
