@@ -7,7 +7,7 @@ const electron = require('electron')
 const app = electron.app;
 const {BrowserWindow} = electron;
 
-app.disableHardwareAcceleration();
+app.disableHardwareAcceleration(); // this makes for potentially faster transfer of pixels
 app.commandLine.appendSwitch('force-device-scale-factor', '1');
 
 let {console} = global;
