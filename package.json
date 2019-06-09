@@ -47,7 +47,6 @@
     "@rgrove/parse-xml": "^1.1.1",
     "cross-env": "^5.2.0",
     "css": "^2.2.4",
-    "electron": "^5.0.3",
     "events": "^3.0.0",
     "fake-indexeddb": "^2.0.4",
     "find": "^0.2.9",
@@ -87,6 +86,9 @@
     "window-selector": "0.0.7",
     "window-xhr": "0.0.32",
     "ws": "^6.2.0"
+  },
+  "optionalDependencies": {
+    "electron": "^5.0.3"
   },
   "devDependencies": {
     "chai": "^4.1.2",
