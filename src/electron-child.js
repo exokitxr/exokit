@@ -17,6 +17,8 @@ const TYPES = (() => {
   let iota = 0;
   return {
     CONSOLE: ++iota,
+    LOAD: ++iota,
+    MESSAGE: ++iota,
     IMAGEDATA: ++iota,
   };
 })();
@@ -85,20 +87,40 @@ const _consumeInput = () => {
               webSecurity: false,
               allowRunningInsecureContent: true,
               backgroundThrottling: false,
+              preload: path.join(__dirname, 'electron-preload.js'),
             },
           })
           mainWindow.loadURL(url)
             .then(() => {
-              // console.log('child loaded');
+              const b = Uint32Array.from([TYPES.LOAD, 200]);
+              const b2 = new Buffer(b.buffer, b.byteOffset, b.byteLength);
+              parentPort.write(b2);
+
+              loaded = true;
+              _flushParentPort();
             });
-          
+
+          mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
+            const match = message.match(/^<postMessage>(.+)$/);
+            if (match) {
+              const s = match[1];
+              let m = new TextEncoder().encode(s);
+              m = new Buffer(m.buffer, m.byteOffset, m.byteLength);
+              const b = Uint32Array.from([TYPES.MESSAGE, m.length]);
+              const b2 = new Buffer(b.buffer, b.byteOffset, b.byteLength);
+              _parentPortWrite(b2);
+              _parentPortWrite(m);
+            } else {
+              console.log(message);
+            }
+          });
           mainWindow.webContents.on('paint', (event, dirty, image) => {
             // console.warn('child got paint', dirty);
             const {width, height} = image.getSize();
             {
               const b = Uint32Array.from([TYPES.IMAGEDATA, dirty.x, dirty.y, dirty.width, dirty.height, width, height]);
               const b2 = new Buffer(b.buffer, b.byteOffset, b.byteLength);
-              client.write(b2);
+              _parentPortWrite(b2);
               // process.stdout.write(b2);
             }
             {
@@ -110,7 +132,7 @@ const _consumeInput = () => {
                 const dstY = y;
                 bitmap.copy(clippedBitmap, (dstY * dirty.width)*4, ((srcY * width) + dirty.x)*4, ((srcY * width) + dirty.x + dirty.width)*4);
               }
-              client.write(clippedBitmap);
+              _parentPortWrite(clippedBitmap);
               // process.stdout.write(i2);
               // console.warn('electron child got dirty', dirty, i2.byteLength);
             }
@@ -121,6 +143,12 @@ const _consumeInput = () => {
             console.warn('electron child  window closed');
           });
           
+          break;
+        }
+        case 'runJs': {
+          const {jsString} = e;
+          // console.log('child run js', jsString);
+          mainWindow.webContents.executeJavaScript(jsString);
           break;
         }
         case 'postMessage': {
@@ -162,13 +190,28 @@ app.on('window-all-closed', function () {
   }
 }); */
 
-const client = net.connect(PIPE_PATH, err => {
+let loaded = false;
+const queue = [];
+const _parentPortWrite = m => {
+  if (loaded) {
+    parentPort.write(m);
+  } else {
+    queue.push(m);
+  }
+};
+const _flushParentPort = () => {
+  for (let i = 0; i < queue.length; i++) {
+    _parentPortWrite(queue[i]);
+  }
+  queue.length = 0;
+};
+const parentPort = net.connect(PIPE_PATH, err => {
   const consoleStream = new stream.Writable();
   const _logChunk = chunk => {
     const b = Uint32Array.from([TYPES.CONSOLE, chunk.length]);
     const b2 = new Buffer(b.buffer, b.byteOffset, b.byteLength);
-    client.write(b2);
-    client.write(chunk);
+    parentPort.write(b2);
+    parentPort.write(chunk);
   };
   consoleStream._write = (chunk, encoding, callback) => {
     _logChunk(chunk);
@@ -183,9 +226,7 @@ const client = net.connect(PIPE_PATH, err => {
   };
   console = new Console(consoleStream);
 
-  client.on('data', b => {
-    // console.warn('client got data', b.byteLength);
-    
+  parentPort.on('data', b => {
     bs.push(b);
     bsLength += b.byteLength;
 

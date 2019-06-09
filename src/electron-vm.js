@@ -14,6 +14,8 @@ const TYPES = (() => {
   let iota = 0;
   return {
     CONSOLE: ++iota,
+    LOAD: ++iota,
+    MESSAGE: ++iota,
     IMAGEDATA: ++iota,
   };
 })();
@@ -120,6 +122,38 @@ class ElectronVm extends EventEmitter {
               b = Buffer.from(b.buffer, b.byteOffset + (1+1)*Uint32Array.BYTES_PER_ELEMENT, size);
               const s = new TextDecoder().decode(b);
               process.stdout.write(s);
+            } else {
+              // console.log('failed to pull', (1+1)*Uint32Array.BYTES_PER_ELEMENT + size, bsLength);
+              return;
+            }
+            break;
+          }
+          case TYPES.LOAD: {
+            if (b.length < (1+1)*Uint32Array.BYTES_PER_ELEMENT) {
+              console.warn(new Error('did not get full header from electron pipe').stack);
+            }
+            const header = new Uint32Array(b.buffer, b.byteOffset + Uint32Array.BYTES_PER_ELEMENT, 1);
+            const [status] = header;
+            _pull((1+1)*Uint32Array.BYTES_PER_ELEMENT);
+            if (status >= 200 && status < 300) {
+              this.emit('load');
+            } else {
+              this.emit('error', new Error(`load got invalid status code ${status}`));
+            }
+            break;
+          }
+          case TYPES.MESSAGE: {
+            if (b.length < (1+1)*Uint32Array.BYTES_PER_ELEMENT) {
+              console.warn(new Error('did not get full header from electron pipe').stack);
+            }
+            const header = new Uint32Array(b.buffer, b.byteOffset + Uint32Array.BYTES_PER_ELEMENT, 1);
+            const [size] = header;
+            b = _pull((1+1)*Uint32Array.BYTES_PER_ELEMENT + size);
+            if (b) {
+              b = Buffer.from(b.buffer, b.byteOffset + (1+1)*Uint32Array.BYTES_PER_ELEMENT, size);
+              const s = new TextDecoder().decode(b);
+              const m = JSON.parse(s);
+              this.emit('message', m);
             } else {
               // console.log('failed to pull', (1+1)*Uint32Array.BYTES_PER_ELEMENT + size, bsLength);
               return;
