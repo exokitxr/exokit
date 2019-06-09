@@ -76,7 +76,7 @@ function init() {
 
   iframe = document.createElement('iframe');
   iframe.d = 2;
-  iframe.src = 'http://lol.com';
+  iframe.src = 'http://google.com';
   iframe.onload = () => {
     iframe.contentWindow.onmessage = m => {
       console.log('parent got message: ' + JSON.stringify(m.data));
