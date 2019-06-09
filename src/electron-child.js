@@ -76,7 +76,7 @@ const _consumeInput = () => {
       
       switch (e.method) {
         case 'initialize': {
-          const {url, width, height} = e;
+          const {url, width, height, devicePixelRatio} = e;
 
           mainWindow = new BrowserWindow({
             width,
@@ -88,6 +88,7 @@ const _consumeInput = () => {
               allowRunningInsecureContent: true,
               backgroundThrottling: false,
               preload: path.join(__dirname, 'electron-preload.js'),
+              zoomFactor: devicePixelRatio,
             },
           })
           mainWindow.loadURL(url)
