@@ -2497,37 +2497,59 @@ NAN_METHOD(WebGLRenderingContext::SetClearEnabled) {
 }
 
 NAN_METHOD(WebGLRenderingContext::LoadSubTexture) {
-  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(Local<Object>::Cast(info[0]));
-  GLuint tex = TO_UINT32(info[1]);
-  GLuint x = TO_UINT32(info[2]);
-  GLuint y = TO_UINT32(info[3]);
-  GLuint width = TO_UINT32(info[4]);
-  GLuint height = TO_UINT32(info[5]);
-  Local<Uint8Array> bufferUint8Array = Local<Uint8Array>::Cast(info[6]);
-  GLuint oldTextureWidth = TO_UINT32(info[7]);
-  GLuint oldTextureHeight = TO_UINT32(info[8]);
-  GLuint newTextureWidth = TO_UINT32(info[9]);
-  GLuint newTextureHeight = TO_UINT32(info[10]);
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+  GLuint tex = TO_UINT32(info[0]);
+  GLuint x = TO_UINT32(info[1]);
+  GLuint y = TO_UINT32(info[2]);
+  GLuint width = TO_UINT32(info[3]);
+  GLuint height = TO_UINT32(info[4]);
+  Local<Uint8Array> bufferUint8Array = Local<Uint8Array>::Cast(info[5]);
+  GLuint oldTextureWidth = TO_UINT32(info[6]);
+  GLuint oldTextureHeight = TO_UINT32(info[7]);
+  GLuint newTextureWidth = TO_UINT32(info[8]);
+  GLuint newTextureHeight = TO_UINT32(info[9]);
+
+  windowsystem::SetCurrentWindowContext(gl->windowHandle);
 
   glBindTexture(GL_TEXTURE_2D, tex);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
   if (newTextureWidth != oldTextureWidth || newTextureHeight != oldTextureHeight) {
     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
     glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
     glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
 // #ifndef LUMIN
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, newTextureWidth, newTextureHeight, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+    // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, newTextureWidth, newTextureHeight, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+    // std::cout << "init texture " << newTextureWidth << " " << newTextureHeight << std::endl;
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, newTextureWidth, newTextureHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+/* {
+  GLenum error = glGetError();
+  if (error) {
+    std::cout << "error 1 " << error << std::endl;
+  }
+} */
 // #else
     // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, newTextureWidth, newTextureHeight, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
 // #endif
   }
 
   glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
-  glPixelStorei(GL_UNPACK_SKIP_PIXELS, x);
-  glPixelStorei(GL_UNPACK_SKIP_ROWS, y);
+  glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
+  glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
+  /* glPixelStorei(GL_UNPACK_SKIP_PIXELS, x);
+  glPixelStorei(GL_UNPACK_SKIP_ROWS, y); */
 // #ifndef LUMIN
   uint8_t *buffer = (uint8_t *)bufferUint8Array->Buffer()->GetContents().Data() + bufferUint8Array->ByteOffset();
-  glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, width, height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, buffer);
+  // std::cout << "write texture 1 " << x << " " << y << " " << width << " " << height << " " << oldTextureWidth << " " << oldTextureHeight << " " << newTextureWidth << " " << newTextureHeight << std::endl;
+  glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+  /* std::cout << "write texture 2" << std::endl;
+{
+  GLenum error = glGetError();
+  if (error) {
+    std::cout << "error 2 " << error << std::endl;
+  }
+} */
 // #else
   // glTexSubImage2D(GL_TEXTURE_2D, 0, rect.x, rect.y, rect.width, rect.height, GL_BGRA_EXT, GL_UNSIGNED_BYTE, buffer);
 // #endif
@@ -2541,12 +2563,18 @@ NAN_METHOD(WebGLRenderingContext::LoadSubTexture) {
   }
   if (gl->HasPixelStoreiBinding(GL_UNPACK_ROW_LENGTH)) {
     glPixelStorei(GL_UNPACK_ROW_LENGTH, gl->GetPixelStoreiBinding(GL_UNPACK_ROW_LENGTH));
+  } else {
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
   }
   if (gl->HasPixelStoreiBinding(GL_UNPACK_SKIP_PIXELS)) {
     glPixelStorei(GL_UNPACK_SKIP_PIXELS, gl->GetPixelStoreiBinding(GL_UNPACK_SKIP_PIXELS));
+  } else {
+    glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
   }
   if (gl->HasPixelStoreiBinding(GL_UNPACK_SKIP_ROWS)) {
     glPixelStorei(GL_UNPACK_SKIP_ROWS, gl->GetPixelStoreiBinding(GL_UNPACK_SKIP_ROWS));
+  } else {
+    glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
   }
 }
 
