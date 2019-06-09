@@ -100,7 +100,7 @@ const _consumeInput = () => {
               loaded = true;
               _flushParentPort();
             });
-
+          mainWindow.focusOnWebView();
           mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
             const match = message.match(/^<postMessage>(.+)$/);
             if (match) {
