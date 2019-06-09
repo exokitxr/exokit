@@ -115,9 +115,6 @@ function init() {
     for (let i = 0; i < numUvs; i++) {
       uvs[i*2+1] = 1 - uvs[i*2+1];
     }
-    /* const material = new THREE.MeshPhongMaterial({
-      color: 0xFFFF00,
-    }); */
     const texture = new THREE.Texture(
       null,
       THREE.UVMapping,
