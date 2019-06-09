@@ -2522,7 +2522,7 @@ NAN_METHOD(WebGLRenderingContext::LoadSubTexture) {
 // #ifndef LUMIN
     // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, newTextureWidth, newTextureHeight, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
     // std::cout << "init texture " << newTextureWidth << " " << newTextureHeight << std::endl;
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, newTextureWidth, newTextureHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, newTextureWidth, newTextureHeight, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 /* {
   GLenum error = glGetError();
   if (error) {
@@ -2542,7 +2542,7 @@ NAN_METHOD(WebGLRenderingContext::LoadSubTexture) {
 // #ifndef LUMIN
   uint8_t *buffer = (uint8_t *)bufferUint8Array->Buffer()->GetContents().Data() + bufferUint8Array->ByteOffset();
   // std::cout << "write texture 1 " << x << " " << y << " " << width << " " << height << " " << oldTextureWidth << " " << oldTextureHeight << " " << newTextureWidth << " " << newTextureHeight << std::endl;
-  glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+  glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, width, height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, buffer);
   /* std::cout << "write texture 2" << std::endl;
 {
   GLenum error = glGetError();
