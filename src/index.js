@@ -1277,7 +1277,7 @@ const _startTopRenderLoop = () => {
 
     // update events
     nativeBindings.nativeVideo.Video.updateAll();
-    nativeBindings.nativeBrowser && nativeBindings.nativeBrowser.Browser.updateAll(); // XXX unlock when oculus mobile supports it
+    // nativeBindings.nativeBrowser && nativeBindings.nativeBrowser.Browser.updateAll(); // XXX unlock when oculus mobile supports it
 
     if (args.performance) {
       const now = Date.now();
