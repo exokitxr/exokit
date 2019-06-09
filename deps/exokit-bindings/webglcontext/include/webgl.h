@@ -358,6 +358,7 @@ public:
   static NAN_METHOD(SetDefaultFramebuffer);
 
   static NAN_METHOD(SetClearEnabled);
+  static NAN_METHOD(LoadSubTexture);
 
   static NAN_METHOD(FramebufferTextureMultiviewOVR);
   static NAN_METHOD(FramebufferTextureMultisampleMultiviewOVR);
