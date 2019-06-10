@@ -1,0 +1,154 @@
+<html>
+  <head>
+   <meta charset="utf-8">
+   <meta http-equiv="X-UA-Compatible" content="IE=edge">
+   <meta name="viewport" content="width=device-width, initial-scale=1">
+   <meta name="theme-color" content="#008000"/>
+   <title>eyetracking_ml</title>
+   <link rel="manifest" href="hello_ml_manifest.json">
+   <script>
+    if('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/hello_ml_sw.js')
+        .then(function() {
+          console.log('Service Worker Registered');
+        });
+    }
+   </script>
+    <style>
+      body {
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+  <h1>eyetracking_ml</h1>
+  <script src="three.js"></script>
+  <script>
+    let container, scene, camera, session, eyeMesh;
+
+    const controllerGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.01);
+    const controllerMaterial = new THREE.MeshPhongMaterial({
+      color: 0x4caf50,
+    });
+    const _makeControllerMesh = (x = 0, y = 0, z = 0, qx = 0, qy = 0, qz = 0, qw = 1) => {
+      const mesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
+      mesh.position.set(x, y, z);
+      mesh.quaternion.set(qx, qy, qz, qw);
+      // mesh.matrix.compose(mesh.position, mesh.quaternion, mesh.scale);
+      mesh.updateMatrix();
+      mesh.updateMatrixWorld();
+      mesh.matrixAutoUpdate = false;
+      mesh.frustumCulled = false;
+      return mesh;
+    };
+    const _getControllerIndex = inputSource => inputSource.handedness === 'left' ? 0 : 1;
+
+    function init() {
+      container = document.createElement('div');
+      document.body.appendChild(container);
+
+      scene = new THREE.Scene();
+      scene.matrixAutoUpdate = false;
+      // scene.background = new THREE.Color(0x3B3961);
+
+      camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+      // camera.position.set(0, 1, 0);
+      camera.lookAt(new THREE.Vector3());
+      scene.add(camera);
+
+      const ambientLight = new THREE.AmbientLight(0x808080);
+      scene.add(ambientLight);
+
+      const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1);
+      directionalLight.position.set(1, 1, 1);
+      scene.add(directionalLight);
+
+      eyeMesh = (() => {
+        const geometry = new THREE.BoxBufferGeometry(0.05, 0.05, 0.05);
+        const material = new THREE.MeshPhongMaterial({
+          color: 0x0000FF,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        // mesh.visible = false;
+        mesh.frustumCulled = false;
+        return mesh;
+      })();
+      scene.add(eyeMesh);
+
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true,
+      });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      // window.browser.magicleap.RequestDepthPopulation(true);
+      // renderer.autoClear = false;
+
+      container.appendChild(renderer.domElement);
+
+      renderer.setAnimationLoop(animate);
+    }
+
+    function animate(time, frame) {
+      const _updateEyeMesh = () => {
+        if (session && frame) {
+          const eyeInputSources = session.getInputSources().filter(inputSource => inputSource.targetRayMode === 'gaze');
+          const eyeGamepads = navigator.getGamepads().filter(gamepad => gamepad.id === 'eye');
+          if (eyeInputSources.length > 0 && eyeGamepads.length > 0) {
+            const eyeInputSource = eyeInputSources[0];
+            const eyeGamepad = eyeGamepads[0];
+
+            const pose = frame.getPose(eyeInputSource.targetRaySpace);
+            const {axes} = eyeGamepad;
+
+            eyeMesh.matrix.fromArray(pose.transform.inverse.matrix);
+            eyeMesh.matrix.decompose(eyeMesh.position, eyeMesh.quaternion, eyeMesh.scale);
+            const scaleFactor = axes.some(axis => axis < 0) ? 0.2 : 1;
+            eyeMesh.scale.set(1, scaleFactor, 1);
+            eyeMesh.updateMatrixWorld();
+          }
+        }
+      };
+      _updateEyeMesh();
+
+      renderer.render(scene, renderer.vr.enabled ? renderer.vr.getCamera(camera) : camera);
+    }
+
+    init();
+
+    (async () => {
+      console.log('request session');
+      session = await navigator.xr.requestSession({
+        exclusive: true,
+        extensions: {
+          eyeTracking: true,
+        },
+      });
+
+      // console.log('request first frame');
+      session.requestAnimationFrame((timestamp, frame) => {
+        renderer.vr.setSession(session, {
+          frameOfReferenceType: 'stage',
+        });
+
+        const {views} = frame.getViewerPose();
+        const viewport = session.baseLayer.getViewport(views[0]);
+        const width = viewport.width;
+        const height = viewport.height;
+
+        renderer.setSize(width * 2, height);
+
+        renderer.setAnimationLoop(null);
+
+        renderer.vr.enabled = true;
+        renderer.vr.setAnimationLoop(animate);
+
+        // eyeTracker = session.requestEyeTracking();
+
+        console.log('running!');
+      });
+    })();
+  </script>
+  </body>
+</html>

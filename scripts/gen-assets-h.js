@@ -80,7 +80,7 @@ Promise.all([
     // console.log('write 2', b.toString('utf8'));
     // process.stdout.write(b);
     process.stdout.write(b);
-    process.stderr.write(JSON.stringify(assetStat,null,2) + '\n');
+    // process.stderr.write(JSON.stringify(assetStat,null,2) + '\n');
 
     /* console.log(`  { // ${assetStat.path}`);
     console.log(`    AssetStat *as = &assetStats[${i}];`);

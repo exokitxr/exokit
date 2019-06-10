@@ -3,7 +3,7 @@
   <body>
     <script src="three.js"></script>
     <script>
-let renderer, scene, camera, iframe, planeMesh, boxMeshes, controllerMeshes, focused;
+let renderer, scene, camera, session, iframe, planeMesh, boxMeshes, controllerMeshes, focused;
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
@@ -123,8 +123,8 @@ function init() {
       THREE.UVMapping,
       THREE.ClampToEdgeWrapping,
       THREE.ClampToEdgeWrapping,
-      THREE.NearestFilter,
-      THREE.NearestFilter,
+      THREE.LinearFilter,
+      THREE.LinearFilter,
       THREE.RGBAFormat,
       THREE.UnsignedByteType,
       16
@@ -295,7 +295,7 @@ function animate(timestamp, frame) {
     controllerMeshes[i].visible = false;
   }
 
-  const inputSources = display.session.getInputSources();
+  const inputSources = session.getInputSources();
   for (let i = 0; i < inputSources.length; i++) {
     const inputSource = inputSources[i];
     const pose = frame.getInputPose(inputSource);
@@ -415,35 +415,37 @@ function animate(timestamp, frame) {
 
 if (navigator.xr) {
   (async () => {
-    display = await navigator.xr.requestDevice();
-    const session = await display.requestSession({
+    session = await navigator.xr.requestSession({
       exclusive: true,
-    });
-    display.session = session;
+    }).catch(err => Promise.resolve(null));
 
-    session.onselect = e => {
-      console.log('select'); // XXX
-    };
+    if (session) {
+      session.onselect = e => {
+        console.log('select'); // XXX
+      };
 
-    session.requestAnimationFrame((timestamp, frame) => {
-      renderer.vr.setSession(session, {
-        frameOfReferenceType: 'stage',
+      session.requestAnimationFrame((timestamp, frame) => {
+        renderer.vr.setSession(session, {
+          frameOfReferenceType: 'stage',
+        });
+
+        const {views} = frame.getViewerPose();
+        const viewport = session.baseLayer.getViewport(views[0]);
+        const width = viewport.width;
+        const height = viewport.height;
+
+        renderer.setSize(width * 2, height);
+
+        renderer.setAnimationLoop(null);
+
+        renderer.vr.enabled = true;
+        renderer.vr.setAnimationLoop(animate);
+
+        console.log('running!');
       });
-
-      const viewport = session.baseLayer.getViewport(frame.views[0]);
-      const width = viewport.width;
-      const height = viewport.height;
-
-      renderer.setSize(width * 2, height);
-
-      renderer.setAnimationLoop(null);
-
-      renderer.vr.enabled = true;
-      renderer.vr.setDevice(display);
-      renderer.vr.setAnimationLoop(animate);
-
-      console.log('running!');
-    });
+    } else {
+      console.log('no xr devices');
+    }
   })()
     .catch(err => {
       console.warn(err.stack);

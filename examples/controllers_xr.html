@@ -15,7 +15,7 @@
   <h1>shooter_ml</h1>
   <script src="three.js"></script>
   <script>
-    let container, scene, camera, renderer, display, controllerMeshes;
+    let container, scene, camera, renderer, session, controllerMeshes;
 
     const controllerMaterial = new THREE.MeshPhongMaterial({
       color: 0x0000FF,
@@ -91,7 +91,7 @@
             controllerMeshes[i].visible = false;
           }
 
-          const inputSources = display.session.getInputSources();
+          const inputSources = session.getInputSources();
           const gamepads = navigator.getGamepads();
           console.log('animate 2', inputSources.length, gamepads.length);
           for (let i = 0; i < gamepads.length; i++) {
@@ -119,46 +119,47 @@
     init();
 
     (async () => {
-      console.log('request device');
-      display = await navigator.xr.requestDevice();
       console.log('request session');
-      const session = await display.requestSession({
+      session = await navigator.xr.requestSession({
         exclusive: true,
-      });
-      display.session = session;
+      }).catch(err => Promise.resolve(null));
 
-      session.onselectstart = e => {
-        const controllerIndex = _getControllerIndex(e.inputSource);
-        console.log('select start', controllerIndex);
-        const controllerMesh = controllerMeshes[controllerIndex];
-        controllerMesh.material = controllerMaterialDown;
-      };
-      session.onselectend = e => {
-        const controllerIndex = _getControllerIndex(e.inputSource);
-        console.log('select end', controllerIndex);
-        const controllerMesh = controllerMeshes[controllerIndex];
-        controllerMesh.material = controllerMaterial;
-      };
+      if (session) {
+        session.onselectstart = e => {
+          const controllerIndex = _getControllerIndex(e.inputSource);
+          console.log('select start', controllerIndex);
+          const controllerMesh = controllerMeshes[controllerIndex];
+          controllerMesh.material = controllerMaterialDown;
+        };
+        session.onselectend = e => {
+          const controllerIndex = _getControllerIndex(e.inputSource);
+          console.log('select end', controllerIndex);
+          const controllerMesh = controllerMeshes[controllerIndex];
+          controllerMesh.material = controllerMaterial;
+        };
 
-      session.requestAnimationFrame((timestamp, frame) => {
-        renderer.vr.setSession(session, {
-          frameOfReferenceType: 'stage',
+        session.requestAnimationFrame((timestamp, frame) => {
+          renderer.vr.setSession(session, {
+            frameOfReferenceType: 'stage',
+          });
+
+          const {views} = frame.getViewerPose();
+          const viewport = session.baseLayer.getViewport(views[0]);
+          const width = viewport.width;
+          const height = viewport.height;
+
+          renderer.setSize(width * 2, height);
+
+          renderer.setAnimationLoop(null);
+
+          renderer.vr.enabled = true;
+          renderer.vr.setAnimationLoop(animate);
+
+          console.log('running!');
         });
-
-        const viewport = session.baseLayer.getViewport(frame.views[0]);
-        const width = viewport.width;
-        const height = viewport.height;
-
-        renderer.setSize(width * 2, height);
-
-        renderer.setAnimationLoop(null);
-
-        renderer.vr.enabled = true;
-        renderer.vr.setDevice(display);
-        renderer.vr.setAnimationLoop(animate);
-
-        console.log('running!');
-      });
+      } else {
+        console.log('no xr devices');
+      }
     })();
   </script>
   </body>

@@ -17,6 +17,8 @@ MLVec3f crossVectors(const MLVec3f &a, const MLVec3f &b);
 float vectorLengthSq(const MLVec3f &v);
 float vectorLength(const MLVec3f &v);
 MLVec3f normalizeVector(const MLVec3f &v);
+float distanceTo(const MLVec3f &a, const MLVec3f &b);
+float distanceToSq(const MLVec3f &a, const MLVec3f &b);
 MLVec3f applyVectorQuaternion(const MLVec3f &v, const MLQuaternionf &q);
 MLVec3f applyVectorMatrix(const MLVec3f &v, const MLMat4f &m);
 float quaternionLength(const MLQuaternionf &q);
@@ -52,8 +54,8 @@ bool getFingerRayTransform(MLTransform &result, std::vector<std::vector<float *>
 bool getHandTransform(MLVec3f &center, MLVec3f &normal, float wristBones[4][1 + 3], float fingerBones[5][4][1 + 3], bool left, const MLMat4f &transform);
 bool getHandPointerTransform(MLTransform &result, float wristBones[4][1 + 3], float fingerBones[5][4][1 + 3], const MLVec3f &normal, const MLMat4f &transform);
 bool getHandGripTransform(MLTransform &result, float wristBones[4][1 + 3], float fingerBones[5][4][1 + 3], const MLVec3f &normal, const MLMat4f &transform);
-void getWristBonePosition(MLVec3f &position, float wristBones[4][1 + 3], int boneIndex, const MLMat4f &transform);
-void getFingerBonePosition(MLVec3f &position, float fingerBones[5][4][1 + 3], int fingerIndex, int boneIndex, const MLMat4f &transform);
+/* void getWristBonePosition(MLVec3f &position, float wristBones[4][1 + 3], int boneIndex, const MLMat4f &transform);
+void getFingerBonePosition(MLVec3f &position, float fingerBones[5][4][1 + 3], int fingerIndex, int boneIndex, const MLMat4f &transform); */
 
 }
 

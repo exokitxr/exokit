@@ -19,10 +19,10 @@ RUN chown -R appuser:appuser $HOME && \
 USER appuser
 
 RUN \
-  wget "https://nodejs.org/dist/v11.6.0/node-v11.6.0-linux-x64.tar.gz" -O node.tar.gz -q && \
+  wget "https://nodejs.org/dist/v11.15.0/node-v11.15.0-linux-x64.tar.gz" -O node.tar.gz -q && \
   tar -zxf node.tar.gz > /dev/null && \
   rm node.tar.gz && \
-  mv node-v11.6.0-linux-x64 node
+  mv node-v11.15.0-linux-x64 node
 RUN \
   wget https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip -q && \
   unzip sdk-tools-linux-4333796.zip > /dev/null && \
@@ -34,7 +34,7 @@ RUN \
   $ANDROID_HOME/tools/bin/sdkmanager "platform-tools" "platforms;android-28" > /dev/null && \
   $ANDROID_HOME/tools/bin/sdkmanager "ndk-bundle" > /dev/null && \
   export PATH="$PATH:$(pwd)/node/bin" && \
-  scripts/make-toolchain-android.sh && \
-  scripts/build-android.sh
+  scripts/oculusmobile/make-toolchain-android.sh && \
+  scripts/oculusmobile/build-android.sh
 RUN \
   mv android/app/build/outputs/apk/debug/app-debug.apk ./exokit.apk

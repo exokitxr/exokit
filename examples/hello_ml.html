@@ -10,7 +10,7 @@
     if('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/hello_ml_sw.js')
         .then(function() {
-              console.log('Service Worker Registered');
+          console.log('Service Worker Registered');
         });
     }
    </script>
@@ -25,7 +25,7 @@
   <script src="three.js"></script>
   <script src="GLTFLoader.js"></script>
   <script>
-    let container, scene, camera, display, model, controllerMeshes, eyeMesh;
+    let container, scene, camera, session, model, controllerMeshes, eyeMesh;
     let mesher = null, planeTracker = null, handTracker = null, eyeTracker = null;
 
     const controllerGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.01);
@@ -440,7 +440,7 @@
           controllerMeshes[i].visible = false;
         }
 
-        const inputSources = display.session.getInputSources();
+        const inputSources = session.getInputSources();
         for (let i = 0; i < inputSources.length; i++) {
           const inputSource = inputSources[i];
           const pose = frame.getInputPose(inputSource);
@@ -459,46 +459,47 @@
     init();
 
     (async () => {
-      console.log('request device');
-      display = await navigator.xr.requestDevice();
       console.log('request session');
-      const session = await display.requestSession({
+      session = await navigator.xr.requestSession({
         exclusive: true,
-      });
-      display.session = session;
+      }).catch(err => Promise.resolve(null));
 
-      session.onselect = e => {
-        const controllerIndex = e.inputSource.handedness === 'left' ? 0 : 1;
-        const controllerMesh = controllerMeshes[controllerIndex];
-        controllerMesh.matrixWorld.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
+      if (session) {
+        session.onselect = e => {
+          const controllerIndex = e.inputSource.handedness === 'left' ? 0 : 1;
+          const controllerMesh = controllerMeshes[controllerIndex];
+          controllerMesh.matrixWorld.decompose(controllerMesh.position, controllerMesh.quaternion, controllerMesh.scale);
 
-        const objectMesh = _makeControllerMesh(
-          controllerMesh.position.x, controllerMesh.position.y, controllerMesh.position.z,
-          controllerMesh.quaternion.x, controllerMesh.quaternion.y, controllerMesh.quaternion.z, controllerMesh.quaternion.w,
-        );
-        scene.add(objectMesh);
-      };
+          const objectMesh = _makeControllerMesh(
+            controllerMesh.position.x, controllerMesh.position.y, controllerMesh.position.z,
+            controllerMesh.quaternion.x, controllerMesh.quaternion.y, controllerMesh.quaternion.z, controllerMesh.quaternion.w,
+          );
+          scene.add(objectMesh);
+        };
 
-      // console.log('request first frame');
-      session.requestAnimationFrame((timestamp, frame) => {
-        renderer.vr.setSession(session, {
-          frameOfReferenceType: 'stage',
+        // console.log('request first frame');
+        session.requestAnimationFrame((timestamp, frame) => {
+          renderer.vr.setSession(session, {
+            frameOfReferenceType: 'stage',
+          });
+
+          const {views} = frame.getViewerPose();
+          const viewport = session.baseLayer.getViewport(views[0]);
+          const width = viewport.width;
+          const height = viewport.height;
+
+          renderer.setSize(width * 2, height);
+
+          renderer.setAnimationLoop(null);
+
+          renderer.vr.enabled = true;
+          renderer.vr.setAnimationLoop(animate);
+
+          console.log('running!');
         });
-
-        const viewport = session.baseLayer.getViewport(frame.views[0]);
-        const width = viewport.width;
-        const height = viewport.height;
-
-        renderer.setSize(width * 2, height);
-
-        renderer.setAnimationLoop(null);
-
-        renderer.vr.enabled = true;
-        renderer.vr.setDevice(display);
-        renderer.vr.setAnimationLoop(animate);
-
-        console.log('running!');
-      });
+      } else {
+        console.log('no xr devices');
+      }
     })();
 
     (() => {

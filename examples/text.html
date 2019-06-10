@@ -3,7 +3,7 @@
   <body>
     <script src="three.js"></script>
     <script>
-let renderer, scene, camera, canvas, planeMesh, boxMeshes, controllerMeshes;
+let renderer, scene, camera, session, canvas, planeMesh, boxMeshes, controllerMeshes;
 
 const localVector = new THREE.Vector3();
 const localVector2 = new THREE.Vector3();
@@ -138,13 +138,11 @@ function animate(timestamp, frame) {
 
 if (navigator.xr) {
   (async () => {
-    display = await navigator.xr.requestDevice();
-    if (display) {
-      const session = await display.requestSession({
-        exclusive: true,
-      });
-      display.session = session;
+    session = await navigator.xr.requestSession({
+      exclusive: true,
+    }).catch(err => Promise.resolve(null));
 
+    if (session) {
       session.onselect = e => {
         console.log('select'); // XXX
       };
@@ -154,7 +152,8 @@ if (navigator.xr) {
           frameOfReferenceType: 'stage',
         });
 
-        const viewport = session.baseLayer.getViewport(frame.views[0]);
+        const {views} = frame.getViewerPose();
+        const viewport = session.baseLayer.getViewport(views[0]);
         const width = viewport.width;
         const height = viewport.height;
 
@@ -163,13 +162,14 @@ if (navigator.xr) {
         renderer.setAnimationLoop(null);
 
         renderer.vr.enabled = true;
-        renderer.vr.setDevice(display);
         renderer.vr.setAnimationLoop(animate);
 
-        console.log('running!');
+        console.log('running xr!');
       });
     } else {
       renderer.setAnimationLoop(animate);
+      
+      console.log('running 2d!');
     }
   })()
     .catch(err => {

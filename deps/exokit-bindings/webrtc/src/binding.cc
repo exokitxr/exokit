@@ -18,9 +18,9 @@ using namespace v8;
 
 namespace node_webrtc {
 
-void dispose(void*) {
+/* void dispose(void*) {
   node_webrtc::PeerConnectionFactory::Dispose();
-}
+} */
 
 void init(v8::Local<v8::Object> exports) {
   node_webrtc::PeerConnectionFactory::Init(exports);
@@ -28,7 +28,7 @@ void init(v8::Local<v8::Object> exports) {
   node_webrtc::DataChannel::Init(exports);
   node_webrtc::RTCStatsReport::Init(exports);
   node_webrtc::RTCStatsResponse::Init(exports);
-  node::AtExit(dispose);
+  // node::AtExit(dispose);
 }
 
 }

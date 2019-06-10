@@ -3,7 +3,6 @@
 <p align="center"><b>:dark_sunglasses: Native VR and AR engine for JavaScript 🦖</b></p>
 
 <p align="center">
-  <a href="https://join.slack.com/t/exokit/shared_invite/enQtNDI3NjcxNzYwMDIxLWU2NmFmOTEzMzk4NWNiYjRhMjVkYzcyNjg5YjUyMzZkYWM1ZGI4M2IwYWZiMjNlMTJjMDlkM2U3Y2JiNTc2M2Q"><img src="https://img.shields.io/badge/slack-join-green.svg?logo=slack&longCache=true&style=flat"></a>
   <a href="https://github.com/exokitxr/exokit/releases"><img src="https://img.shields.io/github/downloads/exokitxr/exokit/total.svg"></a>
   <a href="https://www.npmjs.com/package/exokit"><img src="https://img.shields.io/npm/v/exokit.svg"></a>
   <a href="https://travis-ci.org/modulesio/exokit-windows"><img src="https://travis-ci.org/modulesio/exokit-windows.svg?branch=master"></a>
@@ -17,8 +16,6 @@
   <a href="https://exokit.org/docs/">Docs</a>
   &mdash;
   <a href="https://discordapp.com/invite/Apk6cZN">Discord</a>
-  &mdash;
-  <a href="https://exokit.slack.com/join/shared_invite/enQtNDI3NjcxNzYwMDIxLWU2NmFmOTEzMzk4NWNiYjRhMjVkYzcyNjg5YjUyMzZkYWM1ZGI4M2IwYWZiMjNlMTJjMDlkM2U3Y2JiNTc2M2Q">Slack</a>
   &mdash;
   <a href="https://twitter.com/exokitxr">Twitter</a>
   &mdash;
@@ -42,12 +39,15 @@
 
 This project **enables developers to build XR experiences using the same code that runs on the web**. Exokit engine is written on top of Node and emulates a web browser, providing native hooks for WebGL, WebXR, WebAudio, and other APIs used in immersive experiences.
 
-:eyeglasses: **Exokit targets the following platforms**:
-* Desktop VR (Steam compatible)
+:eyeglasses: **Exokit currently targets the following platforms**:
+* OpenVR Desktop VR (Steam compatible)
+* Oculus Desktop (Oculus Rift/Rift S)
+* Oculus Mobile (Oculus Quest/Go, GearVR)
 * Magic Leap
-* Mobile AR (ARKit / ARCore) *
-* Mobile VR (Daydream / Gear VR) *
-* Standalone VR (Oculus Quest/Go) *
+* iOS ARKit *
+* Android ARCore *
+* Google VR (Daydream / Cardboard / Mirage Solo) *
+* any XR device, start a [pull request](https://github.com/exokitxr/exokit/compare) with a native binding if it isn't listed here! *
 
 \* not supported yet
 
@@ -106,7 +106,7 @@ exokit https://aframe.io/a-painter/ # start A-Painter in Exokit
 ```sh
 mldb connect 192.168.0.10:1131 # mldb needs to be connected; see MLDB documentation
 mldb install -u exokit.mpk # downloaded or built package
-mldb launch com.webmr.exokit -v "ARGS=node --experimental-worker . file:///package/examples/hello_ml.html" # or URL to load
+mldb launch com.webmr.exokit -v "ARGS=node . file:///package/examples/hello_ml.html" # or URL to load
 mldb log exokit:*
 ```
 
@@ -147,6 +147,8 @@ Exokit runs on Windows, macOS, Linux (x64), Linux (ARM64), and Magic Leap (ARM64
 
 - OpenGL
 - OpenVR (Steam VR)
+- Oculus 
+- Oculus Mobile 
 - Magic Leap
 - Leap Motion
 
@@ -157,7 +159,7 @@ See full building instructions in [BUILDING.md](https://github.com/exokitxr/exok
 git clone https://github.com/exokitxr/exokit.git
 cd exokit
 npm install
-node --experimental-worker . <url> # or node --experimental-worker . -h for home
+node . <url> # or node . -h for home
 ```
 
 ## Debugging
@@ -178,13 +180,8 @@ Now you have a handle on the window object as you test your application, and
 you can set `debugger` breakpoints, inspect memory, profile CPU, etc.
 
 
-## Questions
-
-For questions and support, [ask on StackOverflow](https://stackoverflow.com/questions/ask/?tags=exokit).
-
 ## Stay in Touch
 
-- [Join our Slack](https://join.slack.com/t/exokit/shared_invite/enQtNDI3NjcxNzYwMDIxLWU2NmFmOTEzMzk4NWNiYjRhMjVkYzcyNjg5YjUyMzZkYWM1ZGI4M2IwYWZiMjNlMTJjMDlkM2U3Y2JiNTc2M2Q) for development.
 - [Join our Discord](https://discord.gg/Apk6cZN) for hanging out.
 - [Follow @exokitxr on Twitter](https://twitter.com/exokitxr) for updates.
 

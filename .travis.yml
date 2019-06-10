@@ -15,33 +15,13 @@ matrix:
     install:
     - docker build -t exokit .
     - docker run exokit cat exokit-linux-bin.tar.gz >exokit-linux-bin.tar.gz
-    - docker run exokit cat exokit-linux-full.tar.gz >exokit-linux-full.tar.gz
-    - docker run exokit cat exokit-linux.tar.gz >exokit-linux.tar.gz
     script:
     - echo "skipping 'npm run test' outside of docker"
     deploy:
     - provider: releases
       api_key:
         secure: aKBSeSFdOxun6xPqONVB3epPtlUP0nYjK8LWhDijoAustwc1zuHCUgC2h3yJeDVjknbgShkPiVbTxpEOZurdJP/5iYhf9Y4hVsAWqBVdCwlKLgZ8Pj6pVZh0A61XEfd2y1ZNiv35aNIMRrt9IFzbJOpL0uO4BNLWp6j5xb8qcTnmUh5FAfVmm1eavFzj3hW+qpHeg1pbqdzPJqpoM5c99bsWnJ9QQGyfck9tMGVYlSnI/OoI2A1BLHQ9lbxRJ5F0YC0vXqUZd2NM1yTeI4Q8FrSIlFg4120OR1/QQ+LIpXhfcvqEl3MI+T9U6wxYbiBk0m5wJ39FQCpONCIytX1dZ7go53uH3jTVDiWe2eAzqX5dly+PYDzbinx2k3i5gCzkKfvcgchmtVAYip5i3wQguK66irFKr9QeZz1zGSgm9bRQ9GUYC2+8vuBbJH5TjJHmaijSfefN+ym9G6KaREtBArahG2600RxNYISmUUOHVyoYUGLG1VKB3gX7isSpSS96eioAASK+fGY3jxxMkTuSsfVeC/j1TgCLDuYbb28BTSapGbzMayZBCTIy/FmlOa3qqv5rVAz+1ZZ5AbqW3Yh0NPBrJWVPELL3XoQ9pQJ9eKUkIdwz2MNhGMyz4pjPZptT3h5VWg44tpc3TAyO/0l1kvn80MGl7lrKI4nJ+KnqWd0=
-      file: exokit-linux.tar.gz
-      body: Exokit git release
-      on:
-        repo: exokitxr/exokit
-        tags: true
-      skip_cleanup: true
-    - provider: releases
-      api_key:
-        secure: aKBSeSFdOxun6xPqONVB3epPtlUP0nYjK8LWhDijoAustwc1zuHCUgC2h3yJeDVjknbgShkPiVbTxpEOZurdJP/5iYhf9Y4hVsAWqBVdCwlKLgZ8Pj6pVZh0A61XEfd2y1ZNiv35aNIMRrt9IFzbJOpL0uO4BNLWp6j5xb8qcTnmUh5FAfVmm1eavFzj3hW+qpHeg1pbqdzPJqpoM5c99bsWnJ9QQGyfck9tMGVYlSnI/OoI2A1BLHQ9lbxRJ5F0YC0vXqUZd2NM1yTeI4Q8FrSIlFg4120OR1/QQ+LIpXhfcvqEl3MI+T9U6wxYbiBk0m5wJ39FQCpONCIytX1dZ7go53uH3jTVDiWe2eAzqX5dly+PYDzbinx2k3i5gCzkKfvcgchmtVAYip5i3wQguK66irFKr9QeZz1zGSgm9bRQ9GUYC2+8vuBbJH5TjJHmaijSfefN+ym9G6KaREtBArahG2600RxNYISmUUOHVyoYUGLG1VKB3gX7isSpSS96eioAASK+fGY3jxxMkTuSsfVeC/j1TgCLDuYbb28BTSapGbzMayZBCTIy/FmlOa3qqv5rVAz+1ZZ5AbqW3Yh0NPBrJWVPELL3XoQ9pQJ9eKUkIdwz2MNhGMyz4pjPZptT3h5VWg44tpc3TAyO/0l1kvn80MGl7lrKI4nJ+KnqWd0=
       file: exokit-linux-bin.tar.gz
-      body: Exokit git release
-      on:
-        repo: exokitxr/exokit
-        tags: true
-      skip_cleanup: true
-    - provider: releases
-      api_key:
-        secure: aKBSeSFdOxun6xPqONVB3epPtlUP0nYjK8LWhDijoAustwc1zuHCUgC2h3yJeDVjknbgShkPiVbTxpEOZurdJP/5iYhf9Y4hVsAWqBVdCwlKLgZ8Pj6pVZh0A61XEfd2y1ZNiv35aNIMRrt9IFzbJOpL0uO4BNLWp6j5xb8qcTnmUh5FAfVmm1eavFzj3hW+qpHeg1pbqdzPJqpoM5c99bsWnJ9QQGyfck9tMGVYlSnI/OoI2A1BLHQ9lbxRJ5F0YC0vXqUZd2NM1yTeI4Q8FrSIlFg4120OR1/QQ+LIpXhfcvqEl3MI+T9U6wxYbiBk0m5wJ39FQCpONCIytX1dZ7go53uH3jTVDiWe2eAzqX5dly+PYDzbinx2k3i5gCzkKfvcgchmtVAYip5i3wQguK66irFKr9QeZz1zGSgm9bRQ9GUYC2+8vuBbJH5TjJHmaijSfefN+ym9G6KaREtBArahG2600RxNYISmUUOHVyoYUGLG1VKB3gX7isSpSS96eioAASK+fGY3jxxMkTuSsfVeC/j1TgCLDuYbb28BTSapGbzMayZBCTIy/FmlOa3qqv5rVAz+1ZZ5AbqW3Yh0NPBrJWVPELL3XoQ9pQJ9eKUkIdwz2MNhGMyz4pjPZptT3h5VWg44tpc3TAyO/0l1kvn80MGl7lrKI4nJ+KnqWd0=
-      file: exokit-linux-full.tar.gz
       body: Exokit git release
       on:
         repo: exokitxr/exokit
@@ -70,13 +50,14 @@ matrix:
   - os: osx
     osx_image: xcode10.1
     node_js:
-    - "11.6.0"
+    - "12.2.0"
     install:
     - node hackCI.js
     - curl "https://nodejs.org/dist/v11.6.0/node-v11.6.0-darwin-x64.tar.gz" >node.tar.gz
+    - curl "https://nodejs.org/dist/v12.2.0/node-v12.2.0-darwin-x64.tar.gz" >node.tar.gz
     - tar -zxf node.tar.gz
     - rm node.tar.gz
-    - mv node-v11.6.0-darwin-x64 node
+    - mv node-v12.2.0-darwin-x64 node
     - export PATH="$(pwd)/node/bin:$PATH"
     - unset NVM_NODEJS_ORG_MIRROR
     - "./node/bin/npm install --no-optional"
@@ -89,29 +70,9 @@ matrix:
     - mkdir -p /tmp/Exokit.app/Contents/Resources
     - cp -R metadata/icon.icns /tmp/Exokit.app/Contents/Resources
     - cp metadata/Info.plist /tmp/Exokit.app/Contents
-    - tar -czf exokit-macos-full.tar.gz --exclude=".*" --exclude="*.tar.gz" *
     - rm -R node
-    - tar -czf exokit-macos.tar.gz --exclude=".*" --exclude="*.tar.gz" *
-    - ./scripts/exokit-codesign-macos.sh
+    - ./scripts/macos/exokit-codesign-macos.sh
     deploy:
-    - provider: releases
-      api_key:
-        secure: aKBSeSFdOxun6xPqONVB3epPtlUP0nYjK8LWhDijoAustwc1zuHCUgC2h3yJeDVjknbgShkPiVbTxpEOZurdJP/5iYhf9Y4hVsAWqBVdCwlKLgZ8Pj6pVZh0A61XEfd2y1ZNiv35aNIMRrt9IFzbJOpL0uO4BNLWp6j5xb8qcTnmUh5FAfVmm1eavFzj3hW+qpHeg1pbqdzPJqpoM5c99bsWnJ9QQGyfck9tMGVYlSnI/OoI2A1BLHQ9lbxRJ5F0YC0vXqUZd2NM1yTeI4Q8FrSIlFg4120OR1/QQ+LIpXhfcvqEl3MI+T9U6wxYbiBk0m5wJ39FQCpONCIytX1dZ7go53uH3jTVDiWe2eAzqX5dly+PYDzbinx2k3i5gCzkKfvcgchmtVAYip5i3wQguK66irFKr9QeZz1zGSgm9bRQ9GUYC2+8vuBbJH5TjJHmaijSfefN+ym9G6KaREtBArahG2600RxNYISmUUOHVyoYUGLG1VKB3gX7isSpSS96eioAASK+fGY3jxxMkTuSsfVeC/j1TgCLDuYbb28BTSapGbzMayZBCTIy/FmlOa3qqv5rVAz+1ZZ5AbqW3Yh0NPBrJWVPELL3XoQ9pQJ9eKUkIdwz2MNhGMyz4pjPZptT3h5VWg44tpc3TAyO/0l1kvn80MGl7lrKI4nJ+KnqWd0=
-      file: exokit-macos.tar.gz
-      body: Exokit git release
-      on:
-        repo: exokitxr/exokit
-        tags: true
-      skip_cleanup: true
-    - provider: releases
-      api_key:
-        secure: aKBSeSFdOxun6xPqONVB3epPtlUP0nYjK8LWhDijoAustwc1zuHCUgC2h3yJeDVjknbgShkPiVbTxpEOZurdJP/5iYhf9Y4hVsAWqBVdCwlKLgZ8Pj6pVZh0A61XEfd2y1ZNiv35aNIMRrt9IFzbJOpL0uO4BNLWp6j5xb8qcTnmUh5FAfVmm1eavFzj3hW+qpHeg1pbqdzPJqpoM5c99bsWnJ9QQGyfck9tMGVYlSnI/OoI2A1BLHQ9lbxRJ5F0YC0vXqUZd2NM1yTeI4Q8FrSIlFg4120OR1/QQ+LIpXhfcvqEl3MI+T9U6wxYbiBk0m5wJ39FQCpONCIytX1dZ7go53uH3jTVDiWe2eAzqX5dly+PYDzbinx2k3i5gCzkKfvcgchmtVAYip5i3wQguK66irFKr9QeZz1zGSgm9bRQ9GUYC2+8vuBbJH5TjJHmaijSfefN+ym9G6KaREtBArahG2600RxNYISmUUOHVyoYUGLG1VKB3gX7isSpSS96eioAASK+fGY3jxxMkTuSsfVeC/j1TgCLDuYbb28BTSapGbzMayZBCTIy/FmlOa3qqv5rVAz+1ZZ5AbqW3Yh0NPBrJWVPELL3XoQ9pQJ9eKUkIdwz2MNhGMyz4pjPZptT3h5VWg44tpc3TAyO/0l1kvn80MGl7lrKI4nJ+KnqWd0=
-      file: exokit-macos-full.tar.gz
-      body: Exokit git release
-      on:
-        repo: exokitxr/exokit
-        tags: true
-      skip_cleanup: true
     - provider: releases
       api_key:
         secure: aKBSeSFdOxun6xPqONVB3epPtlUP0nYjK8LWhDijoAustwc1zuHCUgC2h3yJeDVjknbgShkPiVbTxpEOZurdJP/5iYhf9Y4hVsAWqBVdCwlKLgZ8Pj6pVZh0A61XEfd2y1ZNiv35aNIMRrt9IFzbJOpL0uO4BNLWp6j5xb8qcTnmUh5FAfVmm1eavFzj3hW+qpHeg1pbqdzPJqpoM5c99bsWnJ9QQGyfck9tMGVYlSnI/OoI2A1BLHQ9lbxRJ5F0YC0vXqUZd2NM1yTeI4Q8FrSIlFg4120OR1/QQ+LIpXhfcvqEl3MI+T9U6wxYbiBk0m5wJ39FQCpONCIytX1dZ7go53uH3jTVDiWe2eAzqX5dly+PYDzbinx2k3i5gCzkKfvcgchmtVAYip5i3wQguK66irFKr9QeZz1zGSgm9bRQ9GUYC2+8vuBbJH5TjJHmaijSfefN+ym9G6KaREtBArahG2600RxNYISmUUOHVyoYUGLG1VKB3gX7isSpSS96eioAASK+fGY3jxxMkTuSsfVeC/j1TgCLDuYbb28BTSapGbzMayZBCTIy/FmlOa3qqv5rVAz+1ZZ5AbqW3Yh0NPBrJWVPELL3XoQ9pQJ9eKUkIdwz2MNhGMyz4pjPZptT3h5VWg44tpc3TAyO/0l1kvn80MGl7lrKI4nJ+KnqWd0=

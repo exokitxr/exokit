@@ -16,6 +16,13 @@
 using namespace v8;
 using namespace std;
 
+#if defined(ANDROID) || defined(LUMIN)
+PFNGLFRAMEBUFFERTEXTUREMULTIVIEWOVR glFramebufferTextureMultiviewOVRExt;
+PFNGLFRAMEBUFFERTEXTUREMULTISAMPLEMULTIVIEWOVR glFramebufferTextureMultisampleMultiviewOVRExt;
+
+bool extensionFunctionsInitialized = false;
+#endif
+
 // forward declarations
 /* enum GLObjectType {
   GLOBJECT_TYPE_BUFFER,
@@ -35,6 +42,8 @@ void unregisterGLObj(GLuint obj); */
 #define JS_GL_SET_CONSTANT(name, constant) proto->Set(JS_STR( name ), JS_INT(constant))
 
 #define JS_GL_CONSTANT(name) JS_GL_SET_CONSTANT(#name, GL_ ## name)
+
+GlShader::~GlShader() {}
 
 template<NAN_METHOD(F)>
 NAN_METHOD(glCallWrap) {
@@ -928,6 +937,20 @@ ColorMaskState &ColorMaskState::operator=(const ColorMaskState &colorMaskState) 
 std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initialize(Isolate *isolate) {
   // Nan::EscapableHandleScope scope;
 
+  #if defined(ANDROID) || defined(LUMIN)
+  if(!extensionFunctionsInitialized){
+    glFramebufferTextureMultiviewOVRExt = (PFNGLFRAMEBUFFERTEXTUREMULTIVIEWOVR)eglGetProcAddress("glFramebufferTextureMultiviewOVR");
+    if (!glFramebufferTextureMultiviewOVRExt) {
+        std::cerr << "Can not get proc address for glFramebufferTextureMultiviewOVR." << std::endl;
+    }
+    glFramebufferTextureMultisampleMultiviewOVRExt = (PFNGLFRAMEBUFFERTEXTUREMULTISAMPLEMULTIVIEWOVR)eglGetProcAddress("glFramebufferTextureMultisampleMultiviewOVR");
+    if (!glFramebufferTextureMultisampleMultiviewOVRExt) {
+        std::cerr << "Can not get proc address for glFramebufferTextureMultisampleMultiviewOVRExt." << std::endl;
+    }
+    extensionFunctionsInitialized = true;
+  }
+  #endif
+
   // constructor
   Local<FunctionTemplate> ctor = Nan::New<FunctionTemplate>(WebGLRenderingContext::New);
 
@@ -1150,8 +1173,15 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
 
   /* Nan::SetMethod(proto, "getFramebuffer", glSwitchCallWrap<GetFramebuffer>);
   Nan::SetMethod(proto, "setDefaultFramebuffer", glSwitchCallWrap<SetDefaultFramebuffer>); */
-  Nan::SetMethod(proto, "getFramebuffer", glCallWrap<GetFramebuffer>);
+  Nan::SetMethod(proto, "getBoundFramebuffer", glCallWrap<GetBoundFramebuffer>);
+  Nan::SetMethod(proto, "getDefaultFramebuffer", GetDefaultFramebuffer);
   Nan::SetMethod(proto, "setDefaultFramebuffer", glCallWrap<SetDefaultFramebuffer>);
+
+  Nan::SetMethod(proto, "setClearEnabled", SetClearEnabled);
+
+  // OVR_multiview2
+  Nan::SetMethod(proto, "framebufferTextureMultiviewOVR", glCallWrap<FramebufferTextureMultiviewOVR>);
+  Nan::SetMethod(proto, "framebufferTextureMultisampleMultiviewOVR", glCallWrap<FramebufferTextureMultisampleMultiviewOVR>);
 
   setGlConstants(proto);
 
@@ -1166,8 +1196,9 @@ WebGLRenderingContext::WebGLRenderingContext() :
   live(true),
   windowHandle(nullptr),
   defaultVao(0),
-  dirty(false),
   defaultFramebuffer(0),
+  clearEnabled(true),
+  dirty(false),
   flipY(false),
   premultiplyAlpha(true),
   packAlignment(4),
@@ -1175,7 +1206,12 @@ WebGLRenderingContext::WebGLRenderingContext() :
   activeTexture(GL_TEXTURE0)
   {}
 
-WebGLRenderingContext::~WebGLRenderingContext() {}
+WebGLRenderingContext::~WebGLRenderingContext() {
+  for (auto iter = keys.begin(); iter != keys.end(); iter++) {
+    GlShader *glShader = (GlShader *)iter->second;
+    delete glShader;
+  }
+}
 
 NAN_METHOD(WebGLRenderingContext::New) {
   WebGLRenderingContext *gl = new WebGLRenderingContext();
@@ -1187,7 +1223,29 @@ NAN_METHOD(WebGLRenderingContext::New) {
 
 NAN_METHOD(WebGLRenderingContext::Destroy) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
   gl->live = false;
+
+  for (auto iter = gl->objectCache.buffers.begin(); iter != gl->objectCache.buffers.end(); iter++) {
+    GLuint buffer = *iter;
+    glDeleteBuffers(1, &buffer);
+  }
+  for (auto iter = gl->objectCache.queries.begin(); iter != gl->objectCache.queries.end(); iter++) {
+    GLuint query = *iter;
+    glDeleteQueries(1, &query);
+  }
+  for (auto iter = gl->objectCache.renderbuffers.begin(); iter != gl->objectCache.renderbuffers.end(); iter++) {
+    GLuint renderbuffer = *iter;
+    glDeleteRenderbuffers(1, &renderbuffer);
+  }
+  for (auto iter = gl->objectCache.samplers.begin(); iter != gl->objectCache.samplers.end(); iter++) {
+    GLuint sampler = *iter;
+    glDeleteSamplers(1, &sampler);
+  }
+  for (auto iter = gl->objectCache.textures.begin(); iter != gl->objectCache.textures.end(); iter++) {
+    GLuint texture = *iter;
+    glDeleteTextures(1, &texture);
+  }
 }
 
 NAN_METHOD(WebGLRenderingContext::GetWindowHandle) {
@@ -2397,7 +2455,7 @@ NAN_GETTER(WebGLRenderingContext::DrawingBufferHeightGetter) {
   info.GetReturnValue().Set(JS_INT(height));
 }
 
-NAN_METHOD(WebGLRenderingContext::GetFramebuffer) {
+NAN_METHOD(WebGLRenderingContext::GetBoundFramebuffer) {
   Local<Object> glObj = info.This();
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
 
@@ -2409,6 +2467,12 @@ NAN_METHOD(WebGLRenderingContext::GetFramebuffer) {
   } else {
     info.GetReturnValue().Set(Nan::Null());
   }
+}
+
+NAN_METHOD(WebGLRenderingContext::GetDefaultFramebuffer) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
+  info.GetReturnValue().Set(JS_INT(gl->defaultFramebuffer));
 }
 
 NAN_METHOD(WebGLRenderingContext::SetDefaultFramebuffer) {
@@ -2433,6 +2497,47 @@ NAN_METHOD(WebGLRenderingContext::SetDefaultFramebuffer) {
   }
 
   gl->defaultFramebuffer = framebuffer;
+}
+
+NAN_METHOD(WebGLRenderingContext::SetClearEnabled) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+  bool clearEnabled = TO_BOOL(info[0]);
+
+  gl->clearEnabled = clearEnabled;
+}
+
+NAN_METHOD(WebGLRenderingContext::FramebufferTextureMultiviewOVR) {
+  GLenum target = TO_UINT32(info[0]);
+  GLenum attachment = TO_UINT32(info[1]);
+  GLuint texture = info[2]->IsObject() ? TO_UINT32(JS_OBJ(info[2])->Get(JS_STR("id"))) : 0;
+  GLint level = TO_INT32(info[3]);
+  GLint baseViewIndex = TO_INT32(info[4]);
+  GLsizei numViews = TO_UINT32(info[5]);
+
+#if !defined(ANDROID) && !defined(LUMIN)
+  glFramebufferTextureMultiviewOVR(target, attachment, texture, level, baseViewIndex, numViews);
+#endif
+#if defined(ANDROID) || defined(LUMIN)
+  glFramebufferTextureMultiviewOVRExt(target, attachment, texture, level, baseViewIndex, numViews);
+#endif
+
+}
+
+NAN_METHOD(WebGLRenderingContext::FramebufferTextureMultisampleMultiviewOVR) {
+  GLenum target = TO_UINT32(info[0]);
+  GLenum attachment = TO_UINT32(info[1]);
+  GLuint texture = info[2]->IsObject() ? TO_UINT32(JS_OBJ(info[2])->Get(JS_STR("id"))) : 0;
+  GLint level = TO_INT32(info[3]);
+  GLsizei samples = TO_UINT32(info[4]);
+  GLint baseViewIndex = TO_INT32(info[5]);
+  GLsizei numViews = TO_UINT32(info[6]);
+
+#if !defined(ANDROID) && !defined(LUMIN)
+  glFramebufferTextureMultisampleMultiviewOVR(target, attachment, texture, level, samples, baseViewIndex, numViews);
+#endif
+#if defined(ANDROID) || defined(LUMIN)
+  glFramebufferTextureMultisampleMultiviewOVRExt(target, attachment, texture, level, samples, baseViewIndex, numViews);
+#endif
 }
 
 NAN_METHOD(WebGLRenderingContext::GetShaderParameter) {
@@ -2571,23 +2676,27 @@ NAN_METHOD(WebGLRenderingContext::ClearDepth) {
 }
 
 NAN_METHOD(WebGLRenderingContext::Disable) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
   GLint arg = TO_INT32(info[0]);
-  glDisable(arg);
 
-  // info.GetReturnValue().Set(Nan::Undefined());
+  glDisable(arg);
 }
 
 NAN_METHOD(WebGLRenderingContext::Enable) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
   GLint arg = TO_INT32(info[0]);
-  glEnable(arg);
 
-  // info.GetReturnValue().Set(Nan::Undefined());
+  glEnable(arg);
 }
 
 
 NAN_METHOD(WebGLRenderingContext::CreateTexture) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
   GLuint texture;
   glGenTextures(1, &texture);
+
+  gl->objectCache.samplers.insert(texture);
 
   Local<Object> textureObject = Nan::New<Object>();
   textureObject->Set(JS_STR("id"), JS_INT(texture));
@@ -2615,8 +2724,8 @@ NAN_METHOD(WebGLRenderingContext::FlipTextureData) {
 
   int num;
   char *pixels=(char*)getArrayData<BYTE>(info[0], &num);
-  int width = info[1]->Int32Value();
-  int height = info[2]->Int32Value();
+  int width = TO_INT32(info[1]);
+  int height = TO_INT32(info[2]);
 
   int elementSize = num / width / height;
   for (int y = 0; y < height; y++) {
@@ -2837,8 +2946,8 @@ NAN_METHOD(WebGLRenderingContext::TexImage2D) {
         height->TypeOf(isolate)->StrictEquals(numberString),
         border->IsNull(), // 0
         !border->IsNull() && border->TypeOf(isolate)->StrictEquals(objectString), // 1
-        !border->IsNull() && border->TypeOf(isolate)->StrictEquals(objectString) && border->ToObject()->Get(widthString)->TypeOf(isolate)->StrictEquals(numberString), // 0
-        !border->IsNull() && border->TypeOf(isolate)->StrictEquals(objectString) && border->ToObject()->Get(heightString)->TypeOf(isolate)->StrictEquals(numberString) // 0
+        !border->IsNull() && border->TypeOf(isolate)->StrictEquals(objectString) && JS_OBJ(border)->Get(widthString)->TypeOf(isolate)->StrictEquals(numberString), // 0
+        !border->IsNull() && border->TypeOf(isolate)->StrictEquals(objectString) && JS_OBJ(border)->Get(heightString)->TypeOf(isolate)->StrictEquals(numberString) // 0
       ); */
 
       Nan::ThrowError("Expected texImage2D(number target, number level, number internalformat, number format, number type, Image pixels)");
@@ -3100,11 +3209,13 @@ NAN_METHOD(WebGLRenderingContext::TexParameterf) {
 
 NAN_METHOD(WebGLRenderingContext::Clear) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
-  GLint arg = TO_INT32(info[0]);
+  if (gl->clearEnabled || (gl->HasFramebufferBinding(GL_DRAW_FRAMEBUFFER) && gl->GetFramebufferBinding(GL_DRAW_FRAMEBUFFER) != gl->defaultFramebuffer)) {
+    GLint arg = TO_INT32(info[0]);
 
-  glClear(arg);
+    glClear(arg);
 
-  gl->dirty = true;
+    gl->dirty = true;
+  }
 }
 
 
@@ -3118,8 +3229,12 @@ NAN_METHOD(WebGLRenderingContext::UseProgram) {
 }
 
 NAN_METHOD(WebGLRenderingContext::CreateBuffer) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
   GLuint buffer;
   glGenBuffers(1, &buffer);
+
+  gl->objectCache.buffers.insert(buffer);
 
   Local<Object> bufferObject = Nan::New<Object>();
   bufferObject->Set(JS_STR("id"), JS_INT(buffer));
@@ -3179,8 +3294,8 @@ NAN_METHOD(WebGLRenderingContext::BindFramebuffer) {
 
   gl->SetFramebufferBinding(target, framebuffer);
   if (target == GL_FRAMEBUFFER) {
-    gl->SetFramebufferBinding(target == GL_DRAW_FRAMEBUFFER, framebuffer);
-    gl->SetFramebufferBinding(target == GL_READ_FRAMEBUFFER, framebuffer);
+    gl->SetFramebufferBinding(GL_DRAW_FRAMEBUFFER, framebuffer);
+    gl->SetFramebufferBinding(GL_READ_FRAMEBUFFER, framebuffer);
   }
 }
 
@@ -3206,6 +3321,8 @@ NAN_METHOD(WebGLRenderingContext::FramebufferTexture2D) {
 }
 
 NAN_METHOD(WebGLRenderingContext::BlitFramebuffer) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
   int sx = TO_UINT32(info[0]);
   int sy = TO_UINT32(info[1]);
   int sw = TO_UINT32(info[2]);
@@ -3225,6 +3342,8 @@ NAN_METHOD(WebGLRenderingContext::BlitFramebuffer) {
     mask,
     filter
   );
+
+  gl->dirty = true;
 
   // info.GetReturnValue().Set(Nan::Undefined());
 }
@@ -3836,8 +3955,6 @@ NAN_METHOD(WebGLRenderingContext::StencilFunc) {
   GLuint mask = TO_INT32(info[2]);
 
   glStencilFunc(func, ref, mask);
-
-  // info.GetReturnValue().Set(Nan::Undefined());
 }
 
 NAN_METHOD(WebGLRenderingContext::StencilFuncSeparate) {
@@ -3847,16 +3964,12 @@ NAN_METHOD(WebGLRenderingContext::StencilFuncSeparate) {
   GLuint mask = TO_INT32(info[3]);
 
   glStencilFuncSeparate(face, func, ref, mask);
-
-  // info.GetReturnValue().Set(Nan::Undefined());
 }
 
 NAN_METHOD(WebGLRenderingContext::StencilMask) {
   GLuint mask = TO_UINT32(info[0]);
 
   glStencilMask(mask);
-
-  // info.GetReturnValue().Set(Nan::Undefined());
 }
 
 NAN_METHOD(WebGLRenderingContext::StencilMaskSeparate) {
@@ -3864,8 +3977,6 @@ NAN_METHOD(WebGLRenderingContext::StencilMaskSeparate) {
   GLuint mask = TO_UINT32(info[1]);
 
   glStencilMaskSeparate(face, mask);
-
-  // info.GetReturnValue().Set(Nan::Undefined());
 }
 
 NAN_METHOD(WebGLRenderingContext::StencilOp) {
@@ -3874,8 +3985,6 @@ NAN_METHOD(WebGLRenderingContext::StencilOp) {
   GLenum zpass = TO_INT32(info[2]);
 
   glStencilOp(fail, zfail, zpass);
-
-  // info.GetReturnValue().Set(Nan::Undefined());
 }
 
 NAN_METHOD(WebGLRenderingContext::StencilOpSeparate) {
@@ -3885,8 +3994,6 @@ NAN_METHOD(WebGLRenderingContext::StencilOpSeparate) {
   GLenum zpass = TO_INT32(info[3]);
 
   glStencilOpSeparate(face, fail, zfail, zpass);
-
-  // info.GetReturnValue().Set(Nan::Undefined());
 }
 
 NAN_METHOD(WebGLRenderingContext::BindRenderbuffer) {
@@ -3903,8 +4010,12 @@ NAN_METHOD(WebGLRenderingContext::BindRenderbuffer) {
 }
 
 NAN_METHOD(WebGLRenderingContext::CreateRenderbuffer) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
   GLuint renderbuffer;
   glGenRenderbuffers(1, &renderbuffer);
+
+  gl->objectCache.renderbuffers.insert(renderbuffer);
 
   Local<Object> renderbufferObject = Nan::New<Object>();
   renderbufferObject->Set(JS_STR("id"), JS_INT(renderbuffer));
@@ -3912,9 +4023,13 @@ NAN_METHOD(WebGLRenderingContext::CreateRenderbuffer) {
 }
 
 NAN_METHOD(WebGLRenderingContext::DeleteBuffer) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
   GLuint buffer = info[0]->IsObject() ? TO_UINT32(JS_OBJ(info[0])->Get(JS_STR("id"))) : 0;
 
   glDeleteBuffers(1, &buffer);
+
+  gl->objectCache.buffers.erase(buffer);
 
   // info.GetReturnValue().Set(Nan::Undefined());
 }
@@ -3934,7 +4049,11 @@ NAN_METHOD(WebGLRenderingContext::DeleteProgram) {
 }
 
 NAN_METHOD(WebGLRenderingContext::DeleteRenderbuffer) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
   GLuint renderbuffer = info[0]->IsObject() ? TO_UINT32(JS_OBJ(info[0])->Get(JS_STR("id"))) : 0;
+
+  gl->objectCache.renderbuffers.erase(renderbuffer);
 
   glDeleteRenderbuffers(1, &renderbuffer);
 
@@ -3950,7 +4069,11 @@ NAN_METHOD(WebGLRenderingContext::DeleteShader) {
 }
 
 NAN_METHOD(WebGLRenderingContext::DeleteTexture) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
   GLuint texture = info[0]->IsObject() ? TO_UINT32(JS_OBJ(info[0])->Get(JS_STR("id"))) : 0;
+
+  gl->objectCache.samplers.erase(texture);
 
   glDeleteTextures(1, &texture);
 
@@ -4843,6 +4966,8 @@ const char *webglExtensions[] = {
   "OES_texture_half_float",
   "OES_texture_half_float_linear",
   "OES_vertex_array_object",
+  "OVR_multiview_multisampled_render_to_texture",
+  "OVR_multiview2",
   "WEBGL_color_buffer_float",
   "WEBGL_compressed_texture_astc",
   "WEBGL_compressed_texture_atc",
@@ -4858,8 +4983,6 @@ const char *webglExtensions[] = {
   "WEBGL_lose_context",
 };
 NAN_METHOD(WebGLRenderingContext::GetSupportedExtensions) {
-  // GLint numExtensions;
-  // glGetIntegerv(GL_NUM_EXTENSIONS, &numExtensions);
 
   int numExtensions = sizeof(webglExtensions)/sizeof(webglExtensions[0]);
   Local<Array> result = Nan::New<Array>(numExtensions);
@@ -4867,11 +4990,6 @@ NAN_METHOD(WebGLRenderingContext::GetSupportedExtensions) {
     // char *extension = (char *)glGetStringi(GL_EXTENSIONS, i);
     result->Set(i, JS_STR(webglExtensions[i]));
   }
-
-  /* for (GLint i = 0; i < numExtensions; i++) {
-    char *extension = (char *)glGetStringi(GL_EXTENSIONS, i);
-    result->Set(i, JS_STR(extension));
-  } */
 
   info.GetReturnValue().Set(result);
 }
@@ -4991,6 +5109,19 @@ NAN_METHOD(WebGLRenderingContext::GetExtension) {
     result->Set(JS_STR("RGB16F_EXT"), JS_INT(GL_RGB16F_EXT));
     result->Set(JS_STR("RGBA16F_EXT"), JS_INT(GL_RGBA16F_EXT));
     result->Set(JS_STR("UNSIGNED_NORMALIZED_EXT"), JS_INT(GL_UNSIGNED_NORMALIZED_EXT));
+    info.GetReturnValue().Set(result);
+  } else if (strcmp(sname, "OVR_multiview2") == 0) {
+    // Add constants: khronos.org/registry/webgl/extensions/OVR_multiview2/
+    Local<Object> result = Object::New(Isolate::GetCurrent());
+    result->Set(JS_STR("FRAMEBUFFER_ATTACHMENT_TEXTURE_NUM_VIEWS_OVR"), JS_INT(0x9630));
+    result->Set(JS_STR("FRAMEBUFFER_ATTACHMENT_TEXTURE_BASE_VIEW_INDEX_OVR"), JS_INT(0x9632));
+    result->Set(JS_STR("MAX_VIEWS_OVR"), JS_INT(0x9631));
+    result->Set(JS_STR("FRAMEBUFFER_INCOMPLETE_VIEW_TARGETS_OVR"), JS_INT(0x9633));
+    Nan::SetMethod(result, "framebufferTextureMultiviewOVR", FramebufferTextureMultiviewOVR);
+    info.GetReturnValue().Set(result);
+  } else if (strcmp(sname, "OVR_multiview_multisampled_render_to_texture") == 0) {
+    Local<Object> result = Object::New(Isolate::GetCurrent());
+    Nan::SetMethod(result, "FramebufferTextureMultisampleMultiviewOVR", FramebufferTextureMultisampleMultiviewOVR);
     info.GetReturnValue().Set(result);
   } else if (strcmp(sname, "EXT_blend_minmax") == 0) {
     // Adds two constants: developer.mozilla.org/docs/Web/API/EXT_blend_minmax
@@ -5189,8 +5320,12 @@ NAN_METHOD(WebGL2RenderingContext::New) {
 
 // reference used https://www.khronos.org/registry/OpenGL-Refpages/es3.0/
 NAN_METHOD(WebGL2RenderingContext::CreateQuery) { // adapted from CreateBuffer
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
   GLuint queryId;
   glGenQueries(1, &queryId);
+
+  gl->objectCache.queries.insert(queryId);
 
   Local<Object> queryObject = Nan::New<Object>();
   queryObject->Set(JS_STR("id"), JS_INT(queryId));
@@ -5261,7 +5396,11 @@ NAN_METHOD(WebGL2RenderingContext::IsQuery) { // adapted from IsVertexArray
 }
 
 NAN_METHOD(WebGL2RenderingContext::DeleteQuery) { // adapted from DeleteBuffer
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
   GLuint query = info[0]->IsObject() ? TO_UINT32(JS_OBJ(info[0])->Get(JS_STR("id"))) : 0;
+
+  gl->objectCache.queries.erase(query);
 
   glDeleteQueries(1, &query);
 }
@@ -5357,8 +5496,12 @@ NAN_METHOD(WebGL2RenderingContext::ResumeTransformFeedback) {
 }
 
 NAN_METHOD(WebGL2RenderingContext::CreateSampler) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
   GLuint samplerId;
   glGenSamplers(1, &samplerId);
+
+  gl->objectCache.samplers.insert(samplerId);
 
   Local<Object> samplerObject = Nan::New<Object>();
   samplerObject->Set(JS_STR("id"), JS_INT(samplerId));
@@ -5366,7 +5509,11 @@ NAN_METHOD(WebGL2RenderingContext::CreateSampler) {
 }
 
 NAN_METHOD(WebGL2RenderingContext::DeleteSampler) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+
   GLuint sampler = info[0]->IsObject() ? TO_UINT32(JS_OBJ(info[0])->Get(JS_STR("id"))) : 0;
+
+  gl->objectCache.samplers.erase(sampler);
 
   glDeleteSamplers(1, &sampler);
 }

@@ -29,6 +29,8 @@
 #include <libcef_dll/ctocpp/request_context_ctocpp.h>
 #include <libcef_dll/ctocpp/browser_ctocpp.h>
 
+#include <include/wrapper/cef_library_loader.h>
+
 #else
 
 #include <Servo2D.h>
@@ -55,7 +57,7 @@ enum class EmbeddedKeyModifiers {
 
 // bindings
 
-bool initializeEmbedded(const std::string &dataPath);
+bool initializeEmbedded(const std::string &dataPath, const string &frameworkPath);
 EmbeddedBrowser createEmbedded(
   const std::string &url,
   WebGLRenderingContext *gl,
@@ -63,6 +65,7 @@ EmbeddedBrowser createEmbedded(
   GLuint tex,
   int width,
   int height,
+  float scale,
   int *textureWidth,
   int *textureHeight,
   std::function<EmbeddedBrowser()> getBrowser,
@@ -74,11 +77,16 @@ EmbeddedBrowser createEmbedded(
   std::function<void(const std::string &)> onmessage
 );
 void destroyEmbedded(EmbeddedBrowser browser_);
+// void embeddedUpdate();
 void embeddedDoMessageLoopWork();
+std::pair<int, int> getEmbeddedSize(EmbeddedBrowser browser_);
+void setEmbeddedSize(EmbeddedBrowser browser_, int width, int height);
 int getEmbeddedWidth(EmbeddedBrowser browser_);
 void setEmbeddedWidth(EmbeddedBrowser browser_, int width);
 int getEmbeddedHeight(EmbeddedBrowser browser_);
 void setEmbeddedHeight(EmbeddedBrowser browser_, int height);
+float getEmbeddedScale(EmbeddedBrowser browser_);
+void setEmbeddedScale(EmbeddedBrowser browser_, float scale);
 void embeddedGoBack(EmbeddedBrowser browser_);
 void embeddedGoForward(EmbeddedBrowser browser_);
 void embeddedReload(EmbeddedBrowser browser_);
@@ -96,7 +104,7 @@ void embeddedRunJs(EmbeddedBrowser browser_, const std::string &jsString, const 
 void QueueOnBrowserThread(std::function<void()> fn);
 // void QueueOnBrowserThreadFront(std::function<void()> fn);
 
-void RunOnMainThread(std::function<void()> fn);
+// void RunOnMainThread(std::function<void()> fn);
 void QueueOnMainThread(std::function<void()> fn);
 void MainThreadAsync(uv_async_t *handle);
 

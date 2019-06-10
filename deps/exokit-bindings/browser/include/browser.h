@@ -9,6 +9,7 @@
 
 #include <defines.h>
 #include <browser-common.h>
+#include <windowsystem.h>
 
 #include <chrono>
 #include <deque>
@@ -29,16 +30,19 @@ public:
   static Local<Object> Initialize(Isolate *isolate);
 
 protected:
-  Browser(WebGLRenderingContext *gl, int width, int height);
+  Browser(WebGLRenderingContext *gl, int width, int height, float scale);
   ~Browser();
 
   static NAN_METHOD(New);
   static NAN_METHOD(UpdateAll);
   static NAN_METHOD(Load);
+  static NAN_METHOD(Resize);
   static NAN_GETTER(WidthGetter);
   static NAN_SETTER(WidthSetter);
   static NAN_GETTER(HeightGetter);
   static NAN_SETTER(HeightSetter);
+  static NAN_GETTER(ScaleGetter);
+  static NAN_SETTER(ScaleSetter);
   static NAN_GETTER(OnLoadStartGetter);
   static NAN_SETTER(OnLoadStartSetter);
   static NAN_GETTER(OnLoadEndGetter);
@@ -71,6 +75,7 @@ protected:
   NATIVEwindow *window;
   int width;
   int height;
+  float scale;
   GLuint tex;
   int textureWidth;
   int textureHeight;

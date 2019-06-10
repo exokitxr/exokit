@@ -4,6 +4,9 @@
 #include <string>
 #include <sstream>
 #include <map>
+#include <functional>
+#include <thread>
+#include <mutex>
 
 #include <v8.h>
 #include <nan.h>
@@ -25,7 +28,36 @@ typedef GLFWwindow NATIVEwindow;
 #define windowsystem glfw
 
 namespace glfw {
-  NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool visible, NATIVEwindow *sharedWindow);
+  class EventHandler {
+  public:
+    EventHandler(uv_loop_t *loop, Local<Function> handlerFn);
+    ~EventHandler();
+
+  // protected:
+    std::mutex mutex;
+    std::unique_ptr<uv_async_t> async;
+    Nan::Persistent<Function> handlerFn;
+    std::deque<std::function<void(std::function<void(int argc, Local<Value> *argv)>)>> fns;
+  };
+
+  class InjectionHandler {
+  public:
+    InjectionHandler();
+
+  // protected:
+    std::deque<std::function<void(InjectionHandler *injectionHandler)>> fns;
+  };
+
+  class WindowState {
+  public:
+    WindowState();
+    ~WindowState();
+
+  // protected:
+    std::unique_ptr<EventHandler> handler;
+  };
+
+  NATIVEwindow *CreateWindowHandle(unsigned int width, unsigned int height, bool visible);
   void GetWindowSize(NATIVEwindow *window, int *width, int *height);
   void GetFramebufferSize(NATIVEwindow *window, int *width, int *height);
   NATIVEwindow *GetGLContext(NATIVEwindow *window);

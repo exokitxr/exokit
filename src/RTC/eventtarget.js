@@ -1,5 +1,7 @@
 'use strict';
 
+const {process} = global;
+
 /**
  * @author mrdoob / http://mrdoob.com/
  * @author Jesús Leganés Combarro "Piranna" <piranna@gmail.com>
