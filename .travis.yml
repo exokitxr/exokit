@@ -72,7 +72,7 @@ matrix:
     node_js:
     - "11.6.0"
     install:
-    - npm install -g appdmg
+    - node hackCI.js
     - curl "https://nodejs.org/dist/v11.6.0/node-v11.6.0-darwin-x64.tar.gz" >node.tar.gz
     - tar -zxf node.tar.gz
     - rm node.tar.gz
