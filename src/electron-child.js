@@ -24,6 +24,9 @@ const TYPES = (() => {
 })();
 
 let mainWindow = null;
+let cachedBitmap = Buffer.alloc(0);
+let textureWidth = 0;
+let textureHeight = 0;
 
 const bs = [];
 let bsLength = 0;
@@ -76,11 +79,11 @@ const _consumeInput = () => {
       
       switch (e.method) {
         case 'initialize': {
-          const {url, width, height, devicePixelRatio} = e;
+          const {url, width: initialWidth, height: initialHeight, devicePixelRatio} = e;
 
           mainWindow = new BrowserWindow({
-            width,
-            height,
+            width: initialWidth,
+            height: initialHeight,
             show: false,
             webPreferences: {
               offscreen: true,
@@ -116,27 +119,73 @@ const _consumeInput = () => {
             }
           });
           mainWindow.webContents.on('paint', (event, dirty, image) => {
-            // console.warn('child got paint', dirty);
-            const {width, height} = image.getSize();
-            {
-              const b = Uint32Array.from([TYPES.IMAGEDATA, dirty.x, dirty.y, dirty.width, dirty.height, width, height]);
-              const b2 = new Buffer(b.buffer, b.byteOffset, b.byteLength);
-              _parentPortWrite(b2);
-              // process.stdout.write(b2);
+            const {width: localTextureWidth, height: localTextureHeight} = image.getSize();
+
+            if (localTextureWidth !== textureWidth || localTextureHeight !== textureHeight) {
+              textureWidth = localTextureWidth;
+              textureHeight = localTextureHeight;
+              cachedBitmap = Buffer.alloc(textureWidth * textureHeight * 4);
             }
-            {
-              const bitmap = image.getBitmap();
-              const clippedBitmap = Buffer.allocUnsafe(dirty.width * dirty.height * 4);
-              // clippedBitmap.fill(0xFF);
-              for (let y = 0; y < dirty.height; y++) {
-                const srcY = dirty.y + y;
-                const dstY = y;
-                bitmap.copy(clippedBitmap, (dstY * dirty.width)*4, ((srcY * width) + dirty.x)*4, ((srcY * width) + dirty.x + dirty.width)*4);
+            const bitmap = image.getBitmap();
+
+            const maxChunkSize = 64*1024;
+            const maxChunkHeight = Math.ceil(maxChunkSize/(dirty.width*4));
+            const chunks = [];
+            let currentChunk = null;
+            let currentChunkStartY = 0;
+            let currentChunkHeight = 0;
+            let currentChunkDirty = false;
+            /* let numDirtyChunks = 0;
+            let numCleanChunks = 0; */
+            const _initializeChunk = y => {
+              currentChunkHeight = Math.min(dirty.height - y, maxChunkHeight);
+              currentChunk = Buffer.allocUnsafe(dirty.width * currentChunkHeight * 4);
+              currentChunkStartY = y;
+              currentChunkDirty = false;
+            };
+            const _processChunk = y => {
+              // copy to output
+              const srcStartY = dirty.y + y;
+              const dstStartY = y - currentChunkStartY;
+              const dstStartIndex = (dstStartY * dirty.width)*4;
+              const srcStartIndex = ((srcStartY * textureWidth) + dirty.x)*4;
+              const srcEndIndex = ((srcStartY * textureWidth) + dirty.x + dirty.width)*4;
+              bitmap.copy(currentChunk, dstStartIndex, srcStartIndex, srcEndIndex);
+
+              // check diff
+              if (bitmap.compare(cachedBitmap, srcStartIndex, srcEndIndex, srcStartIndex, srcEndIndex) !== 0) {
+                bitmap.copy(cachedBitmap, srcStartIndex, srcStartIndex, srcEndIndex);
+                currentChunkDirty = true;
               }
-              _parentPortWrite(clippedBitmap);
-              // process.stdout.write(i2);
-              // console.warn('electron child got dirty', dirty, i2.byteLength);
+            };
+            const _flushChunk = () => {
+              if (currentChunkDirty) {
+                const b = Uint32Array.from([TYPES.IMAGEDATA, dirty.x, dirty.y + currentChunkStartY, dirty.width, currentChunkHeight, textureWidth, textureHeight]);
+                const b2 = new Buffer(b.buffer, b.byteOffset, b.byteLength);
+                _parentPortWrite(b2);
+                _parentPortWrite(currentChunk);
+                // numDirtyChunks++;
+              } /* else {
+                numCleanChunks++;
+              } */
+              currentChunk = null;
+              /* currentChunkStartY = 0;
+              currentChunkHeight = 0;
+              currentChunkDirty = false; */
+            };
+            for (let y = 0; y < dirty.height; y++) {
+              if (currentChunk && (y % maxChunkHeight) === 0) {
+                _flushChunk();
+              }
+              if (!currentChunk) {
+                _initializeChunk(y);
+              }
+              _processChunk(y);
             }
+            if (currentChunk) {
+              _flushChunk();
+            }
+            // console.log('num dirty chunks', dirty.x, dirty.y, dirty.width, dirty.height, numDirtyChunks, numCleanChunks);
           });
           // mainWindow.webContents.setFrameRate(30);
 
