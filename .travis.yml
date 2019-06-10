@@ -1,9 +1,25 @@
 language: node_js
 node_js:
 - '11'
-scripts: 
-- export BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH; else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
-- echo "TRAVIS_BRANCH=$TRAVIS_BRANCH, PR=$PR, BRANCH=$BRANCH"
-install:
-- node hackCI.js
+env:
+  matrix:
+    secure: IKkxnHrFU46DF5bs1q/bldg2sAbRWAoIqHuv4ddzAgv+0Oxbg9oD8mC9DmJ77wglMt7ErLKmHxG4qImGgHTZWPTgW3oSaFkIfT32YdsLh/6tewIZmjsffjBse3yP2hpTAx2qMeCBeRTuxTqQqQ8xMuZK2i08YFnYEMJ8FSd9pJnu7FUCZ1s8sYnwHp5YctGdMLkWNVkEVyI9dAHSPsBYyC1aSEeKUOmlqUc07kJVVknG+EOX95QqGtnRIB274+Kdj64g9dX0447sRWzDM+3gK4TXKxaOqdp/YCgWtILa33u1RBwxmv4CEseRYUsr9HSHfZMaY0EPlFqSXDZD0emNVUgttnD+KyIE1Mo3pUAcc+Gkr4TePTmi+EieBw/Re5Nv3ChEBpOYL9a6GFb+MKMDzLhU6PaFQU0SaaVYkFhhpRvCr7O1Sr4Tz+814A8x32ZCEx/ER37CjB5UN0HsHgPAS4T/jNE1QC7gSX6pNBu5JQRevruWE/gZI20J6EqXR26hPhGInf175Ho4W3+GZ7Cur4sdgcXevm1mt+ZcMQEqIs0NI1TZDxfUEa3smp14fbo/ehtasTNPWwGx4hw2dgtT6/cUBzWECHExydt/e5hw41IlYKW8VW0/kC9/l+n7A/lVBbhGfV2XMXdYLcvpySAihLVou3G/rQeFGmA80Ag5vp0=
+    secure: MP84r8nsLXPBijsGNglKWZEOvTjVcDJwcsm708S3kw0HxtbYHPfDVxAFV9iCSff9mCCNeUP/uTCw4e0MxzqtoLirj+qzWI8EDqLDxB/YsAdANm5Puq+7QYWvgK6HwYmq8guMfeZuT8DTlzSRPjDMIlUHJsv7rGatoD4BCEYUOs20mDoEkujjWeYoMAF6w/TIm/HukAFO71E2uIGysE77b9/1QbbYLtEF8f94k5mJliWS1sLQ1dGGHrw+mKVdJqB5oueDhJatF/29eEGLxiBOJACn291Xl1Vyfqj+le+7XX4qwvCRAVUySrkLFbVbf1B+lQHCaI4LFrqWsIGrjxk8bT7NRJQSCxi4tqRu96gn8nGFgetMkeryJrtB7G1/AYjBpvjq1VGAhbWWAWZB4fqdsvOPWDD2jBhLCRMWHSZ6cFERddfZScsenu4ksGnBZZ7Gd8zo/86HRakeHVJxwvprei3MW4P9xfR64+CoWAphhDPZivj/N7MBq8HmAva2cZHBajVR7DE+GenmyzcTFWpAwNO3WAcUJL3kGFW1eI4fUY2HPa0kDITdbJ1ryHDn//nTPbDwzWmK5xY71P1zP8kaBJawJ54bYdw/YCd/WNq9pNoknQ6WJu4RUdHBNroVOINZslIWWNWK93M9FVchNerNXaOytYHBD8bVfEhtVnlSzPU=
 
+matrix:
+  include:
+  - os: linux
+    install:
+    - node hackCI.js
+    script:
+    - export BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH; else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
+    - echo "TRAVIS_BRANCH=$TRAVIS_BRANCH, PR=$PR, BRANCH=$BRANCH"
+  - os: osx
+    osx_image: xcode10.1
+    node_js:
+    - "12.2.0"
+    script:
+    - export BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH; else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
+    - echo "TRAVIS_BRANCH=$TRAVIS_BRANCH, PR=$PR, BRANCH=$BRANCH"
+    install:
+    - node hackCI.js
