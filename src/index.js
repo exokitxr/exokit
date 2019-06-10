@@ -655,9 +655,6 @@ const _startTopRenderLoop = () => {
       xrState.leftProjectionMatrix.set(localFloat32Array2);
       xrState.rightViewMatrix.set(localFloat32Array3);
       xrState.rightProjectionMatrix.set(localFloat32Array4);
-
-      localVector.toArray(xrState.position);
-      localQuaternion.toArray(xrState.orientation);
     };
     _loadHmd();
 
