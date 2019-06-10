@@ -138,7 +138,7 @@ const _consumeInput = () => {
               // console.warn('electron child got dirty', dirty, i2.byteLength);
             }
           });
-          mainWindow.webContents.setFrameRate(30);
+          // mainWindow.webContents.setFrameRate(30);
 
           mainWindow.on('closed', function () {
             console.warn('electron child  window closed');
