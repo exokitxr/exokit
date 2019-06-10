@@ -50,7 +50,7 @@ matrix:
   - os: osx
     osx_image: xcode10.1
     node_js:
-    - "11.6.0"
+    - "12.2.0"
     script:
     - export BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH; else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
      - echo "TRAVIS_BRANCH=$TRAVIS_BRANCH, PR=$PR, BRANCH=$BRANCH"
