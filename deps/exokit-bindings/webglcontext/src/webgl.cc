@@ -2535,7 +2535,7 @@ NAN_METHOD(WebGLRenderingContext::LoadSubTexture) {
   uint8_t *buffer = (uint8_t *)bufferUint8Array->Buffer()->GetContents().Data() + bufferUint8Array->ByteOffset();
   glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, width, height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, buffer);
 #else
-  glTexSubImage2D(GL_TEXTURE_2D, 0, rect.x, rect.y, rect.width, rect.height, GL_BGRA_EXT, GL_UNSIGNED_BYTE, buffer);
+  glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, width, height, GL_BGRA_EXT, GL_UNSIGNED_BYTE, buffer);
 #endif
   
   // glFlush();
