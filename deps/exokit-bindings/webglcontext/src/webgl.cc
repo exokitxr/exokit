@@ -2531,8 +2531,8 @@ NAN_METHOD(WebGLRenderingContext::LoadSubTexture) {
   glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
   /* glPixelStorei(GL_UNPACK_SKIP_PIXELS, x);
   glPixelStorei(GL_UNPACK_SKIP_ROWS, y); */
-#if !defined(LUMIN) && !defined(ANDROID)
   uint8_t *buffer = (uint8_t *)bufferUint8Array->Buffer()->GetContents().Data() + bufferUint8Array->ByteOffset();
+#if !defined(LUMIN) && !defined(ANDROID)
   glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, width, height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, buffer);
 #else
   glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, width, height, GL_BGRA_EXT, GL_UNSIGNED_BYTE, buffer);
