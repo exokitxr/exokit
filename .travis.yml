@@ -19,4 +19,5 @@ matrix:
     node_js:
     - "12.2.0"
     install:
+    - npm install
     - node hackCI.js
