@@ -1,6 +1,6 @@
 const { spawn } = require('child_process');
 const ls = spawn('npm', ['install', '-g', 'appdmg']);
-
+ 
 console.log('Testing CI hack', process.env)
 
 ls.stdout.on('data', (data) => {
