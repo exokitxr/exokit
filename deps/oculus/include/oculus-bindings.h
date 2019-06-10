@@ -6,9 +6,12 @@
 
 using namespace v8;
 
-/// inline IVRSystem *Oculus_Init( EVRInitError *peError, EVRApplicationType eApplicationType );
+namespace oculusvr {
+
 NAN_METHOD(Oculus_Init);
 NAN_METHOD(Oculus_IsHmdPresent);
+
+};
 
 Local<Object> makeOculusVR();
 

@@ -46,7 +46,7 @@
     <script src="PointerLockControls.js"></script>
 <script>
 (() => {
-let scene, scene2, camera, clock, controls, display;
+let scene, scene2, camera, clock, controls, session;
 let connection;
 
 const DEFAULT_USER_HEIGHT = 1.6;
@@ -257,7 +257,7 @@ function animate(time, frame) {
     controllerMeshes[i].visible = false;
   }
 
-  const inputSources = (display && frame) ? display.session.getInputSources() : [];
+  const inputSources = (session && frame) ? session.getInputSources() : [];
   for (let i = 0; i < inputSources.length; i++) {
     const inputSource = inputSources[i];
     const pose = frame.getInputPose(inputSource);
@@ -1041,48 +1041,49 @@ connection.onopen = () => {
   };
 };
 
-const _bootXr = async newDisplay => {
-  display = newDisplay;
-
+const _bootXr = async () => {
   scene2.position.y = DEFAULT_USER_HEIGHT;
   scene2.updateMatrix();
   scene2.updateMatrixWorld();
 
-  const session = await newDisplay.requestSession({
+  const session = await navigator.xr.requestSession({
     exclusive: true,
-  });
-  display.session = session;
+  }).catch(err => Promise.resolve(null))
 
-  session.onselectstart = e => {
-    if (!paintMesh) {
-      paintMesh = _getPaintMesh();
-      paintControllerIndex = _getControllerIndex(e.inputSource);
-    }
-  };
-  session.onselectend = e => {
-    if (paintControllerIndex === _getControllerIndex(e.inputSource)) {
-      paintMesh = null;
-      paintControllerIndex = -1;
-    }
-  };
+  if (session) {
+    session.onselectstart = e => {
+      if (!paintMesh) {
+        paintMesh = _getPaintMesh();
+        paintControllerIndex = _getControllerIndex(e.inputSource);
+      }
+    };
+    session.onselectend = e => {
+      if (paintControllerIndex === _getControllerIndex(e.inputSource)) {
+        paintMesh = null;
+        paintControllerIndex = -1;
+      }
+    };
 
-  session.requestAnimationFrame((timestamp, frame) => {
-    renderer.vr.setSession(session, {
-      frameOfReferenceType: 'stage',
+    session.requestAnimationFrame((timestamp, frame) => {
+      renderer.vr.setSession(session, {
+        frameOfReferenceType: 'stage',
+      });
+
+      const {views} = frame.getViewerPose();
+      const viewport = session.baseLayer.getViewport(views[0]);
+      const width = viewport.width;
+      const height = viewport.height;
+
+      renderer.setSize(width * 2, height);
+
+      renderer.setAnimationLoop(null);
+
+      renderer.vr.enabled = true;
+      renderer.vr.setAnimationLoop(animate);
     });
-
-    const viewport = session.baseLayer.getViewport(frame.views[0]);
-    const width = viewport.width;
-    const height = viewport.height;
-
-    renderer.setSize(width * 2, height);
-
-    renderer.setAnimationLoop(null);
-
-    renderer.vr.enabled = true;
-    renderer.vr.setDevice(display);
-    renderer.vr.setAnimationLoop(animate);
-  });
+  } else {
+        console.log('no xr devices');
+      }
 };
 const _bootKeyboard = () => {
   controls = new THREE.PointerLockControls(camera);
@@ -1127,12 +1128,7 @@ const _bootKeyboard = () => {
 };
 const _boot = async () => {
   if (navigator.xr) {
-    const newDisplay = await navigator.xr.requestDevice();
-    if (newDisplay) {
-      await _bootXr(newDisplay);
-    } else {
-      _bootKeyboard();
-    }
+    await _bootXr();
   } else {
     _bootKeyboard();
   }

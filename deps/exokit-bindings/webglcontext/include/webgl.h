@@ -70,6 +70,10 @@
 #define MAX_CLIENT_WAIT_TIMEOUT_WEBGL ((uint32_t)2e7)
 
 #include <defines.h>
+#include <exout>
+#include <vector>
+#include <map>
+#include <set>
 
 #if !defined(ANDROID) && !defined(LUMIN)
 #include <glfw/include/glfw.h>
@@ -77,12 +81,33 @@
 #include <egl/include/egl.h>
 #endif
 
+#if defined(ANDROID) || defined(LUMIN)
+typedef void (*PFNGLFRAMEBUFFERTEXTUREMULTIVIEWOVR)(GLenum, GLenum, GLuint, GLint, GLint, GLsizei);
+extern PFNGLFRAMEBUFFERTEXTUREMULTIVIEWOVR glFramebufferTextureMultiviewOVRExt;
+typedef void (GL_APIENTRY* PFNGLFRAMEBUFFERTEXTUREMULTISAMPLEMULTIVIEWOVR)(GLenum target, GLenum attachment, GLuint texture, GLint level, GLsizei samples, GLint baseViewIndex, GLsizei numViews);
+extern PFNGLFRAMEBUFFERTEXTUREMULTISAMPLEMULTIVIEWOVR glFramebufferTextureMultisampleMultiviewOVRExt;
+#endif
+
 using namespace v8;
 using namespace node;
+
+class GlObjectCache {
+public:
+  std::set<GLuint> buffers;
+  std::set<GLuint> queries;
+  std::set<GLuint> renderbuffers;
+  std::set<GLuint> samplers;
+  std::set<GLuint> textures;
+};
 
 enum GlKey {
   GL_KEY_COMPOSE,
   GL_KEY_PLANE,
+};
+
+class GlShader {
+public:
+  virtual ~GlShader() = 0;
 };
 
 void flipImageData(char *dstData, char *srcData, size_t width, size_t height, size_t pixelSize);
@@ -307,7 +332,7 @@ public:
   static NAN_METHOD(GetSupportedExtensions);
   static NAN_METHOD(GetExtension);
   static NAN_METHOD(GetContextAttributes);
-  
+
   static NAN_METHOD(CheckFramebufferStatus);
 
   static NAN_METHOD(CreateVertexArray);
@@ -328,8 +353,14 @@ public:
   static NAN_GETTER(DrawingBufferWidthGetter);
   static NAN_GETTER(DrawingBufferHeightGetter);
 
-  static NAN_METHOD(GetFramebuffer);
+  static NAN_METHOD(GetBoundFramebuffer);
+  static NAN_METHOD(GetDefaultFramebuffer);
   static NAN_METHOD(SetDefaultFramebuffer);
+
+  static NAN_METHOD(SetClearEnabled);
+
+  static NAN_METHOD(FramebufferTextureMultiviewOVR);
+  static NAN_METHOD(FramebufferTextureMultisampleMultiviewOVR);
 
   void SetVertexArrayBinding(GLuint vao) {
     vertexArrayBindings[GL_VERTEX_SHADER] = vao;
@@ -394,8 +425,10 @@ public:
   bool live;
   NATIVEwindow *windowHandle;
   GLuint defaultVao;
-  bool dirty;
   GLuint defaultFramebuffer;
+  GlObjectCache objectCache;
+  bool clearEnabled;
+  bool dirty;
   bool flipY;
   bool premultiplyAlpha;
   GLint packAlignment;
@@ -420,7 +453,7 @@ public:
   static std::pair<Local<Object>, Local<FunctionTemplate>> Initialize(Isolate *isolate, Local<FunctionTemplate> baseCtor);
 
   static NAN_METHOD(New);
-  
+
   static NAN_METHOD(CreateQuery);
   static NAN_METHOD(BeginQuery);
   static NAN_METHOD(EndQuery);
@@ -428,7 +461,7 @@ public:
   static NAN_METHOD(GetQueryParameter);
   static NAN_METHOD(IsQuery);
   static NAN_METHOD(DeleteQuery);
-  
+
   static NAN_METHOD(CreateTransformFeedback);
   static NAN_METHOD(DeleteTransformFeedback);
   static NAN_METHOD(IsTransformFeedback);
@@ -439,7 +472,7 @@ public:
   static NAN_METHOD(GetTransformFeedbackVarying);
   static NAN_METHOD(PauseTransformFeedback);
   static NAN_METHOD(ResumeTransformFeedback);
-  
+
   static NAN_METHOD(CreateSampler);
   static NAN_METHOD(DeleteSampler);
   static NAN_METHOD(IsSampler);
@@ -448,5 +481,32 @@ public:
   static NAN_METHOD(SamplerParameterf);
   static NAN_METHOD(GetSamplerParameter);
 };
+
+template <typename T>
+T *getGlShader(WebGLRenderingContext *gl) {
+  const GlKey &key = T::key;
+  auto iter = gl->keys.find(key);
+  if (iter != gl->keys.end()) {
+    return (T *)iter->second;
+  } else {
+    T *t = new T();
+
+    {
+      if (gl->HasVertexArrayBinding()) {
+        glBindVertexArray(gl->GetVertexArrayBinding());
+      } else {
+        glBindVertexArray(gl->defaultVao);
+      }
+      if (gl->HasBufferBinding(GL_ARRAY_BUFFER)) {
+        glBindBuffer(GL_ARRAY_BUFFER, gl->GetBufferBinding(GL_ARRAY_BUFFER));
+      } else {
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+      }
+    }
+
+    gl->keys[key] = t;
+    return t;
+  }
+}
 
 #endif

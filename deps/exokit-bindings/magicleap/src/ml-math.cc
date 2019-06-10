@@ -54,6 +54,13 @@ MLVec3f normalizeVector(const MLVec3f &v) {
   return divideVector(v, vectorLength(v));
 }
 
+float distanceTo(const MLVec3f &a, const MLVec3f &b) {
+  return vectorLength(subVectors(a, b));
+}
+
+float distanceToSq(const MLVec3f &a, const MLVec3f &b) {
+  return vectorLengthSq(subVectors(a, b));
+}
 
 MLVec3f applyVectorQuaternion(const MLVec3f &v, const MLQuaternionf &q) {
   const float x = v.x, y = v.y, z = v.z;
@@ -694,7 +701,7 @@ bool getHandGripTransform(MLTransform &result, float wristBones[4][1 + 3], float
   return getFingerRayTransform(result, fingers, normal, transform);
 }
 
-void getWristBonePosition(MLVec3f &position, float wristBones[4][1 + 3], int boneIndex, const MLMat4f &transform) {
+/* void getWristBonePosition(MLVec3f &position, float wristBones[4][1 + 3], int boneIndex, const MLMat4f &transform) {
   float *positionValues = (float *)&wristBones[boneIndex][1];
   position.x = positionValues[0];
   position.y = positionValues[1];
@@ -714,7 +721,7 @@ void getFingerBonePosition(MLVec3f &position, float fingerBones[5][4][1 + 3], in
   if (!isIdentityMatrix(transform)) {
     position = applyVectorMatrix(position, transform);
   }
-} 
+} */
 
 }
 

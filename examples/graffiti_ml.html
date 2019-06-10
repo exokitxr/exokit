@@ -27,7 +27,7 @@
 <script>
 (() => {
 
-let container, scene, camera, display, controllerMeshes, hitMeshes;
+let container, scene, camera, session, controllerMeshes, hitMeshes;
 let mesher = null;
 
 const MAX_NUM_POINTS = 1024;
@@ -62,9 +62,9 @@ const _makeControllerMesh = (x = 0, y = 0, z = 0, qx = 0, qy = 0, qz = 0, qw = 1
   mesh.position.set(x, y, z);
   mesh.quaternion.set(qx, qy, qz, qw);
   // mesh.matrix.compose(mesh.position, mesh.quaternion, mesh.scale);
-  mesh.updateMatrix();
-  mesh.updateMatrixWorld();
-  mesh.matrixAutoUpdate = false;
+  // mesh.updateMatrix();
+  // mesh.updateMatrixWorld();
+  // mesh.matrixAutoUpdate = false;
   mesh.frustumCulled = false;
   return mesh;
 };
@@ -331,7 +331,7 @@ function init() {
     scene.add(controllerMesh);
   });
 
-  const cubeGeometry = new THREE.BoxBufferGeometry(0.02, 0.02, 0.001);
+  const cubeGeometry = new THREE.BoxBufferGeometry(0.05, 0.05, 0.05);
   const hitMeshMaterial = new THREE.MeshPhongMaterial({
     color: 0x673ab7,
   });
@@ -375,7 +375,7 @@ function animate(time, frame) {
       controllerMeshes[i].visible = false;
     }
 
-    const inputSources = display.session.getInputSources();
+    const inputSources = session.getInputSources();
     for (let i = 0; i < inputSources.length; i++) {
       const inputSource = inputSources[i];
       const pose = frame.getInputPose(inputSource);
@@ -390,7 +390,7 @@ function animate(time, frame) {
       if (!controllerHitTesting[controllerIndex]) {
         const hitMesh = hitMeshes[controllerIndex];
 
-        display.session.requestHitTest(
+        session.requestHitTest(
           controllerMesh.position
             .toArray(localVectorFloat32Array),
           localVector.set(0, 0, -1)
@@ -468,47 +468,51 @@ function animate(time, frame) {
 init();
 
 (async () => {
-  console.log('request device');
-  display = await navigator.xr.requestDevice();
   console.log('request session');
-  const session = await display.requestSession({
+  session = await navigator.xr.requestSession({
     exclusive: true,
-  });
-  display.session = session;
+    extensions: {
+      meshing: true,
+    },
+  }).catch(err => Promise.resolve(null));
 
-  session.onselectstart = e => {
-    if (!paintMesh) {
-      paintMesh = _getPaintMesh();
-      paintControllerIndex = _getControllerIndex(e.inputSource);
-    }
-  };
-  session.onselectend = e => {
-    if (paintControllerIndex === _getControllerIndex(e.inputSource)) {
-      paintMesh = null;
-      paintControllerIndex = -1;
-    }
-  };
+  if (session) {
+    session.onselectstart = e => {
+      if (!paintMesh) {
+        paintMesh = _getPaintMesh();
+        paintControllerIndex = _getControllerIndex(e.inputSource);
+      }
+    };
+    session.onselectend = e => {
+      if (paintControllerIndex === _getControllerIndex(e.inputSource)) {
+        paintMesh = null;
+        paintControllerIndex = -1;
+      }
+    };
 
-  // console.log('request first frame');
-  session.requestAnimationFrame((timestamp, frame) => {
-    renderer.vr.setSession(session, {
-      frameOfReferenceType: 'stage',
+    // console.log('request first frame');
+    session.requestAnimationFrame((timestamp, frame) => {
+      renderer.vr.setSession(session, {
+        frameOfReferenceType: 'stage',
+      });
+
+      const {views} = frame.getViewerPose();
+      const viewport = session.baseLayer.getViewport(views[0]);
+      const width = viewport.width;
+      const height = viewport.height;
+
+      renderer.setSize(width * 2, height);
+
+      renderer.setAnimationLoop(null);
+
+      renderer.vr.enabled = true;
+      renderer.vr.setAnimationLoop(animate);
+
+      console.log('running!');
     });
-
-    const viewport = session.baseLayer.getViewport(frame.views[0]);
-    const width = viewport.width;
-    const height = viewport.height;
-
-    renderer.setSize(width * 2, height);
-
-    renderer.setAnimationLoop(null);
-
-    renderer.vr.enabled = true;
-    renderer.vr.setDevice(display);
-    renderer.vr.setAnimationLoop(animate);
-
-    console.log('running!');
-  });
+  } else {
+    console.log('no xr devices');
+  }
 })();
 
 })();

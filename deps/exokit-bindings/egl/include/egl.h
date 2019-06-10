@@ -15,6 +15,10 @@
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 
+#define EGL_CONTEXT_RELEASE_BEHAVIOR_NONE_KHR 0
+#define EGL_CONTEXT_RELEASE_BEHAVIOR_KHR  0x2097
+#define EGL_CONTEXT_RELEASE_BEHAVIOR_FLUSH_KHR 0x2098
+
 using namespace v8;
 
 class WebGLRenderingContext;
@@ -30,7 +34,7 @@ public:
 #define windowsystem egl
 
 namespace egl {
-  NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool visible, NATIVEwindow *sharedWindow);
+  NATIVEwindow *CreateWindowHandle(unsigned int width, unsigned int height, bool visible);
   void GetWindowSize(NATIVEwindow *window, int *width, int *height);
   void GetFramebufferSize(NATIVEwindow *window, int *width, int *height);
   EGLContext GetGLContext(NATIVEwindow *window);

@@ -21,12 +21,14 @@ namespace windowsystembase {
 enum class LayerType {
   NONE,
   IFRAME_3D,
+  IFRAME_3D_REPROJECT,
   IFRAME_2D,
   RAW_CANVAS,
 };
 
 class LayerSpec {
 public:
+  LayerType layerType;
   int width;
   int height;
   GLuint msTex;
@@ -38,22 +40,32 @@ public:
   float *projection[2];
 };
 
-class ComposeSpec {
+class ComposeGlShader : public GlShader {
 public:
+  ComposeGlShader();
+  virtual ~ComposeGlShader();
+
+  static GlKey key;
+
+  GLuint blitFbos[2];
   GLuint composeVao;
   GLuint composeProgram;
   GLint positionLocation;
   GLint uvLocation;
-  GLint msTexLocation;
-  GLint msDepthTexLocation;
-  GLint texSizeLocation;
+  GLint texLocation;
+  GLint depthTexLocation;
   GLuint positionBuffer;
   GLuint uvBuffer;
   GLuint indexBuffer;
 };
 
-class PlaneSpec {
+class PlaneGlShader : public GlShader {
 public:
+  PlaneGlShader();
+  virtual ~PlaneGlShader();
+
+  static GlKey key;
+
   GLuint planeVao;
   GLuint planeProgram;
   GLint positionLocation;
@@ -66,15 +78,16 @@ public:
   GLuint indexBuffer;
 };
 
-void InitializeLocalGlState(WebGLRenderingContext *gl);
 bool CreateRenderTarget(WebGLRenderingContext *gl, int width, int height, GLuint sharedColorTex, GLuint sharedDepthStencilTex, GLuint sharedMsColorTex, GLuint sharedMsDepthStencilTex, GLuint *pfbo, GLuint *pcolorTex, GLuint *pdepthStencilTex, GLuint *pmsFbo, GLuint *pmsColorTex, GLuint *pmsDepthStencilTex);
 NAN_METHOD(CreateRenderTarget);
 NAN_METHOD(ResizeRenderTarget);
 NAN_METHOD(DestroyRenderTarget);
+NAN_METHOD(GetSync);
+NAN_METHOD(WaitSync);
+NAN_METHOD(DeleteSync);
 void ComposeLayers(WebGLRenderingContext *gl, const std::vector<LayerSpec> &layers);
 NAN_METHOD(ComposeLayers);
-NAN_METHOD(GetEventLoop);
-NAN_METHOD(SetEventLoop);
+uv_loop_t *GetEventLoop();
 void Decorate(Local<Object> target);
 
 }

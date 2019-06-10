@@ -1,7 +1,12 @@
 const path = require('path');
 const fs = require('fs');
 const url = require('url');
+const vm = require('vm');
 const util = require('util');
+const {parentPort} = require('worker_threads');
+
+const {process} = global;
+
 const ClassList = require('window-classlist');
 const css = require('css');
 const he = require('he');
@@ -13,13 +18,11 @@ const {Blob} = fetch;
 const htmlUnescape = require('unescape');
 
 const bindings = require('./native-bindings');
-const {defaultCanvasSize} = require('./constants');
 const {Event, EventTarget, MessageEvent, MouseEvent, ErrorEvent} = require('./Event');
+const {_makeWindow} = require('./WindowVm');
 const GlobalContext = require('./GlobalContext');
 const symbols = require('./symbols');
-const {urls} = require('./urls');
-const utils = require('./utils');
-const {_elementGetter, _elementSetter} = utils;
+const {_elementGetter, _elementSetter, _normalizeUrl} = require('./utils');
 const {XRRigidTransform} = require('./XR');
 
 he.encode.options.useNamedReferences = true;
@@ -954,7 +957,7 @@ class Element extends Node {
   }
 
   focus() {
-    const document = this.ownerDocument;
+    const document = this.tagName === 'DOCUMENT' ? this : this.ownerDocument;
     document.activeElement.dispatchEvent(new Event('blur', {
       target: document.activeElement,
     }));
@@ -977,40 +980,37 @@ class Element extends Node {
   }
 
   get clientWidth() {
-    const style = this.ownerDocument.defaultView.getComputedStyle(this);
-    const fontFamily = style.fontFamily;
-    if (fontFamily) {
-       if (fontFamily === 'sans-serif') {
-         return 0;
-       } else {
-         return _hash(fontFamily) * _hash(this.innerHTML);
-       }
-    } else {
-      let result = 1;
-      this.traverse(el => {
-        if (el.tagName === 'CANVAS' || el.tagName === 'IMAGE' || el.tagName === 'VIDEO') {
-          result = Math.max(el.width, result);
-          return true;
-        }
-			});
-      return result / this.ownerDocument.defaultView.devicePixelRatio;
+    switch (this.tagName) {
+      case 'DOCUMENT':
+      case 'HTML':
+      case 'BODY': {
+        const ownerDocument = this.ownerDocument || this;
+        return ownerDocument.defaultView.innerWidth;
+      }
+      case 'CANVAS':
+      case 'IMAGE':
+      case 'VIDEO':
+        return this.width;
+      default:
+        return 0;
     }
   }
   set clientWidth(clientWidth) {}
   get clientHeight() {
-    let result = 0;
-    const _recurse = el => {
-      if (el.nodeType === Node.ELEMENT_NODE) {
-        if (el.tagName === 'CANVAS' || el.tagName === 'IMAGE' || el.tagName === 'VIDEO') {
-          result = Math.max(el.height, result);
-        }
-        for (let i = 0; i < el.childNodes.length; i++) {
-          _recurse(el.childNodes[i]);
-        }
+    switch (this.tagName) {
+      case 'DOCUMENT':
+      case 'HTML':
+      case 'BODY': {
+        const ownerDocument = this.ownerDocument || this;
+        return ownerDocument.defaultView.innerHeight;
       }
-    };
-    _recurse(this);
-    return result / this.ownerDocument.defaultView.devicePixelRatio;
+      case 'CANVAS':
+      case 'IMAGE':
+      case 'VIDEO':
+        return this.height;
+      default:
+        return 0;
+    }
   }
   set clientHeight(clientHeight) {}
 
@@ -1165,27 +1165,23 @@ class Element extends Node {
   }
 
   requestPointerLock() {
-    const topDocument = this.ownerDocument.defaultView.top.document;
-
-    if (topDocument[symbols.pointerLockElementSymbol] === null) {
-      topDocument[symbols.pointerLockElementSymbol] = this;
+    if (this.ownerDocument[symbols.pointerLockElementSymbol] === null) {
+      this.ownerDocument[symbols.pointerLockElementSymbol] = this;
 
       process.nextTick(() => {
-        topDocument._emit('pointerlockchange');
+        this.ownerDocument._emit('pointerlockchange');
       });
     }
   }
 
   requestFullscreen() {
-    const topDocument = this.ownerDocument.defaultView.top.document;
-
-    if (topDocument[symbols.fullscreenElementSymbol] === null) {
-      topDocument[symbols.fullscreenElementSymbol] = this;
+    /* if (this.ownerDocument[symbols.fullscreenElementSymbol] === null) { // XXX
+      this.ownerDocument[symbols.fullscreenElementSymbol] = this;
 
       process.nextTick(() => {
-        topDocument._emit('fullscreenchange');
+        this.ownerDocument._emit('fullscreenchange');
       });
-    }
+    } */
   }
 
   /**
@@ -1705,8 +1701,11 @@ class HTMLScriptElement extends HTMLLoadableElement {
           }
         })
         .then(s => {
-          utils._runJavascript(s, this.ownerDocument.defaultView, url);
-
+          vm.runInThisContext(s, {
+            filename: url,
+          });
+        })
+        .then(() => {
           this.readyState = 'complete';
 
           this.dispatchEvent(new Event('load', {target: this}));
@@ -1733,13 +1732,30 @@ class HTMLScriptElement extends HTMLLoadableElement {
     const window = this.ownerDocument.defaultView;
     
     return this.ownerDocument.resources.addResource((onprogress, cb) => {
-      utils._runJavascript(innerHTML, window, window.location.href, this.location && this.location.line !== null ? this.location.line - 1 : 0, this.location && this.location.col !== null ? this.location.col - 1 : 0);
+      (async () => {
+        vm.runInThisContext(innerHTML, {
+          filename: window.location.href,
+          lineOffset : this.location && this.location.line !== null ? this.location.line - 1 : 0,
+          columnOffset: this.location && this.location.col !== null ? this.location.col - 1 : 0,
+        });
+      })()
+        .then(() => {
+          this.readyState = 'complete';
+          
+          this.dispatchEvent(new Event('load', {target: this}));
 
-      this.readyState = 'complete';
-      
-      this.dispatchEvent(new Event('load', {target: this}));
+          cb();
+        })
+        .catch(err => {
+          this.readyState = 'complete';
 
-      cb();
+          const e = new ErrorEvent('error', {target: this});
+          e.message = err.message;
+          e.stack = err.stack;
+          this.dispatchEvent(e);
+          
+          cb(err);
+        });
     });
   }
 
@@ -1915,15 +1931,17 @@ class HTMLIFrameElement extends HTMLSrcableElement {
 
     this.contentWindow = null;
     this.contentDocument = null;
-    this.live = true;
-    
-    this.d = null;
+    // this.live = true;
+    this.epoch = 0;
+
     this.browser = null;
     this.onconsole = null;
     this.xrOffset = new XRRigidTransform();
 
     this.on('attribute', (name, value) => {
       if (name === 'src' && value) {
+        const localEpoch = ++this.epoch;
+
         this.readyState = 'loading';
         
         let url = value;
@@ -1931,6 +1949,8 @@ class HTMLIFrameElement extends HTMLSrcableElement {
         if (match) {
           url = 'data:text/html,' + encodeURIComponent(`<!doctype html><html><head><script>${match[1]}</script></head></html>`);
         }
+        const oldUrl = url;
+        url = _normalizeUrl(url, this.ownerDocument.defaultView[symbols.optionsSymbol].baseUrl);
 
         this.ownerDocument.resources.addResource((onprogress, cb) => {
           (async () => {
@@ -1942,7 +1962,9 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                     context,
                     this.width||context.canvas.ownerDocument.defaultView.innerWidth,
                     this.height||context.canvas.ownerDocument.defaultView.innerHeight,
-                    path.join(this.ownerDocument.defaultView[symbols.optionsSymbol].dataPath, '.cef')
+                    this.devicePixelRatio||1,
+                    path.join(this.ownerDocument.defaultView[symbols.optionsSymbol].dataPath, '.cef'),
+                    path.join(__dirname, '..', 'node_modules', 'native-browser-deps-macos', 'lib3', 'macos', 'Chromium Embedded Framework.framework')
                   );
                   
                   this.browser.onconsole = (message, source, line) => {
@@ -1952,7 +1974,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                       console.log(`${source}:${line}: ${message}`);
                     }
                   };
-                  
+
                   const loadedUrl = await new Promise((accept, reject) => {
                     this.browser.onloadend = _url => {
                       accept(_url);
@@ -1963,7 +1985,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                     
                     this.browser.load(url);
                   });
-                  
+
                   let onmessage = null;
                   const self = this;
                   this.contentWindow = {
@@ -1985,10 +2007,10 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                         }));
                       } : null;
                     },
-                    destroy() {
+                    /* destroy() {
                       self.browser.destroy();
                       self.browser = null;
-                    },
+                    }, */
                   };
                   this.contentDocument = {
                     _emit() {},
@@ -2007,36 +2029,57 @@ class HTMLIFrameElement extends HTMLSrcableElement {
               }
             } else {
               const res = await this.ownerDocument.defaultView.fetch(url);
+              if (this.epoch !== localEpoch) {
+                return;
+              }
               if (res.status >= 200 && res.status < 300) {
                 const htmlString = await res.text();
-                
-                if (this.live) {
-                  const parentWindow = this.ownerDocument.defaultView;
-                  const options = parentWindow[symbols.optionsSymbol];
-
-                  url = utils._makeNormalizeUrl(options.baseUrl)(url);
-                  const contentWindow = GlobalContext._makeWindow({
-                    url,
-                    baseUrl: url,
-                    args: options.args,
-                    dataPath: options.dataPath,
-                    replacements: options.replacements,
-                  }, parentWindow, parentWindow.top);
-                  const contentDocument = GlobalContext._parseDocument(htmlString, contentWindow);
-
-                  contentDocument.hidden = this.d === 3;
-
-                  contentDocument.xrOffset = this.xrOffset;
-
-                  contentWindow.document = contentDocument;
-
-                  this.contentWindow = contentWindow;
-                  this.contentDocument = contentDocument;
-
-                  this.readyState = 'complete';
-
-                  this.dispatchEvent(new Event('load', {target: this}));
+                if (this.epoch !== localEpoch) {
+                  return;
                 }
+
+                const parentWindow = this.ownerDocument.defaultView;
+                const options = parentWindow[symbols.optionsSymbol];
+
+                url = _normalizeUrl(url, options.baseUrl);
+                const parent = {};
+                const top = parentWindow === parentWindow.top ? parent : {};
+                const contentWindow = _makeWindow({
+                  url,
+                  baseUrl: url,
+                  args: options.args,
+                  dataPath: options.dataPath,
+                  replacements: options.replacements,
+                  parent,
+                  top,
+                  htmlString,
+                  hidden: true,
+                  xrOffsetBuffer: this.xrOffset._buffer,
+                  onnavigate(href) {
+                    this.readyState = null;
+                    this.contentWindow = null;
+                    this.contentDocument = null;
+
+                    this.setAttribute('src', href);
+                  },
+                  onrequest(req) {
+                    parentPort.postMessage(req);
+                  },
+                  onhapticpulse(event) {
+                    parentPort.postMessage({
+                      method: 'emit',
+                      type: 'hapticPulse',
+                      event,
+                    });
+                  },
+                });
+
+                this.contentWindow = contentWindow;
+                this.contentDocument = contentWindow.document = {};
+
+                this.readyState = 'complete';
+
+                this.dispatchEvent(new Event('load', {target: this}));
 
                 cb();
               } else {
@@ -2058,30 +2101,29 @@ class HTMLIFrameElement extends HTMLSrcableElement {
         const v = _parseVector(value);
         if (name === 'position' && v.length === 3) {
           this.xrOffset.position.set(v);
-          this.xrOffset.updateMatrix();
+          this.xrOffset.pushUpdate();
         } else if (name === 'orientation' && v.length === 4) {
           this.xrOffset.orientation.set(v);
-          this.xrOffset.updateMatrix();
+          this.xrOffset.pushUpdate();
         } else if (name === 'scale' && v.length === 3) {
           this.xrOffset.scale.set(v);
-          this.xrOffset.updateMatrix();
+          this.xrOffset.pushUpdate();
         }
-      } else if (name === 'd') {
-        if (value === '2') {
-          this.d = 2;
-        } else if (value === '3') {
-          this.d = 3;
-        } else {
-          this.d = null;
-        }
-      } else if (name === 'width' || name === 'height') {
+      } else if (name === 'width') {
         if (this.browser) {
           this.browser.width = this.width;
+        }
+      } else if (name === 'height') {
+        if (this.browser) {
           this.browser.height = this.height;
+        }
+      } else if (name === 'devicePixelRatio') {
+        if (this.browser) {
+          this.browser.scale = this.devicePixelRatio;
         }
       }
     });
-    this.on('destroy', () => {
+    /* this.on('destroy', () => {
       if (this.contentWindow) {
         this.contentWindow.destroy();
         this.contentWindow = null;
@@ -2091,11 +2133,11 @@ class HTMLIFrameElement extends HTMLSrcableElement {
       if (this.browser) {
         this.browser.destroy(); // XXX support this
       }
-    });
+    }); */
   }
   
   get width() {
-    return parseInt(this.getAttribute('width') || defaultCanvasSize[0] + '', 10);
+    return parseInt(this.getAttribute('width') || bindings.nativeWindow.getScreenSize()[0]/2 + '', 10);
   }
   set width(value) {
     if (typeof value === 'number' && isFinite(value)) {
@@ -2103,14 +2145,32 @@ class HTMLIFrameElement extends HTMLSrcableElement {
     }
   }
   get height() {
-    return parseInt(this.getAttribute('height') || defaultCanvasSize[1] + '', 10);
+    return parseInt(this.getAttribute('height') || bindings.nativeWindow.getScreenSize()[1]/2 + '', 10);
   }
   set height(value) {
     if (typeof value === 'number' && isFinite(value)) {
       this.setAttribute('height', value);
     }
   }
-  
+  get devicePixelRatio() {
+    return parseInt(this.getAttribute('devicePixelRatio') || 1 + '', 10);
+  }
+  set devicePixelRatio(value) {
+    if (typeof value === 'number' && isFinite(value)) {
+      this.setAttribute('devicePixelRatio', value);
+    }
+  }
+
+  get d() {
+    const d = parseInt(this.getAttribute('d') + '', 10);
+    return isFinite(d) ? d : 3;
+  }
+  set d(value) {
+    if (typeof value === 'number' && isFinite(value)) {
+      this.setAttribute('d', value);
+    }
+  }
+
   get texture() {
     if (this.d === 2) {
       return this.browser && this.browser.texture;
@@ -2191,12 +2251,12 @@ class HTMLIFrameElement extends HTMLSrcableElement {
     this.browser && this.browser.runJs(jsString, scriptUrl, startLine);
   }
   
-  destroy() {
+  /* destroy() {
     if (this.live) {
       this._emit('destroy');
       this.live = false;
     }
-  }
+  } */
 }
 module.exports.HTMLIFrameElement = HTMLIFrameElement;
 
@@ -2216,7 +2276,7 @@ class HTMLCanvasElement extends HTMLElement {
   }
 
   get width() {
-    return parseInt(this.getAttribute('width') || defaultCanvasSize[0] + '', 10);
+    return parseInt(this.getAttribute('width') || bindings.nativeWindow.getScreenSize()[0]/2 + '', 10);
   }
   set width(value) {
     if (typeof value === 'number' && isFinite(value)) {
@@ -2224,7 +2284,7 @@ class HTMLCanvasElement extends HTMLElement {
     }
   }
   get height() {
-    return parseInt(this.getAttribute('height') || defaultCanvasSize[1] + '', 10);
+    return parseInt(this.getAttribute('height') || bindings.nativeWindow.getScreenSize()[1]/2 + '', 10);
   }
   set height(value) {
     if (typeof value === 'number' && isFinite(value)) {
@@ -2233,11 +2293,11 @@ class HTMLCanvasElement extends HTMLElement {
   }
 
   get clientWidth() {
-    return this.width / this.ownerDocument.defaultView.devicePixelRatio;
+    return this.width;
   }
   set clientWidth(clientWidth) {}
   get clientHeight() {
-    return this.height / this.ownerDocument.defaultView.devicePixelRatio;
+    return this.height;
   }
   set clientHeight(clientHeight) {}
 
@@ -2255,7 +2315,7 @@ class HTMLCanvasElement extends HTMLElement {
   }
   set texture(texture) {}
 
-  getContext(contextType) {
+  getContext(contextType, attrs = {}) {
     if (contextType === '2d') {
       if (this._context && this._context.constructor && this._context.constructor.name !== 'CanvasRenderingContext2D') {
         this._context.destroy();
@@ -2274,13 +2334,13 @@ class HTMLCanvasElement extends HTMLElement {
 
         if (!window[symbols.optionsSymbol].args || window[symbols.optionsSymbol].args.webgl === '1') {
           if (contextType === 'webgl' || contextType === 'experimental-webgl' || contextType === 'xrpresent') {
-            this._context = new GlobalContext.WebGLRenderingContext(this);
+            this._context = new GlobalContext.WebGLRenderingContext(this, attrs);
           }
         } else {
           if (contextType === 'webgl' || contextType === 'experimental-webgl') {
-            this._context = new GlobalContext.WebGLRenderingContext(this);
+            this._context = new GlobalContext.WebGLRenderingContext(this, attrs);
           } else {
-            this._context = new GlobalContext.WebGL2RenderingContext(this);
+            this._context = new GlobalContext.WebGL2RenderingContext(this, attrs);
           }
         }
       }
@@ -2290,6 +2350,12 @@ class HTMLCanvasElement extends HTMLElement {
         this._context = null;
       }
     }
+
+    // hack: assume that getting a context means we might want to enter XR
+    setTimeout(() => {
+      window.vrdisplayactivate();
+    });
+
     return this._context;
   }
 
@@ -2328,7 +2394,8 @@ class HTMLTemplateElement extends HTMLElement {
   }
 
   get content() {
-    const content = new GlobalContext.DocumentFragment();
+    const window = this.ownerDocument.defaultView;
+    const content = new window.DocumentFragment();
     content.ownerDocument = this.ownerDocument;
     content.childNodes = new NodeList(this._childNodes);
     return content;
@@ -2451,7 +2518,9 @@ class Text extends CharacterNode {
   get nodeValue() {
     return this.value;
   }
-  set nodeValue(nodeValue) {}
+  set nodeValue(nodeValue) {
+    this.value = nodeValue;
+  }
 
   get firstChild() {
     return null;
@@ -2486,7 +2555,9 @@ class Comment extends CharacterNode {
   get nodeValue() {
     return this.value;
   }
-  set nodeValue(nodeValue) {}
+  set nodeValue(nodeValue) {
+    this.value = nodeValue;
+  }
 
   [util.inspect.custom]() {
     return `<!--${this.value}-->`;
@@ -2637,12 +2708,9 @@ class HTMLAudioElement extends HTMLMediaElement {
   constructor(window, attrs = [], value = '') {    
     if (typeof attrs === 'string') {
       const src = attrs;
-      return new HTMLAudioElement(window, [
-        {
-          name: 'src',
-          value: src + '',
-        },
-      ], '', null);
+      const audio = new HTMLAudioElement(window, [], '', null);
+      audio.src = src + '';
+      return audio;
     } else {
       super(window, 'AUDIO', attrs, value);
 
@@ -2662,13 +2730,15 @@ class HTMLAudioElement extends HTMLMediaElement {
                   return Promise.reject(new Error(`audio src got invalid status code (url: ${JSON.stringify(src)}, code: ${res.status})`));
                 }
               })
-              .then(arrayBuffer => {
-                try {
-                  this.audio.load(arrayBuffer);
-                } catch(err) {
-                  throw new Error(`failed to decode audio: ${err.message} (url: ${JSON.stringify(src)}, size: ${arrayBuffer.byteLength})`);
-                }
-              })
+              .then(arrayBuffer => new Promise((accept, reject) => {
+                this.audio.load(arrayBuffer, err => {
+                  if (!err) {
+                    accept();
+                  } else {
+                    reject(new Error(`failed to decode audio: ${err.message} (url: ${JSON.stringify(src)}, size: ${arrayBuffer.byteLength})`));
+                  }
+                });
+              }))
               .then(() => {
                 this.readyState = HTMLMediaElement.HAVE_ENOUGH_DATA;
 
@@ -2678,6 +2748,8 @@ class HTMLAudioElement extends HTMLMediaElement {
                 progressEvent.lengthComputable = true;
                 this._emit(progressEvent);
 
+                this._dispatchEventOnDocumentReady(new Event('loadeddata', {target: this}));
+                this._dispatchEventOnDocumentReady(new Event('loadedmetadata', {target: this}));
                 this._dispatchEventOnDocumentReady(new Event('canplay', {target: this}));
                 this._dispatchEventOnDocumentReady(new Event('canplaythrough', {target: this}));
                 
@@ -2772,12 +2844,12 @@ class HTMLVideoElement extends HTMLMediaElement {
 
         this.readyState = HTMLMediaElement.HAVE_ENOUGH_DATA;
 
-        if (urls.has(value)) {
+        /* if (urls.has(value)) {
           const blob = urls.get(value);
           if (blob instanceof bindings.nativeVideo.VideoDevice) {
             this.video = blob;
           }
-        }
+        } */
 
         this.ownerDocument.resources.addResource((onprogress, cb) => {
           const progressEvent = new Event('progress', {target: this});
@@ -2788,6 +2860,8 @@ class HTMLVideoElement extends HTMLMediaElement {
           
           this.readyState = 'complete';
 
+          this._dispatchEventOnDocumentReady(new Event('loadeddata', {target: this}));
+          this._dispatchEventOnDocumentReady(new Event('loadedmetadata', {target: this}));
           this._dispatchEventOnDocumentReady(new Event('canplay', {target: this}));
           this._dispatchEventOnDocumentReady(new Event('canplaythrough', {target: this}));
 

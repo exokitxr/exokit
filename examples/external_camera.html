@@ -195,56 +195,57 @@
          const localMatrix = new THREE.Matrix4();
 
          if (!presenting) {
-           window.navigator.xr.requestDevice()
-             .then(device => {
-                return device.requestSession({
-                  exclusive: true,
-                  outputContext: renderer.getContext(),
-                })
-                  .then(session => {
-                    device.session = session;
+            navigator.xr.requestSession({
+              exclusive: true,
+              outputContext: renderer.getContext(),
+            })
+              .catch(err => Promise.resolve(null))
+              .then(session => {
+                if (session) {
+                  session.update = (update => function(updateSpec) {
+                    if (updateSpec.renderWidth !== undefined) {
+                      updateSpec.renderWidth *= 2;
+                    }
+                    if (updateSpec.frameData !== undefined) {
+                      const {frameData} = updateSpec;
 
-                    session.update = (update => function(updateSpec) {
-                      if (updateSpec.renderWidth !== undefined) {
-                        updateSpec.renderWidth *= 2;
-                      }
-                      if (updateSpec.frameData !== undefined) {
-                        const {frameData} = updateSpec;
+                      localMatrix.fromArray(frameData.leftViewMatrix);
+                      localMatrix.getInverse(localMatrix);
+                      localMatrix.decompose(localVector, localQuaternion, localVector2);
+                      controllerMeshes[2].quaternion.fromArray(frameData.pose.orientation);
+                      controllerMeshes[2].position.copy(localVector);
+                      controllerMeshes[2].updateMatrixWorld();
 
-                        localMatrix.fromArray(frameData.leftViewMatrix);
-                        localMatrix.getInverse(localMatrix);
-                        localMatrix.decompose(localVector, localQuaternion, localVector2);
-                        controllerMeshes[2].quaternion.fromArray(frameData.pose.orientation);
-                        controllerMeshes[2].position.copy(localVector);
-                        controllerMeshes[2].updateMatrixWorld();
+                      localMatrix.fromArray(frameData.rightViewMatrix);
+                      localMatrix.getInverse(localMatrix);
+                      localMatrix.decompose(localVector, localQuaternion, localVector2);
+                      controllerMeshes[3].quaternion.fromArray(frameData.pose.orientation);
+                      controllerMeshes[3].position.copy(localVector);
+                      controllerMeshes[3].updateMatrixWorld();
 
-                        localMatrix.fromArray(frameData.rightViewMatrix);
-                        localMatrix.getInverse(localMatrix);
-                        localMatrix.decompose(localVector, localQuaternion, localVector2);
-                        controllerMeshes[3].quaternion.fromArray(frameData.pose.orientation);
-                        controllerMeshes[3].position.copy(localVector);
-                        controllerMeshes[3].updateMatrixWorld();
+                      matrixWorld.toArray(frameData.leftViewMatrix);
+                      projectionMatrix.toArray(frameData.leftProjectionMatrix);
 
-                        matrixWorld.toArray(frameData.leftViewMatrix);
-                        projectionMatrix.toArray(frameData.leftProjectionMatrix);
+                      matrixWorld.toArray(frameData.rightViewMatrix);
+                      projectionMatrix.toArray(frameData.rightProjectionMatrix);
+                    }
+                    return update.apply(this, arguments);
+                  })(session.update);
+                  session._frame.views = session._frame.views.slice(0, 1);
 
-                        matrixWorld.toArray(frameData.rightViewMatrix);
-                        projectionMatrix.toArray(frameData.rightProjectionMatrix);
-                      }
-                      return update.apply(this, arguments);
-                    })(session.update);
-                    session._frame.views = session._frame.views.slice(0, 1);
+                  renderer.setAnimationLoop(null);
 
-                    renderer.setAnimationLoop(null);
-
-                    renderer.vr.enabled = true;
-                    renderer.vr.setDevice(device);
-                    renderer.vr.setSession(session, {
-                      frameOfReferenceType: 'stage',
-                    });
-                    renderer.vr.setAnimationLoop(animate);
+                  renderer.vr.enabled = true;
+                  renderer.vr.setSession(session, {
+                    frameOfReferenceType: 'stage',
                   });
-             });
+                  renderer.vr.setAnimationLoop(animate);
+                  
+                  console.log('running!');
+                } else {
+                  console.log('no xr devices');
+                }
+              });
 
           presenting = true;
         }

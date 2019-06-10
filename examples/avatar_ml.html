@@ -25,7 +25,7 @@
   <script src="three.js"></script>
   <script src="skin.js"></script>
   <script>
-    let container, scene, camera, display, controllerMeshes, avatarMesh, rayMesh, destinationMesh, hitMeshes, controllerHitMeshes;
+    let container, scene, camera, session, controllerMeshes, avatarMesh, rayMesh, destinationMesh, hitMeshes, controllerHitMeshes;
     let mesher = null;
     const waypoints = {};
     let numWaypoints = 0;
@@ -466,10 +466,10 @@
           destinationMesh.updateMatrixWorld();
           
           if (factor < 1) {
-            if (display.session && !animation.hitTesting) {
+            if (session && !animation.hitTesting) {
               const localAnimation = animation;
               const startPosition = rayMesh.position.clone();
-              display.session.requestHitTest(
+              session.requestHitTest(
                 rayMesh.position
                   .toArray(localVectorFloat32Array),
                 localVector.set(0, 0, -1)
@@ -526,7 +526,7 @@
           controllerMeshes[i].visible = false;
         }
 
-        const inputSources = display.session.getInputSources();
+        const inputSources = session.getInputSources();
         for (let i = 0; i < inputSources.length; i++) {
           const inputSource = inputSources[i];
           const pose = frame.getInputPose(inputSource);
@@ -542,7 +542,7 @@
             const controllerHitMesh = controllerHitMeshes[controllerIndex];
 
             if (controllerMesh.position.length() > 0.3) {
-              display.session.requestHitTest(
+              session.requestHitTest(
                 controllerMesh.position
                   .toArray(localVectorFloat32Array),
                 localVector.set(0, 0, -1)
@@ -597,46 +597,46 @@
     init();
 
     (async () => {
-      console.log('request device');
-      display = await navigator.xr.requestDevice();
-      console.log('request session');
-      const session = await display.requestSession({
+      session = await navigator.xr.requestSession({
         exclusive: true,
-      });
-      display.session = session;
+      }).catch(err => Promise.resolve(null));
 
-      session.onselect = e => {
-        const controllerIndex = e.inputSource.handedness === 'left' ? 0 : 1;
-        const controllerHitMesh = controllerHitMeshes[controllerIndex];
+      if (session) {
+        session.onselect = e => {
+          const controllerIndex = e.inputSource.handedness === 'left' ? 0 : 1;
+          const controllerHitMesh = controllerHitMeshes[controllerIndex];
 
-        if (controllerHitMesh.visible) {
-          const destination = controllerHitMesh.position.clone();
-          _xrOffset(localVector.copy(destination));
-          destination.y -= localVector.y;
-          _animateTo(destination);
-        }
-      };
+          if (controllerHitMesh.visible) {
+            const destination = controllerHitMesh.position.clone();
+            _xrOffset(localVector.copy(destination));
+            destination.y -= localVector.y;
+            _animateTo(destination);
+          }
+        };
 
-      // console.log('request first frame');
-      session.requestAnimationFrame((timestamp, frame) => {
-        renderer.vr.setSession(session, {
-          frameOfReferenceType: 'stage',
+        // console.log('request first frame');
+        session.requestAnimationFrame((timestamp, frame) => {
+          renderer.vr.setSession(session, {
+            frameOfReferenceType: 'stage',
+          });
+
+          const {views} = frame.getViewerPose();
+          const viewport = session.baseLayer.getViewport(views[0]);
+          const width = viewport.width;
+          const height = viewport.height;
+
+          renderer.setSize(width * 2, height);
+
+          renderer.setAnimationLoop(null);
+
+          renderer.vr.enabled = true;
+          renderer.vr.setAnimationLoop(animate);
+
+          console.log('running!');
         });
-
-        const viewport = session.baseLayer.getViewport(frame.views[0]);
-        const width = viewport.width;
-        const height = viewport.height;
-
-        renderer.setSize(width * 2, height);
-
-        renderer.setAnimationLoop(null);
-
-        renderer.vr.enabled = true;
-        renderer.vr.setDevice(display);
-        renderer.vr.setAnimationLoop(animate);
-
-        console.log('running!');
-      });
+      } else {
+        console.log('no xr devices');
+      }
     })();
 
     renderer.setAnimationLoop(animate);

@@ -25,7 +25,7 @@
   <script src="three.js"></script>
   <script src="GLTFLoader.js"></script>
   <script>
-    let container, scene, camera, display, model;
+    let container, scene, camera, display, session, model;
     let animation = null;
 
     const localVector = new THREE.Vector3();
@@ -148,11 +148,11 @@
           THREE.UVMapping,
           THREE.RepeatWrapping,
           THREE.RepeatWrapping,
-          THREE.NearestFilter,
-          THREE.NearestFilter,
+          THREE.LinearMipMapLinearFilter,
+          THREE.LinearMipMapLinearFilter,
           THREE.RGBAFormat,
           THREE.UnsignedByteType,
-          1
+          16
         );
 
         const planeImg = new Image();
@@ -267,7 +267,7 @@
         antialias: true,
         alpha: true,
       });
-      renderer.setPixelRatio(window.devicePixelRatio);
+      // renderer.setPixelRatio(window.devicePixelRatio);
       renderer.setSize(window.innerWidth, window.innerHeight);
 
       // window.browser.magicleap.RequestDepthPopulation(true);
@@ -346,14 +346,20 @@
       console.log('request device');
 
       if (navigator.xr) {
-        display = await navigator.xr.requestDevice();
+        console.log('request session xr');
+        session = await navigator.xr.requestSession({
+          exclusive: true,
+        }).catch(err => Promise.resolve(null));
 
-        if (display) {
-          console.log('request session');
-          const session = await display.requestSession({
-            exclusive: true,
-          });
-          display.session = session;
+        if (session) {
+          const _end = () => {
+            renderer.vr.enabled = false;
+            renderer.vr.setSession(null);
+            renderer.vr.setAnimationLoop(null);
+
+            session.removeEventListener('end', _end);
+          };
+          session.addEventListener('end', _end);
 
           // console.log('request first frame');
           session.requestAnimationFrame((timestamp, frame) => {
@@ -361,19 +367,21 @@
               frameOfReferenceType: 'stage',
             });
 
-            const viewport = session.baseLayer.getViewport(frame.views[0]);
+            const {views} = frame.getViewerPose();
+            const viewport = session.baseLayer.getViewport(views[0]);
             const width = viewport.width;
             const height = viewport.height;
-
             renderer.setSize(width * 2, height);
 
             renderer.setAnimationLoop(null);
 
             renderer.vr.enabled = true;
-            renderer.vr.setDevice(display);
+            renderer.vr.setSession(session, {
+              frameOfReferenceType: 'stage',
+            });
             renderer.vr.setAnimationLoop(animate);
 
-            console.log('running!');
+            console.log('entered xr');
           });
         } else {
           console.log('no xr displays');
@@ -385,30 +393,25 @@
         display = displays[0];
 
         if (display) {
-          console.log('request present');
-          await display.requestPresent([
-            {
-              source: renderer.domElement,
-            }
-          ]);
-          console.log('entered vr');
+          console.log('request present vr');
+          await display.requestPresent([{
+            source: renderer.domElement,
+          }]);
 
           const {renderWidth: width, renderHeight: height} = display.getEyeParameters('left');
           renderer.setSize(width * 2, height);
 
           renderer.setAnimationLoop(null);
           renderer.vr.enabled = true;
-          renderer.vr.setDevice(display);
           renderer.vr.setAnimationLoop(animate);
+
+          console.log('entered vr');
         } else {
           console.log('no vr displays');
           renderer.setAnimationLoop(animate);
         }
       }
-    })()
-      .catch(err => {
-        console.warn(err.stack);
-      });
+    })();
   </script>
   </body>
 </html>

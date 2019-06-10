@@ -24,7 +24,7 @@
   <h1>microphone</h1>
   <script src="three.js"></script>
   <script>
-    let container, scene, camera, renderer, display, controllerMeshes;
+    let container, scene, camera, renderer, session, controllerMeshes;
     let audioCtx, mediaStream;
 
     const controllerGeometry = new THREE.BoxBufferGeometry(0.1, 0.2, 0.01);
@@ -153,7 +153,7 @@
 
     function animate(time, frame) {
       if (renderer.vr.enabled) {
-        const inputSources = display.session.getInputSources();
+        const inputSources = session.getInputSources();
         const gamepads = navigator.getGamepads();
 
         for (let i = 0; i < controllerMeshes.length; i++) {
@@ -220,43 +220,44 @@
       });
 
     (async () => {
-      console.log('request device');
-      display = await navigator.xr.requestDevice();
       console.log('request session');
-      const session = await display.requestSession({
+      session = await navigator.xr.requestSession({
         exclusive: true,
-      });
-      display.session = session;
+      }).catch(err => Promise.resolve(null));
 
-      session.onselect = () => {
-        console.log('audio play', audio.paused);
+      if (session) {
+        session.onselect = () => {
+          console.log('audio play', audio.paused);
 
-        if (!audio.paused) {
-          audio.pause();
-        }
-        audio.currentTime = 0;
-        audio.play();
-      };
+          if (!audio.paused) {
+            audio.pause();
+          }
+          audio.currentTime = 0;
+          audio.play();
+        };
 
-      session.requestAnimationFrame((timestamp, frame) => {
-        renderer.vr.setSession(session, {
-          frameOfReferenceType: 'stage',
+        session.requestAnimationFrame((timestamp, frame) => {
+          renderer.vr.setSession(session, {
+            frameOfReferenceType: 'stage',
+          });
+
+          const {views} = frame.getViewerPose();
+          const viewport = session.baseLayer.getViewport(views[0]);
+          const width = viewport.width;
+          const height = viewport.height;
+
+          renderer.setSize(width * 2, height);
+
+          renderer.setAnimationLoop(null);
+
+          renderer.vr.enabled = true;
+          renderer.vr.setAnimationLoop(animate);
+
+          console.log('running!');
         });
-
-        const viewport = session.baseLayer.getViewport(frame.views[0]);
-        const width = viewport.width;
-        const height = viewport.height;
-
-        renderer.setSize(width * 2, height);
-
-        renderer.setAnimationLoop(null);
-
-        renderer.vr.enabled = true;
-        renderer.vr.setDevice(display);
-        renderer.vr.setAnimationLoop(animate);
-
-        console.log('running!');
-      });
+      } else {
+        console.log('no xr devices');
+      }
     })();
   </script>
   </body>

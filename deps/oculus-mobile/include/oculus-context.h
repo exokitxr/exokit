@@ -16,12 +16,13 @@ public:
 
   void RequestPresent();
   static void handleAppCmd(struct android_app *app, int32_t cmd);
-  void CreateSwapChain(WebGLRenderingContext *gl, int width, int height);
+  void CreateSwapChain(int width, int height);
   void PollEvents(bool wait);
 
   static NAN_METHOD(New);
   void Destroy();
 
+  static NAN_METHOD(CreateSwapChain);
   static NAN_METHOD(WaitGetPoses);
   static NAN_METHOD(Submit);
   static NAN_METHOD(GetRecommendedRenderTargetSize);
@@ -34,12 +35,15 @@ public:
   ovrMobile *ovrState;
   bool running;
   ANativeWindow *androidNativeWindow;
-  ovrTextureSwapChain *swapChains[2];
-  int swapChainMetrics[2];
+  GLuint fbo;
+  ovrTextureSwapChain *colorSwapChain;
+  std::vector<GLuint> depthTextures;
+  GLuint msFbo;
+  std::vector<GLuint> msColorTextures;
+  std::vector<GLuint> msDepthTextures;
   int swapChainLength;
   int swapChainIndex;
   bool hasSwapChain;
-  GLuint fboId;
   ovrTracking2 tracking;
   long long frameIndex;
 	double displayTime;

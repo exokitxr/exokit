@@ -185,8 +185,7 @@ NAN_METHOD(GetContext)
   info.GetReturnValue().Set(result);
 }
 
-Local<Object> makeOpenVR
-() {
+Local<Object> makeOpenVR() {
   v8::EscapableHandleScope scope(Isolate::GetCurrent());
 
   Local<Object> exports = Object::New(Isolate::GetCurrent());

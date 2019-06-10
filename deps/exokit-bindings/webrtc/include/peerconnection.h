@@ -24,6 +24,7 @@
 #include "webrtc/rtc_base/scoped_ref_ptr.h"
 
 #include "peerconnectionfactory.h"
+#include "windowsystem.h"
 
 namespace node_webrtc {
 
@@ -146,7 +147,7 @@ class PeerConnection
   // Nodejs wrapping.
   //
   static void Init(v8::Local<v8::Object> exports);
-  static Nan::Persistent<v8::Function> constructor;
+  static thread_local Nan::Persistent<v8::Function> constructor;
   static NAN_METHOD(New);
 
   static NAN_METHOD(CreateOffer);

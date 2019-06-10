@@ -15,10 +15,12 @@ class EventTarget extends EventEmitter {
 
   addEventListener(event, listener, options) {
     if (typeof listener === 'function') {
-      if (options && options.once) {
-        this.once(event, listener);
-      } else {
-        this.on(event, listener);
+      if (!this.listeners(event).includes(listener)) {
+        if (options && options.once) {
+          this.once(event, listener);
+        } else {
+          this.on(event, listener);
+        }
       }
     }
   }
@@ -162,14 +164,14 @@ class MouseEvent extends Event {
   }
 
   init(init = {}) {
-    this.screenX = init.screenX !== undefined ? init.screenX : 0;
-    this.screenY = init.screenY !== undefined ? init.screenY : 0;
     this.clientX = init.clientX !== undefined ? init.clientX : 0;
     this.clientY = init.clientY !== undefined ? init.clientY : 0;
     this.pageX = init.pageX !== undefined ? init.pageX : 0;
     this.pageY = init.pageY !== undefined ? init.pageY : 0;
     this.offsetX = init.offsetX !== undefined ? init.offsetX : 0;
     this.offsetY = init.offsetY !== undefined ? init.offsetY : 0;
+    this.screenX = init.offsetX !== undefined ? init.screenX : 0;
+    this.screenY = init.offsetY !== undefined ? init.screenY : 0;
     this.movementX = init.movementX !== undefined ? init.movementX : 0;
     this.movementY = init.movementY !== undefined ? init.movementY : 0;
     this.ctrlKey = init.ctrlKey !== undefined ? init.ctrlKey : false;
@@ -256,6 +258,19 @@ class PromiseRejectionEvent extends Event {
   }
 }
 module.exports.PromiseRejectionEvent = PromiseRejectionEvent;
+
+class SpatialEvent extends Event {
+  constructor(type, init = {}) {
+    super(type);
+
+    if (init.detail) {
+      for (const k in init.detail) {
+        this[k] = init.detail[k];
+      }
+    }
+  }
+}
+module.exports.SpatialEvent = SpatialEvent;
 
 class CustomEvent extends Event {
   constructor(type, init = {}) {

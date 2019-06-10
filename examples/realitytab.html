@@ -67,43 +67,45 @@ function animate() {
 
 if (navigator.xr) {
   (async () => {
-    const display = await navigator.xr.requestDevice();
-    const session = await display.requestSession({
+    session = await navigator.xr.requestSession({
       exclusive: true,
-    });
-    display.session = session;
+    }).catch(err => Promise.resolve(null));
 
-    session.onselect = e => {
-      console.log('select'); // XXX
-    };
+    if (session) {
+      session.onselect = e => {
+        console.log('select'); // XXX
+      };
 
-    // console.log('request first frame');
-    session.requestAnimationFrame((timestamp, frame) => {
-      renderer.vr.setSession(session, {
-        frameOfReferenceType: 'stage',
+      // console.log('request first frame');
+      session.requestAnimationFrame((timestamp, frame) => {
+        renderer.vr.setSession(session, {
+          frameOfReferenceType: 'stage',
+        });
+
+        const {views} = frame.getViewerPose();
+        const viewport = session.baseLayer.getViewport(views[0]);
+        // const width = viewport.width;
+        const height = viewport.height;
+        const fullWidth = (() => {
+          let result = 0;
+          for (let i = 0; i < views.length; i++) {
+            result += session.baseLayer.getViewport(views[i]).width;
+          }
+          return result;
+        })();
+
+        renderer.setSize(fullWidth, height);
+
+        renderer.setAnimationLoop(null);
+
+        renderer.vr.enabled = true;
+        renderer.vr.setAnimationLoop(animate);
+
+        console.log('loaded reality tab in XR');
       });
-
-      const viewport = session.baseLayer.getViewport(frame.views[0]);
-      // const width = viewport.width;
-      const height = viewport.height;
-      const fullWidth = (() => {
-        let result = 0;
-        for (let i = 0; i < frame.views.length; i++) {
-          result += session.baseLayer.getViewport(frame.views[i]).width;
-        }
-        return result;
-      })();
-
-      renderer.setSize(fullWidth, height);
-
-      renderer.setAnimationLoop(null);
-
-      renderer.vr.enabled = true;
-      renderer.vr.setDevice(display);
-      renderer.vr.setAnimationLoop(animate);
-
-      console.log('loaded reality tab in XR');
-    });
+    } else {
+      console.log('no xr devices');
+    }
   })()
     .catch(err => {
       console.warn(err.stack);

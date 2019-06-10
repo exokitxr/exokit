@@ -13,7 +13,7 @@ Local<Object> Image::Initialize(Isolate *isolate) {
   // prototype
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
 
-  Nan::SetMethod(proto, "load", LoadMethod);
+  Nan::SetMethod(proto, "load", Load);
 
   return scope.Escape(Nan::GetFunction(ctor).ToLocalChecked());
 }
@@ -46,16 +46,13 @@ unsigned int Image::GetNumChannels() {
   }
 } */
 
-std::map<uv_async_t *, Image *> handleToImageMap;
 void Image::RunInMainThread(uv_async_t *handle) {
   Nan::HandleScope scope;
 
-  auto iter = handleToImageMap.find(handle);
-  Image *image = (*iter).second;
-  handleToImageMap.erase(iter);
+  Image *image = (Image *)handle->data;
 
   Local<Object> asyncObject = Nan::New<Object>();
-  AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "imageLoad");
+  AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "Image::RunInMainThread");
 
   Local<Function> cbFn = Nan::New(image->cbFn);
   Local<String> arg0 = Nan::New<String>(image->error).ToLocalChecked();
@@ -68,9 +65,7 @@ void Image::RunInMainThread(uv_async_t *handle) {
   image->arrayBuffer.Reset();
   image->error = "";
 
-  uv_close((uv_handle_t *)handle, [](uv_handle_t *handle) {
-    free(handle);
-  });
+  uv_close((uv_handle_t *)handle, nullptr);
 }
 
 void Image::Load(Local<ArrayBuffer> arrayBuffer, size_t byteOffset, size_t byteLength, Local<Function> cbFn) {
@@ -79,12 +74,10 @@ void Image::Load(Local<ArrayBuffer> arrayBuffer, size_t byteOffset, size_t byteL
 
     this->arrayBuffer.Reset(arrayBuffer);
     this->cbFn.Reset(cbFn);
-    this->error = "";
 
-    threadAsyncHandle = (uv_async_t *)malloc(sizeof(uv_async_t));
-    uv_async_init(uv_default_loop(), threadAsyncHandle, RunInMainThread);
-
-    handleToImageMap[threadAsyncHandle] = this;
+    uv_loop_t *loop = windowsystembase::GetEventLoop();
+    uv_async_init(loop, &this->threadAsyncHandle, RunInMainThread);
+    this->threadAsyncHandle.data = this;
 
     std::thread([this, buffer, byteLength]() -> void {
       sk_sp<SkData> data = SkData::MakeWithoutCopy(buffer, byteLength);
@@ -135,7 +128,7 @@ void Image::Load(Local<ArrayBuffer> arrayBuffer, size_t byteOffset, size_t byteL
         }
       }
 
-      uv_async_send(this->threadAsyncHandle);
+      uv_async_send(&this->threadAsyncHandle);
     }).detach();
   } else {
     Local<String> arg0 = Nan::New<String>("already loading").ToLocalChecked();
@@ -206,8 +199,8 @@ NAN_GETTER(Image::DataGetter) {
   info.GetReturnValue().Set(Nan::New(image->dataArray));
 }
 
-NAN_METHOD(Image::LoadMethod) {
-  Nan::HandleScope scope;
+NAN_METHOD(Image::Load) {
+  // Nan::HandleScope scope;
 
   if (info[1]->IsFunction()) {
     if (info[0]->IsArrayBuffer()) {

@@ -10,7 +10,7 @@ using namespace node;
 
 namespace browser {
 
-bool initializeEmbedded(const std::string &dataPath) {
+bool initializeEmbedded(const std::string &dataPath, const string &frameworkPath) {
   Servo2D::init();
   return true;
 }
@@ -21,6 +21,7 @@ EmbeddedBrowser createEmbedded(
   GLuint tex,
   int width,
   int height,
+  float scale,
   int *textureWidth,
   int *textureHeight,
   std::function<EmbeddedBrowser()> getBrowser,
@@ -103,6 +104,9 @@ void destroyEmbedded(EmbeddedBrowser browser_) {
   browser_->deInit();
   browsers.erase(std::find(browsers.begin(), browsers.end(), browser_));
 }
+void embeddedUpdate() {
+  // nothing
+}
 void embeddedDoMessageLoopWork() {
   // exout << "do message loop work 1 " << browsers.size() << std::endl;
 
@@ -116,6 +120,13 @@ void embeddedDoMessageLoopWork() {
   
   // exout << "do message loop work 2 " << browsers.size() << std::endl;
 }
+std::pair<int, int> getEmbeddedSize(EmbeddedBrowser browser_) {
+  return std::pair<int, int>(browser_->getWidth(), browser_->getHeight());
+}
+void setEmbeddedSize(EmbeddedBrowser browser_, int width, int height) {
+  browser_->setWidth(width);
+  browser_->setHeight(height);
+}
 int getEmbeddedWidth(EmbeddedBrowser browser_) {
   return browser_->getWidth();
 }
@@ -127,6 +138,12 @@ int getEmbeddedHeight(EmbeddedBrowser browser_) {
 }
 void setEmbeddedHeight(EmbeddedBrowser browser_, int height) {
   browser_->setHeight(height);
+}
+float getEmbeddedScale(EmbeddedBrowser browser_) {
+  return 1;
+}
+void setEmbeddedScale(EmbeddedBrowser browser_, float scale) {
+  // nothing
 }
 void embeddedGoBack(EmbeddedBrowser browser_) {
   traverse_servo(browser_->getInstance(), -1);
