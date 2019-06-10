@@ -51,9 +51,6 @@ matrix:
     osx_image: xcode10.1
     node_js:
     - "12.2.0"
-    script:
-    - export BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH; else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
-     - echo "TRAVIS_BRANCH=$TRAVIS_BRANCH, PR=$PR, BRANCH=$BRANCH"
     install:
     - node hackCI.js
     - curl "https://nodejs.org/dist/v11.6.0/node-v11.6.0-darwin-x64.tar.gz" >node.tar.gz

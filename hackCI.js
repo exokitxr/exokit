@@ -45,7 +45,6 @@ async function main(){
     });
     res.on("end", () => {
       prevJSON = JSON.parse(prevJSON);
-      console.log(prevJSON);
       // GET CURRENT COMMIT PACKAGE.JSON
       https.get('https://raw.githubusercontent.com/exokitxr/exokit/' + currentHash.slice(0, -3) + '/package.json', res => {
         res.setEncoding("utf8");
@@ -55,10 +54,9 @@ async function main(){
         });
         res.on("end", () => {
           currentJSON = JSON.parse(currentJSON);
-          console.log(currentJSON);
           // COMPARE PACKAGE.JSON's, could be more specific but for now just compare full file.
           if(JSON.stringify(currentJSON) === JSON.stringify(prevJSON)){
-            console.log('Skipping install');
+            console.log('No changes in package.json, skipping npm install');
           }
           else{
             // NPM INSTALL / INSTALL STUFF HERE

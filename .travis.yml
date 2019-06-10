@@ -5,18 +5,94 @@ env:
   matrix:
     secure: IKkxnHrFU46DF5bs1q/bldg2sAbRWAoIqHuv4ddzAgv+0Oxbg9oD8mC9DmJ77wglMt7ErLKmHxG4qImGgHTZWPTgW3oSaFkIfT32YdsLh/6tewIZmjsffjBse3yP2hpTAx2qMeCBeRTuxTqQqQ8xMuZK2i08YFnYEMJ8FSd9pJnu7FUCZ1s8sYnwHp5YctGdMLkWNVkEVyI9dAHSPsBYyC1aSEeKUOmlqUc07kJVVknG+EOX95QqGtnRIB274+Kdj64g9dX0447sRWzDM+3gK4TXKxaOqdp/YCgWtILa33u1RBwxmv4CEseRYUsr9HSHfZMaY0EPlFqSXDZD0emNVUgttnD+KyIE1Mo3pUAcc+Gkr4TePTmi+EieBw/Re5Nv3ChEBpOYL9a6GFb+MKMDzLhU6PaFQU0SaaVYkFhhpRvCr7O1Sr4Tz+814A8x32ZCEx/ER37CjB5UN0HsHgPAS4T/jNE1QC7gSX6pNBu5JQRevruWE/gZI20J6EqXR26hPhGInf175Ho4W3+GZ7Cur4sdgcXevm1mt+ZcMQEqIs0NI1TZDxfUEa3smp14fbo/ehtasTNPWwGx4hw2dgtT6/cUBzWECHExydt/e5hw41IlYKW8VW0/kC9/l+n7A/lVBbhGfV2XMXdYLcvpySAihLVou3G/rQeFGmA80Ag5vp0=
     secure: MP84r8nsLXPBijsGNglKWZEOvTjVcDJwcsm708S3kw0HxtbYHPfDVxAFV9iCSff9mCCNeUP/uTCw4e0MxzqtoLirj+qzWI8EDqLDxB/YsAdANm5Puq+7QYWvgK6HwYmq8guMfeZuT8DTlzSRPjDMIlUHJsv7rGatoD4BCEYUOs20mDoEkujjWeYoMAF6w/TIm/HukAFO71E2uIGysE77b9/1QbbYLtEF8f94k5mJliWS1sLQ1dGGHrw+mKVdJqB5oueDhJatF/29eEGLxiBOJACn291Xl1Vyfqj+le+7XX4qwvCRAVUySrkLFbVbf1B+lQHCaI4LFrqWsIGrjxk8bT7NRJQSCxi4tqRu96gn8nGFgetMkeryJrtB7G1/AYjBpvjq1VGAhbWWAWZB4fqdsvOPWDD2jBhLCRMWHSZ6cFERddfZScsenu4ksGnBZZ7Gd8zo/86HRakeHVJxwvprei3MW4P9xfR64+CoWAphhDPZivj/N7MBq8HmAva2cZHBajVR7DE+GenmyzcTFWpAwNO3WAcUJL3kGFW1eI4fUY2HPa0kDITdbJ1ryHDn//nTPbDwzWmK5xY71P1zP8kaBJawJ54bYdw/YCd/WNq9pNoknQ6WJu4RUdHBNroVOINZslIWWNWK93M9FVchNerNXaOytYHBD8bVfEhtVnlSzPU=
-
 matrix:
   include:
   - os: linux
+    services:
+    - docker
+    before_install:
+    - docker pull debian:latest
     install:
-    - node hackCI.js
+    - docker build -t exokit .
+    - docker run exokit cat exokit-linux-bin.tar.gz >exokit-linux-bin.tar.gz
     script:
-    - export BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH; else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
-    - echo "TRAVIS_BRANCH=$TRAVIS_BRANCH, PR=$PR, BRANCH=$BRANCH"
+    - echo "skipping 'npm run test' outside of docker"
+    deploy:
+    - provider: releases
+      api_key:
+        secure: aKBSeSFdOxun6xPqONVB3epPtlUP0nYjK8LWhDijoAustwc1zuHCUgC2h3yJeDVjknbgShkPiVbTxpEOZurdJP/5iYhf9Y4hVsAWqBVdCwlKLgZ8Pj6pVZh0A61XEfd2y1ZNiv35aNIMRrt9IFzbJOpL0uO4BNLWp6j5xb8qcTnmUh5FAfVmm1eavFzj3hW+qpHeg1pbqdzPJqpoM5c99bsWnJ9QQGyfck9tMGVYlSnI/OoI2A1BLHQ9lbxRJ5F0YC0vXqUZd2NM1yTeI4Q8FrSIlFg4120OR1/QQ+LIpXhfcvqEl3MI+T9U6wxYbiBk0m5wJ39FQCpONCIytX1dZ7go53uH3jTVDiWe2eAzqX5dly+PYDzbinx2k3i5gCzkKfvcgchmtVAYip5i3wQguK66irFKr9QeZz1zGSgm9bRQ9GUYC2+8vuBbJH5TjJHmaijSfefN+ym9G6KaREtBArahG2600RxNYISmUUOHVyoYUGLG1VKB3gX7isSpSS96eioAASK+fGY3jxxMkTuSsfVeC/j1TgCLDuYbb28BTSapGbzMayZBCTIy/FmlOa3qqv5rVAz+1ZZ5AbqW3Yh0NPBrJWVPELL3XoQ9pQJ9eKUkIdwz2MNhGMyz4pjPZptT3h5VWg44tpc3TAyO/0l1kvn80MGl7lrKI4nJ+KnqWd0=
+      file: exokit-linux-bin.tar.gz
+      body: Exokit git release
+      on:
+        repo: exokitxr/exokit
+        tags: true
+      skip_cleanup: true
+  - os: linux
+    services:
+    - docker
+    before_install:
+    - docker pull debian:latest
+    install:
+    - docker build -f android.Dockerfile -t exokit .
+    - docker run exokit cat exokit.apk >exokit.apk
+    script:
+    - echo "skipping 'npm run test' outside of docker"
+    deploy:
+    - provider: releases
+      api_key:
+        secure: aKBSeSFdOxun6xPqONVB3epPtlUP0nYjK8LWhDijoAustwc1zuHCUgC2h3yJeDVjknbgShkPiVbTxpEOZurdJP/5iYhf9Y4hVsAWqBVdCwlKLgZ8Pj6pVZh0A61XEfd2y1ZNiv35aNIMRrt9IFzbJOpL0uO4BNLWp6j5xb8qcTnmUh5FAfVmm1eavFzj3hW+qpHeg1pbqdzPJqpoM5c99bsWnJ9QQGyfck9tMGVYlSnI/OoI2A1BLHQ9lbxRJ5F0YC0vXqUZd2NM1yTeI4Q8FrSIlFg4120OR1/QQ+LIpXhfcvqEl3MI+T9U6wxYbiBk0m5wJ39FQCpONCIytX1dZ7go53uH3jTVDiWe2eAzqX5dly+PYDzbinx2k3i5gCzkKfvcgchmtVAYip5i3wQguK66irFKr9QeZz1zGSgm9bRQ9GUYC2+8vuBbJH5TjJHmaijSfefN+ym9G6KaREtBArahG2600RxNYISmUUOHVyoYUGLG1VKB3gX7isSpSS96eioAASK+fGY3jxxMkTuSsfVeC/j1TgCLDuYbb28BTSapGbzMayZBCTIy/FmlOa3qqv5rVAz+1ZZ5AbqW3Yh0NPBrJWVPELL3XoQ9pQJ9eKUkIdwz2MNhGMyz4pjPZptT3h5VWg44tpc3TAyO/0l1kvn80MGl7lrKI4nJ+KnqWd0=
+      file: exokit.apk
+      body: Exokit Oculus Mobile APK git release
+      on:
+        repo: exokitxr/exokit
+        tags: true
+      skip_cleanup: true
   - os: osx
     osx_image: xcode10.1
     node_js:
     - "12.2.0"
     install:
     - node hackCI.js
+    - curl "https://nodejs.org/dist/v11.6.0/node-v11.6.0-darwin-x64.tar.gz" >node.tar.gz
+    - curl "https://nodejs.org/dist/v12.2.0/node-v12.2.0-darwin-x64.tar.gz" >node.tar.gz
+    - tar -zxf node.tar.gz
+    - rm node.tar.gz
+    - mv node-v12.2.0-darwin-x64 node
+    - export PATH="$(pwd)/node/bin:$PATH"
+    - unset NVM_NODEJS_ORG_MIRROR
+    - "./node/bin/npm install --no-optional"
+    - export TEST_ENV=ci
+    - "./node/bin/npm run test"
+    - install_name_tool -change '@rpath/OpenVR.framework/Versions/A/OpenVR' '@loader_path/../../node_modules/native-openvr-deps/bin/osx64/OpenVR.framework/Versions/A/OpenVR'
+      build/Release/exokit.node
+    - mkdir -p /tmp/Exokit.app/Contents/MacOS
+    - cp -R * /tmp/Exokit.app/Contents/MacOS
+    - mkdir -p /tmp/Exokit.app/Contents/Resources
+    - cp -R metadata/icon.icns /tmp/Exokit.app/Contents/Resources
+    - cp metadata/Info.plist /tmp/Exokit.app/Contents
+    - rm -R node
+    - ./scripts/macos/exokit-codesign-macos.sh
+    deploy:
+    - provider: releases
+      api_key:
+        secure: aKBSeSFdOxun6xPqONVB3epPtlUP0nYjK8LWhDijoAustwc1zuHCUgC2h3yJeDVjknbgShkPiVbTxpEOZurdJP/5iYhf9Y4hVsAWqBVdCwlKLgZ8Pj6pVZh0A61XEfd2y1ZNiv35aNIMRrt9IFzbJOpL0uO4BNLWp6j5xb8qcTnmUh5FAfVmm1eavFzj3hW+qpHeg1pbqdzPJqpoM5c99bsWnJ9QQGyfck9tMGVYlSnI/OoI2A1BLHQ9lbxRJ5F0YC0vXqUZd2NM1yTeI4Q8FrSIlFg4120OR1/QQ+LIpXhfcvqEl3MI+T9U6wxYbiBk0m5wJ39FQCpONCIytX1dZ7go53uH3jTVDiWe2eAzqX5dly+PYDzbinx2k3i5gCzkKfvcgchmtVAYip5i3wQguK66irFKr9QeZz1zGSgm9bRQ9GUYC2+8vuBbJH5TjJHmaijSfefN+ym9G6KaREtBArahG2600RxNYISmUUOHVyoYUGLG1VKB3gX7isSpSS96eioAASK+fGY3jxxMkTuSsfVeC/j1TgCLDuYbb28BTSapGbzMayZBCTIy/FmlOa3qqv5rVAz+1ZZ5AbqW3Yh0NPBrJWVPELL3XoQ9pQJ9eKUkIdwz2MNhGMyz4pjPZptT3h5VWg44tpc3TAyO/0l1kvn80MGl7lrKI4nJ+KnqWd0=
+      file: exokit-macos-x64.dmg
+      body: Exokit macOS release
+      on:
+        repo: exokitxr/exokit
+        tags: true
+      skip_cleanup: true
+notifications:
+  slack:
+    rooms:
+    - exokit:QzFMQYjtFRwrGm25iLOWxMTA#builds
+    on_success: change
+    on_failure: always
+after_success:
+  - wget https://raw.githubusercontent.com/exokitxr/travis-ci-discord-webhook/master/send.sh
+  - chmod +x send.sh
+  - ./send.sh success $WEBHOOK_URL
+after_failure:
+  - wget https://raw.githubusercontent.com/exokitxr/travis-ci-discord-webhook/master/send.sh
+  - chmod +x send.sh
+  - ./send.sh failure $WEBHOOK_URL
