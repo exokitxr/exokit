@@ -79,14 +79,15 @@ const _consumeInput = () => {
       
       switch (e.method) {
         case 'initialize': {
-          const {url, width: initialWidth, height: initialHeight, devicePixelRatio} = e;
+          const {url, width: initialWidth, height: initialHeight, devicePixelRatio, inline} = e;
 
           mainWindow = new BrowserWindow({
             width: initialWidth,
             height: initialHeight,
-            show: false,
+            show: !inline,
+            // frame: false,
             webPreferences: {
-              offscreen: true,
+              offscreen: inline,
               webSecurity: false,
               allowRunningInsecureContent: true,
               backgroundThrottling: false,

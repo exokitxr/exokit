@@ -2105,6 +2105,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   width: this.width || context.canvas.ownerDocument.defaultView.innerWidth,
                   height: this.height || context.canvas.ownerDocument.defaultView.innerHeight,
                   devicePixelRatio: context.canvas.ownerDocument.defaultView.devicePixelRatio,
+                  inline: this.inline,
                   context,
                 });
                 this.browser = browser;
@@ -2245,6 +2246,10 @@ class HTMLIFrameElement extends HTMLSrcableElement {
         if (this.browser) {
           this.browser.scale = this.devicePixelRatio;
         }
+      } else if (name === 'inline') {
+        if (this.browser) {
+          this.browser.inline = this.inline;
+        }
       }
     });
     /* this.on('destroy', () => {
@@ -2292,6 +2297,16 @@ class HTMLIFrameElement extends HTMLSrcableElement {
   set d(value) {
     if (typeof value === 'number' && isFinite(value)) {
       this.setAttribute('d', value);
+    }
+  }
+  get inline() {
+    return this.getAttribute('inline') === '';
+  }
+  set inline(inline) {
+    if (inline) {
+      this.setAttribute('inline', '');
+    } else {
+      this.removeAttribute('inline');
     }
   }
 

@@ -44,7 +44,7 @@ const _stringifyButton = button => {
   }
 };
 class ElectronVm extends EventEmitter {
-  constructor({url = 'http://google.com', width = 1280, height = 1024, devicePixelRatio = 1, context = null} = {}) {
+  constructor({url = 'http://google.com', width = 1280, height = 1024, devicePixelRatio = 1, inline = true, context = null} = {}) {
     super();
     
     const server = net.createServer(stream => {
@@ -208,6 +208,7 @@ class ElectronVm extends EventEmitter {
       width,
       height,
       devicePixelRatio,
+      inline,
     });
   }
 
