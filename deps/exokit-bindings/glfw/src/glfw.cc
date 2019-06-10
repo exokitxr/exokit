@@ -1036,6 +1036,16 @@ NAN_METHOD(SetVisibility) {
   });
 }
 
+NAN_METHOD(SetPosition) {
+  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+  GLint x = TO_INT32(info[1]);
+  GLint y = TO_INT32(info[2]);
+
+  QueueInjection([window, x, y](InjectionHandler *injectionHandler) -> void {
+    glfwSetWindowPos(window, x, y);
+  });
+}
+
 NAN_METHOD(IsVisible) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   bool visible = glfwGetWindowAttrib(window, GLFW_VISIBLE);
@@ -1672,6 +1682,7 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "createWindowHandle", glfw::CreateWindowHandle);
   Nan::SetMethod(target, "destroyWindowHandle", glfw::DestroyWindowHandle);
   Nan::SetMethod(target, "setVisibility", glfw::SetVisibility);
+  Nan::SetMethod(target, "setPosition", glfw::SetPosition);
   Nan::SetMethod(target, "isVisible", glfw::IsVisible);
   Nan::SetMethod(target, "setFullscreen", glfw::SetFullscreen);
   Nan::SetMethod(target, "getMonitors", glfw::GetMonitors);
