@@ -106,6 +106,9 @@ const _consumeInput = () => {
               _flushParentPort();
             });
           mainWindow.focusOnWebView();
+          mainWindow.on('move', e => {
+            mainWindow.webContents.executeJavaScript(`window.dispatchEvent(new UIEvent('move'));`);
+          });
           mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
             const match = message.match(/^<postMessage>(.+)$/);
             if (match) {
