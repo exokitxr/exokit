@@ -67,7 +67,7 @@
     "native-browser-deps-magicleap": "0.0.5",
     "native-browser-deps-windows": "0.0.1",
     "native-canvas-deps": "0.0.53",
-    "native-graphics-deps": "0.0.21",
+    "native-graphics-deps": "0.0.22",
     "native-oculus-deps": "0.0.2",
     "native-oculus-mobile-deps": "0.0.2",
     "native-openvr-deps": "0.0.18",
