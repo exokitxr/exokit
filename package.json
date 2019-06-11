@@ -25,15 +25,16 @@
     "url": "git+https://github.com/exokitxr/exokit.git"
   },
   "keywords": [
+    "web",
     "browser",
     "native",
-    "webvr",
     "webgl",
     "webvr",
-    "webar",
     "webxr",
     "vr",
     "ar",
+    "vive",
+    "oculus",
     "magic leap"
   ],
   "author": "Avaer Kazmer <a@modules.io>",
