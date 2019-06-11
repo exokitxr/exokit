@@ -2106,6 +2106,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   height: this.height || context.canvas.ownerDocument.defaultView.innerHeight,
                   devicePixelRatio: context.canvas.ownerDocument.defaultView.devicePixelRatio,
                   inline: this.inline,
+                  transparent: !this.inline,
                   context,
                 });
                 this.browser = browser;
