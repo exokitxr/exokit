@@ -1036,14 +1036,10 @@ NAN_METHOD(SetVisibility) {
   });
 }
 
-NAN_METHOD(SetPosition) {
+NAN_METHOD(SetWindowFocus) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  GLint x = TO_INT32(info[1]);
-  GLint y = TO_INT32(info[2]);
 
-  QueueInjection([window, x, y](InjectionHandler *injectionHandler) -> void {
-    glfwSetWindowPos(window, x, y);
-  });
+  glfwFocusWindow(window);
 }
 
 NAN_METHOD(IsVisible) {
@@ -1682,7 +1678,6 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "createWindowHandle", glfw::CreateWindowHandle);
   Nan::SetMethod(target, "destroyWindowHandle", glfw::DestroyWindowHandle);
   Nan::SetMethod(target, "setVisibility", glfw::SetVisibility);
-  Nan::SetMethod(target, "setPosition", glfw::SetPosition);
   Nan::SetMethod(target, "isVisible", glfw::IsVisible);
   Nan::SetMethod(target, "setFullscreen", glfw::SetFullscreen);
   Nan::SetMethod(target, "getMonitors", glfw::GetMonitors);
@@ -1693,6 +1688,7 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "setWindowSize", glfw::SetWindowSize);
   Nan::SetMethod(target, "setWindowPos", glfw::SetWindowPos);
   Nan::SetMethod(target, "getWindowPos", glfw::GetWindowPos);
+  Nan::SetMethod(target, "setWindowFocus", glfw::SetWindowFocus);
   Nan::SetMethod(target, "getFramebufferSize", glfw::GetFramebufferSize);
   Nan::SetMethod(target, "getDevicePixelRatio", glfw::GetDevicePixelRatio);
   Nan::SetMethod(target, "iconifyWindow", glfw::IconifyWindow);
