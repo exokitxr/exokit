@@ -3,10 +3,13 @@ const {EventEmitter} = require('events');
 const stream = require('stream');
 const net = require('net');
 const child_process = require('child_process');
+const os = require('os');
 const {TextEncoder} = require('util');
 
 const electron = require('electron');
 const keycode = require('keycode');
+
+const GlobalContext = require('./GlobalContext');
 
 const {process} = global;
 
@@ -19,8 +22,12 @@ const TYPES = (() => {
     IMAGEDATA: ++iota,
   };
 })();
-
-let numVms = 0;
+const PIPE_PREFIX = (() => {
+  switch (os.platform()) {
+    case 'win32': '\\\\.\\pipe\\exokit-electron';
+    default: return '/tmp/exokit-electron';
+  }
+})();
 
 const _arrayifyModifiers = modifiers => {
   const result = [];
@@ -52,7 +59,8 @@ class ElectronVm extends EventEmitter {
         .pipe(stream)
         .pipe(cp.stdout);
     });
-    const pipePath = '\\\\.\\pipe\\exokit-electron' + numVms++;
+    const id = Atomics.add(GlobalContext.xrState.id, 0, 1) + 1;
+    const pipePath = `${PIPE_PREFIX}-${process.pid}-${id}`;
     server.listen(pipePath);
     
     const cp = child_process.spawn(electron, [path.join(__dirname, 'electron-child.js'), pipePath]);
