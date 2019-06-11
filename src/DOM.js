@@ -2430,6 +2430,18 @@ class HTMLCanvasElement extends HTMLElement {
       this.setAttribute('height', value);
     }
   }
+  setPosition(x, y) {
+    if (this._context && (this._context.constructor.name === 'WebGLRenderingContext' || this._context.constructor.name === 'WebGL2RenderingContext')) {
+      const windowHandle = this._context.getWindowHandle();
+      bindings.nativeWindow.setWindowPos(windowHandle, x, y);
+    }
+  }
+  setSize(width, height) {
+    if (this._context && (this._context.constructor.name === 'WebGLRenderingContext' || this._context.constructor.name === 'WebGL2RenderingContext')) {
+      const windowHandle = this._context.getWindowHandle();
+      bindings.nativeWindow.setWindowSize(windowHandle, width, height);
+    }
+  }
 
   get clientWidth() {
     return this.width;
