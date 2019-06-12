@@ -2342,23 +2342,22 @@ class HTMLCanvasElement extends HTMLElement {
 
       this._context = new GlobalContext.CanvasRenderingContext2D(this);
     } else if (contextType === 'webgl' || contextType === 'experimental-webgl' || contextType === 'webgl2' || contextType === 'xrpresent') {
-      if (this._context && this._context.constructor && this._context.constructor.name !== 'WebGLRenderingContext' && this._context.constructor.name !== 'WebGL2RenderingContext') {
+      if (this._context) {
         this._context.destroy();
         this._context = null;
       }
-      if (this._context === null) {
-        const window = this.ownerDocument.defaultView;
 
-        if (!window[symbols.optionsSymbol].args || window[symbols.optionsSymbol].args.webgl === '1') {
-          if (contextType === 'webgl' || contextType === 'experimental-webgl' || contextType === 'xrpresent') {
-            this._context = new GlobalContext.WebGLRenderingContext(this, attrs);
-          }
+      const window = this.ownerDocument.defaultView;
+
+      if (!window[symbols.optionsSymbol].args || window[symbols.optionsSymbol].args.webgl === '1') {
+        if (contextType === 'webgl' || contextType === 'experimental-webgl' || contextType === 'xrpresent') {
+          this._context = new GlobalContext.WebGLRenderingContext(this, attrs);
+        }
+      } else {
+        if (contextType === 'webgl' || contextType === 'experimental-webgl') {
+          this._context = new GlobalContext.WebGLRenderingContext(this, attrs);
         } else {
-          if (contextType === 'webgl' || contextType === 'experimental-webgl') {
-            this._context = new GlobalContext.WebGLRenderingContext(this, attrs);
-          } else {
-            this._context = new GlobalContext.WebGL2RenderingContext(this, attrs);
-          }
+          this._context = new GlobalContext.WebGL2RenderingContext(this, attrs);
         }
       }
     } else {
