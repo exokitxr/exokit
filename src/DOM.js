@@ -532,10 +532,10 @@ const _camelCaseToDash = s => {
   }
 };
 
-const _makeDataset = el => new Proxy(el.attrs, {
+const _makeDataset = el => new Proxy(el, {
   get(target, key) {
-    for (let i = 0; i < target.length; i++) {
-      const attr = target[i];
+    for (let i = 0; i < target.attrs.length; i++) {
+      const attr = target.attrs[i];
       if (_dashToCamelCase(attr.name) === key) {
         return attr.value;
       }
@@ -544,9 +544,27 @@ const _makeDataset = el => new Proxy(el.attrs, {
   set(target, key, value) {
     const dashName = _camelCaseToDash(key);
     if (dashName) {
-      _setAttributeRaw(el, dashName, value);
+      _setAttributeRaw(target, dashName, value);
     }
     return true;
+  },
+  getOwnPropertyDescriptor(target, key) {
+    for (let i = 0; i < target.attrs.length; i++) {
+      const attr = target.attrs[i];
+      if (_dashToCamelCase(attr.name) === key) {
+        return Reflect.getOwnPropertyDescriptor(target.attrs, i);
+      }
+    }
+  },
+  ownKeys(target) {
+    const result = [];
+    for (let i = 0; i < target.attrs.length; i++) {
+      const camelCase = _dashToCamelCase(target.attrs[i].name);
+      if (camelCase !== null) {
+        result.push(camelCase);
+      }
+    }
+    return result;
   },
 });
 
