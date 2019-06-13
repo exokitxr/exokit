@@ -95,7 +95,8 @@ const _consumeInput = () => {
               preload: path.join(__dirname, 'electron-preload.js'),
               zoomFactor: devicePixelRatio,
             },
-          })
+          });
+          mainWindow.setMenu(null);
           mainWindow.loadURL(url)
             .then(() => {
               const b = Uint32Array.from([TYPES.LOAD, 200]);
