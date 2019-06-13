@@ -4,6 +4,10 @@
 
 #include <exout>
 
+#if defined(TARGET_OS_MAC) || defined(__linux__)
+#define MAIN_THREAD_POLLING 1
+#endif
+
 namespace glfw {
 
 thread_local NATIVEwindow *currentWindow = nullptr;
@@ -12,7 +16,7 @@ NATIVEwindow *sharedWindow = nullptr;
 InjectionHandler mainThreadInjectionHandler;
 std::mutex injectionHandlerMapMutex;
 // int lastX = 0, lastY = 0; // XXX track this per-window
-#ifdef TARGET_OS_MAC
+#ifdef MAIN_THREAD_POLLING
 std::thread::id mainThreadId;
 bool hasMainThreadId = false;
 #endif
@@ -121,7 +125,7 @@ void handleInjections() {
 }
 void QueueInjection(std::function<void(InjectionHandler *injectionHandler)> fn) {
   if (!glfwInitialized) {
-#ifndef TARGET_OS_MAC
+#ifndef MAIN_THREAD_POLLING
     std::thread([&]() -> void {
       initializeGlfw();
 
@@ -150,7 +154,7 @@ void QueueInjection(std::function<void(InjectionHandler *injectionHandler)> fn) 
     mainThreadInjectionHandler.fns.push_back(fn);
   }
 
-#ifndef TARGET_OS_MAC
+#ifndef MAIN_THREAD_POLLING
   glfwPostEmptyEvent();
 #else
   if (std::this_thread::get_id() == mainThreadId) {
@@ -1277,7 +1281,7 @@ NAN_METHOD(SetClipboard) {
   }
 }
 
-#ifdef TARGET_OS_MAC
+#ifdef MAIN_THREAD_POLLING
 NAN_METHOD(PollEvents) {
   glfwPollEvents();
 
@@ -1648,7 +1652,7 @@ NAN_METHOD(PollEvents) {
 } */
 
 Local<Object> makeWindow() {
-#ifdef TARGET_OS_MAC
+#ifdef MAIN_THREAD_POLLING
   if (!glfw::hasMainThreadId) {
     glfw::mainThreadId = std::this_thread::get_id();
     glfw::hasMainThreadId = true;
@@ -1692,7 +1696,7 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "blitTopFrameBuffer", glfw::BlitTopFrameBuffer);
   Nan::SetMethod(target, "blitChildFrameBuffer", glfw::BlitChildFrameBuffer);
   Nan::SetMethod(target, "setCurrentWindowContext", glfw::SetCurrentWindowContext);
-#ifdef TARGET_OS_MAC
+#ifdef MAIN_THREAD_POLLING
   Nan::SetMethod(target, "pollEvents", glfw::PollEvents);
 #endif
 
