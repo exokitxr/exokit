@@ -532,6 +532,10 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
       })
     }
   };
+  window.matchMedia = media => ({
+    media,
+    matches: false,
+  });
 
   // WebVR enabled.
   if (['all', 'webvr'].includes(options.args.xr)) {
