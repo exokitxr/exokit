@@ -7,7 +7,6 @@ const {parentPort} = require('worker_threads');
 
 const {process} = global;
 
-const ClassList = require('window-classlist');
 const css = require('css');
 const he = require('he');
 const parse5 = require('parse5');
@@ -602,6 +601,94 @@ const _defineId = (window, id, el) => {
   });
 };
 
+class DOMTokenList extends Array {
+  constructor(onchange) {
+    this.onchange = onchange;
+  }
+
+  item(k) {
+    const v = this[k];
+    return v !== undefined ? v : null;
+  }
+
+  add() {
+    for (let i = 0; i < arguments.length; i++) {
+      const name = '' + arguments[i];
+
+      if (this.indexOf(name) !== -1) {
+        continue;
+      }
+
+      this.push(name);
+    }
+
+    this.onchange(this.toString());
+
+    return this;
+  }
+
+  remove() {
+    var index,
+        name,
+        i,
+        j;
+
+    for (i = 0; i < arguments.length; i += 1) {
+      name = arguments[i] + '';
+      index = this.indexOf(name);
+
+      if (index < 0) {
+        continue;
+      }
+
+      for (j = index; j < this.length - 1; j++) {
+        this[index] = this[index + 1];
+      }
+      this.length--;
+    }
+
+    this.onchange(this.toString());
+
+    return this;
+  }
+
+  contains(name) {
+    name += '';
+    return this.indexOf(name) !== -1;
+  }
+
+  toggle(name, force) {
+    name += '';
+
+    if (force === true) {
+      return this.add(name);
+    }
+    if (force === false) {
+      return this.remove(name);
+    }
+
+    return this[this.contains(name) ? 'remove' : 'add'](name);
+  }
+
+  toString() {
+    return this.join(' ');
+  }
+}
+module.exports.DOMTokenList = DOMTokenList;
+
+const _resetClassList = (classList, className) => {
+  classList.length = 0;
+
+  const classes = className
+    .replace(/^\s+|\s+$/g, '')
+    .split(/\s+/);
+  for (let i = 0; i < classes.length; i += 1) {
+    if (classes[i]) {
+      classList.push(classes[i]);
+    }
+  }
+};
+
 class Element extends Node {
   constructor(window, tagName = 'DIV', attrs = [], value = '', location = null) {
     super(window);
@@ -623,7 +710,7 @@ class Element extends Node {
           _defineId(this.ownerDocument.defaultView, value, this);
         }
       } else if (name === 'class' && this._classList) {
-        this._classList.reset(value);
+        _resetClassList(this._classList, value);
       }
     });
     this.on('children', (addedNodes, removedNodes, previousSibling, nextSiblings) => {
@@ -911,7 +998,7 @@ class Element extends Node {
 
   get classList() {
     if (!this._classList) {
-      this._classList = new ClassList(this.className, className => {
+      this._classList = new DOMTokenList(className => {
         _setAttributeRaw(this, 'class', className);
       });
     }
@@ -1275,7 +1362,7 @@ class HTMLElement extends Element {
 
     this.on('attribute', (name, value) => {
       if (name === 'class' && this._classList) {
-        this._classList.reset(value);
+        _resetClassList(this._classList, value);
       } else if (name === 'style') {
         if (this._style) {
           this._style.reset();
