@@ -2125,6 +2125,12 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   set onmessage(newOnmessage) {
                     onmessage = newOnmessage;
                   },
+                  addEventListener() {
+                    return browser.on.apply(browser, arguments);
+                  },
+                  removeEventListener() {
+                    return browser.removeListener.apply(browser, arguments);
+                  },
                   /* destroy() {
                     self.browser.destroy();
                     self.browser = null;
