@@ -603,6 +603,8 @@ const _defineId = (window, id, el) => {
 
 class DOMTokenList extends Array {
   constructor(onchange) {
+    super();
+
     this.onchange = onchange;
   }
 
