@@ -80,7 +80,6 @@
     "rimraf": "^2.6.2",
     "unescape": "^1.0.1",
     "webgl-to-opengl": "0.0.16",
-    "window-classlist": "0.0.4",
     "window-fetch": "0.0.10",
     "window-ls": "0.0.1",
     "window-selector": "0.0.7",
