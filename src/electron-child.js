@@ -18,6 +18,7 @@ const TYPES = (() => {
   return {
     CONSOLE: ++iota,
     LOAD: ++iota,
+    EVENT: ++iota,
     MESSAGE: ++iota,
     IMAGEDATA: ++iota,
   };
@@ -84,16 +85,18 @@ const _consumeInput = () => {
           const _postResizeEvent = () => {
             const {x, y, width, height} = mainWindow.getContentBounds();
             const o = {
-              method: 'resize',
-              x,
-              y,
-              width,
-              height,
+              type: 'resize',
+              event: {
+                x,
+                y,
+                width,
+                height,
+              },
             };
             const s = JSON.stringify(o);
             let m = new TextEncoder().encode(s);
             m = new Buffer(m.buffer, m.byteOffset, m.byteLength);
-            const b = Uint32Array.from([TYPES.MESSAGE, m.length]); // XXX make this a first-class event rather than a message
+            const b = Uint32Array.from([TYPES.EVENT, m.length]);
             const b2 = new Buffer(b.buffer, b.byteOffset, b.byteLength);
             _parentPortWrite(b2);
             _parentPortWrite(m);

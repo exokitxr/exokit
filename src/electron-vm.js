@@ -18,6 +18,7 @@ const TYPES = (() => {
   return {
     CONSOLE: ++iota,
     LOAD: ++iota,
+    EVENT: ++iota,
     MESSAGE: ++iota,
     IMAGEDATA: ++iota,
   };
@@ -150,6 +151,25 @@ class ElectronVm extends EventEmitter {
               this.emit('load');
             } else {
               this.emit('error', new Error(`load got invalid status code ${status}`));
+            }
+            break;
+          }
+          case TYPES.EVENT: {
+            if (b.length < (1+1)*Uint32Array.BYTES_PER_ELEMENT) {
+              console.warn(new Error('did not get full header from electron pipe').stack);
+            }
+            const header = new Uint32Array(b.buffer, b.byteOffset + Uint32Array.BYTES_PER_ELEMENT, 1);
+            const [size] = header;
+            b = _pull((1+1)*Uint32Array.BYTES_PER_ELEMENT + size);
+            if (b) {
+              b = Buffer.from(b.buffer, b.byteOffset + (1+1)*Uint32Array.BYTES_PER_ELEMENT, size);
+              const s = new TextDecoder().decode(b);
+              const e = JSON.parse(s);
+              const {type, event} = e;
+              this.emit(type, event);
+            } else {
+              // console.log('failed to pull', (1+1)*Uint32Array.BYTES_PER_ELEMENT + size, bsLength);
+              return;
             }
             break;
           }
