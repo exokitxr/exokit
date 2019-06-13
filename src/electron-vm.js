@@ -24,7 +24,7 @@ const TYPES = (() => {
 })();
 const PIPE_PREFIX = (() => {
   switch (os.platform()) {
-    case 'win32': '\\\\.\\pipe\\exokit-electron';
+    case 'win32': return '\\\\.\\pipe\\exokit-electron';
     default: return '/tmp/exokit-electron';
   }
 })();
