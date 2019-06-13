@@ -111,6 +111,7 @@ const {_parseDocument, _parseDocumentAst, getBoundDocumentElements, DocumentType
 const {
   HTMLElement,
   getBoundDOMElements,
+  DOMTokenList,
   NodeList,
   HTMLCollection,
   DOMRect,
@@ -680,6 +681,7 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
     LI: HTMLLIElement,
     TABLE: HTMLTableElement,
   };
+  window.DOMTokenList = DOMTokenList;
   window.NodeList = NodeList;
   window.HTMLCollection = HTMLCollection;
 
