@@ -68,7 +68,7 @@ function initDocument (document, window) {
         throw new Error('invalid createEvent type: ' + type);
     }
   };
-  document.createRange = () => new window.Range();
+  document.createRange = () => new Range();
   document.importNode = (el, deep) => el.cloneNode(deep);
   document.scripts = utils._makeHtmlCollectionProxy(document.documentElement, 'script');
   document.styleSheets = [];
@@ -532,14 +532,53 @@ class Range extends DocumentFragment {
     super(window, 'RANGE');
   }
 
+  get collapsed() {
+    return true;
+  }
+  get commonAncestorContainer() {
+    return this.window.document.body;
+  }
+  get startContainer() {
+    return this.window.document.body;
+  }
+  get startOffset() {
+    return 0;
+  }
+  get endContainer() {
+    return this.window.document.body;
+  }
+  get endOffset() {
+    return 0;
+  }
+
+  setStart() {}
+  setEnd() {}
+  setStartBefore() {}
+  setStartAfter() {}
+  setEndBefore() {}
+  setEndAfter() {}
+  selectNode() {}
+  selectNodeContents() {}
+  collapse() {}
+  cloneContents() {}
+  deleteContents() {}
+  extractContents() {}
+  insertNode() {}
+  surroundContents() {}
+  compareBoundaryPoints() {}
+  cloneRange() {
+    return new Range(this.window);
+  }
+  detach() {}
+  toString() {
+    return '';
+  }
+  
   createContextualFragment(str) {
     var fragment = this.ownerDocument.createDocumentFragment();
     fragment.innerHTML = str;
     return fragment;
   }
-
-  setStart() {}
-  setEnd() {}
 }
 module.exports.Range = Range;
 
