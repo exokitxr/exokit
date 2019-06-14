@@ -68,7 +68,7 @@ function initDocument (document, window) {
         throw new Error('invalid createEvent type: ' + type);
     }
   };
-  document.createRange = () => new Range();
+  document.createRange = () => new Range(window);
   document.importNode = (el, deep) => el.cloneNode(deep);
   document.scripts = utils._makeHtmlCollectionProxy(document.documentElement, 'script');
   document.styleSheets = [];
