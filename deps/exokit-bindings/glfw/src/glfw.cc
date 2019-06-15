@@ -363,21 +363,6 @@ void APIENTRY windowRefreshCB(NATIVEwindow *window) {
   });
 }
 
-void APIENTRY windowIconifyCB(NATIVEwindow *window, int iconified) {
-  QueueEvent(window, [=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
-    Local<Object> evt = Nan::New<Object>();
-    evt->Set(JS_STR("type"),JS_STR("iconified"));
-    evt->Set(JS_STR("iconified"),JS_BOOL(iconified));
-    // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
-
-    Local<Value> argv[] = {
-      JS_STR("iconified"), // event name
-      evt,
-    };
-    eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
-  });
-}
-
 void APIENTRY windowFocusCB(NATIVEwindow *window, int focused) {
   QueueEvent(window, [=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
     Local<Object> evt = Nan::New<Object>();
@@ -387,6 +372,36 @@ void APIENTRY windowFocusCB(NATIVEwindow *window, int focused) {
 
     Local<Value> argv[] = {
       JS_STR("focus"), // event name
+      evt,
+    };
+    eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
+  });
+}
+
+void APIENTRY windowMaximizeCB(NATIVEwindow *window, int maximized) {
+  QueueEvent(window, [=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
+    Local<Object> evt = Nan::New<Object>();
+    evt->Set(JS_STR("type"),JS_STR("maximize"));
+    evt->Set(JS_STR("maximized"),JS_BOOL((bool)maximized));
+    // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
+
+    Local<Value> argv[] = {
+      JS_STR("maximize"), // event name
+      evt,
+    };
+    eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
+  });
+}
+
+void APIENTRY windowIconifyCB(NATIVEwindow *window, int iconified) {
+  QueueEvent(window, [=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
+    Local<Object> evt = Nan::New<Object>();
+    evt->Set(JS_STR("type"),JS_STR("minimize"));
+    evt->Set(JS_STR("minimized"),JS_BOOL((bool)iconified));
+    // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
+
+    Local<Value> argv[] = {
+      JS_STR("minimize"), // event name
       evt,
     };
     eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
@@ -1145,6 +1160,7 @@ NATIVEwindow *CreateWindowHandle(unsigned int width, unsigned int height, bool i
       glfwSetWindowCloseCallback(windowHandle, windowCloseCB);
       glfwSetWindowRefreshCallback(windowHandle, windowRefreshCB);
       glfwSetWindowFocusCallback(windowHandle, windowFocusCB);
+      glfwSetWindowMaximizeCallback(windowHandle, windowMaximizeCB);
       glfwSetWindowIconifyCallback(windowHandle, windowIconifyCB);
       glfwSetFramebufferSizeCallback(windowHandle, windowFramebufferSizeCB);
       glfwSetDropCallback(windowHandle, windowDropCB);
