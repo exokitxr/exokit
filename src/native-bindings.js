@@ -96,6 +96,17 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
     gl.setDefaultVao(vao);
     nativeWindow.setEventHandler(windowHandle, (type, data) => {
       switch (type) {
+        case 'move': {
+          const {x, y} = data;
+
+          window.dispatchEvent(new window.CustomEvent('move', {
+            detail: {
+              x,
+              y,
+            },
+          }));
+          break;
+        }
         case 'focus': {
           const {focused} = data;
           if (!focused && window.document.pointerLockElement) {
