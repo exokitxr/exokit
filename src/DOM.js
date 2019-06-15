@@ -2318,10 +2318,19 @@ class HTMLIFrameElement extends HTMLSrcableElement {
   }
 
   setPosition(x, y) {
-    this.browser.setPosition && this.browser.setPosition(x, y);
+    this.browser && this.browser.setPosition && this.browser.setPosition(x, y);
   }
   setSize(width, height) {
-    this.browser.setSize && this.browser.setSize(width, height);
+    this.browser && this.browser.setSize && this.browser.setSize(width, height);
+  }
+  show() {
+    this.browser && this.browser.show && this.browser.show();
+  }
+  hide() {
+    this.browser && this.browser.hide && this.browser.hide();
+  }
+  setAlwaysOnTop(value) {
+    this.browser && this.browser.setAlwaysOnTop && this.browser.setAlwaysOnTop(value);
   }
 
   get texture() {

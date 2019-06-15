@@ -218,6 +218,23 @@ const _consumeInput = () => {
           mainWindow.setPosition(x, y);
           break;
         }
+        case 'show': {
+          mainWindow.show();
+          break;
+        }
+        case 'hide': {
+          mainWindow.hide();
+          break;
+        }
+        case 'setAlwaysOnTop': {
+          const {value} = e;
+          if (value) {
+            mainWindow.setAlwaysOnTop(true, 'floating');
+          } else {
+            mainWindow.setAlwaysOnTop(false);
+          }
+          break;
+        }
         case 'postMessage': {
           mainWindow.webContents.executeJavaScript(`window.dispatchEvent(new MessageEvent('message', {data: ${JSON.stringify(e.message)}}));`);
           break;

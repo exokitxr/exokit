@@ -301,6 +301,22 @@ class ElectronVm extends EventEmitter {
       y,
     });
   }
+  show() {
+    this.runAsync({
+      method: 'show',
+    });
+  }
+  hide() {
+    this.runAsync({
+      method: 'hide',
+    });
+  }
+  setAlwaysOnTop(value) {
+    this.runAsync({
+      method: 'setAlwaysOnTop',
+      value,
+    });
+  }
 
   sendInputEvent(event) {
     this.runAsync({
