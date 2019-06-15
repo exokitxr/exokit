@@ -2317,6 +2317,13 @@ class HTMLIFrameElement extends HTMLSrcableElement {
     }
   }
 
+  setPosition(x, y) {
+    this.browser.setPosition && this.browser.setPosition(x, y);
+  }
+  setSize(width, height) {
+    this.browser.setSize && this.browser.setSize(width, height);
+  }
+
   get texture() {
     if (this.d === 2) {
       return this.browser && this.browser.texture;
