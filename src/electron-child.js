@@ -98,6 +98,7 @@ const _consumeInput = () => {
             },
           });
           mainWindow.setMenu(null);
+          mainWindow.setResizable(false);
           mainWindow.setAlwaysOnTop(true, 'floating');
           mainWindow.loadURL(url)
             .then(() => {
