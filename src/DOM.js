@@ -2456,6 +2456,12 @@ class HTMLCanvasElement extends HTMLElement {
       bindings.nativeWindow.setWindowSize(windowHandle, width, height);
     }
   }
+  setFocus() {
+    if (this._context && (this._context.constructor.name === 'WebGLRenderingContext' || this._context.constructor.name === 'WebGL2RenderingContext')) {
+      const windowHandle = this._context.getWindowHandle();
+      bindings.nativeWindow.setWindowFocus(windowHandle);
+    }
+  }
 
   get clientWidth() {
     return this.width;
