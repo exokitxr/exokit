@@ -275,7 +275,7 @@ void APIENTRY windowPosCB(NATIVEwindow *window, int xpos, int ypos) {
 void APIENTRY windowSizeCB(NATIVEwindow *window, int w, int h) {
   QueueEvent(window, [=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
     Local<Object> evt = Nan::New<Object>();
-    evt->Set(JS_STR("type"),JS_STR("resize"));
+    evt->Set(JS_STR("type"),JS_STR("windowResize"));
     evt->Set(JS_STR("width"),JS_INT(w));
     evt->Set(JS_STR("height"),JS_INT(h));
     // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
@@ -291,7 +291,7 @@ void APIENTRY windowSizeCB(NATIVEwindow *window, int w, int h) {
 void APIENTRY windowFramebufferSizeCB(NATIVEwindow *window, int w, int h) {
   QueueEvent(window, [=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
     Local<Object> evt = Nan::New<Object>();
-    evt->Set(JS_STR("type"),JS_STR("framebuffer_resize"));
+    evt->Set(JS_STR("type"),JS_STR("framebufferResize"));
     evt->Set(JS_STR("width"),JS_INT(w));
     evt->Set(JS_STR("height"),JS_INT(h));
     // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
@@ -381,8 +381,8 @@ void APIENTRY windowIconifyCB(NATIVEwindow *window, int iconified) {
 void APIENTRY windowFocusCB(NATIVEwindow *window, int focused) {
   QueueEvent(window, [=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
     Local<Object> evt = Nan::New<Object>();
-    evt->Set(JS_STR("type"),JS_STR("focused"));
-    evt->Set(JS_STR("focused"),JS_BOOL(focused));
+    evt->Set(JS_STR("type"),JS_STR("focus"));
+    evt->Set(JS_STR("focused"),JS_BOOL((bool)focused));
     // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
     Local<Value> argv[] = {
