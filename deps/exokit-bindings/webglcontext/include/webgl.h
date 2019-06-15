@@ -353,15 +353,14 @@ public:
   static NAN_GETTER(DrawingBufferWidthGetter);
   static NAN_GETTER(DrawingBufferHeightGetter);
 
+  static NAN_METHOD(FramebufferTextureMultiviewOVR);
+  static NAN_METHOD(FramebufferTextureMultisampleMultiviewOVR);
+
   static NAN_METHOD(GetBoundFramebuffer);
   static NAN_METHOD(GetDefaultFramebuffer);
   static NAN_METHOD(SetDefaultFramebuffer);
-
   static NAN_METHOD(SetClearEnabled);
   static NAN_METHOD(LoadSubTexture);
-
-  static NAN_METHOD(FramebufferTextureMultiviewOVR);
-  static NAN_METHOD(FramebufferTextureMultisampleMultiviewOVR);
 
   void SetVertexArrayBinding(GLuint vao) {
     vertexArrayBindings[GL_VERTEX_SHADER] = vao;
