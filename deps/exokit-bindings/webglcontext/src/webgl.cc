@@ -1171,20 +1171,19 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
   Nan::SetAccessor(proto, JS_STR("drawingBufferWidth"), glGetterWrap<DrawingBufferWidthGetter>);
   Nan::SetAccessor(proto, JS_STR("drawingBufferHeight"), glGetterWrap<DrawingBufferHeightGetter>);
 
-  /* Nan::SetMethod(proto, "getFramebuffer", glSwitchCallWrap<GetFramebuffer>);
-  Nan::SetMethod(proto, "setDefaultFramebuffer", glSwitchCallWrap<SetDefaultFramebuffer>); */
-  Nan::SetMethod(proto, "getBoundFramebuffer", glCallWrap<GetBoundFramebuffer>);
-  Nan::SetMethod(proto, "getDefaultFramebuffer", GetDefaultFramebuffer);
-  Nan::SetMethod(proto, "setDefaultFramebuffer", glCallWrap<SetDefaultFramebuffer>);
-
-  Nan::SetMethod(proto, "setClearEnabled", SetClearEnabled);
-  Nan::SetMethod(proto, "loadSubTexture", LoadSubTexture);
-
   // OVR_multiview2
   Nan::SetMethod(proto, "framebufferTextureMultiviewOVR", glCallWrap<FramebufferTextureMultiviewOVR>);
   Nan::SetMethod(proto, "framebufferTextureMultisampleMultiviewOVR", glCallWrap<FramebufferTextureMultisampleMultiviewOVR>);
 
   setGlConstants(proto);
+  
+  // non-standard
+
+  Nan::SetMethod(proto, "getBoundFramebuffer", glCallWrap<GetBoundFramebuffer>);
+  Nan::SetMethod(proto, "getDefaultFramebuffer", GetDefaultFramebuffer);
+  Nan::SetMethod(proto, "setDefaultFramebuffer", glCallWrap<SetDefaultFramebuffer>);
+  Nan::SetMethod(proto, "setClearEnabled", SetClearEnabled);
+  Nan::SetMethod(proto, "loadSubTexture", LoadSubTexture);
 
   // ctor
   Local<Function> ctorFn = Nan::GetFunction(ctor).ToLocalChecked();
