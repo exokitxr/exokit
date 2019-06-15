@@ -2098,7 +2098,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   this.browser.load(url);
                 }); */
 
-                console.log('make browser');
+                // console.log('make browser');
 
                 const browser = new ElectronVm({
                   url,
