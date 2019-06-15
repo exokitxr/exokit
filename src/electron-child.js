@@ -82,26 +82,6 @@ const _consumeInput = () => {
         case 'initialize': {
           const {url, width: initialWidth, height: initialHeight, devicePixelRatio, inline, transparent} = e;
 
-          const _postResizeEvent = () => {
-            const {x, y, width, height} = mainWindow.getContentBounds();
-            const o = {
-              type: 'resize',
-              event: {
-                x,
-                y,
-                width,
-                height,
-              },
-            };
-            const s = JSON.stringify(o);
-            let m = new TextEncoder().encode(s);
-            m = new Buffer(m.buffer, m.byteOffset, m.byteLength);
-            const b = Uint32Array.from([TYPES.EVENT, m.length]);
-            const b2 = new Buffer(b.buffer, b.byteOffset, b.byteLength);
-            _parentPortWrite(b2);
-            _parentPortWrite(m);
-          };
-
           mainWindow = new BrowserWindow({
             width: initialWidth,
             height: initialHeight,
@@ -127,12 +107,8 @@ const _consumeInput = () => {
 
               loaded = true;
               _flushParentPort();
-
-              _postResizeEvent();
             });
           mainWindow.focusOnWebView();
-          mainWindow.on('resize', _postResizeEvent);
-          mainWindow.on('move', _postResizeEvent);
           mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
             const match = message.match(/^<postMessage>(.+)$/);
             if (match) {
