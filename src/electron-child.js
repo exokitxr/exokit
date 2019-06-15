@@ -87,6 +87,7 @@ const _consumeInput = () => {
             height: initialHeight,
             show: !inline,
             frame: false,
+            skipTaskbar: true,
             transparent,
             webPreferences: {
               offscreen: inline,
