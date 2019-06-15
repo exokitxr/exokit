@@ -118,6 +118,7 @@ const _consumeInput = () => {
             },
           });
           mainWindow.setMenu(null);
+          mainWindow.setAlwaysOnTop(true, 'floating');
           mainWindow.loadURL(url)
             .then(() => {
               const b = Uint32Array.from([TYPES.LOAD, 200]);
