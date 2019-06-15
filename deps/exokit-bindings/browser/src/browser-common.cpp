@@ -1,3 +1,5 @@
+#ifdef LUMIN
+
 #include <browser.h>
 
 #include <v8.h>
@@ -87,3 +89,5 @@ std::mutex mainThreadFnMutex;
 std::deque<std::pair<std::function<void()>, bool>> mainThreadFns;
 
 }
+
+#endif

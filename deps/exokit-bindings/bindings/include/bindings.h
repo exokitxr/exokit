@@ -16,15 +16,12 @@
 #include <AudioContext.h>
 #include <Video.h>
 #include <webrtc.h>
-// Stub out on Android for now until get libcef working on Android.
-#if !defined(ANDROID)
-  #include <browser.h>
-#endif
 #if _WIN32
 #include <leapmotion.h>
 #endif
 #if defined(LUMIN)
 #include <magicleap.h>
+#include <browser.h>
 #endif
 
 Local<Object> makeConsole();
@@ -40,7 +37,9 @@ Local<Object> makeCanvasGradient();
 Local<Object> makeCanvasPattern();
 Local<Object> makeAudio();
 Local<Object> makeVideo(Local<Value> imageDataCons);
+#ifdef LUMIN
 Local<Object> makeBrowser();
+#endif
 Local<Object> makeRtc();
 
 #endif

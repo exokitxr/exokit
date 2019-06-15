@@ -1,3 +1,5 @@
+#ifdef LUMIN
+
 #include <browser.h>
 
 #include <v8.h>
@@ -661,3 +663,5 @@ NAN_GETTER(Browser::TextureGetter) {
 }
 
 }
+
+#endif
