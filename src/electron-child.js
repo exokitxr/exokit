@@ -203,7 +203,9 @@ const _consumeInput = () => {
         }
         case 'resize': {
           const {width, height} = e;
+          mainWindow.setResizable(true);
           mainWindow.setSize(width, height);
+          mainWindow.setResizable(false);
           break;
         }
         case 'runJs': {
