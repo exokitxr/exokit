@@ -107,13 +107,6 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
           }));
           break;
         }
-        case 'focus': {
-          const {focused} = data;
-          if (!focused && window.document.pointerLockElement) {
-            window.document.exitPointerLock();
-          }
-          break;
-        }
         case 'windowResize': {
           const {width, height} = data;
           window.innerWidth = width;
@@ -132,6 +125,18 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
           window.dispatchEvent(new window.Event('resize'));
           break;
         } */
+        case 'focus': {
+          const {focused} = data;
+          if (focused) {
+            window.dispatchEvent(new window.Event('focus'));
+          } else {
+            window.dispatchEvent(new window.Event('blur'));
+            if (window.document.pointerLockElement) {
+              window.document.exitPointerLock();
+            }
+          }
+          break;
+        }
         case 'keydown': {
           let handled = false;
           if (data.keyCode === 27) { // ESC
