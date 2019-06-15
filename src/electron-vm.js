@@ -294,6 +294,14 @@ class ElectronVm extends EventEmitter {
     });
   }
 
+  setPosition(x, y) {
+    this.runAsync({
+      method: 'setPosition',
+      x,
+      y,
+    });
+  }
+
   sendInputEvent(event) {
     this.runAsync({
       method: 'sendInputEvent',

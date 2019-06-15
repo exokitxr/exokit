@@ -212,6 +212,11 @@ const _consumeInput = () => {
           mainWindow.webContents.executeJavaScript(e.jsString);
           break;
         }
+        case 'setPosition': {
+          const {x, y} = e;
+          mainWindow.setPosition(x, y);
+          break;
+        }
         case 'postMessage': {
           mainWindow.webContents.executeJavaScript(`window.dispatchEvent(new MessageEvent('message', {data: ${JSON.stringify(e.message)}}));`);
           break;
