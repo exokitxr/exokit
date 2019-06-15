@@ -259,13 +259,13 @@ NAN_METHOD(GetScreenSize) {
 void APIENTRY windowPosCB(NATIVEwindow *window, int xpos, int ypos) {
   QueueEvent(window, [=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
     Local<Object> evt = Nan::New<Object>();
-    evt->Set(JS_STR("type"),JS_STR("window_pos"));
-    evt->Set(JS_STR("xpos"),JS_INT(xpos));
-    evt->Set(JS_STR("ypos"),JS_INT(ypos));
+    evt->Set(JS_STR("type"),JS_STR("move"));
+    evt->Set(JS_STR("x"),JS_INT(xpos));
+    evt->Set(JS_STR("y"),JS_INT(ypos));
     // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
     Local<Value> argv[] = {
-      JS_STR("window_pos"), // event name
+      JS_STR("move"), // event name
       evt,
     };
     eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
