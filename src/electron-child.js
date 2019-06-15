@@ -106,8 +106,8 @@ const _consumeInput = () => {
             width: initialWidth,
             height: initialHeight,
             show: !inline,
-            // frame: false,
-            // transparent,
+            frame: false,
+            transparent,
             webPreferences: {
               offscreen: inline,
               webSecurity: false,
