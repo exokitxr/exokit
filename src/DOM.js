@@ -2307,13 +2307,13 @@ class HTMLIFrameElement extends HTMLSrcableElement {
     }
   }
   get inline() {
-    return this.getAttribute('inline') === '';
+    return this.getAttribute('inline') !== 'false';
   }
   set inline(inline) {
     if (inline) {
-      this.setAttribute('inline', '');
-    } else {
       this.removeAttribute('inline');
+    } else {
+      this.setAttribute('inline', 'false');
     }
   }
 
