@@ -52,6 +52,7 @@ std::vector<const char *> getDefaultArguments() {
 
 struct android_app *androidApp;
 JNIEnv *androidJniEnv;
+jobject androidJniContext;
 // std::vector<std::string> androidArgs;
 
 typedef struct AssetStatStruct {
@@ -148,6 +149,7 @@ void jniOnload(JavaVM *vm) {
   }
 
   androidJniEnv = env;
+  androidJniContext = context;
   __android_log_print(ANDROID_LOG_INFO, "exokit", "Got JNI Env %lx", (unsigned long)androidJniEnv);
 
   {
