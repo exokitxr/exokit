@@ -1199,10 +1199,6 @@ WebGLRenderingContext::WebGLRenderingContext() :
   defaultFramebuffer(0),
   clearEnabled(true),
   dirty(false),
-  /* flipY(false),
-  premultiplyAlpha(true),
-  packAlignment(4),
-  unpackAlignment(4), */
   activeTexture(GL_TEXTURE0)
   {}
 

@@ -439,10 +439,6 @@ public:
   GlObjectCache objectCache;
   bool clearEnabled;
   bool dirty;
-  // bool flipY;
-  // bool premultiplyAlpha;
-  // GLint packAlignment;
-  // GLint unpackAlignment;
   GLuint activeTexture;
   std::map<GLenum, GLuint> vertexArrayBindings;
   std::map<GLenum, GLuint> framebufferBindings;
