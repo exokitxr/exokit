@@ -12,15 +12,18 @@ public class ExokitWebView extends WebView
 {
     private Surface _webViewSurface;
 
-    public ExokitWebView(Context context, int colorTex) {
+    public ExokitWebView(Context context, int width, int height, int colorTex, String url) {
       super(context);
 
+      loadUrl(url);
+
       SurfaceTexture surfaceTexture = new SurfaceTexture(colorTex);
+      surfaceTexture.setDefaultBufferSize(width, height);
       _webViewSurface = new Surface(surfaceTexture);
     }
 
-    public static ExokitWebView make(Activity activity, Context context, int colorTex) {
-      ExokitWebView webView = new ExokitWebView(context, colorTex);
+    public static ExokitWebView make(Activity activity, Context context, int width, int height, int colorTex, String url) {
+      ExokitWebView webView = new ExokitWebView(context, width, height, colorTex, url);
 
       activity.addContentView(webView, new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT));
 
