@@ -19,6 +19,9 @@
 #if _WIN32
 #include <leapmotion.h>
 #endif
+#if defined(ANDROID) && !defined(LUMIN)
+#include <browser-android.h>
+#endif
 #if defined(LUMIN)
 #include <magicleap.h>
 #include <browser.h>

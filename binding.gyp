@@ -558,7 +558,7 @@
             '<!@(ls -1 deps/exokit-bindings/util/src/*.cc)',
             '<!@(ls -1 deps/exokit-bindings/console/src/*.cc)',
             '<!@(ls -1 deps/exokit-bindings/cache/src/*.cc)',
-            # '<!@(ls -1 deps/exokit-bindings/browser/src/*.cpp)',
+            '<!@(ls -1 deps/exokit-bindings/browser/src/browser-android.cpp)',
             '<!@(ls -1 deps/exokit-bindings/canvas/src/*.cpp)',
             '<!@(ls -1 deps/exokit-bindings/nanosvg/src/*.cpp)',
             '<!@(ls -1 deps/exokit-bindings/canvascontext/src/*.cc)',
