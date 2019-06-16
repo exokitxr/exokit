@@ -53,6 +53,7 @@
     "he": "^1.1.1",
     "history": "^4.9.0",
     "hterm-repl": "0.0.10",
+    "keycode": "^2.2.0",
     "leapmotion": "0.0.4",
     "libnode.a": "0.0.12",
     "libnode.a-android": "0.0.2",
@@ -62,10 +63,7 @@
     "nan": "^2.14.0",
     "native-audio-deps": "0.0.65",
     "native-browser-deps": "0.0.16",
-    "native-browser-deps-linux": "0.0.8",
-    "native-browser-deps-macos": "0.0.1",
     "native-browser-deps-magicleap": "0.0.5",
-    "native-browser-deps-windows": "0.0.1",
     "native-canvas-deps": "0.0.53",
     "native-graphics-deps": "0.0.22",
     "native-oculus-deps": "0.0.2",
@@ -85,6 +83,9 @@
     "window-selector": "0.0.7",
     "window-xhr": "0.0.32",
     "ws": "^6.2.0"
+  },
+  "optionalDependencies": {
+    "electron": "^5.0.3"
   },
   "devDependencies": {
     "chai": "^4.1.2",

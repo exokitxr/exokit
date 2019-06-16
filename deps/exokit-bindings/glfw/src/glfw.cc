@@ -259,13 +259,13 @@ NAN_METHOD(GetScreenSize) {
 void APIENTRY windowPosCB(NATIVEwindow *window, int xpos, int ypos) {
   QueueEvent(window, [=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
     Local<Object> evt = Nan::New<Object>();
-    evt->Set(JS_STR("type"),JS_STR("window_pos"));
-    evt->Set(JS_STR("xpos"),JS_INT(xpos));
-    evt->Set(JS_STR("ypos"),JS_INT(ypos));
+    evt->Set(JS_STR("type"),JS_STR("move"));
+    evt->Set(JS_STR("x"),JS_INT(xpos));
+    evt->Set(JS_STR("y"),JS_INT(ypos));
     // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
     Local<Value> argv[] = {
-      JS_STR("window_pos"), // event name
+      JS_STR("move"), // event name
       evt,
     };
     eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
@@ -275,7 +275,7 @@ void APIENTRY windowPosCB(NATIVEwindow *window, int xpos, int ypos) {
 void APIENTRY windowSizeCB(NATIVEwindow *window, int w, int h) {
   QueueEvent(window, [=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
     Local<Object> evt = Nan::New<Object>();
-    evt->Set(JS_STR("type"),JS_STR("resize"));
+    evt->Set(JS_STR("type"),JS_STR("windowResize"));
     evt->Set(JS_STR("width"),JS_INT(w));
     evt->Set(JS_STR("height"),JS_INT(h));
     // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
@@ -291,7 +291,7 @@ void APIENTRY windowSizeCB(NATIVEwindow *window, int w, int h) {
 void APIENTRY windowFramebufferSizeCB(NATIVEwindow *window, int w, int h) {
   QueueEvent(window, [=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
     Local<Object> evt = Nan::New<Object>();
-    evt->Set(JS_STR("type"),JS_STR("framebuffer_resize"));
+    evt->Set(JS_STR("type"),JS_STR("framebufferResize"));
     evt->Set(JS_STR("width"),JS_INT(w));
     evt->Set(JS_STR("height"),JS_INT(h));
     // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
@@ -363,30 +363,45 @@ void APIENTRY windowRefreshCB(NATIVEwindow *window) {
   });
 }
 
-void APIENTRY windowIconifyCB(NATIVEwindow *window, int iconified) {
+void APIENTRY windowFocusCB(NATIVEwindow *window, int focused) {
   QueueEvent(window, [=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
     Local<Object> evt = Nan::New<Object>();
-    evt->Set(JS_STR("type"),JS_STR("iconified"));
-    evt->Set(JS_STR("iconified"),JS_BOOL(iconified));
+    evt->Set(JS_STR("type"),JS_STR("focus"));
+    evt->Set(JS_STR("focused"),JS_BOOL((bool)focused));
     // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
     Local<Value> argv[] = {
-      JS_STR("iconified"), // event name
+      JS_STR("focus"), // event name
       evt,
     };
     eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
   });
 }
 
-void APIENTRY windowFocusCB(NATIVEwindow *window, int focused) {
+void APIENTRY windowMaximizeCB(NATIVEwindow *window, int maximized) {
   QueueEvent(window, [=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
     Local<Object> evt = Nan::New<Object>();
-    evt->Set(JS_STR("type"),JS_STR("focused"));
-    evt->Set(JS_STR("focused"),JS_BOOL(focused));
+    evt->Set(JS_STR("type"),JS_STR("maximize"));
+    evt->Set(JS_STR("maximized"),JS_BOOL((bool)maximized));
     // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
 
     Local<Value> argv[] = {
-      JS_STR("focus"), // event name
+      JS_STR("maximize"), // event name
+      evt,
+    };
+    eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
+  });
+}
+
+void APIENTRY windowIconifyCB(NATIVEwindow *window, int iconified) {
+  QueueEvent(window, [=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
+    Local<Object> evt = Nan::New<Object>();
+    evt->Set(JS_STR("type"),JS_STR("minimize"));
+    evt->Set(JS_STR("minimized"),JS_BOOL((bool)iconified));
+    // evt->Set(JS_STR("windowHandle"), pointerToArray(window));
+
+    Local<Value> argv[] = {
+      JS_STR("minimize"), // event name
       evt,
     };
     eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
@@ -1036,6 +1051,12 @@ NAN_METHOD(SetVisibility) {
   });
 }
 
+NAN_METHOD(SetWindowFocus) {
+  NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+
+  glfwFocusWindow(window);
+}
+
 NAN_METHOD(IsVisible) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   bool visible = glfwGetWindowAttrib(window, GLFW_VISIBLE);
@@ -1139,6 +1160,7 @@ NATIVEwindow *CreateWindowHandle(unsigned int width, unsigned int height, bool i
       glfwSetWindowCloseCallback(windowHandle, windowCloseCB);
       glfwSetWindowRefreshCallback(windowHandle, windowRefreshCB);
       glfwSetWindowFocusCallback(windowHandle, windowFocusCB);
+      glfwSetWindowMaximizeCallback(windowHandle, windowMaximizeCB);
       glfwSetWindowIconifyCallback(windowHandle, windowIconifyCB);
       glfwSetFramebufferSizeCallback(windowHandle, windowFramebufferSizeCB);
       glfwSetDropCallback(windowHandle, windowDropCB);
@@ -1682,6 +1704,7 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "setWindowSize", glfw::SetWindowSize);
   Nan::SetMethod(target, "setWindowPos", glfw::SetWindowPos);
   Nan::SetMethod(target, "getWindowPos", glfw::GetWindowPos);
+  Nan::SetMethod(target, "setWindowFocus", glfw::SetWindowFocus);
   Nan::SetMethod(target, "getFramebufferSize", glfw::GetFramebufferSize);
   Nan::SetMethod(target, "getDevicePixelRatio", glfw::GetDevicePixelRatio);
   Nan::SetMethod(target, "iconifyWindow", glfw::IconifyWindow);

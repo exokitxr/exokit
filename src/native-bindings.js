@@ -96,11 +96,15 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
     gl.setDefaultVao(vao);
     nativeWindow.setEventHandler(windowHandle, (type, data) => {
       switch (type) {
-        case 'focus': {
-          const {focused} = data;
-          if (!focused && window.document.pointerLockElement) {
-            window.document.exitPointerLock();
-          }
+        case 'move': {
+          const {x, y} = data;
+
+          window.dispatchEvent(new window.CustomEvent('move', {
+            detail: {
+              x,
+              y,
+            },
+          }));
           break;
         }
         case 'windowResize': {
@@ -121,6 +125,26 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
           window.dispatchEvent(new window.Event('resize'));
           break;
         } */
+        case 'focus': {
+          const {focused} = data;
+          if (focused) {
+            window.dispatchEvent(new window.Event('focus'));
+          } else {
+            window.dispatchEvent(new window.Event('blur'));
+            if (window.document.pointerLockElement) {
+              window.document.exitPointerLock();
+            }
+          }
+          break;
+        }
+        case 'maximize': {
+          window.dispatchEvent(new window.Event(data.maximized ? 'maximize' : 'restore'));
+          break;
+        }
+        case 'minimize': {
+          window.dispatchEvent(new window.Event(data.minimized ? 'minimize' : 'restore'));
+          break;
+        }
         case 'keydown': {
           let handled = false;
           if (data.keyCode === 27) { // ESC

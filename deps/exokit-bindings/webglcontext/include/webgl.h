@@ -353,14 +353,14 @@ public:
   static NAN_GETTER(DrawingBufferWidthGetter);
   static NAN_GETTER(DrawingBufferHeightGetter);
 
+  static NAN_METHOD(FramebufferTextureMultiviewOVR);
+  static NAN_METHOD(FramebufferTextureMultisampleMultiviewOVR);
+
   static NAN_METHOD(GetBoundFramebuffer);
   static NAN_METHOD(GetDefaultFramebuffer);
   static NAN_METHOD(SetDefaultFramebuffer);
-
   static NAN_METHOD(SetClearEnabled);
-
-  static NAN_METHOD(FramebufferTextureMultiviewOVR);
-  static NAN_METHOD(FramebufferTextureMultisampleMultiviewOVR);
+  static NAN_METHOD(LoadSubTexture);
 
   void SetVertexArrayBinding(GLuint vao) {
     vertexArrayBindings[GL_VERTEX_SHADER] = vao;
@@ -422,6 +422,16 @@ public:
     return programBindings.find(GL_VERTEX_SHADER) != programBindings.end();
   }
 
+  void SetPixelStoreiBinding(GLenum pname, GLint param) {
+    pixelStoreiBindings[pname] = param;
+  }
+  GLuint GetPixelStoreiBinding(GLenum pname) {
+    return pixelStoreiBindings[pname];
+  }
+  bool HasPixelStoreiBinding(GLenum pname) {
+    return pixelStoreiBindings.find(pname) != pixelStoreiBindings.end();
+  }
+
   bool live;
   NATIVEwindow *windowHandle;
   GLuint defaultVao;
@@ -429,10 +439,6 @@ public:
   GlObjectCache objectCache;
   bool clearEnabled;
   bool dirty;
-  bool flipY;
-  bool premultiplyAlpha;
-  GLint packAlignment;
-  GLint unpackAlignment;
   GLuint activeTexture;
   std::map<GLenum, GLuint> vertexArrayBindings;
   std::map<GLenum, GLuint> framebufferBindings;
@@ -440,6 +446,7 @@ public:
   std::map<GLenum, GLuint> bufferBindings;
   std::map<std::pair<GLenum, GLenum>, GLuint> textureBindings;
   std::map<GLenum, GLuint> programBindings;
+  std::map<GLenum, GLint> pixelStoreiBindings;
   ViewportState viewportState;
   ColorMaskState colorMaskState;
   std::map<GlKey, void *> keys;

@@ -138,7 +138,7 @@ Local<Object> makeAudio() {
   return scope.Escape(exports);
 }
 
-#if !defined(ANDROID)
+#ifdef LUMIN
 Local<Object> makeBrowser() {
   Isolate *isolate = Isolate::GetCurrent();
 

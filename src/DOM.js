@@ -23,6 +23,7 @@ const GlobalContext = require('./GlobalContext');
 const symbols = require('./symbols');
 const {_elementGetter, _elementSetter, _normalizeUrl} = require('./utils');
 const {XRRigidTransform} = require('./XR');
+const {ElectronVm} = require('./electron-vm.js');
 
 he.encode.options.useNamedReferences = true;
 
@@ -2062,77 +2063,101 @@ class HTMLIFrameElement extends HTMLSrcableElement {
         this.ownerDocument.resources.addResource((onprogress, cb) => {
           (async () => {
             if (this.d === 2) {
-              if (!this.browser) {
-                const context = GlobalContext.contexts.find(context => context.canvas.ownerDocument === this.ownerDocument);
-                if (context) {
-                  this.browser = new GlobalContext.nativeBrowser.Browser(
-                    context,
-                    this.width||context.canvas.ownerDocument.defaultView.innerWidth,
-                    this.height||context.canvas.ownerDocument.defaultView.innerHeight,
-                    this.devicePixelRatio||1,
-                    path.join(this.ownerDocument.defaultView[symbols.optionsSymbol].dataPath, '.cef'),
-                    path.join(__dirname, '..', 'node_modules', 'native-browser-deps-macos', 'lib3', 'macos', 'Chromium Embedded Framework.framework')
-                  );
+              if (this.browser) {
+                this.browser.destroy();
+                this.browser = null;
+              }
+
+              const context = GlobalContext.contexts.find(context => context.canvas.ownerDocument === this.ownerDocument);
+              if (context) {
+                /* this.browser = new GlobalContext.nativeBrowser.Browser(
+                  context,
+                  this.width||context.canvas.ownerDocument.defaultView.innerWidth,
+                  this.height||context.canvas.ownerDocument.defaultView.innerHeight,
+                  this.devicePixelRatio||1,
+                  path.join(this.ownerDocument.defaultView[symbols.optionsSymbol].dataPath, '.cef'),
+                  path.join(__dirname, '..', 'node_modules', 'native-browser-deps-macos', 'lib3', 'macos', 'Chromium Embedded Framework.framework')
+                );
+                
+                this.browser.onconsole = (message, source, line) => {
+                  if (this.onconsole) {
+                    this.onconsole(message, source, line);
+                  } else {
+                    console.log(`${source}:${line}: ${message}`);
+                  }
+                };
+
+                const loadedUrl = await new Promise((accept, reject) => {
+                  this.browser.onloadend = _url => {
+                    accept(_url);
+                  };
+                  this.browser.onloaderror = (errorCode, errorString, failedUrl) => {
+                    reject(new Error(`failed to load page (${errorCode}) ${failedUrl}: ${errorString}`));
+                  };
                   
-                  this.browser.onconsole = (message, source, line) => {
-                    if (this.onconsole) {
-                      this.onconsole(message, source, line);
-                    } else {
-                      console.log(`${source}:${line}: ${message}`);
-                    }
-                  };
+                  this.browser.load(url);
+                }); */
 
-                  const loadedUrl = await new Promise((accept, reject) => {
-                    this.browser.onloadend = _url => {
-                      accept(_url);
-                    };
-                    this.browser.onloaderror = (errorCode, errorString, failedUrl) => {
-                      reject(new Error(`failed to load page (${errorCode}) ${failedUrl}: ${errorString}`));
-                    };
-                    
-                    this.browser.load(url);
-                  });
+                // console.log('make browser');
 
-                  let onmessage = null;
-                  const self = this;
-                  this.contentWindow = {
-                    _emit() {},
-                    location: {
-                      href: loadedUrl
-                    },
-                    postMessage(m) {
-                      self.browser.postMessage(JSON.stringify(m));
-                    },
-                    get onmessage() {
-                      return onmessage;
-                    },
-                    set onmessage(newOnmessage) {
-                      onmessage = newOnmessage;
-                      self.browser.onmessage = newOnmessage ? m => {
-                        newOnmessage(new MessageEvent('messaage', {
-                          data: JSON.parse(m),
-                        }));
-                      } : null;
-                    },
-                    /* destroy() {
-                      self.browser.destroy();
-                      self.browser = null;
-                    }, */
-                  };
-                  this.contentDocument = {
-                    _emit() {},
-                  };
+                const browser = new ElectronVm({
+                  url,
+                  width: this.width || context.canvas.ownerDocument.defaultView.innerWidth,
+                  height: this.height || context.canvas.ownerDocument.defaultView.innerHeight,
+                  devicePixelRatio: context.canvas.ownerDocument.defaultView.devicePixelRatio,
+                  inline: this.inline,
+                  transparent: !this.inline,
+                  context,
+                });
+                this.browser = browser;
 
+                let onmessage = null;
+                const self = this;
+                this.contentWindow = {
+                  _emit() {},
+                  location: {
+                    href: url,
+                  },
+                  postMessage: browser.postMessage.bind(browser),
+                  get onmessage() {
+                    return onmessage;
+                  },
+                  set onmessage(newOnmessage) {
+                    onmessage = newOnmessage;
+                  },
+                  addEventListener() {
+                    return browser.on.apply(browser, arguments);
+                  },
+                  removeEventListener() {
+                    return browser.removeListener.apply(browser, arguments);
+                  },
+                  /* destroy() {
+                    self.browser.destroy();
+                    self.browser = null;
+                  }, */
+                };
+                this.contentDocument = {
+                  _emit() {},
+                };
+
+                browser.on('message', data => {
+                  if (onmessage) {
+                    const e = new MessageEvent('messaage', {
+                      data,
+                    });
+                    onmessage(e);
+                  }
+                });
+
+                browser.once('load', () => {
                   this.readyState = 'complete';
-                  
+
                   this.dispatchEvent(new Event('load', {target: this}));
 
                   cb();
-                } else {
-                  throw new Error('iframe owner document does not have a WebGL context');
-                }
+                });
               } else {
-                this.browser.load(url);
+                throw new Error('iframe owner document does not have a WebGL context');
               }
             } else {
               const res = await this.ownerDocument.defaultView.fetch(url);
@@ -2228,6 +2253,10 @@ class HTMLIFrameElement extends HTMLSrcableElement {
         if (this.browser) {
           this.browser.scale = this.devicePixelRatio;
         }
+      } else if (name === 'inline') {
+        if (this.browser) {
+          this.browser.inline = this.inline;
+        }
       }
     });
     /* this.on('destroy', () => {
@@ -2276,6 +2305,32 @@ class HTMLIFrameElement extends HTMLSrcableElement {
     if (typeof value === 'number' && isFinite(value)) {
       this.setAttribute('d', value);
     }
+  }
+  get inline() {
+    return this.getAttribute('inline') !== 'false';
+  }
+  set inline(inline) {
+    if (inline) {
+      this.removeAttribute('inline');
+    } else {
+      this.setAttribute('inline', 'false');
+    }
+  }
+
+  setPosition(x, y) {
+    this.browser && this.browser.setPosition && this.browser.setPosition(x, y);
+  }
+  setSize(width, height) {
+    this.browser && this.browser.setSize && this.browser.setSize(width, height);
+  }
+  show() {
+    this.browser && this.browser.show && this.browser.show();
+  }
+  hide() {
+    this.browser && this.browser.hide && this.browser.hide();
+  }
+  setAlwaysOnTop(value) {
+    this.browser && this.browser.setAlwaysOnTop && this.browser.setAlwaysOnTop(value);
   }
 
   get texture() {
@@ -2396,6 +2451,24 @@ class HTMLCanvasElement extends HTMLElement {
   set height(value) {
     if (typeof value === 'number' && isFinite(value)) {
       this.setAttribute('height', value);
+    }
+  }
+  setPosition(x, y) {
+    if (this._context && (this._context.constructor.name === 'WebGLRenderingContext' || this._context.constructor.name === 'WebGL2RenderingContext')) {
+      const windowHandle = this._context.getWindowHandle();
+      bindings.nativeWindow.setWindowPos(windowHandle, x, y);
+    }
+  }
+  setSize(width, height) {
+    if (this._context && (this._context.constructor.name === 'WebGLRenderingContext' || this._context.constructor.name === 'WebGL2RenderingContext')) {
+      const windowHandle = this._context.getWindowHandle();
+      bindings.nativeWindow.setWindowSize(windowHandle, width, height);
+    }
+  }
+  setFocus() {
+    if (this._context && (this._context.constructor.name === 'WebGLRenderingContext' || this._context.constructor.name === 'WebGL2RenderingContext')) {
+      const windowHandle = this._context.getWindowHandle();
+      bindings.nativeWindow.setWindowFocus(windowHandle);
     }
   }
 
