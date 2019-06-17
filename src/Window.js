@@ -554,7 +554,9 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
   window.setTimeout = (setTimeout => (fn, timeout, args) => {
     fn = fn.bind.apply(fn, [window].concat(args));
     let id = _findFreeSlot(timeouts);
-    id++;
+    if (id === 0) {
+      id++;
+    }
     timeouts[id] = fn;
     fn[symbols.timeoutSymbol] = setTimeout(fn, timeout, args);
     return id;
@@ -572,7 +574,9 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
     }
     fn = fn.bind.apply(fn, [window].concat(args));
     let id = _findFreeSlot(intervals);
-    id++;
+    if (id === 0) {
+      id++;
+    }
     intervals[id] = fn;
     fn[symbols.timeoutSymbol] = setInterval(fn, interval, args);
     return id;
