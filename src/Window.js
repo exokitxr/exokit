@@ -403,9 +403,9 @@ class DataTransferItem {
 }
 
 let rafIndex = 0;
-const _findFreeSlot = a => {
+const _findFreeSlot = (a, startIndex = 0) => {
   let i;
-  for (i = 0; i < a.length; i++) {
+  for (i = startIndex; i < a.length; i++) {
     if (a[i] === null) {
       break;
     }
@@ -553,8 +553,7 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
   window.alert = console.log;
   window.setTimeout = (setTimeout => (fn, timeout, args) => {
     fn = fn.bind.apply(fn, [window].concat(args));
-    let id = _findFreeSlot(timeouts);
-    id++;
+    const id = _findFreeSlot(timeouts, 1);
     timeouts[id] = fn;
     fn[symbols.timeoutSymbol] = setTimeout(fn, timeout, args);
     return id;
@@ -571,8 +570,7 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
       interval = 10;
     }
     fn = fn.bind.apply(fn, [window].concat(args));
-    let id = _findFreeSlot(intervals);
-    id++;
+    const id = _findFreeSlot(intervals, 1);
     intervals[id] = fn;
     fn[symbols.timeoutSymbol] = setInterval(fn, interval, args);
     return id;
@@ -1006,8 +1004,8 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
 
   const rafCbs = [];
   window[symbols.rafCbsSymbol] = rafCbs;
-  const timeouts = [];
-  const intervals = [];
+  const timeouts = [null];
+  const intervals = [null];
   const localCbs = [];
   const prevSyncs = [];
   const _cacheLocalCbs = cbs => {
