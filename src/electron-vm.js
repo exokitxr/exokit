@@ -6,7 +6,8 @@ const child_process = require('child_process');
 const os = require('os');
 const {TextEncoder} = require('util');
 
-const electron = require('electron');
+const bindings = require('./native-bindings');
+const electron = !bindings.nativePlatform ? require('electron') : null;
 const keycode = require('keycode');
 
 const GlobalContext = require('./GlobalContext');
