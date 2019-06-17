@@ -1010,8 +1010,8 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
 
   const rafCbs = [];
   window[symbols.rafCbsSymbol] = rafCbs;
-  const timeouts = [];
-  const intervals = [];
+  const timeouts = [null];
+  const intervals = [null];
   const localCbs = [];
   const prevSyncs = [];
   const _cacheLocalCbs = cbs => {
