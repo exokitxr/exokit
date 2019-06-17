@@ -58,7 +58,7 @@ void InitExports(Local<Object> exports) {
   Local<Value> video = makeVideo(imageData);
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeVideo"), video);
 
-#ifdef LUMIN
+#if defined(ANDROID) || defined(LUMIN)
   Local<Value> browser = makeBrowser();
   exports->Set(v8::String::NewFromUtf8(Isolate::GetCurrent(), "nativeBrowser"), browser);
 #endif

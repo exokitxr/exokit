@@ -40,7 +40,7 @@ Local<Object> makeCanvasGradient();
 Local<Object> makeCanvasPattern();
 Local<Object> makeAudio();
 Local<Object> makeVideo(Local<Value> imageDataCons);
-#ifdef LUMIN
+#if defined(ANDROID) || defined(LUMIN)
 Local<Object> makeBrowser();
 #endif
 Local<Object> makeRtc();
