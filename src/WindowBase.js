@@ -93,6 +93,7 @@ class Worker extends EventTarget {
       initModule: path.join(__dirname, 'Worker.js'),
       args: {
         src,
+        args,
         xrState: args.xrState,
       },
     });
