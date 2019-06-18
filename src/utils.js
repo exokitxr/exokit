@@ -11,7 +11,7 @@ function _getBaseUrl(u, currentBaseUrl = '') {
   let result;
   if (/^file:\/\//.test(u)) {
     result = u;
-  } else if (/^data:/.test(u)) {
+  } else if (/^(?:data|blob):/.test(u)) {
     result = currentBaseUrl;
   } else {
     const parsedUrl = url.parse(u);
