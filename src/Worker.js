@@ -59,6 +59,6 @@ process.on('unhandledRejection', _handleError);
 vm.runInThisContext(exp, {
   filename: /^https?:/.test(filename) ? filename : 'data-url://',
 }); */
-process.nexTick(() => { // importScripts will block, so make sure we are done setup first
+process.nextTick(() => { // importScripts will block, so make sure we are done setup first
   importScripts(filename);
 });
