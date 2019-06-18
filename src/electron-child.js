@@ -25,6 +25,8 @@ const TYPES = (() => {
 })();
 
 let mainWindow = null;
+let resizeTimeout = null;
+let resizeTimeoutFn = null;
 let cachedBitmap = Buffer.alloc(0);
 let textureWidth = 0;
 let textureHeight = 0;
@@ -203,10 +205,21 @@ const _consumeInput = () => {
           break;
         }
         case 'resize': {
-          const {width, height} = e;
-          mainWindow.setResizable(true);
-          mainWindow.setSize(width, height);
-          mainWindow.setResizable(false);
+          if (resizeTimeout) {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = null;
+            resizeTimeoutFn = null;
+          }
+          resizeTimeoutFn = () => {
+            const {width, height} = e;
+            mainWindow.setResizable(true);
+            mainWindow.setSize(width, height);
+            mainWindow.setResizable(false);
+
+            resizeTimeout = null;
+            resizeTimeoutFn = null;
+          };
+          resizeTimeout = setTimeout(resizeTimeoutFn, 10);
           break;
         }
         case 'runJs': {
