@@ -1171,6 +1171,9 @@ NATIVEwindow *CreateWindowHandle(unsigned int width, unsigned int height, bool i
       glfwSetCursorPosCallback(windowHandle, cursorPosCB);
       glfwSetCursorEnterCallback(windowHandle, cursorEnterCB);
       glfwSetScrollCallback(windowHandle, scrollCB);
+
+      // size setting
+      glfwSetWindowSizeLimits(windowHandle, 1, 1, GLFW_DONT_CARE, GLFW_DONT_CARE);
     } else {
       /* Problem: glewInit failed, something is seriously wrong. */
       exerr << "Can't init GLEW (glew error " << (const char *)glewGetErrorString(err) << ")" << std::endl;
