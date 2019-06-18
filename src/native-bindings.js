@@ -145,6 +145,10 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
           window.dispatchEvent(new window.Event(data.minimized ? 'minimize' : 'restore'));
           break;
         }
+        case 'mouseenter': {
+          window.dispatchEvent(new window.Event(data.entered ? 'mouseenter' : 'mouseleave'));
+          break;
+        }
         case 'keydown': {
           let handled = false;
           if (data.keyCode === 27) { // ESC
