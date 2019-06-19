@@ -1729,7 +1729,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
       }
     });
     this.on('attached', () => {
-      if (this.src && this.isRunnable() && this.isConnected && !this.readyState) {
+      if (this.getAttribute('src') && this.isRunnable() && this.isConnected && !this.readyState) {
         const async = this.getAttribute('async');
         _loadRun(async !== null ? async !== 'false' : true);
       }
