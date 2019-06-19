@@ -1729,7 +1729,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
       }
     });
     this.on('attached', () => {
-      if (this.src && this.isRunnable() && this.isConnected && !this.readyState) {
+      if (this.getAttribute('src') && this.isRunnable() && this.isConnected && !this.readyState) {
         const async = this.getAttribute('async');
         _loadRun(async !== null ? async !== 'false' : true);
       }
@@ -1742,7 +1742,8 @@ class HTMLScriptElement extends HTMLLoadableElement {
   }
 
   get src() {
-    return this.getAttribute('src') || '';
+    const src = this.getAttribute('src');
+    return src ? _normalizeUrl(src, this.ownerDocument.defaultView[symbols.optionsSymbol].baseUrl) : '';
   }
   set src(src) {
     src = src + '';
