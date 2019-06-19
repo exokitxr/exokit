@@ -1742,7 +1742,12 @@ class HTMLScriptElement extends HTMLLoadableElement {
   }
 
   get src() {
-    return this.getAttribute('src') || '';
+    const src = this.getAttribute('src');
+    if (src) {
+      return _normalizeUrl(src, this.ownerDocument.defaultView[symbols.optionsSymbol].baseUrl);
+    } else {
+      return '';
+    }
   }
   set src(src) {
     src = src + '';
