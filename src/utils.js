@@ -21,7 +21,7 @@ function _getBaseUrl(u, currentBaseUrl = '') {
       pathname: parsedUrl.pathname.replace(/\/[^\/]*\.[^\/]*$/, '') || '/',
     });
   }
-  if (!/\/$/.test(result) && !/\./.test(result.match(/\/([^\/]*)$/)[1])) {
+  if (!/\/$/.test(result)) {
     result += '/';
   }
   return result;
