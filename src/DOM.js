@@ -2078,7 +2078,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   const height = this.height || context.canvas.ownerDocument.defaultView.innerHeight;
 
                   if (bindings.nativePlatform === 'android') {
-                    return new bindings.nativeBrowser(context, width, height, url);
+                    return new bindings.nativeBrowser.Browser(context, width, height, url);
                   } else {
                     return new ElectronVm({
                       url,
