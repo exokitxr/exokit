@@ -3,7 +3,11 @@ const fs = require('fs');
 const url = require('url');
 const {URL} = url;
 const vm = require('vm');
-const {workerData: {args}} = require('worker_threads');
+const {
+  workerData: {
+    args,
+  },
+} = require('worker_threads');
 
 const {createImageBitmap} = require('./DOM.js');
 const fetch = require('window-fetch');
@@ -11,16 +15,7 @@ const {XMLHttpRequest} = require('window-xhr');
 const WebSocket = require('ws/lib/websocket');
 const {FileReader} = require('./File.js');
 
-const {src} = args;
-const baseUrl = (src => {
-  if (/^(?:https?|file):/.test(src)) {
-    const u = new URL(src);
-    u.pathname = path.dirname(u.pathname) + '/';
-    return u.href;
-  } else {
-    return 'file://' + process.cwd();
-  }
-})(src);
+const {src, baseUrl} = args;
 setBaseUrl(baseUrl);
 const _normalizeUrl = src => {
   if (!/^(?:file|data|blob):/.test(src)) {

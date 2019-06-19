@@ -1,6 +1,15 @@
 const {EventEmitter} = require('events');
 const url = require('url');
-const utils = require('./utils');
+
+const {
+  workerData: {
+    args: {
+      options: {
+        baseUrl,
+      },
+    },
+  },
+} = require('worker_threads');
 
 class Location extends EventEmitter {
   constructor(u) {
@@ -12,7 +21,7 @@ class Location extends EventEmitter {
   get href() { return this._url.href || ''; }
   set href(href) {
     const oldUrl = this._url;
-    const newUrl = new url.URL(href, utils._getBaseUrl(this._url.href));
+    const newUrl = new url.URL(href, baseUrl);
     this._url = newUrl;
     if (
       newUrl.origin !== oldUrl.origin ||

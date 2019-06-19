@@ -2,26 +2,29 @@ const path = require('path');
 const fs = require('fs');
 const url = require('url');
 
-const symbols = require('./symbols');
 const mkdirp = require('mkdirp');
 const parseIntStrict = require('parse-int');
 
-function _getBaseUrl(u) {
-  let baseUrl;
-  if (/^file:\/\/(.*)$/.test(u)) {
-    baseUrl = u;
+const symbols = require('./symbols');
+
+function _getBaseUrl(u, currentBaseUrl = '') {
+  let result;
+  if (/^file:\/\//.test(u)) {
+    result = u;
+  } else if (/^(?:data|blob):/.test(u)) {
+    result = currentBaseUrl;
   } else {
     const parsedUrl = url.parse(u);
-    baseUrl = url.format({
+    result = url.format({
       protocol: parsedUrl.protocol || 'http:',
       host: parsedUrl.host || '127.0.0.1',
       pathname: parsedUrl.pathname.replace(/\/[^\/]*\.[^\/]*$/, '') || '/',
     });
   }
-  if (!/\/$/.test(baseUrl) && !/\./.test(baseUrl.match(/\/([^\/]*)$/)[1])) {
-    baseUrl = baseUrl + '/';
+  if (!/\/$/.test(result)) {
+    result += '/';
   }
-  return baseUrl;
+  return result;
 }
 module.exports._getBaseUrl = _getBaseUrl;
 
