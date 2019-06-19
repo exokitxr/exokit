@@ -131,11 +131,7 @@ void Image::Load(Local<ArrayBuffer> arrayBuffer, size_t byteOffset, size_t byteL
       uv_async_send(&this->threadAsyncHandle);
     }).detach();
   } else {
-    Local<String> arg0 = Nan::New<String>("already loading").ToLocalChecked();
-    Local<Value> argv[] = {
-      arg0,
-    };
-    cbFn->Call(Isolate::GetCurrent()->GetCurrentContext(), Nan::Null(), sizeof(argv)/sizeof(argv[0]), argv);
+    Nan::ThrowError("already loading");
   }
 }
 
