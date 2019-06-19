@@ -1743,11 +1743,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
 
   get src() {
     const src = this.getAttribute('src');
-    if (src) {
-      return _normalizeUrl(src, this.ownerDocument.defaultView[symbols.optionsSymbol].baseUrl);
-    } else {
-      return '';
-    }
+    return src ? _normalizeUrl(src, this.ownerDocument.defaultView[symbols.optionsSymbol].baseUrl) : '';
   }
   set src(src) {
     src = src + '';
