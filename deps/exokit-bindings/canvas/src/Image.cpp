@@ -15,14 +15,12 @@ using namespace canvas;
 
 static NSVGrasterizer *imageSvgRasterizer = nsvgCreateRasterizer();
 
-bool
-Image::decode(const unsigned char * buffer, size_t size) {
+bool Image::decode(const unsigned char * buffer, size_t size) {
   data = loadFromMemory(buffer, size);
   return (bool)data;
 }
 
-std::unique_ptr<ImageData>
-Image::loadFromMemory(const unsigned char * buffer, size_t size) {
+std::unique_ptr<ImageData> Image::loadFromMemory(const unsigned char * buffer, size_t size) {
   int w, h, channels;
   unsigned char *imgDataBuffer = stbi_load_from_memory(buffer, size, &w, &h, &channels, 4);
   if (imgDataBuffer) {
