@@ -31,7 +31,7 @@ Browser::Browser(WebGLRenderingContext *gl, int width, int height, const std::st
     jclass exokitWebViewClass = env->FindClass("com/webmr/ExokitWebView");
     // jmethodID constructor = env->GetMethodID(exokitWebViewClass, "<init>", "(Landroid/content/Context;)V");
     // jobject exokitWebView = env->NewObject(exokitWebViewClass, constructor, context);
-    jmethodID makeFnId = env->GetStaticMethodID(exokitWebViewClass, "make", "(Landroid/app/Activity;Landroid/content/Context;I;I;I;Ljava/lang/String;)Lcom/webmr/ExokitWebView;");
+    jmethodID makeFnId = env->GetStaticMethodID(exokitWebViewClass, "make", "(Landroid/app/Activity;Landroid/content/Context;IIILjava/lang/String;)Lcom/webmr/exokit/ExokitWebView;");
     jint colorTex = 0;
     jstring url = env->NewStringUTF(urlString.c_str());
     jobject exokitWebView = env->CallStaticObjectMethod(exokitWebViewClass, makeFnId, androidApp->activity->clazz, context, width, height, colorTex, url);
