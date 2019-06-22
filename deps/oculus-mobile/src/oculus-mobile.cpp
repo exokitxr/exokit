@@ -16,8 +16,6 @@ Nan::Persistent<v8::Function> oculusMobileContextConstructor;
 Nan::Persistent<v8::Object> oculusMobileContext;
 
 NAN_METHOD(OculusMobile_Init) {
-  std::cout << "OculusMobile_Init 1" << std::endl;
-
   Local<Array> windowHandleArray = Local<Array>::Cast(info[0]);
 
   if (oculusMobileContextConstructor.IsEmpty()) {
@@ -39,8 +37,6 @@ NAN_METHOD(OculusMobile_Init) {
 }
 
 NAN_METHOD(OculusMobile_Shutdown) {
-  std::cout << "OculusMobile_Shutdown" << std::endl;
-
   Local<Object> oculusMobileContextObj = Nan::New(oculusMobileContext);
   OculusMobileContext *omc = ObjectWrap::Unwrap<OculusMobileContext>(oculusMobileContextObj);
   omc->Destroy();
@@ -50,13 +46,10 @@ NAN_METHOD(OculusMobile_Shutdown) {
 }
 
 NAN_METHOD(OculusMobile_IsHmdPresent) {
-  std::cout << "OculusMobile_IsHmdPresent" << std::endl;
-
   info.GetReturnValue().Set(Nan::New<Boolean>(true));
 }
 
 NAN_METHOD(OculusMobile_GetDeviceType) {
-  std::cout << "OculusMobile_GetDeviceType" << std::endl;
   const char* id;
   Local<String> result;
   int deviceType = vrapi_GetSystemPropertyInt(&java, VRAPI_SYS_PROP_DEVICE_TYPE);
