@@ -103,9 +103,9 @@ function init() {
     console.log(source + ':' + line + ': ' + message);
   };
   document.body.appendChild(iframe);
-  setTimeout(() => {
+  /* setTimeout(() => {
     iframe.src = 'http://text.com/';
-  }, 2000);
+  }, 2000); */
 
   planeMesh = (() => {
     const geometry = new THREE.PlaneBufferGeometry(planeWorldWidth, planeWorldHeight)
