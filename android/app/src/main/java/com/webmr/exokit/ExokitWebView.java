@@ -126,9 +126,13 @@ public class ExokitWebView extends WebView
     }
 
     public void draw() {
-      draw(null);
+      try {
+        draw(null);
 
-      _webViewSurfaceTexture.updateTexImage();
+        _webViewSurfaceTexture.updateTexImage();
+      } catch (Exception err) {
+        err.printStackTrace();
+      }
     }
 
 }
