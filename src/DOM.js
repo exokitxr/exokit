@@ -2072,8 +2072,6 @@ class HTMLIFrameElement extends HTMLSrcableElement {
               const context = GlobalContext.contexts.find(context => context.canvas.ownerDocument === this.ownerDocument);
               if (context) {
                 const browser = (() => {
-                  // console.log('make browser');
-
                   const width = this.width || context.canvas.ownerDocument.defaultView.innerWidth;
                   const height = this.height || context.canvas.ownerDocument.defaultView.innerHeight;
 
@@ -2090,8 +2088,8 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                       context,
                     });
                   }
-                  this.browser = browser;
                 })();
+                this.browser = browser;
 
                 let onmessage = null;
                 const self = this;
