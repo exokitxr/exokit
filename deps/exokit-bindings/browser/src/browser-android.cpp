@@ -143,10 +143,10 @@ Browser::Browser(GLuint externalTex, GLuint tex, int width, int height, const st
   glGenBuffers(1, &uvBuffer);
   glBindBuffer(GL_ARRAY_BUFFER, uvBuffer);
   static const float uvs[] = {
-    0.0f, 0.0f,
-    1.0f, 0.0f,
     0.0f, 1.0f,
     1.0f, 1.0f,
+    0.0f, 0.0f,
+    1.0f, 0.0f,
   };
   glBufferData(GL_ARRAY_BUFFER, sizeof(uvs), uvs, GL_STATIC_DRAW);
   glEnableVertexAttribArray(uvLocation);
