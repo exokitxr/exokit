@@ -264,8 +264,6 @@ function init() {
   });
 }
 
-init();
-
 let direction = true;
 const controllerCoords = [
   [0, 0],
@@ -274,22 +272,26 @@ const controllerCoords = [
 const lastPresseds = [false, false];
 function animate(timestamp, frame) {
   try {
-  if (direction) {
-    planeMesh.rotation.y += 0.001;
+  if (planeMesh) {
+    if (direction) {
+      planeMesh.rotation.y += 0.001;
 
-    if (planeMesh.rotation.y >= Math.PI/8) {
-      direction = false;
-    }
-  } else {
-    planeMesh.rotation.y -= 0.001;
+      if (planeMesh.rotation.y >= Math.PI/8) {
+        direction = false;
+      }
+    } else {
+      planeMesh.rotation.y -= 0.001;
 
-    if (planeMesh.rotation.y <= -Math.PI/8) {
-      direction = true;
+      if (planeMesh.rotation.y <= -Math.PI/8) {
+        direction = true;
+      }
     }
   }
 
-  for (let i = 0; i < controllerMeshes.length; i++) {
-    controllerMeshes[i].visible = false;
+  if (controllerMeshes) {
+    for (let i = 0; i < controllerMeshes.length; i++) {
+      controllerMeshes[i].visible = false;
+    }
   }
 
   if (session) {
@@ -358,7 +360,7 @@ function animate(timestamp, frame) {
     }
   }
 
-  if (focused) {
+  if (planeMesh && focused) {
     const gamepads = navigator.getGamepads();
     for (let i = 0; i < gamepads.length; i++) {
       if (i === 1) { // XXX only use right controller
@@ -419,6 +421,8 @@ if (navigator.xr) {
     }).catch(err => Promise.resolve(null));
 
     if (session) {
+      init();
+
       session.onselect = e => {
         console.log('select'); // XXX
       };
@@ -451,6 +455,8 @@ if (navigator.xr) {
     });
 } else {
   renderer.setAnimationLoop(animate);
+
+  init();
 }
 
     </script>
