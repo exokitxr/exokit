@@ -611,6 +611,11 @@ const _startTopRenderLoop = () => {
       nativeBindings.nativeWindow.pollEvents();
     }, 1000/60); // XXX make this run at the native frame rate
   }
+  if (nativeBindings.nativeBrowser && nativeBindings.nativeBrowser.Browser && nativeBindings.nativeBrowser.Browser.pollEvents) {
+    setInterval(() => {
+      nativeBindings.nativeBrowser.Browser.pollEvents();
+    }, 1000/60);
+  }
 
   const _waitGetPoses = () => {
     if (topVrPresentState.hmdType === 'oculus') {
