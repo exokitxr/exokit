@@ -389,7 +389,6 @@ function animate(timestamp, frame) {
         } else if (lastPressed && !pressed) {
           const [x, y] = controllerCoords[i];
           iframe.sendMouseUp(x, y, 0);
-          iframe.sendClick(x, y, 0);
         }
         lastPresseds[i] = pressed;
 
