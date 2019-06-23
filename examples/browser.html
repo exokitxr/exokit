@@ -388,6 +388,21 @@ function animate(timestamp, frame) {
         }
         lastPresseds[i] = pressed;
 
+        const scrollSpeed = 30;
+        let dx = 0;
+        if (axes[0] < -0.5) {
+          dx = scrollSpeed;
+        } else if (axes[0] > 0.5) {
+          dx = -scrollSpeed;
+        }
+        let dy = 0;
+        if (axes[1] < -0.5) {
+          dy = -scrollSpeed;
+        } else if (axes[1] > 0.5) {
+          dy = scrollSpeed;
+        }
+        iframe.sendMouseWheel(0, 0, dx, dy);
+
         /* const padPressed = buttons[0].pressed;
         if (padPressed) {
           if (axes[0] > 0.5) {
