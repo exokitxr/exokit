@@ -33,7 +33,7 @@ void main() {\n\
 }\n\
 ";
 
-Browser::Browser(JNIEnv *env, jobject context, GLuint externalTex, GLuint tex, int width, int height, const std::string &urlString) :
+BrowserJava::BrowserJava(JNIEnv *env, jobject context, GLuint externalTex, GLuint tex, int width, int height, const std::string &urlString) :
   env(env),
   context(context),
   externalTex(externalTex),
@@ -190,57 +190,57 @@ Browser::Browser(JNIEnv *env, jobject context, GLuint externalTex, GLuint tex, i
     glBindTexture(GL_TEXTURE_EXTERNAL_OES, 0);
   });
 }
-Browser::~Browser() {
+BrowserJava::~BrowserJava() {
   glDeleteFramebuffers(1, &renderFbo);
   glDeleteVertexArrays(1, &renderVao);
   glDeleteProgram(renderProgram);
 }
 
-void Browser::KeyDown(int keyCode) {
+void BrowserJava::KeyDown(int keyCode) {
   QueueInMainThread([this, keyCode]() -> void {
     env->CallVoidMethod(exokitWebView, keyDownFnId, keyCode);
   });
 }
-void Browser::KeyUp(int keyCode) {
+void BrowserJava::KeyUp(int keyCode) {
   QueueInMainThread([this, keyCode]() -> void {
     env->CallVoidMethod(exokitWebView, keyUpFnId, keyCode);
   });
 }
-void Browser::KeyPress(int keyCode) {
+void BrowserJava::KeyPress(int keyCode) {
   QueueInMainThread([this, keyCode]() -> void {
     env->CallVoidMethod(exokitWebView, keyPressFnId, keyCode);
   });
 }
-void Browser::MouseDown(int x, int y, int button) {
+void BrowserJava::MouseDown(int x, int y, int button) {
   QueueInMainThread([this, x, y, button]() -> void {
     env->CallVoidMethod(exokitWebView, mouseDownFnId, x, y, button);
   });
 }
-void Browser::MouseUp(int x, int y, int button) {
+void BrowserJava::MouseUp(int x, int y, int button) {
   QueueInMainThread([this, x, y, button]() -> void {
     env->CallVoidMethod(exokitWebView, mouseUpFnId, x, y, button);
   });
 }
-void Browser::Click(int x, int y, int button) {
+void BrowserJava::Click(int x, int y, int button) {
   QueueInMainThread([this, x, y, button]() -> void {
     env->CallVoidMethod(exokitWebView, clickFnId, x, y, button);
   });
 }
-void Browser::MouseMove(int x, int y) {
+void BrowserJava::MouseMove(int x, int y) {
   QueueInMainThread([this, x, y]() -> void {
     env->CallVoidMethod(exokitWebView, mouseMoveFnId, x, y);
   });
 }
-void Browser::MouseWheel(int x, int y, int deltaX, int deltaY) {
+void BrowserJava::MouseWheel(int x, int y, int deltaX, int deltaY) {
   QueueInMainThread([this, x, y, deltaX, deltaY]() -> void {
     env->CallVoidMethod(exokitWebView, mouseWheelFnId, x, y, deltaX, deltaY);
   });
 }
 
-BrowserWrap::BrowserWrap(Browser *browser) : browser(browser) {}
-BrowserWrap::~BrowserWrap() {}
+Browser::Browser(BrowserJava *browser) : browser(browser) {}
+Browser::~Browser() {}
 
-NAN_METHOD(BrowserWrap::New) {
+NAN_METHOD(Browser::New) {
   if (
     info[0]->IsObject() &&
     info[1]->IsNumber() &&
@@ -277,81 +277,81 @@ NAN_METHOD(BrowserWrap::New) {
       glBindTexture( GL_TEXTURE_2D, 0 );
     }
 
-    Browser *browser;
+    BrowserJava *browserJava;
     RunInMainThread([&]() -> void {
-      browser = new Browser(androidJniEnv, androidJniContext, externalTex, tex, width, height, url);
+      browserJava = new BrowserJava(androidJniEnv, androidJniContext, externalTex, tex, width, height, url);
     });
-    BrowserWrap *browserWrap = new BrowserWrap(browser);
+    Browser *browser = new Browser(browserJava);
     Local<Object> browserObj = info.This();
-    browserWrap->Wrap(browserObj);
+    browser->Wrap(browserObj);
     Nan::SetAccessor(browserObj, JS_STR("texture"), TextureGetter);
 
     return info.GetReturnValue().Set(browserObj);
   } else {
-    return Nan::ThrowError("BrowserWrap::New: invalid arguments");
+    return Nan::ThrowError("Browser::New: invalid arguments");
   }
 }
 
-NAN_GETTER(BrowserWrap::TextureGetter) {
-  BrowserWrap *browserWrap = ObjectWrap::Unwrap<BrowserWrap>(info.This());
+NAN_GETTER(Browser::TextureGetter) {
+  Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
 
   Local<Object> textureObj = Nan::New<Object>();
-  textureObj->Set(JS_STR("id"), JS_INT(browserWrap->browser->tex));
+  textureObj->Set(JS_STR("id"), JS_INT(browser->browser->tex));
   info.GetReturnValue().Set(textureObj);
 }
 
-NAN_METHOD(BrowserWrap::KeyDown) {
-  BrowserWrap *browserWrap = ObjectWrap::Unwrap<BrowserWrap>(info.This());
+NAN_METHOD(Browser::KeyDown) {
+  Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
   int keyCode = TO_INT32(info[0]);
-  browserWrap->browser->KeyDown(keyCode);
+  browser->browser->KeyDown(keyCode);
 }
-NAN_METHOD(BrowserWrap::KeyUp) {
-  BrowserWrap *browserWrap = ObjectWrap::Unwrap<BrowserWrap>(info.This());
+NAN_METHOD(Browser::KeyUp) {
+  Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
   int keyCode = TO_INT32(info[0]);
-  browserWrap->browser->KeyUp(keyCode);
+  browser->browser->KeyUp(keyCode);
 }
-NAN_METHOD(BrowserWrap::KeyPress) {
-  BrowserWrap *browserWrap = ObjectWrap::Unwrap<BrowserWrap>(info.This());
+NAN_METHOD(Browser::KeyPress) {
+  Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
   int keyCode = TO_INT32(info[0]);
-  browserWrap->browser->KeyPress(keyCode);
+  browser->browser->KeyPress(keyCode);
 }
-NAN_METHOD(BrowserWrap::MouseDown) {
-  BrowserWrap *browserWrap = ObjectWrap::Unwrap<BrowserWrap>(info.This());
+NAN_METHOD(Browser::MouseDown) {
+  Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
   int x = TO_INT32(info[0]);
   int y = TO_INT32(info[1]);
   int button = TO_INT32(info[2]);
-  browserWrap->browser->MouseDown(x, y, button);
+  browser->browser->MouseDown(x, y, button);
 }
-NAN_METHOD(BrowserWrap::MouseUp) {
-  BrowserWrap *browserWrap = ObjectWrap::Unwrap<BrowserWrap>(info.This());
+NAN_METHOD(Browser::MouseUp) {
+  Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
   int x = TO_INT32(info[0]);
   int y = TO_INT32(info[1]);
   int button = TO_INT32(info[2]);
-  browserWrap->browser->MouseUp(x, y, button);
+  browser->browser->MouseUp(x, y, button);
 }
-NAN_METHOD(BrowserWrap::Click) {
-  BrowserWrap *browserWrap = ObjectWrap::Unwrap<BrowserWrap>(info.This());
+NAN_METHOD(Browser::Click) {
+  Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
   int x = TO_INT32(info[0]);
   int y = TO_INT32(info[1]);
   int button = TO_INT32(info[2]);
-  browserWrap->browser->Click(x, y, button);
+  browser->browser->Click(x, y, button);
 }
-NAN_METHOD(BrowserWrap::MouseMove) {
-  BrowserWrap *browserWrap = ObjectWrap::Unwrap<BrowserWrap>(info.This());
+NAN_METHOD(Browser::MouseMove) {
+  Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
   int x = TO_INT32(info[0]);
   int y = TO_INT32(info[1]);
-  browserWrap->browser->MouseMove(x, y);
+  browser->browser->MouseMove(x, y);
 }
-NAN_METHOD(BrowserWrap::MouseWheel) {
-  BrowserWrap *browserWrap = ObjectWrap::Unwrap<BrowserWrap>(info.This());
+NAN_METHOD(Browser::MouseWheel) {
+  Browser *browser = ObjectWrap::Unwrap<Browser>(info.This());
   int x = TO_INT32(info[0]);
   int y = TO_INT32(info[1]);
   int deltaX = TO_INT32(info[2]);
   int deltaY = TO_INT32(info[3]);
-  browserWrap->browser->MouseWheel(x, y, deltaX, deltaY);
+  browser->browser->MouseWheel(x, y, deltaX, deltaY);
 }
 
-Local<Object> BrowserWrap::Initialize(Isolate *isolate) {
+Local<Object> Browser::Initialize(Isolate *isolate) {
   Nan::EscapableHandleScope scope;
 
   // constructor

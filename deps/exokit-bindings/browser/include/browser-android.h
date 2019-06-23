@@ -18,10 +18,10 @@ using namespace node;
 
 namespace browser {
 
-class Browser {
+class BrowserJava {
 public:
-  Browser(JNIEnv *env, jobject context, GLuint externalTex, GLuint tex, int width, int height, const std::string &urlString);
-  ~Browser();
+  BrowserJava(JNIEnv *env, jobject context, GLuint externalTex, GLuint tex, int width, int height, const std::string &urlString);
+  ~BrowserJava();
 
   void KeyDown(int keyCode);
   void KeyUp(int keyCode);
@@ -57,10 +57,10 @@ public:
   GLuint positionLocation;
 };
 
-class BrowserWrap : public ObjectWrap {
+class Browser : public ObjectWrap {
 public:
-  BrowserWrap(Browser *browser);
-  ~BrowserWrap();
+  Browser(BrowserJava *browser);
+  ~Browser();
 
   static NAN_METHOD(New);
   static NAN_GETTER(TextureGetter);
@@ -75,7 +75,7 @@ public:
 
   static Local<Object> Initialize(Isolate *isolate);
 
-  Browser *browser;
+  BrowserJava *browser;
 };
 
 extern std::vector<std::function<void()>> mainThreadFns;

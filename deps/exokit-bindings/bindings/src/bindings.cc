@@ -146,7 +146,7 @@ Local<Object> makeBrowser() {
 
   Local<Object> exports = Nan::New<Object>();
 
-  exports->Set(JS_STR("Browser"), browser::BrowserWrap::Initialize(isolate));
+  exports->Set(JS_STR("Browser"), browser::Browser::Initialize(isolate));
 
   return scope.Escape(exports);
 }
