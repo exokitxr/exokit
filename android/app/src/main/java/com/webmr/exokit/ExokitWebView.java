@@ -196,8 +196,6 @@ public class ExokitWebView extends WebView
           long downTime = SystemClock.uptimeMillis();
           long eventTime = downTime; // SystemClock.uptimeMillis() + 100;
           int metaState = 0;
-          System.out.printf("mouse down x %s\n", x);
-          System.out.printf("mouse down y %s\n", y);
           MotionEvent motionEvent = MotionEvent.obtain(
             downTime,
             eventTime,
@@ -220,8 +218,6 @@ public class ExokitWebView extends WebView
           long downTime = SystemClock.uptimeMillis();
           long eventTime = downTime; // SystemClock.uptimeMillis() + 100;
           int metaState = 0;
-          System.out.printf("mouse up x %s\n", x);
-          System.out.printf("mouse up y %s\n", y);
           MotionEvent motionEvent = MotionEvent.obtain(
             downTime,
             eventTime,
@@ -258,7 +254,7 @@ public class ExokitWebView extends WebView
     }
 
     public void mouseMove(int x, int y) {
-      ExokitWebView webView = this;
+      /* ExokitWebView webView = this;
       _activity.runOnUiThread(new Runnable() {
         public void run() {
           webView.requestFocus();
@@ -266,9 +262,7 @@ public class ExokitWebView extends WebView
           long downTime = SystemClock.uptimeMillis();
           long eventTime = downTime; // SystemClock.uptimeMillis() + 100;
           int metaState = 0;
-          /* System.out.printf("mouse move disabled x %s\n", x);
-          System.out.printf("mouse move disabled y %s\n", y); */
-          /* MotionEvent motionEvent = MotionEvent.obtain(
+          MotionEvent motionEvent = MotionEvent.obtain(
             downTime,
             eventTime,
             MotionEvent.ACTION_HOVER_MOVE,
@@ -276,9 +270,9 @@ public class ExokitWebView extends WebView
             y,
             metaState
           );
-          webView.dispatchTouchEvent(motionEvent); */
+          webView.dispatchTouchEvent(motionEvent);
         }
-      });
+      }); */
     }
 
     public void mouseWheel(int x, int y, int deltaX, int deltaY) {
