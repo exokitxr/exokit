@@ -2314,7 +2314,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
 
   get texture() {
     if (this.d === 2) {
-      return this.browser && this.browser.texture;
+      return this.browser ? this.browser.texture : null;
     } else {
       return null;
     }
