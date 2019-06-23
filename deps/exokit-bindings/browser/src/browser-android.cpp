@@ -33,10 +33,12 @@ void main() {\n\
 }\n\
 ";
 
-Browser::Browser(GLuint externalTex, GLuint tex, int width, int height, const std::string &urlString) : externalTex(externalTex), tex(tex) {
-  JNIEnv *env = androidJniEnv;
-  jobject context = androidJniContext;
-
+Browser::Browser(JNIEnv *env, jobject context, GLuint externalTex, GLuint tex, int width, int height, const std::string &urlString) :
+  env(env),
+  context(context),
+  externalTex(externalTex),
+  tex(tex)
+{
   jobject nativeActivity = androidApp->activity->clazz;
   jclass acl = env->GetObjectClass(nativeActivity);
   jmethodID getClassLoader = env->GetMethodID(acl, "getClassLoader", "()Ljava/lang/ClassLoader;");
@@ -51,7 +53,17 @@ Browser::Browser(GLuint externalTex, GLuint tex, int width, int height, const st
   // jmethodID updateTexImageFnId = env->GetMethodID(exokitWebViewClass, "updateTexImage", "()V");
   jint externalTexInt = externalTex;
   jstring url = env->NewStringUTF(urlString.c_str());
-  jobject exokitWebView = env->CallStaticObjectMethod(exokitWebViewClass, makeFnId, androidApp->activity->clazz, context, width, height, externalTexInt, url);
+  exokitWebView = env->CallStaticObjectMethod(exokitWebViewClass, makeFnId, androidApp->activity->clazz, context, width, height, externalTexInt, url);
+
+  // runJsFnId = env->GetMethodID(exokitWebView, "runJs", "(Ljava/lang/String;)V");
+  keyDownFnId = env->GetMethodID(exokitWebViewClass, "keyDown", "(I)V");
+  keyUpFnId = env->GetMethodID(exokitWebViewClass, "keyUp", "(I)V");
+  keyPressFnId = env->GetMethodID(exokitWebViewClass, "keyPress", "(I)V");
+  mouseDownFnId = env->GetMethodID(exokitWebViewClass, "mouseDown", "(III)V");
+  mouseUpFnId = env->GetMethodID(exokitWebViewClass, "mouseUp", "(III)V");
+  clickFnId = env->GetMethodID(exokitWebViewClass, "click", "(III)V");
+  mouseMoveFnId = env->GetMethodID(exokitWebViewClass, "mouseMove", "(II)V");
+  mouseWheelFnId = env->GetMethodID(exokitWebViewClass, "mouseWheel", "(II)V");
 
   glGenFramebuffers(1, &renderFbo);
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, renderFbo);
@@ -158,9 +170,9 @@ Browser::Browser(GLuint externalTex, GLuint tex, int width, int height, const st
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-  persistentMainThreadFns.push_back([this, env, exokitWebView, drawFnId, /* updateTexImageFnId, */externalTex, tex, width, height, externalTexLocation]() -> void {
-    env->CallVoidMethod(exokitWebView, drawFnId);
-    // env->CallVoidMethod(exokitWebView, updateTexImageFnId);
+  persistentMainThreadFns.push_back([this, drawFnId, /* updateTexImageFnId, */externalTex, tex, width, height, externalTexLocation]() -> void {
+    this->env->CallVoidMethod(this->exokitWebView, drawFnId);
+    // this->env->CallVoidMethod(this->exokitWebView, updateTexImageFnId);
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, this->renderFbo);
 
@@ -176,13 +188,53 @@ Browser::Browser(GLuint externalTex, GLuint tex, int width, int height, const st
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
 
     glBindTexture(GL_TEXTURE_EXTERNAL_OES, 0);
-
   });
 }
 Browser::~Browser() {
   glDeleteFramebuffers(1, &renderFbo);
   glDeleteVertexArrays(1, &renderVao);
   glDeleteProgram(renderProgram);
+}
+
+void Browser::KeyDown(int keyCode) {
+  QueueInMainThread([this, keyCode]() -> void {
+    env->CallVoidMethod(exokitWebView, keyDownFnId, keyCode);
+  });
+}
+void Browser::KeyUp(int keyCode) {
+  QueueInMainThread([this, keyCode]() -> void {
+    env->CallVoidMethod(exokitWebView, keyUpFnId, keyCode);
+  });
+}
+void Browser::KeyPress(int keyCode) {
+  QueueInMainThread([this, keyCode]() -> void {
+    env->CallVoidMethod(exokitWebView, keyPressFnId, keyCode);
+  });
+}
+void Browser::MouseDown(int x, int y, int button) {
+  QueueInMainThread([this, x, y, button]() -> void {
+    env->CallVoidMethod(exokitWebView, mouseDownFnId, x, y, button);
+  });
+}
+void Browser::MouseUp(int x, int y, int button) {
+  QueueInMainThread([this, x, y, button]() -> void {
+    env->CallVoidMethod(exokitWebView, mouseUpFnId, x, y, button);
+  });
+}
+void Browser::Click(int x, int y, int button) {
+  QueueInMainThread([this, x, y, button]() -> void {
+    env->CallVoidMethod(exokitWebView, clickFnId, x, y, button);
+  });
+}
+void Browser::MouseMove(int x, int y) {
+  QueueInMainThread([this, x, y]() -> void {
+    env->CallVoidMethod(exokitWebView, mouseMoveFnId, x, y);
+  });
+}
+void Browser::MouseWheel(int x, int y, int deltaX, int deltaY) {
+  QueueInMainThread([this, x, y, deltaX, deltaY]() -> void {
+    env->CallVoidMethod(exokitWebView, mouseWheelFnId, x, y, deltaX, deltaY);
+  });
 }
 
 BrowserWrap::BrowserWrap(Browser *browser) : browser(browser) {}
@@ -227,7 +279,7 @@ NAN_METHOD(BrowserWrap::New) {
 
     Browser *browser;
     RunInMainThread([&]() -> void {
-      browser = new Browser(externalTex, tex, width, height, url);
+      browser = new Browser(androidJniEnv, androidJniContext, externalTex, tex, width, height, url);
     });
     BrowserWrap *browserWrap = new BrowserWrap(browser);
     Local<Object> browserObj = info.This();
@@ -248,6 +300,57 @@ NAN_GETTER(BrowserWrap::TextureGetter) {
   info.GetReturnValue().Set(textureObj);
 }
 
+NAN_METHOD(BrowserWrap::KeyDown) {
+  BrowserWrap *browserWrap = ObjectWrap::Unwrap<BrowserWrap>(info.This());
+  int keyCode = TO_INT32(info[0]);
+  browserWrap->browser->KeyDown(keyCode);
+}
+NAN_METHOD(BrowserWrap::KeyUp) {
+  BrowserWrap *browserWrap = ObjectWrap::Unwrap<BrowserWrap>(info.This());
+  int keyCode = TO_INT32(info[0]);
+  browserWrap->browser->KeyUp(keyCode);
+}
+NAN_METHOD(BrowserWrap::KeyPress) {
+  BrowserWrap *browserWrap = ObjectWrap::Unwrap<BrowserWrap>(info.This());
+  int keyCode = TO_INT32(info[0]);
+  browserWrap->browser->KeyPress(keyCode);
+}
+NAN_METHOD(BrowserWrap::MouseDown) {
+  BrowserWrap *browserWrap = ObjectWrap::Unwrap<BrowserWrap>(info.This());
+  int x = TO_INT32(info[0]);
+  int y = TO_INT32(info[1]);
+  int button = TO_INT32(info[2]);
+  browserWrap->browser->MouseDown(x, y, button);
+}
+NAN_METHOD(BrowserWrap::MouseUp) {
+  BrowserWrap *browserWrap = ObjectWrap::Unwrap<BrowserWrap>(info.This());
+  int x = TO_INT32(info[0]);
+  int y = TO_INT32(info[1]);
+  int button = TO_INT32(info[2]);
+  browserWrap->browser->MouseUp(x, y, button);
+}
+NAN_METHOD(BrowserWrap::Click) {
+  BrowserWrap *browserWrap = ObjectWrap::Unwrap<BrowserWrap>(info.This());
+  int x = TO_INT32(info[0]);
+  int y = TO_INT32(info[1]);
+  int button = TO_INT32(info[2]);
+  browserWrap->browser->Click(x, y, button);
+}
+NAN_METHOD(BrowserWrap::MouseMove) {
+  BrowserWrap *browserWrap = ObjectWrap::Unwrap<BrowserWrap>(info.This());
+  int x = TO_INT32(info[0]);
+  int y = TO_INT32(info[1]);
+  browserWrap->browser->MouseMove(x, y);
+}
+NAN_METHOD(BrowserWrap::MouseWheel) {
+  BrowserWrap *browserWrap = ObjectWrap::Unwrap<BrowserWrap>(info.This());
+  int x = TO_INT32(info[0]);
+  int y = TO_INT32(info[1]);
+  int deltaX = TO_INT32(info[2]);
+  int deltaY = TO_INT32(info[3]);
+  browserWrap->browser->MouseWheel(x, y, deltaX, deltaY);
+}
+
 Local<Object> BrowserWrap::Initialize(Isolate *isolate) {
   Nan::EscapableHandleScope scope;
 
@@ -258,7 +361,14 @@ Local<Object> BrowserWrap::Initialize(Isolate *isolate) {
 
   // prototype
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
-  // Nan::SetMethod(proto, "resize", Resize);
+  Nan::SetMethod(proto, "sendKeyDown", KeyDown);
+  Nan::SetMethod(proto, "sendKeyUp", KeyUp);
+  Nan::SetMethod(proto, "sendKeyPress", KeyPress);
+  Nan::SetMethod(proto, "sendMouseDown", MouseDown);
+  Nan::SetMethod(proto, "sendMouseUp", MouseUp);
+  Nan::SetMethod(proto, "sendClick", Click);
+  Nan::SetMethod(proto, "sendMouseMove", MouseMove);
+  Nan::SetMethod(proto, "sendMouseWheel", MouseWheel);
 
   Local<Function> ctorFn = Nan::GetFunction(ctor).ToLocalChecked();
   Nan::SetMethod(ctorFn, "pollEvents", PollEvents);
@@ -266,24 +376,39 @@ Local<Object> BrowserWrap::Initialize(Isolate *isolate) {
   return scope.Escape(ctorFn);
 }
 
+std::mutex mainThreadFnMutex;
 std::vector<std::function<void()>> mainThreadFns;
 std::vector<std::function<void()>> persistentMainThreadFns;
 void RunInMainThread(std::function<void()> fn) {
   uv_sem_t sem;
   uv_sem_init(&sem, 0);
 
-  mainThreadFns.push_back([&]() -> void {
-    fn();
+  {
+    std::lock_guard<mutex> lock(mainThreadFnMutex);
 
-    uv_sem_post(&sem);
-  });
+    mainThreadFns.push_back([&]() -> void {
+      fn();
+
+      uv_sem_post(&sem);
+    });
+  }
 
   uv_sem_wait(&sem);
   uv_sem_destroy(&sem);
 }
+void QueueInMainThread(std::function<void()> fn) {
+  std::lock_guard<mutex> lock(mainThreadFnMutex);
+
+  mainThreadFns.push_back(fn);
+}
 NAN_METHOD(PollEvents) {
-  std::vector<std::function<void()>> localMainThreadFns = std::move(mainThreadFns);
-  mainThreadFns.clear();
+  std::vector<std::function<void()>> localMainThreadFns;
+  {
+    std::lock_guard<mutex> lock(mainThreadFnMutex);
+
+    localMainThreadFns = std::move(mainThreadFns);
+    mainThreadFns.clear();
+  }
   for (auto iter = localMainThreadFns.begin(); iter != localMainThreadFns.end(); iter++) {
     std::function<void()> &fn = *iter;
     fn();
