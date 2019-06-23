@@ -3,7 +3,7 @@ package com.webmr.exokit;
 import java.text.MessageFormat;
 import android.app.Activity;
 import android.content.Context;
-import android.widget.RelativeLayout;
+// import android.widget.RelativeLayout;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.webkit.WebChromeClient;
@@ -88,7 +88,7 @@ public class ExokitWebView extends WebView
           try {
             ExokitWebView webView = new ExokitWebView(activity, context, width, height, colorTex, webViewSurface, webViewSurfaceTexture, url);
 
-            activity.addContentView(webView, new RelativeLayout.LayoutParams(width, height));
+            activity.addContentView(webView, new ViewGroup.LayoutParams(width, height));
 
             result = webView;
 
