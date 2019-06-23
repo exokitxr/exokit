@@ -63,7 +63,7 @@ Browser::Browser(JNIEnv *env, jobject context, GLuint externalTex, GLuint tex, i
   mouseUpFnId = env->GetMethodID(exokitWebViewClass, "mouseUp", "(III)V");
   clickFnId = env->GetMethodID(exokitWebViewClass, "click", "(III)V");
   mouseMoveFnId = env->GetMethodID(exokitWebViewClass, "mouseMove", "(II)V");
-  mouseWheelFnId = env->GetMethodID(exokitWebViewClass, "mouseWheel", "(II)V");
+  mouseWheelFnId = env->GetMethodID(exokitWebViewClass, "mouseWheel", "(IIII)V");
 
   glGenFramebuffers(1, &renderFbo);
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, renderFbo);
