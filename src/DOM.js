@@ -2120,21 +2120,26 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   _emit() {},
                 };
 
-                browser.on && browser.on('message', data => { // XXX
-                  if (onmessage) {
-                    const e = new MessageEvent('messaage', {
-                      data,
-                    });
-                    onmessage(e);
-                  }
-                });
-                browser.once && browser.once('load', () => { // XXX
-                    this.readyState = 'complete';
+                const _load = () => {
+                  this.readyState = 'complete';
 
-                    this.dispatchEvent(new Event('load', {target: this}));
+                  this.dispatchEvent(new Event('load', {target: this}));
 
-                    cb();
+                  cb();
+                };
+                if (browser.on) {
+                  browser.on('message', data => {
+                    if (onmessage) {
+                      const e = new MessageEvent('messaage', {
+                        data,
+                      });
+                      onmessage(e);
+                    }
                   });
+                  browser.once('load', _load);
+                } else {
+                  process.nextTick(_load); // XXX make this an actual event
+                }
               } else {
                 throw new Error('iframe owner document does not have a WebGL context');
               }
