@@ -48,7 +48,12 @@ public class ExokitWebView extends WebView
             // System.out.printf("webview onpagefinished 1 %s\n", String.valueOf(view.isEnabled()));
           }
         });
-        setWebChromeClient(new WebChromeClient() { });
+        setWebChromeClient(new WebChromeClient() {
+          public boolean onConsoleMessage(ConsoleMessage consoleMessage) {
+            System.out.println(consoleMessage.message());
+            return true;
+          }
+        });
         /* setLayoutParams( new ViewGroup.LayoutParams( width, height ) );
         forceLayout(); */
 
