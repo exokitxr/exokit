@@ -7,6 +7,7 @@ import android.widget.RelativeLayout;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.webkit.WebChromeClient;
+import android.webkit.ConsoleMessage;
 import android.webkit.ValueCallback;
 import android.graphics.SurfaceTexture;
 import android.graphics.Canvas;
@@ -15,6 +16,9 @@ import android.view.Surface;
 import android.view.ViewGroup;
 import android.os.Looper;
 import android.os.Handler;
+import android.os.SystemClock;
+import android.view.KeyEvent;
+import android.view.InputDevice;
 import android.view.MotionEvent;
 
 public class ExokitWebView extends WebView
