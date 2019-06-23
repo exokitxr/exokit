@@ -64,6 +64,8 @@ public class ExokitWebView extends WebView
         // layout(0, 0, width, height);
         // setWillNotDraw(false);
         getSettings().setJavaScriptEnabled(true);
+        setNestedScrollingEnabled(false);
+        setOverScrollMode(OVER_SCROLL_NEVER);
         loadUrl(url);
         // setLayoutParams(new ViewGroup.LayoutParams(width, height));
         /* ExokitWebView webView = this;
