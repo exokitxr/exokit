@@ -351,6 +351,9 @@ class ElectronVm extends EventEmitter {
       clickCount: 1,
     });
   }
+  sendClick(x, y, button) {
+    // nothing
+  }
   sendMouseWheel(x, y, deltaX, deltaY) {
     this.sendInputEvent({
       type: 'mouseWheel',

@@ -58,6 +58,9 @@ android {
     main {
       assets.srcDirs = ['assets']
       jniLibs.srcDirs = ['assets/node_modules/native-oculus-mobile-deps/lib/android']
+      java {
+          srcDirs 'src'
+      }
     }
   }
 }

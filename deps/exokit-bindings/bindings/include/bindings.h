@@ -19,6 +19,9 @@
 #if _WIN32
 #include <leapmotion.h>
 #endif
+#if defined(ANDROID) && !defined(LUMIN)
+#include <browser-android.h>
+#endif
 #if defined(LUMIN)
 #include <magicleap.h>
 #include <browser.h>
@@ -37,7 +40,7 @@ Local<Object> makeCanvasGradient();
 Local<Object> makeCanvasPattern();
 Local<Object> makeAudio();
 Local<Object> makeVideo(Local<Value> imageDataCons);
-#ifdef LUMIN
+#if defined(ANDROID) || defined(LUMIN)
 Local<Object> makeBrowser();
 #endif
 Local<Object> makeRtc();

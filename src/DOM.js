@@ -2071,45 +2071,24 @@ class HTMLIFrameElement extends HTMLSrcableElement {
 
               const context = GlobalContext.contexts.find(context => context.canvas.ownerDocument === this.ownerDocument);
               if (context) {
-                /* this.browser = new GlobalContext.nativeBrowser.Browser(
-                  context,
-                  this.width||context.canvas.ownerDocument.defaultView.innerWidth,
-                  this.height||context.canvas.ownerDocument.defaultView.innerHeight,
-                  this.devicePixelRatio||1,
-                  path.join(this.ownerDocument.defaultView[symbols.optionsSymbol].dataPath, '.cef'),
-                  path.join(__dirname, '..', 'node_modules', 'native-browser-deps-macos', 'lib3', 'macos', 'Chromium Embedded Framework.framework')
-                );
-                
-                this.browser.onconsole = (message, source, line) => {
-                  if (this.onconsole) {
-                    this.onconsole(message, source, line);
+                const browser = (() => {
+                  const width = this.width || context.canvas.ownerDocument.defaultView.innerWidth;
+                  const height = this.height || context.canvas.ownerDocument.defaultView.innerHeight;
+
+                  if (bindings.nativePlatform === 'android') {
+                    return new bindings.nativeBrowser.Browser(context, width, height, url);
                   } else {
-                    console.log(`${source}:${line}: ${message}`);
+                    return new ElectronVm({
+                      url,
+                      width,
+                      height,
+                      devicePixelRatio: context.canvas.ownerDocument.defaultView.devicePixelRatio,
+                      inline: this.inline,
+                      transparent: !this.inline,
+                      context,
+                    });
                   }
-                };
-
-                const loadedUrl = await new Promise((accept, reject) => {
-                  this.browser.onloadend = _url => {
-                    accept(_url);
-                  };
-                  this.browser.onloaderror = (errorCode, errorString, failedUrl) => {
-                    reject(new Error(`failed to load page (${errorCode}) ${failedUrl}: ${errorString}`));
-                  };
-                  
-                  this.browser.load(url);
-                }); */
-
-                // console.log('make browser');
-
-                const browser = new ElectronVm({
-                  url,
-                  width: this.width || context.canvas.ownerDocument.defaultView.innerWidth,
-                  height: this.height || context.canvas.ownerDocument.defaultView.innerHeight,
-                  devicePixelRatio: context.canvas.ownerDocument.defaultView.devicePixelRatio,
-                  inline: this.inline,
-                  transparent: !this.inline,
-                  context,
-                });
+                })();
                 this.browser = browser;
 
                 let onmessage = null;
@@ -2119,7 +2098,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   location: {
                     href: url,
                   },
-                  postMessage: browser.postMessage.bind(browser),
+                  postMessage: browser.postMessage && browser.postMessage.bind(browser), // XXX
                   get onmessage() {
                     return onmessage;
                   },
@@ -2127,10 +2106,10 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                     onmessage = newOnmessage;
                   },
                   addEventListener() {
-                    return browser.on.apply(browser, arguments);
+                    browser.on && browser.on.apply(browser, arguments); // XXX
                   },
                   removeEventListener() {
-                    return browser.removeListener.apply(browser, arguments);
+                    browser.removeListener && browser.removeListener.apply(browser, arguments); // XXX
                   },
                   /* destroy() {
                     self.browser.destroy();
@@ -2141,22 +2120,26 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   _emit() {},
                 };
 
-                browser.on('message', data => {
-                  if (onmessage) {
-                    const e = new MessageEvent('messaage', {
-                      data,
-                    });
-                    onmessage(e);
-                  }
-                });
-
-                browser.once('load', () => {
+                const _load = () => {
                   this.readyState = 'complete';
 
                   this.dispatchEvent(new Event('load', {target: this}));
 
                   cb();
-                });
+                };
+                if (browser.on) {
+                  browser.on('message', data => {
+                    if (onmessage) {
+                      const e = new MessageEvent('messaage', {
+                        data,
+                      });
+                      onmessage(e);
+                    }
+                  });
+                  browser.once('load', _load);
+                } else {
+                  process.nextTick(_load); // XXX make this an actual event
+                }
               } else {
                 throw new Error('iframe owner document does not have a WebGL context');
               }
@@ -2336,7 +2319,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
 
   get texture() {
     if (this.d === 2) {
-      return this.browser && this.browser.texture;
+      return this.browser ? this.browser.texture : null;
     } else {
       return null;
     }
@@ -2389,6 +2372,9 @@ class HTMLIFrameElement extends HTMLSrcableElement {
   sendMouseDown(x, y, button) {
     this.browser && this.browser.sendMouseDown(x, y, button);
   }
+  sendClick(x, y, button) {
+    this.browser && this.browser.sendClick(x, y, button);
+  }
   sendMouseUp(x, y, button) {
     this.browser && this.browser.sendMouseUp(x, y, button);
   }
@@ -2409,7 +2395,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
   sendKeyPress(key, modifiers) {
     this.browser && this.browser.sendKeyPress(key, modifiers);
   }
-  
+
   runJs(jsString = '', scriptUrl = '<unknown>', startLine = 1) {
     this.browser && this.browser.runJs(jsString, scriptUrl, startLine);
   }

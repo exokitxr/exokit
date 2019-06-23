@@ -103,9 +103,9 @@ function init() {
     console.log(source + ':' + line + ': ' + message);
   };
   document.body.appendChild(iframe);
-  setTimeout(() => {
+  /* setTimeout(() => {
     iframe.src = 'http://text.com/';
-  }, 2000);
+  }, 2000); */
 
   planeMesh = (() => {
     const geometry = new THREE.PlaneBufferGeometry(planeWorldWidth, planeWorldHeight)
@@ -229,7 +229,14 @@ function init() {
     const coord = planeMesh.projectMouse(e.clientX, e.clientY);
 
     if (coord) {
-      iframe.sendMouseUp(coord.x, coord.y,e.button);
+      iframe.sendMouseUp(coord.x, coord.y, e.button);
+    }
+  });
+  window.addEventListener('click', e => {
+    const coord = planeMesh.projectMouse(e.clientX, e.clientY);
+
+    if (coord) {
+      iframe.sendClick(coord.x, coord.y, e.button);
     }
   });
   window.addEventListener('wheel', e => {
@@ -264,8 +271,6 @@ function init() {
   });
 }
 
-init();
-
 let direction = true;
 const controllerCoords = [
   [0, 0],
@@ -274,22 +279,26 @@ const controllerCoords = [
 const lastPresseds = [false, false];
 function animate(timestamp, frame) {
   try {
-  if (direction) {
-    planeMesh.rotation.y += 0.001;
+  if (planeMesh) {
+    if (direction) {
+      planeMesh.rotation.y += 0.001;
 
-    if (planeMesh.rotation.y >= Math.PI/8) {
-      direction = false;
-    }
-  } else {
-    planeMesh.rotation.y -= 0.001;
+      if (planeMesh.rotation.y >= Math.PI/8) {
+        direction = false;
+      }
+    } else {
+      planeMesh.rotation.y -= 0.001;
 
-    if (planeMesh.rotation.y <= -Math.PI/8) {
-      direction = true;
+      if (planeMesh.rotation.y <= -Math.PI/8) {
+        direction = true;
+      }
     }
   }
 
-  for (let i = 0; i < controllerMeshes.length; i++) {
-    controllerMeshes[i].visible = false;
+  if (controllerMeshes) {
+    for (let i = 0; i < controllerMeshes.length; i++) {
+      controllerMeshes[i].visible = false;
+    }
   }
 
   if (session) {
@@ -342,9 +351,11 @@ function animate(timestamp, frame) {
         const distance = raycaster.ray.origin.distanceTo(intersectionPoint);
 
         if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < 3) {
-          const SCROLL_SCALE = 3; // constant in libmlservo
+          /* const SCROLL_SCALE = 3; // constant in libmlservo
           const x = (xFactor * planeWidth)/SCROLL_SCALE;
-          const y = (yFactor * planeHeight)/SCROLL_SCALE;
+          const y = (yFactor * planeHeight)/SCROLL_SCALE; */
+          const x = xFactor * planeWidth;
+          const y = yFactor * planeHeight;
 
           controllerCoords[controllerIndex][0] = x;
           controllerCoords[controllerIndex][1] = y;
@@ -358,13 +369,9 @@ function animate(timestamp, frame) {
     }
   }
 
-  if (focused) {
+  if (planeMesh && focused) {
     const gamepads = navigator.getGamepads();
     for (let i = 0; i < gamepads.length; i++) {
-      if (i === 1) { // XXX only use right controller
-        continue;
-      }
-
       const gamepad = gamepads[i];
 
       if (gamepad) {
@@ -380,6 +387,21 @@ function animate(timestamp, frame) {
           iframe.sendMouseUp(x, y, 0);
         }
         lastPresseds[i] = pressed;
+
+        const scrollSpeed = 30;
+        let dx = 0;
+        if (axes[0] < -0.5) {
+          dx = scrollSpeed;
+        } else if (axes[0] > 0.5) {
+          dx = -scrollSpeed;
+        }
+        let dy = 0;
+        if (axes[1] < -0.5) {
+          dy = -scrollSpeed;
+        } else if (axes[1] > 0.5) {
+          dy = scrollSpeed;
+        }
+        iframe.sendMouseWheel(0, 0, dx, dy);
 
         /* const padPressed = buttons[0].pressed;
         if (padPressed) {
@@ -419,6 +441,8 @@ if (navigator.xr) {
     }).catch(err => Promise.resolve(null));
 
     if (session) {
+      init();
+
       session.onselect = e => {
         console.log('select'); // XXX
       };
@@ -451,6 +475,8 @@ if (navigator.xr) {
     });
 } else {
   renderer.setAnimationLoop(animate);
+
+  init();
 }
 
     </script>
