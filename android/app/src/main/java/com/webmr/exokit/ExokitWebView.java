@@ -162,59 +162,176 @@ public class ExokitWebView extends WebView
     }
 
     public void keyDown(int keyCode) {
-      Object[] params = new Object[]{String.valueOf(keyCode)};
-      String jsString = MessageFormat.format("window.dispatchEvent(new KeyboardEvent('keydown', '{'keyCode: {0}'}'))", params);
-
-      runJs(jsString);
+      ExokitWebView webView = this;
+      _activity.runOnUiThread(new Runnable() {
+        public void run() {
+          webView.requestFocus();
+          KeyEvent keyEvent = new KeyEvent(KeyEvent.ACTION_DOWN, keyCode);
+          webView.dispatchKeyEvent(keyEvent);
+        }
+      });
     }
 
     public void keyUp(int keyCode) {
-      Object[] params = new Object[]{String.valueOf(keyCode)};
-      String jsString = MessageFormat.format("window.dispatchEvent(new KeyboardEvent('keyup', '{'keyCode: {0}'}'))", params);
-
-      runJs(jsString);
+      ExokitWebView webView = this;
+      _activity.runOnUiThread(new Runnable() {
+        public void run() {
+          webView.requestFocus();
+          KeyEvent keyEvent = new KeyEvent(KeyEvent.ACTION_UP, keyCode);
+          webView.dispatchKeyEvent(keyEvent);
+        }
+      });
     }
 
     public void keyPress(int keyCode) {
-      Object[] params = new Object[]{String.valueOf(keyCode)};
-      String jsString = MessageFormat.format("window.dispatchEvent(new KeyboardEvent('keypress', '{'keyCode: {0}'}'))", params);
-
-      runJs(jsString);
+      // nothing
     }
 
     public void mouseDown(int x, int y, int button) {
-      Object[] params = new Object[]{String.valueOf(x), String.valueOf(y), String.valueOf(button)};
-      String jsString = MessageFormat.format("window.dispatchEvent(new MouseEvent('mousedown', '{'clientX: {0}, clientY: {1}, button: {2}'}'))", params);
+      ExokitWebView webView = this;
+      _activity.runOnUiThread(new Runnable() {
+        public void run() {
+          webView.requestFocus();
 
-      runJs(jsString);
+          long downTime = SystemClock.uptimeMillis();
+          long eventTime = downTime; // SystemClock.uptimeMillis() + 100;
+          int metaState = 0;
+          System.out.printf("mouse down x %s\n", x);
+          System.out.printf("mouse down y %s\n", y);
+          MotionEvent motionEvent = MotionEvent.obtain(
+            downTime,
+            eventTime,
+            MotionEvent.ACTION_DOWN,
+            x,
+            y,
+            metaState
+          );
+          webView.dispatchTouchEvent(motionEvent);
+        }
+      });
     }
 
     public void mouseUp(int x, int y, int button) {
-      Object[] params = new Object[]{String.valueOf(x), String.valueOf(y), String.valueOf(button)};
-      String jsString = MessageFormat.format("window.dispatchEvent(new MouseEvent('mouseup', '{'clientX: {0}, clientY: {1}, button: {2}'}'))", params);
+      ExokitWebView webView = this;
+      _activity.runOnUiThread(new Runnable() {
+        public void run() {
+          webView.requestFocus();
 
-      runJs(jsString);
+          long downTime = SystemClock.uptimeMillis();
+          long eventTime = downTime; // SystemClock.uptimeMillis() + 100;
+          int metaState = 0;
+          System.out.printf("mouse up x %s\n", x);
+          System.out.printf("mouse up y %s\n", y);
+          MotionEvent motionEvent = MotionEvent.obtain(
+            downTime,
+            eventTime,
+            MotionEvent.ACTION_UP,
+            x,
+            y,
+            metaState
+          );
+          webView.dispatchTouchEvent(motionEvent);
+        }
+      });
     }
 
     public void click(int x, int y, int button) {
-      Object[] params = new Object[]{String.valueOf(x), String.valueOf(y), String.valueOf(button)};
-      String jsString = MessageFormat.format("window.dispatchEvent(new MouseEvent('click', '{'clientX: {0}, clientY: {1}, button: {2}'}'))", params);
+      // nothing
 
-      runJs(jsString);
+      /* ExokitWebView webView = this;
+      _activity.runOnUiThread(new Runnable() {
+        public void run() {
+          long downTime = SystemClock.uptimeMillis();
+          long eventTime = downTime; // SystemClock.uptimeMillis() + 100;
+          int metaState = 0;
+          MotionEvent motionEvent = MotionEvent.obtain(
+            downTime,
+            eventTime,
+            MotionEvent.ACTION_CLICK,
+            x,
+            y,
+            metaState
+          );
+          webView.dispatchTouchEvent(motionEvent);
+        }
+      }); */
     }
 
     public void mouseMove(int x, int y) {
-      Object[] params = new Object[]{String.valueOf(x), String.valueOf(y)};
-      String jsString = MessageFormat.format("window.dispatchEvent(new MouseEvent('mousemove', '{'clientX: {0}, clientY: {1}'}'))", params);
+      ExokitWebView webView = this;
+      _activity.runOnUiThread(new Runnable() {
+        public void run() {
+          webView.requestFocus();
 
-      runJs(jsString);
+          long downTime = SystemClock.uptimeMillis();
+          long eventTime = downTime; // SystemClock.uptimeMillis() + 100;
+          int metaState = 0;
+          /* System.out.printf("mouse move disabled x %s\n", x);
+          System.out.printf("mouse move disabled y %s\n", y); */
+          /* MotionEvent motionEvent = MotionEvent.obtain(
+            downTime,
+            eventTime,
+            MotionEvent.ACTION_HOVER_MOVE,
+            x,
+            y,
+            metaState
+          );
+          webView.dispatchTouchEvent(motionEvent); */
+        }
+      });
     }
 
-    public void mouseWheel(int deltaX, int deltaY) {
-      Object[] params = new Object[]{String.valueOf(deltaX), String.valueOf(deltaY)};
-      String jsString = MessageFormat.format("window.dispatchEvent(new WheelEvent('wheel', '{'deltaX: {1}, deltaY: {2}'}'))", params);
+    public void mouseWheel(int x, int y, int deltaX, int deltaY) {
+      ExokitWebView webView = this;
+      _activity.runOnUiThread(new Runnable() {
+        public void run() {
+          webView.requestFocus();
 
-      runJs(jsString);
+          webView.scrollBy(deltaX, deltaY);
+
+          /* long downTime = SystemClock.uptimeMillis();
+          long eventTime = downTime; // SystemClock.uptimeMillis() + 100;
+          int metaState = 0;
+          int buttonState = 0;
+          float xPrecision = 1.0f;
+          float yPrecision = 1.0f;
+          int deviceId = 0;
+          int edgeFlags = 0;
+          int source = InputDevice.SOURCE_CLASS_POINTER;
+          int flags = 0;
+
+          int pointerCount = 1;
+
+          MotionEvent.PointerProperties properties = new MotionEvent.PointerProperties();
+          properties.id = 0;
+          MotionEvent.PointerProperties[] prop = { properties };
+
+          MotionEvent.PointerCoords coord = new MotionEvent.PointerCoords();
+          coord.x = 0;
+          coord.y = 0;
+          coord.setAxisValue(MotionEvent.AXIS_HSCROLL, deltaX);
+          coord.setAxisValue(MotionEvent.AXIS_VSCROLL, deltaY);
+          MotionEvent.PointerCoords[] coords = { coord };
+
+          MotionEvent motionEvent = MotionEvent.obtain(
+            downTime,
+            eventTime,
+            MotionEvent.ACTION_MOVE,
+            pointerCount,
+            prop,
+            coords,
+            metaState,
+            buttonState,
+            xPrecision,
+            yPrecision,
+            deviceId,
+            edgeFlags,
+            source,
+            flags
+          );
+          webView.dispatchTouchEvent(motionEvent); */
+        }
+      });
     }
 
 }
