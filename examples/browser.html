@@ -229,7 +229,14 @@ function init() {
     const coord = planeMesh.projectMouse(e.clientX, e.clientY);
 
     if (coord) {
-      iframe.sendMouseUp(coord.x, coord.y,e.button);
+      iframe.sendMouseUp(coord.x, coord.y, e.button);
+    }
+  });
+  window.addEventListener('click', e => {
+    const coord = planeMesh.projectMouse(e.clientX, e.clientY);
+
+    if (coord) {
+      iframe.sendClick(coord.x, coord.y, e.button);
     }
   });
   window.addEventListener('wheel', e => {
@@ -380,6 +387,7 @@ function animate(timestamp, frame) {
         } else if (lastPressed && !pressed) {
           const [x, y] = controllerCoords[i];
           iframe.sendMouseUp(x, y, 0);
+          iframe.sendClick(x, y, 0);
         }
         lastPresseds[i] = pressed;
 
