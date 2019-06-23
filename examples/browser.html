@@ -351,9 +351,11 @@ function animate(timestamp, frame) {
         const distance = raycaster.ray.origin.distanceTo(intersectionPoint);
 
         if (xFactor > 0 && xFactor <= 0.99 && yFactor > 0 && yFactor <= 0.99 && distance < 3) {
-          const SCROLL_SCALE = 3; // constant in libmlservo
+          /* const SCROLL_SCALE = 3; // constant in libmlservo
           const x = (xFactor * planeWidth)/SCROLL_SCALE;
-          const y = (yFactor * planeHeight)/SCROLL_SCALE;
+          const y = (yFactor * planeHeight)/SCROLL_SCALE; */
+          const x = xFactor * planeWidth;
+          const y = yFactor * planeHeight;
 
           controllerCoords[controllerIndex][0] = x;
           controllerCoords[controllerIndex][1] = y;
