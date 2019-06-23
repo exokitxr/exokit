@@ -202,8 +202,8 @@ public class ExokitWebView extends WebView
             downTime,
             eventTime,
             MotionEvent.ACTION_DOWN,
-            x,
-            y,
+            x - getScrollX(),
+            y - getScrollY(),
             metaState
           );
           webView.dispatchTouchEvent(motionEvent);
@@ -224,8 +224,8 @@ public class ExokitWebView extends WebView
             downTime,
             eventTime,
             MotionEvent.ACTION_UP,
-            x,
-            y,
+            x - getScrollX(),
+            y - getScrollY(),
             metaState
           );
           webView.dispatchTouchEvent(motionEvent);
@@ -246,8 +246,8 @@ public class ExokitWebView extends WebView
             downTime,
             eventTime,
             MotionEvent.ACTION_CLICK,
-            x,
-            y,
+            x - getScrollX(),
+            y - getScrollY(),
             metaState
           );
           webView.dispatchTouchEvent(motionEvent);
@@ -268,8 +268,8 @@ public class ExokitWebView extends WebView
             downTime,
             eventTime,
             MotionEvent.ACTION_HOVER_MOVE,
-            x,
-            y,
+            x - getScrollX(),
+            y - getScrollY(),
             metaState
           );
           webView.dispatchTouchEvent(motionEvent);
