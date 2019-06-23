@@ -372,10 +372,6 @@ function animate(timestamp, frame) {
   if (planeMesh && focused) {
     const gamepads = navigator.getGamepads();
     for (let i = 0; i < gamepads.length; i++) {
-      if (i === 1) { // XXX only use right controller
-        continue;
-      }
-
       const gamepad = gamepads[i];
 
       if (gamepad) {
