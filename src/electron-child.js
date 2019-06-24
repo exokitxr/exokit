@@ -155,7 +155,7 @@ const _consumeInput = () => {
             const _processChunk = y => {
               // copy to output
               const srcStartY = dirty.y + y;
-              const dstStartY = y - currentChunkStartY;
+              const dstStartY = currentChunkHeight - 1 - (y - currentChunkStartY);
               const dstStartIndex = (dstStartY * dirty.width)*4;
               const srcStartIndex = ((srcStartY * textureWidth) + dirty.x)*4;
               const srcEndIndex = ((srcStartY * textureWidth) + dirty.x + dirty.width)*4;
@@ -169,7 +169,7 @@ const _consumeInput = () => {
             };
             const _flushChunk = () => {
               if (currentChunkDirty) {
-                const b = Uint32Array.from([TYPES.IMAGEDATA, dirty.x, dirty.y + currentChunkStartY, dirty.width, currentChunkHeight, textureWidth, textureHeight]);
+                const b = Uint32Array.from([TYPES.IMAGEDATA, dirty.x, textureHeight - (dirty.y + currentChunkStartY) - currentChunkHeight, dirty.width, currentChunkHeight, textureWidth, textureHeight]);
                 const b2 = new Buffer(b.buffer, b.byteOffset, b.byteLength);
                 _parentPortWrite(b2);
                 _parentPortWrite(currentChunk);
