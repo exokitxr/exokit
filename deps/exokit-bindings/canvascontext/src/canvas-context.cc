@@ -127,6 +127,7 @@ Local<Object> CanvasRenderingContext2D::Initialize(Isolate *isolate, Local<Value
   Nan::SetMethod(proto, "createLinearGradient", ctxCallWrap<CreateLinearGradient>);
   Nan::SetMethod(proto, "createRadialGradient", ctxCallWrap<CreateRadialGradient>);
   Nan::SetMethod(proto, "createPattern", ctxCallWrap<CreatePattern>);
+  Nan::SetMethod(proto, "setLineDash", ctxCallWrap<SetLineDash>);
   Nan::SetMethod(proto, "resize", ctxCallWrap<Resize>);
   Nan::SetMethod(proto, "drawImage", ctxCallWrap<DrawImage>);
   Nan::SetMethod(proto, "save", ctxCallWrap<Save>);
@@ -1342,6 +1343,22 @@ NAN_METHOD(CanvasRenderingContext2D::CreatePattern) {
     };
     Local<Object> canvasPatternObj = canvasPatternCons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(argv)/sizeof(argv[0]), argv).ToLocalChecked();
     info.GetReturnValue().Set(canvasPatternObj);
+  } else {
+    Nan::ThrowError("invalid arguments");
+  }
+}
+
+NAN_METHOD(CanvasRenderingContext2D::SetLineDash) {
+  if (info[0]->IsArray()) {
+    CanvasRenderingContext2D *context = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+    Local<Array> arg = Local<Array>::Cast(info[0]);
+
+    int length = arg->Length();
+    std::vector<float> intervals(length);
+    for (int i = 0; i < length; i++) {
+      intervals[i] = TO_FLOAT(arg->Get(i));
+    }
+    context->strokePaint.setPathEffect(SkDashPathEffect::Make(intervals.data(), intervals.size(), 0));
   } else {
     Nan::ThrowError("invalid arguments");
   }
