@@ -254,7 +254,8 @@ class Node extends EventTarget {
           this.ownerDocument.removeEventListener('readystatechange', _readystatechange);
 
           process.nextTick(() => {
-            this.dispatchEvent.apply(this, args);
+            const el = args[0].target;
+            el.dispatchEvent.apply(el, args);
           });
         }
       };
@@ -1630,36 +1631,48 @@ class HTMLLinkElement extends HTMLLoadableElement {
     this.stylesheet = null;
 
     this.on('attribute', (name, value) => {
-      if (name === 'href' && this.isRunnable()) {
-        this.readyState = 'loading';
-        
-        const url = value;
-        this.ownerDocument.defaultView.fetch(url)
-          .then(res => {
-            if (res.status >= 200 && res.status < 300) {
-              return res.text();
-            } else {
-              return Promise.reject(new Error('link href got invalid status code: ' + res.status + ' : ' + url));
-            }
-          })
-          .then(s => css.parse(s).stylesheet)
-          .then(stylesheet => {
-            this.stylesheet = stylesheet;
-            this.ownerDocument.defaultView[symbols.styleEpochSymbol]++;
-            
-            this.readyState = 'complete';
-            
-            this.dispatchEvent(new Event('load', {target: this}));
-          })
-          .catch(err => {
-            this.readyState = 'complete';
-            
-            const e = new ErrorEvent('error', {target: this});
-            e.message = err.message;
-            e.stack = err.stack;
-            this.dispatchEvent(e);
-          });
+      if (this.isRunnable() && !this.readyState) {
+        this.loadRunNow();
       }
+    });
+  }
+  
+  loadRunNow() {
+    this.readyState = 'loading';
+
+    const url = _mapUrl(this.href, this.ownerDocument.defaultView);
+    
+    return this.ownerDocument.resources.addResource((onprogress, cb) => {
+      this.ownerDocument.defaultView.fetch(url)
+        .then(res => {
+          if (res.status >= 200 && res.status < 300) {
+            return res.text();
+          } else {
+            return Promise.reject(new Error('link href got invalid status code: ' + res.status + ' : ' + url));
+          }
+        })
+        .then(s => css.parse(s).stylesheet)
+        .then(stylesheet => {
+          this.stylesheet = stylesheet;
+          this.ownerDocument.defaultView[symbols.styleEpochSymbol]++;
+          
+          this.readyState = 'complete';
+          
+          const e = new Event('load', {target: this});
+          this._dispatchEventOnDocumentReady(e);
+          
+          cb();
+        })
+        .catch(err => {
+          this.readyState = 'complete';
+          
+          const e = new ErrorEvent('error', {target: this});
+          e.message = err.message;
+          e.stack = err.stack;
+          this._dispatchEventOnDocumentReady(e);
+          
+          cb(err);
+        });
     });
   }
 
@@ -1688,19 +1701,16 @@ class HTMLLinkElement extends HTMLLoadableElement {
   }
 
   isRunnable() {
-    return this.rel === 'stylesheet';
+    return this.rel === 'stylesheet' && !!this.href;
   }
 
   [symbols.runSymbol]() {
-    let running = false;
     if (this.isRunnable() && !this.readyState) {
-      const hrefAttr = this.attributes.href;
-      if (hrefAttr) {
-        this._emit('attribute', 'href', hrefAttr.value);
-        running = true;
+      if (this.attributes.href) {
+        return this.loadRunNow();
       }
     }
-    return running ? _loadPromise(this) : Promise.resolve();
+    return Promise.resolve();
   }
 }
 module.exports.HTMLLinkElement = HTMLLinkElement;
@@ -1870,8 +1880,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
 
   [symbols.runSymbol]() {
     if (this.isRunnable() && !this.readyState) {
-      const srcAttr = this.attributes.src;
-      if (srcAttr) {
+      if (this.attributes.src) {
         return this.loadRunNow();
       } else if (this.childNodes.length > 0) {
         return this.runNow();
