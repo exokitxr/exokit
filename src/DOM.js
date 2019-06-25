@@ -2047,20 +2047,8 @@ class HTMLIFrameElement extends HTMLSrcableElement {
   constructor(window, attrs = [], value = '', location = null) {
     super(window, 'IFRAME', attrs, value, location);
 
-    const _resetContentWindowDocument = () => {
-      const contentDocument = {
-        _emit() {},
-        open() {},
-        write() {},
-        close() {},
-      };
-      this.contentWindow = {
-        document: contentDocument,
-      };
-      this.contentDocument = contentDocument;
-    };
-    _resetContentWindowDocument();
-
+    this.contentWindow = null;
+    this.contentDocument = null;
     // this.live = true;
     this.epoch = 0;
 
@@ -2068,12 +2056,32 @@ class HTMLIFrameElement extends HTMLSrcableElement {
     this.onconsole = null;
     this.xrOffset = new XRRigidTransform();
 
+    const _resetContentWindowDocument = () => {
+      const contentDocument = {
+        _emit() {},
+        open() {},
+        write() {},
+        close() {},
+        documentElement: {
+          getBoundingClientRect() {
+            return new DOMRect(0, 0, 0, 0);
+          },
+        },
+      };
+      this.contentWindow = {
+        document: contentDocument,
+      };
+      this.contentDocument = contentDocument;
+    };
+
     this.on('attribute', (name, value) => {
       if (name === 'src' && value) {
         const localEpoch = ++this.epoch;
 
         this.readyState = 'loading';
-        
+
+        _resetContentWindowDocument();
+
         let url = value;
         const match = url.match(/^javascript:(.+)$/); // XXX should support this for regular fetches too
         if (match) {
@@ -2192,7 +2200,6 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   xrOffsetBuffer: this.xrOffset._buffer,
                   onnavigate(href) {
                     this.readyState = null;
-                    _resetContentWindowDocument();
 
                     this.setAttribute('src', href);
                   },
@@ -2257,6 +2264,11 @@ class HTMLIFrameElement extends HTMLSrcableElement {
         if (this.browser) {
           this.browser.inline = this.inline;
         }
+      }
+    });
+    this.on('attached', () => {
+      if (!this.contentWindow) {
+        _resetContentWindowDocument();
       }
     });
     /* this.on('destroy', () => {
