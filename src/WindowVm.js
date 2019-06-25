@@ -55,8 +55,8 @@ class WorkerVm extends EventEmitter {
     worker.cleanup = () => {
       worker.removeListener('message', _message);
     };
-
     this.worker = worker;
+
     this.requestKeys = 0;
     this.queue = {};
   }

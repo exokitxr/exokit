@@ -2047,8 +2047,20 @@ class HTMLIFrameElement extends HTMLSrcableElement {
   constructor(window, attrs = [], value = '', location = null) {
     super(window, 'IFRAME', attrs, value, location);
 
-    this.contentWindow = null;
-    this.contentDocument = null;
+    const _resetContentWindowDocument = () => {
+      const contentDocument = {
+        _emit() {},
+        open() {},
+        write() {},
+        close() {},
+      };
+      this.contentWindow = {
+        document: contentDocument,
+      };
+      this.contentDocument = contentDocument;
+    };
+    _resetContentWindowDocument();
+
     // this.live = true;
     this.epoch = 0;
 
@@ -2104,6 +2116,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                 const self = this;
                 this.contentWindow = {
                   _emit() {},
+                  document: this.contentDocument,
                   location: {
                     href: url,
                   },
@@ -2124,9 +2137,6 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                     self.browser.destroy();
                     self.browser = null;
                   }, */
-                };
-                this.contentDocument = {
-                  _emit() {},
                 };
 
                 const _load = () => {
@@ -2169,7 +2179,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                 url = _normalizeUrl(url, options.baseUrl);
                 const parent = {};
                 const top = parentWindow === parentWindow.top ? parent : {};
-                const contentWindow = _makeWindow({
+                this.contentWindow = _makeWindow({
                   url,
                   baseUrl: url,
                   args: options.args,
@@ -2182,8 +2192,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   xrOffsetBuffer: this.xrOffset._buffer,
                   onnavigate(href) {
                     this.readyState = null;
-                    this.contentWindow = null;
-                    this.contentDocument = null;
+                    _resetContentWindowDocument();
 
                     this.setAttribute('src', href);
                   },
@@ -2198,9 +2207,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                     });
                   },
                 });
-
-                this.contentWindow = contentWindow;
-                this.contentDocument = contentWindow.document = {};
+                this.contentWindow.document = this.contentDocument;
 
                 this.readyState = 'complete';
 
