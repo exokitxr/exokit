@@ -2056,12 +2056,32 @@ class HTMLIFrameElement extends HTMLSrcableElement {
     this.onconsole = null;
     this.xrOffset = new XRRigidTransform();
 
+    const _resetContentWindowDocument = () => {
+      const contentDocument = {
+        _emit() {},
+        open() {},
+        write() {},
+        close() {},
+        documentElement: {
+          getBoundingClientRect() {
+            return new DOMRect(0, 0, 0, 0);
+          },
+        },
+      };
+      this.contentWindow = {
+        document: contentDocument,
+      };
+      this.contentDocument = contentDocument;
+    };
+
     this.on('attribute', (name, value) => {
       if (name === 'src' && value) {
         const localEpoch = ++this.epoch;
 
         this.readyState = 'loading';
-        
+
+        _resetContentWindowDocument();
+
         let url = value;
         const match = url.match(/^javascript:(.+)$/); // XXX should support this for regular fetches too
         if (match) {
@@ -2104,6 +2124,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                 const self = this;
                 this.contentWindow = {
                   _emit() {},
+                  document: this.contentDocument,
                   location: {
                     href: url,
                   },
@@ -2124,9 +2145,6 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                     self.browser.destroy();
                     self.browser = null;
                   }, */
-                };
-                this.contentDocument = {
-                  _emit() {},
                 };
 
                 const _load = () => {
@@ -2169,7 +2187,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                 url = _normalizeUrl(url, options.baseUrl);
                 const parent = {};
                 const top = parentWindow === parentWindow.top ? parent : {};
-                const contentWindow = _makeWindow({
+                this.contentWindow = _makeWindow({
                   url,
                   baseUrl: url,
                   args: options.args,
@@ -2182,8 +2200,6 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   xrOffsetBuffer: this.xrOffset._buffer,
                   onnavigate(href) {
                     this.readyState = null;
-                    this.contentWindow = null;
-                    this.contentDocument = null;
 
                     this.setAttribute('src', href);
                   },
@@ -2198,9 +2214,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                     });
                   },
                 });
-
-                this.contentWindow = contentWindow;
-                this.contentDocument = contentWindow.document = {};
+                this.contentWindow.document = this.contentDocument;
 
                 this.readyState = 'complete';
 
@@ -2250,6 +2264,11 @@ class HTMLIFrameElement extends HTMLSrcableElement {
         if (this.browser) {
           this.browser.inline = this.inline;
         }
+      }
+    });
+    this.on('attached', () => {
+      if (!this.contentWindow) {
+        _resetContentWindowDocument();
       }
     });
     /* this.on('destroy', () => {
