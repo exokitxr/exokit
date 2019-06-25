@@ -254,7 +254,8 @@ class Node extends EventTarget {
           this.ownerDocument.removeEventListener('readystatechange', _readystatechange);
 
           process.nextTick(() => {
-            this.dispatchEvent.apply(this, args);
+            const el = args[0].target;
+            el.dispatchEvent.apply(el, args);
           });
         }
       };
