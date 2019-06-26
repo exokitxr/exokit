@@ -59,8 +59,6 @@ const {
   FakeXRDisplay,
   Gamepad,
   GamepadButton,
-  getGamepads,
-  getHMDType,
   lookupHMDTypeString,
 } = require('./VR.js');
 
@@ -89,11 +87,9 @@ const {
     AnalyserNode,
     PannerNode,
     StereoPannerNode,
-    MicrophoneMediaStream,
   },
   nativeVideo: {
     Video,
-    VideoDevice,
   },
   nativeOpenVR,
   nativeOculusVR,
@@ -481,58 +477,6 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
     },
   });
   window.history = new History(location.href);
-  function getUserMedia(constraints) {
-    if (constraints.audio) {
-      return Promise.resolve(new MicrophoneMediaStream());
-    } else if (constraints.video) {
-      const dev = new VideoDevice();
-      dev.constraints = constraints.video;
-      return Promise.resolve(dev);
-    } else {
-      return Promise.reject(new Error('constraints not met'));
-    }
-  }
-  window.navigator = {
-    userAgent: `Mozilla/5.0 (OS) AppleWebKit/999.0 (KHTML, like Gecko) Chrome/999.0.0.0 Safari/999.0 Exokit/${GlobalContext.version}`,
-    vendor: 'Exokit',
-    platform: os.platform(),
-    hardwareConcurrency: os.cpus().length,
-    appCodeName: 'Mozilla',
-    appName: 'Netscape',
-    appVersion: '5.0',
-    language: 'en-US',
-    mediaDevices: {
-      getUserMedia,
-      enumerateDevices() {
-        let deviceIds = 0;
-        let groupIds = 0;
-        return Promise.resolve([
-          {
-            deviceId: (++deviceIds) + '',
-            groupId: (++groupIds) + '',
-            kind: 'audioinput',
-            label: 'Microphone',
-          },
-        ]);
-      },
-    },
-    webkitGetUserMedia: getUserMedia, // for feature detection
-    getVRDisplaysSync() {
-      return getHMDType() ? [window[symbols.mrDisplaysSymbol].vrDisplay] : [];
-    },
-    getGamepads,
-    clipboard: {
-      read: () => Promise.resolve(), // Not implemented yet
-      readText: () => new Promise(resolve => {
-        resolve(nativeWindow.getClipboard().slice(0, 256));// why do we slice this?
-      }),
-      write: () => Promise.resolve(), // Not implemented yet
-      writeText: clipboardContents => new Promise(resolve => {
-        nativeWindow.setClipboard(clipboardContents);
-        resolve();
-      })
-    }
-  };
   window.matchMedia = media => ({
     media,
     matches: false,

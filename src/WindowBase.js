@@ -20,7 +20,8 @@ const {
 const {Buffer} = global;
 
 const {CustomEvent, DragEvent, ErrorEvent, Event, EventTarget, KeyboardEvent, MessageEvent, MouseEvent, WheelEvent, PromiseRejectionEvent} = require('./Event');
-const {FileReader} = require('./File.js');
+const {MediaDevices, Clipboard, Navigator} = require('./Navigator');
+const {FileReader} = require('./File');
 const {XMLHttpRequest, FormData} = require('window-xhr');
 const fetch = require('window-fetch');
 const {Request, Response, Headers, Blob} = fetch;
@@ -149,6 +150,11 @@ class Worker extends EventTarget {
   self.EventTarget = EventTarget;
 
   self.URL = URL;
+
+  self.MediaDevices = MediaDevices;
+  self.Clipboard = Clipboard;
+  self.Navigator = Navigator;
+  self.navigator = new Navigator();
 
   self.fetch = (u, options) => {
     if (typeof u === 'string') {
