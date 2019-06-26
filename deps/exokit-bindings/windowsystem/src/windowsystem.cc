@@ -304,10 +304,10 @@ PlaneGlShader::PlaneGlShader() {
   glGenBuffers(1, &this->positionBuffer);
   glBindBuffer(GL_ARRAY_BUFFER, this->positionBuffer);
   static const float positions[] = {
-    -1.0f, 1.0f,
-    1.0f, 1.0f,
-    -1.0f, -1.0f,
-    1.0f, -1.0f,
+    -0.5f, 0.5f,
+    0.5f, 0.5f,
+    -0.5f, -0.5f,
+    0.5f, -0.5f,
   };
   glBufferData(GL_ARRAY_BUFFER, sizeof(positions), positions, GL_STATIC_DRAW);
   glEnableVertexAttribArray(this->positionLocation);
