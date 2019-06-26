@@ -13,6 +13,7 @@ const {
   },
   nativeWindow,
 } = require('./native-bindings');
+const symbols = require('./symbols');
 const GlobalContext = require('./GlobalContext');
 
 function getUserMedia(constraints) {
