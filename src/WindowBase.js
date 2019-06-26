@@ -17,6 +17,8 @@ const {
   parentPort,
 } = require('worker_threads');
 
+const {Buffer} = global;
+
 const {CustomEvent, DragEvent, ErrorEvent, Event, EventTarget, KeyboardEvent, MessageEvent, MouseEvent, WheelEvent, PromiseRejectionEvent} = require('./Event');
 const {FileReader} = require('./File.js');
 const {XMLHttpRequest, FormData} = require('window-xhr');
