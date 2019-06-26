@@ -102,7 +102,6 @@ const {
 GlobalContext.id = id;
 GlobalContext.args = args;
 GlobalContext.version = version;
-GlobalContext.userAgent = `Mozilla/5.0 (OS) AppleWebKit/999.0 (KHTML, like Gecko) Chrome/999.0.0.0 Safari/999.0 Exokit/${GlobalContext.version}`;
 
 const {_parseDocument, _parseDocumentAst, getBoundDocumentElements, DocumentType, DOMImplementation, initDocument} = require('./Document');
 const {

@@ -70,7 +70,7 @@ module.exports.Clipboard = Clipboard;
 
 class Navigator {
   constructor() {
-    this.userAgent = GlobalContext.userAgent;
+    this.userAgent = Navigator.userAgent;
     this.vendor = 'Exokit';
     this.platform = os.platform();
     this.hardwareConcurrency = os.cpus().length;
@@ -81,6 +81,9 @@ class Navigator {
     this.mediaDevices = new MediaDevices();
     this.clipboard = new Clipboard();
     this.webkitGetUserMedia = getUserMedia; // for feature detection
+  }
+  static get userAgent() {
+    return `Mozilla/5.0 (OS) AppleWebKit/999.0 (KHTML, like Gecko) Chrome/999.0.0.0 Safari/999.0 Exokit/${GlobalContext.version}`
   }
   getVRDisplaysSync() {
     return getHMDType() ? [window[symbols.mrDisplaysSymbol].vrDisplay] : [];
