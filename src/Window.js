@@ -262,7 +262,7 @@ class CustomElementRegistry {
         }
       });
 
-      const observedAttributes = constructor.observedAttributes ? constructor.observedAttributes() : [];
+      const observedAttributes = constructor.observedAttributes || [];
       if (observedAttributes.length > 0) {
         el.on('attribute', (name, value, oldValue) => {
           if (el.attributeChangedCallback && observedAttributes.includes(name)) {
