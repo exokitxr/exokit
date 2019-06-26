@@ -10,7 +10,7 @@ const {
 } = require('worker_threads');
 
 const {createImageBitmap} = require('./DOM.js');
-const fetch = require('window-fetch');
+const fetch = require('./fetch');
 const {XMLHttpRequest} = require('window-xhr');
 const WebSocket = require('ws/lib/websocket');
 const {FileReader} = require('./File.js');

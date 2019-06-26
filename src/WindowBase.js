@@ -23,7 +23,7 @@ const {CustomEvent, DragEvent, ErrorEvent, Event, EventTarget, KeyboardEvent, Me
 const {MediaDevices, Clipboard, Navigator} = require('./Navigator');
 const {FileReader} = require('./File');
 const {XMLHttpRequest, FormData} = require('window-xhr');
-const fetch = require('window-fetch');
+const fetch = require('./fetch');
 const {Request, Response, Headers, Blob} = fetch;
 const WebSocket = require('ws/lib/websocket');
 

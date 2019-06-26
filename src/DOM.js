@@ -12,7 +12,7 @@ const he = require('he');
 const parse5 = require('parse5');
 const parseIntStrict = require('parse-int');
 const selector = require('window-selector');
-const fetch = require('window-fetch');
+const fetch = require('./fetch');
 const {Blob} = fetch;
 const htmlUnescape = require('unescape');
 

@@ -17,7 +17,7 @@ consoleStream._writev = (chunks, callback) => {
 };
 global.console = new Console(consoleStream);
 
-const fetch = require('window-fetch');
+const fetch = require('./fetch');
 const {workerData, parentPort} = require('worker_threads');
 const {url, int32Array} = workerData;
 
