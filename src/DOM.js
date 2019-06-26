@@ -1643,7 +1643,7 @@ class HTMLLinkElement extends HTMLLoadableElement {
     const url = _mapUrl(this.href, this.ownerDocument.defaultView);
     
     return this.ownerDocument.resources.addResource((onprogress, cb) => {
-      this.ownerDocument.defaultView.fetch(url)
+      this.ownerDocument.defaultView.fetch(url, {headers: {'user-agent': `User-Agent: ${this.ownerDocument.defaultView.navigator.userAgent}`}})
         .then(res => {
           if (res.status >= 200 && res.status < 300) {
             return res.text();
@@ -1811,7 +1811,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
     const url = _mapUrl(this.src, this.ownerDocument.defaultView);
     
     return this.ownerDocument.resources.addResource((onprogress, cb) => {
-      this.ownerDocument.defaultView.fetch(url)
+      this.ownerDocument.defaultView.fetch(url, {headers: {'user-agent': `User-Agent: ${this.ownerDocument.defaultView.navigator.userAgent}`}})
         .then(res => {
           if (res.status >= 200 && res.status < 300) {
             return res.text();
@@ -2171,7 +2171,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                 throw new Error('iframe owner document does not have a WebGL context');
               }
             } else {
-              const res = await this.ownerDocument.defaultView.fetch(url);
+              const res = await this.ownerDocument.defaultView.fetch(url, {headers: {'user-agent': `User-Agent: ${this.ownerDocument.defaultView.navigator.userAgent}`}});
               if (this.epoch !== localEpoch) {
                 return;
               }
@@ -2785,7 +2785,7 @@ class HTMLImageElement extends HTMLSrcableElement {
           const src = value;
 
           this.ownerDocument.resources.addResource((onprogress, cb) => {
-            this.ownerDocument.defaultView.fetch(src)
+            this.ownerDocument.defaultView.fetch(src, {headers: {'user-agent': `User-Agent: ${this.ownerDocument.defaultView.navigator.userAgent}`}})
               .then(res => {
                 if (res.status >= 200 && res.status < 300) {
                   return res.arrayBuffer();
@@ -2915,7 +2915,7 @@ class HTMLAudioElement extends HTMLMediaElement {
           const src = value;
 
           this.ownerDocument.resources.addResource((onprogress, cb) => {
-            this.ownerDocument.defaultView.fetch(src)
+            this.ownerDocument.defaultView.fetch(src, {headers: {'user-agent': `User-Agent: ${this.ownerDocument.defaultView.navigator.userAgent}`}})
               .then(res => {
                 if (res.status >= 200 && res.status < 300) {
                   return res.arrayBuffer();
@@ -3149,7 +3149,7 @@ class HTMLVideoElement extends HTMLMediaElement {
         console.log('video downloading...');
         const src = value;
 
-        this.ownerDocument.defaultView.fetch(src)
+        this.ownerDocument.defaultView.fetch(src, {headers: {'user-agent': `User-Agent: ${this.ownerDocument.defaultView.navigator.userAgent}`}})
           .then(res => {
             console.log('video download res');
             if (res.status >= 200 && res.status < 300) {
