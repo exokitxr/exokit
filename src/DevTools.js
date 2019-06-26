@@ -1,5 +1,8 @@
 const url = require('url');
 const http = require('http');
+
+const {Buffer} = global;
+
 const htermRepl = require('hterm-repl');
 
 const DOM = require('./DOM');
