@@ -59,7 +59,6 @@ const {
   FakeXRDisplay,
   Gamepad,
   GamepadButton,
-  getHMDType,
   lookupHMDTypeString,
 } = require('./VR.js');
 
@@ -88,11 +87,9 @@ const {
     AnalyserNode,
     PannerNode,
     StereoPannerNode,
-    MicrophoneMediaStream,
   },
   nativeVideo: {
     Video,
-    VideoDevice,
   },
   nativeOpenVR,
   nativeOculusVR,
