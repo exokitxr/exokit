@@ -246,16 +246,18 @@ class CustomElementRegistry {
 
   upgrade(el, constructor) {
     if (el instanceof HTMLElement) {
-      let wasConnected = el.isConnected;
+      let isConnected = el.isConnected;
+      let connectHandled = false;
       el.ownerDocument.on('domchange', () => {
         const newConnected = el.isConnected;
-        if (newConnected && !wasConnected) {
+        if (newConnected && !isConnected) {
           el.connectedCallback && el.connectedCallback();
-          wasConnected = true;
-        } else if (wasConnected && !newConnected) {
+          isConnected = true;
+        } else if (isConnected && !newConnected) {
           el.disconnectedCallback && el.disconnectedCallback();
-          wasConnected = false;
+          isConnected = false;
         }
+        connectHandled = true;
       });
 
       const observedAttributes = constructor.observedAttributes || [];
@@ -279,10 +281,8 @@ class CustomElementRegistry {
       HTMLElement.upgradeElement = null;
 
       if (!error) {
-        if (wasConnected) {
-          setImmediate(() => {
-            el.connectedCallback && el.connectedCallback();
-          });
+        if (isConnected && !connectHandled) {
+          el.connectedCallback && el.connectedCallback();
         }
       } else {
         throw error;
