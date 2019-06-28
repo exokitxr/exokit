@@ -6,6 +6,8 @@ const mkdirp = require('mkdirp');
 const parseIntStrict = require('parse-int');
 
 const symbols = require('./symbols');
+const vm = require('vm');
+const fetch = require('window-fetch');
 
 function _getBaseUrl(u, currentBaseUrl = '') {
   let result;
@@ -29,6 +31,9 @@ function _getBaseUrl(u, currentBaseUrl = '') {
 module.exports._getBaseUrl = _getBaseUrl;
 
 function _normalizeUrl(src, baseUrl) {
+  if (/^[/][/]/.test(src)) {
+    src = new URL(baseUrl || 'https://www.example.com').protocol + src;
+  }
   if (!/^(?:https?|data|blob):/.test(src)) {
     return new URL(src, baseUrl).href
       .replace(/^(file:\/\/)\/([a-z]:.*)$/i, '$1$2');
@@ -37,6 +42,44 @@ function _normalizeUrl(src, baseUrl) {
   }
 }
 module.exports._normalizeUrl = _normalizeUrl;
+
+async function _fetch(url) {
+  const res = await fetch(url)
+  if (res.status >= 200 && res.status < 300) {
+    return await res.text();
+  } else {
+    throw new Error('fetch got invalid status code: ' + res.status + ' : ' + url);
+  }
+}
+module.exports._fetch = _fetch;
+
+var _G = typeof global !== 'undefined' ? global : 
+         typeof window !== 'undefined' ? window :
+         typeof self !== 'undefined' ? self : this;
+var _context = vm.createContext(_G);
+
+async function _runMJS(code, {context, ...opts} = {}, fetch = _fetch) {
+  if (!vm.SourceTextModule) {
+    throw new Error('ECMAScript modules are not supported: ' + url);
+  }
+  if (!context) {
+    context = _context;
+  }
+  const script = new vm.SourceTextModule(code, {context, ...opts});
+  await script.link(async (path, {url, context}) => {
+    url = _normalizeUrl(path, url);
+    const code = await fetch(url);
+    return new vm.SourceTextModule(code, {url, context});
+  });
+  script.instantiate();
+  return await script.evaluate();
+}
+module.exports._runMJS = _runMJS;
+
+function _runJS(code, opts) {
+  return vm.runInThisContext(code, opts);
+}
+module.exports._runJS = _runJS;
 
 const _makeHtmlCollectionProxy = (el, query) => new Proxy(el, {
   get(target, prop) {

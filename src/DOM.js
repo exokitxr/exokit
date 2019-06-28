@@ -21,7 +21,7 @@ const {Event, EventTarget, MessageEvent, MouseEvent, ErrorEvent} = require('./Ev
 const {_makeWindow} = require('./WindowVm');
 const GlobalContext = require('./GlobalContext');
 const symbols = require('./symbols');
-const {_elementGetter, _elementSetter, _normalizeUrl} = require('./utils');
+const {_elementGetter, _elementSetter, _normalizeUrl, _runMJS} = require('./utils');
 const {XRRigidTransform} = require('./XR');
 const {ElectronVm} = require('./electron-vm.js');
 
@@ -1790,7 +1790,21 @@ class HTMLScriptElement extends HTMLLoadableElement {
 
   isRunnable() {
     const {type} = this;
-    return !type || /^(?:(?:text|application)\/javascript|application\/ecmascript)$/.test(type);
+    return !type || type === 'module' || /^(?:(?:text|application)\/javascript|application\/ecmascript)$/.test(type);
+  }
+
+
+  isModule() {
+    return this.getAttribute('type') === 'module';
+  }
+
+  async _fetch(url) {
+    const res = await this.ownerDocument.defaultView.fetch(url)
+    if (res.status >= 200 && res.status < 300) {
+      return await res.text();
+    } else {
+      throw new Error('script src got invalid status code: ' + res.status + ' : ' + url);
+    }
   }
 
   loadRunNow() {
@@ -1799,18 +1813,15 @@ class HTMLScriptElement extends HTMLLoadableElement {
     const url = _mapUrl(this.src, this.ownerDocument.defaultView);
     
     return this.ownerDocument.resources.addResource((onprogress, cb) => {
-      this.ownerDocument.defaultView.fetch(url)
-        .then(res => {
-          if (res.status >= 200 && res.status < 300) {
-            return res.text();
-          } else {
-            return Promise.reject(new Error('script src got invalid status code: ' + res.status + ' : ' + url));
-          }
-        })
+      this._fetch(url)
         .then(s => {
-          vm.runInThisContext(s, {
-            filename: url,
-          });
+          if (this.isModule()) {
+            _runMJS(s, {url}, (url) => this._fetch(url))
+          } else {
+            vm.runInThisContext(s, {
+              filename: url,
+            });
+          }
         })
         .then(() => {
           this.readyState = 'complete';
@@ -1840,11 +1851,16 @@ class HTMLScriptElement extends HTMLLoadableElement {
     
     return this.ownerDocument.resources.addResource((onprogress, cb) => {
       (async () => {
-        vm.runInThisContext(innerHTML, {
-          filename: window.location.href,
+        const url = window.location.href;
+        const opts = {
           lineOffset : this.location && this.location.line !== null ? this.location.line - 1 : 0,
           columnOffset: this.location && this.location.col !== null ? this.location.col - 1 : 0,
-        });
+        }
+        if (this.isModule()) {
+          await _runMJS(innerHTML, {url, ...opts}, (url) => this._fetch(url));
+        } else {
+          vm.runInThisContext(innerHTML, {filename: url, ...opts});
+        }
       })()
         .then(() => {
           this.readyState = 'complete';
