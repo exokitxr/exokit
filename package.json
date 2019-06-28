@@ -16,8 +16,9 @@
     "lint": "eslint src tests",
     "rebuild": "shx rm -rf node_modules && npm cache clean --force && npm install",
     "serve": "serve examples",
-    "start": "node .",
+    "start": "node --experimental-vm-modules .",
     "test": "node node_modules/mocha/bin/mocha --full-trace --exit --bail --timeout 5000 tests/unit/__setup.test.js tests/unit/*.test.js tests/unit/**/*.test.js",
+    "test:one": "node node_modules/mocha/bin/mocha --full-trace --exit --bail --timeout 5000 tests/unit/__setup.test.js",
     "test:watch": "npm run test -- --watch"
   },
   "repository": {
