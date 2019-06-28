@@ -1739,7 +1739,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
       }
     });
     this.on('attached', () => {
-      if (this.getAttribute('src') && this.isRunnable() && this.isConnected && !this.readyState) {
+      if (this.isRunnable() && this.isConnected && !this.readyState) {
         const async = this.getAttribute('async');
         _loadRun(async !== null ? async !== 'false' : true);
       }
@@ -1809,38 +1809,39 @@ class HTMLScriptElement extends HTMLLoadableElement {
     this.readyState = 'loading';
     
     const url = _mapUrl(this.src, this.ownerDocument.defaultView);
+
+    const _fetch = async (url) => {
+      const res = await this.ownerDocument.defaultView.fetch(url)
+      if (res.status >= 200 && res.status < 300) {
+        return await res.text();
+      } else {
+        throw new Error('script src got invalid status code: ' + res.status + ' : ' + url);
+      }
+    }
     
-    return this.ownerDocument.resources.addResource((onprogress, cb) => {
-      this.ownerDocument.defaultView.fetch(url)
-        .then(res => {
-          if (res.status >= 200 && res.status < 300) {
-            return res.text();
-          } else {
-            return Promise.reject(new Error('script src got invalid status code: ' + res.status + ' : ' + url));
-          }
-        })
-        .then(s => {
-          vm.runInThisContext(s, {
+    return this.ownerDocument.resources.addResource(async (onprogress, cb) => {
+      try {
+        let code = url ? await _fetch(url) : this.innerHTML;
+        if (code) {
+          vm.runInThisContext(code, {
             filename: url,
           });
-        })
-        .then(() => {
-          this.readyState = 'complete';
+        }
+        this.readyState = 'complete';
 
-          this.dispatchEvent(new Event('load', {target: this}));
-          
-          cb();
-        })
-        .catch(err => {
-          this.readyState = 'complete';
+        this.dispatchEvent(new Event('load', {target: this}));
 
-          const e = new ErrorEvent('error', {target: this});
-          e.message = err.message;
-          e.stack = err.stack;
-          this.dispatchEvent(e);
-          
-          cb(err);
-        });
+        cb();
+       } catch (err) {
+         this.readyState = 'complete';
+
+         const e = new ErrorEvent('error', {target: this});
+         e.message = err.message;
+         e.stack = err.stack;
+         this.dispatchEvent(e);
+
+         cb(err);
+       }
     });
   }
 
