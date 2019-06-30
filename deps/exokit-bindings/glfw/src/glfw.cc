@@ -16,6 +16,7 @@ NATIVEwindow *sharedWindow = nullptr;
 InjectionHandler mainThreadInjectionHandler;
 std::mutex injectionHandlerMapMutex;
 // int lastX = 0, lastY = 0; // XXX track this per-window
+uint64_t lastClickTime = 0;
 #ifdef MAIN_THREAD_POLLING
 std::thread::id mainThreadId;
 bool hasMainThreadId = false;
@@ -791,6 +792,21 @@ void APIENTRY mouseButtonCB(NATIVEwindow *window, int button, int action, int mo
         evt,
       };
       eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
+
+      uint64_t now = glfwGetTimerValue();
+      uint64_t timeDiffTicks = now - lastClickTime;
+      uint64_t frequency = glfwGetTimerFrequency();
+      double timeDiffSeconds = (double)timeDiffTicks / (double)frequency;
+      if (timeDiffSeconds < 0.2) {
+        evt->Set(JS_STR("type"),JS_STR("dblclick"));
+
+        Local<Value> argv[] = {
+          JS_STR("dblclick"), // event name
+          evt,
+        };
+        eventHandlerFn(sizeof(argv)/sizeof(argv[0]), argv);
+      }
+      lastClickTime = now;
     }
   });
 }
