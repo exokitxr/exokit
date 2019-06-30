@@ -183,7 +183,8 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
         }
         case 'mousedown':
         case 'mouseup':
-        case 'click': {
+        case 'click':
+        case 'dblclick': {
           canvas.dispatchEvent(new window.MouseEvent(type, data));
           break;
         }
