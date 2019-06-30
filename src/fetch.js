@@ -1,23 +1,28 @@
+const url = require('url');
 const windowFetch = require('window-fetch');
-const protoFetch = require('proto-fetch')
 
-const protocols = {
-  file: windowFetch,
-  http: windowFetch,
-  https: windowFetch
+const protocols = {};
+['http', 'https', 'data', 'blob'].forEach(p => {
+  protocols[p] = windowFetch;
+});
+
+function fetch(u, options) {
+  const protocol = url.parse(u).protocol.match(/^([^:]*):/)[1];
+  if (protocol in protocols) {
+    return protocols[protocol](u, options);
+  } else {
+    return Promise.reject(new Error('unknown protocol'));
+  }
+}
+for (const k in windowFetch) {
+  fetch[k] = windowFetch[k];
 }
 
-const fetch = protoFetch(protocols)
-
-const {Request, Response, Headers, Blob} = windowFetch
-
-Object.assign(fetch, {Request, Response, Headers, Blob})
-
-function registerProtocol(protocol, fetchImpl) {
-  protocols[protocol] = fetchImpl
+function registerProtocolHandler(protocol, protocolFetchImpl) {
+  protocols[protocol] = protocolFetchImpl;
 }
 
 module.exports = {
   fetch,
-  registerProtocol
-}
+  registerProtocolHandler,
+};
