@@ -22,7 +22,7 @@ async function fetch(u, options) {
     }
   } else {
     // Fetch is being called with a Request object
-    // We should get the URL for matching the protoco
+    // We should get the URL for matching the protocol
     url = u.url
   }
 
