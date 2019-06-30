@@ -1030,16 +1030,19 @@ const _startTopRenderLoop = () => {
   };
   const _waitGetPosesFake = async () => {
     if (!args.uncapped) {
-      await new Promise((accept, reject) => {
-        const fps = nativeBindings.nativeWindow.getRefreshRate();
-        const expectedTimeDiff = 1000 / fps;
+      const fps = nativeBindings.nativeWindow.getRefreshRate();
+      const expectedTimeDiff = 1000 / fps;
 
-        const now = Date.now();
-        const timeDiff = now - lastFrameTime;
-        const waitTime = Math.max(expectedTimeDiff - timeDiff, 0) / 2;
+      const now = Date.now();
+      const timeDiff = now - lastFrameTime;
+      const waitTime = Math.max(expectedTimeDiff - timeDiff, 0) / 2;
+      lastFrameTime = now;
 
-        setTimeout(accept, waitTime);
-      });
+      if (waitTime > 0) {
+        await new Promise((accept, reject) => {
+          setTimeout(accept, waitTime);
+        });
+      }
     }
 
     const _updateMeshing = () => {
@@ -1309,8 +1312,6 @@ const _startTopRenderLoop = () => {
     }
 
     await _submitFrame();
-
-    lastFrameTime = Date.now()
 
     if (args.performance) {
       const now = Date.now();
