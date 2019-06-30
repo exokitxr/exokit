@@ -21,7 +21,7 @@ async function fetch(u, options) {
       u = utils._normalizeUrl(u, GlobalContext.baseUrl);
     }
   } else {
-    // Fetch is being called with request
+    // Fetch is being called with a Request object
     // We should get the URL for matching the protoco
     url = u.url
   }
