@@ -2,13 +2,12 @@ const {URL} = require('url');;
 const utils = require('./utils');
 const windowFetch = require('window-fetch');
 const {Response} = windowFetch;
+const GlobalContext = require('./GlobalContext');
 
 const protocols = {};
 ['http', 'https', 'data', 'blob'].forEach(p => {
   protocols[p] = windowFetch;
 });
-
-let baseUrl = undefined;
 
 const PROTOCOL_REGEX = /^([^:]*):/
 
@@ -19,7 +18,7 @@ async function fetch(u, options) {
     if (blob) {
       return new Response(blob);
     } else {
-      u = utils._normalizeUrl(u, baseUrl);
+      u = utils._normalizeUrl(u, GlobalContext.baseUrl);
     }
   } else {
     // Fetch is being called with request
@@ -44,12 +43,7 @@ function registerProtocolHandler(protocol, protocolFetchImpl) {
   protocols[protocol] = protocolFetchImpl;
 }
 
-function setBaseFetchUrl(url) {
-  baseUrl = url;
-}
-
 module.exports = {
   fetch,
   registerProtocolHandler,
-  setBaseFetchUrl
 };
