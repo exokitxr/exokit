@@ -12,7 +12,7 @@ const he = require('he');
 const parse5 = require('parse5');
 const parseIntStrict = require('parse-int');
 const selector = require('window-selector');
-const fetch = require('window-fetch');
+const {fetch} = require('./fetch');
 const {Blob} = fetch;
 const htmlUnescape = require('unescape');
 
@@ -211,7 +211,7 @@ class Node extends EventTarget {
     }
   }
   set previousElementSibling(previousElementSibling) {}
-  
+
   get nodeValue() {
     return null;
   }
@@ -826,7 +826,7 @@ class Element extends Node {
       throw new Error('The node to be removed is not a child of this node.');
     }
   }
-  
+
   append() {
     for (let i = 0; i < arguments.length; i++) {
       const content = arguments[0];
@@ -842,7 +842,7 @@ class Element extends Node {
       this.parentNode.removeChild(this);
     }
   }
-  
+
   replaceChild(newChild, oldChild) {
     const index = this.childNodes.indexOf(oldChild);
     if (index !== -1) {
@@ -1350,7 +1350,7 @@ class HTMLElement extends Element {
     if (HTMLElement.upgradeElement) {
       return HTMLElement.upgradeElement;
     }
-    
+
     const extension = window.customElements.extensions[tagName];
     if (extension) {
       attrs.push({
@@ -1358,7 +1358,7 @@ class HTMLElement extends Element {
         value: extension,
       });
     }
-    
+
     super(window, tagName, attrs, value, location);
 
     this._style = null;
@@ -1636,12 +1636,12 @@ class HTMLLinkElement extends HTMLLoadableElement {
       }
     });
   }
-  
+
   loadRunNow() {
     this.readyState = 'loading';
 
     const url = _mapUrl(this.href, this.ownerDocument.defaultView);
-    
+
     return this.ownerDocument.resources.addResource((onprogress, cb) => {
       this.ownerDocument.defaultView.fetch(url)
         .then(res => {
@@ -1655,22 +1655,22 @@ class HTMLLinkElement extends HTMLLoadableElement {
         .then(stylesheet => {
           this.stylesheet = stylesheet;
           this.ownerDocument.defaultView[symbols.styleEpochSymbol]++;
-          
+
           this.readyState = 'complete';
-          
+
           const e = new Event('load', {target: this});
           this._dispatchEventOnDocumentReady(e);
-          
+
           cb();
         })
         .catch(err => {
           this.readyState = 'complete';
-          
+
           const e = new ErrorEvent('error', {target: this});
           e.message = err.message;
           e.stack = err.stack;
           this._dispatchEventOnDocumentReady(e);
-          
+
           cb(err);
         });
     });
@@ -1807,9 +1807,9 @@ class HTMLScriptElement extends HTMLLoadableElement {
 
   loadRunNow() {
     this.readyState = 'loading';
-    
+
     const url = _mapUrl(this.src, this.ownerDocument.defaultView);
-    
+
     return this.ownerDocument.resources.addResource((onprogress, cb) => {
       this.ownerDocument.defaultView.fetch(url)
         .then(res => {
@@ -1828,7 +1828,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
           this.readyState = 'complete';
 
           this.dispatchEvent(new Event('load', {target: this}));
-          
+
           cb();
         })
         .catch(err => {
@@ -1838,7 +1838,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
           e.message = err.message;
           e.stack = err.stack;
           this.dispatchEvent(e);
-          
+
           cb(err);
         });
     });
@@ -1846,10 +1846,10 @@ class HTMLScriptElement extends HTMLLoadableElement {
 
   runNow() {
     this.readyState = 'loading';
-    
+
     const innerHTML = this.childNodes[0].value;
     const window = this.ownerDocument.defaultView;
-    
+
     return this.ownerDocument.resources.addResource((onprogress, cb) => {
       (async () => {
         vm.runInThisContext(innerHTML, {
@@ -1860,7 +1860,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
       })()
         .then(() => {
           this.readyState = 'complete';
-          
+
           this.dispatchEvent(new Event('load', {target: this}));
 
           cb();
@@ -1872,7 +1872,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
           e.message = err.message;
           e.stack = err.stack;
           this.dispatchEvent(e);
-          
+
           cb(err);
         });
     });
@@ -1894,7 +1894,7 @@ module.exports.HTMLScriptElement = HTMLScriptElement;
 class HTMLSrcableElement extends HTMLLoadableElement {
   constructor(window, tagName = null, attrs = [], value = '', location = null) {
     super(window, tagName, attrs, value, location);
-    
+
     this.readyState = null;
   }
 
@@ -2029,7 +2029,7 @@ const _parseVector = s => {
   if (Array.isArray(s)) {
     s = s.join(' ');
   }
-  
+
   const result = [];
   const ss = s.split(' ');
   for (let i = 0; i < ss.length; i++) {
@@ -2277,13 +2277,13 @@ class HTMLIFrameElement extends HTMLSrcableElement {
         this.contentWindow = null;
       }
       this.contentDocument = null;
-      
+
       if (this.browser) {
         this.browser.destroy(); // XXX support this
       }
     }); */
   }
-  
+
   get width() {
     return parseInt(this.getAttribute('width') || bindings.nativeWindow.getScreenSize()[0]/2 + '', 10);
   }
@@ -2353,7 +2353,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
     }
   }
   set texture(texture) {}
-  
+
   get position() {
     return this.getAttribute('position');
   }
@@ -2363,7 +2363,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
     }
     this.setAttribute('position', position);
   }
-  
+
   get orientation() {
     return this.getAttribute('orientation');
   }
@@ -2373,7 +2373,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
     }
     this.setAttribute('orientation', orientation);
   }
-  
+
   get scale() {
     return this.getAttribute('scale');
   }
@@ -2383,7 +2383,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
     }
     this.setAttribute('scale', scale);
   }
-  
+
   back() { // XXX should use native navigation APIs for these
     this.browser && this.browser.back();
   }
@@ -2393,7 +2393,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
   reload() {
     this.browser && this.browser.reload();
   }
-  
+
   sendMouseMove(x, y) {
     this.browser && this.browser.sendMouseMove(x, y);
   }
@@ -2427,7 +2427,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
   runJs(jsString = '', scriptUrl = '<unknown>', startLine = 1) {
     this.browser && this.browser.runJs(jsString, scriptUrl, startLine);
   }
-  
+
   /* destroy() {
     if (this.live) {
       this._emit('destroy');
@@ -2499,7 +2499,7 @@ class HTMLCanvasElement extends HTMLElement {
   getBoundingClientRect() {
     return new DOMRect(0, 0, this.clientWidth, this.clientHeight);
   }
-  
+
   get data() {
     return (this._context && this._context.data) || null;
   }
@@ -2781,7 +2781,7 @@ class HTMLImageElement extends HTMLSrcableElement {
       this.on('attribute', (name, value) => {
         if (name === 'src' && value) {
           this.readyState = 'loading';
-          
+
           const src = value;
 
           this.ownerDocument.resources.addResource((onprogress, cb) => {
@@ -2804,21 +2804,21 @@ class HTMLImageElement extends HTMLSrcableElement {
               }))
               .then(() => {
                 this.readyState = 'complete';
-                
+
                 this._dispatchEventOnDocumentReady(new Event('load', {target: this}));
-                
+
                 cb();
               })
               .catch(err => {
                 console.warn('failed to load image:', src);
 
                 this.readyState = 'complete';
-                
+
                 const e = new ErrorEvent('error', {target: this});
                 e.message = err.message;
                 e.stack = err.stack;
                 this._dispatchEventOnDocumentReady(e);
-                
+
                 cb(err);
               });
           });
@@ -2898,7 +2898,7 @@ class TimeRanges {
 module.exports.TimeRanges = TimeRanges;
 
 class HTMLAudioElement extends HTMLMediaElement {
-  constructor(window, attrs = [], value = '') {    
+  constructor(window, attrs = [], value = '') {
     if (typeof attrs === 'string') {
       const src = attrs;
       const audio = new HTMLAudioElement(window, [], '', null);
@@ -2945,7 +2945,7 @@ class HTMLAudioElement extends HTMLMediaElement {
                 this._dispatchEventOnDocumentReady(new Event('loadedmetadata', {target: this}));
                 this._dispatchEventOnDocumentReady(new Event('canplay', {target: this}));
                 this._dispatchEventOnDocumentReady(new Event('canplaythrough', {target: this}));
-                
+
                 cb();
               })
               .catch(err => {
@@ -2955,7 +2955,7 @@ class HTMLAudioElement extends HTMLMediaElement {
                 e.message = err.message;
                 e.stack = err.stack;
                 this._dispatchEventOnDocumentReady(e);
-                
+
                 cb(err);
               });
           });
@@ -2972,7 +2972,7 @@ class HTMLAudioElement extends HTMLMediaElement {
   pause() {
     this.audio.pause();
   }
-  
+
   get paused() {
     return this.audio ? this.audio.paused : true;
   }
@@ -3032,7 +3032,7 @@ class HTMLVideoElement extends HTMLMediaElement {
     this.on('attribute', (name, value) => {
       if (name === 'src' && value) {
         this.readyState = 'loading';
-        
+
         const src = value;
 
         this.readyState = HTMLMediaElement.HAVE_ENOUGH_DATA;
@@ -3050,7 +3050,7 @@ class HTMLVideoElement extends HTMLMediaElement {
           progressEvent.total = 1;
           progressEvent.lengthComputable = true;
           this._emit(progressEvent);
-          
+
           this.readyState = 'complete';
 
           this._dispatchEventOnDocumentReady(new Event('loadeddata', {target: this}));

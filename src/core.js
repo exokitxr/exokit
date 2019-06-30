@@ -1,7 +1,7 @@
 const url = require('url');
 const {URL} = url;
 
-const fetch = require('window-fetch');
+const {fetch} = require('./fetch');
 const GlobalContext = require('./GlobalContext');
 const symbols = require('./symbols');
 const {_getBaseUrl} = require('./utils');
