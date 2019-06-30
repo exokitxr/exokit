@@ -35,7 +35,7 @@ const utils = require('./utils');
 const btoa = s => Buffer.from(s, 'binary').toString('base64');
 const atob = s => Buffer.from(s, 'base64').toString('binary');
 
-XMLHttpRequest.setFetchImplementation(fetch)
+XMLHttpRequest.setFetchImplementation(fetch);
 
 const {
   nativeConsole,
