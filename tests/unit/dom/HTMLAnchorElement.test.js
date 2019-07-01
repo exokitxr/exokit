@@ -33,7 +33,7 @@ describe('HTMLAnchorElement', () => {
       `);
     });
 
-    it('can get location propert:ies', async () => {
+    it('can get location properties', async () => {
       return await window.evalAsync(`
         window.location.toString = () => 'https://foo.com';
         el.href = 'https://bar.com:8080/corge?qux=1#qaz';
