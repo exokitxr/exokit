@@ -39,7 +39,6 @@ XMLHttpRequest.setFetchImplementation(fetch);
 
 const {
   nativeConsole,
-  nativeCache,
 } = require('./native-bindings');
 const {process} = global;
 
@@ -57,21 +56,6 @@ consoleStream._writev = (chunks, callback) => {
   callback();
 };
 global.console = new Console(consoleStream);
-
-URL.createObjectURL = blob => {
-  const url = 'blob:' + GlobalContext.xrState.blobId[0]++;
-  nativeCache.set(url, blob.buffer);
-  return url;
-};
-URL.revokeObjectURL = url => {
-  nativeCache.delete(url);
-};
-URL.lookupObjectURL = url => {
-  const uint8Array = nativeCache.get(url);
-  return uint8Array && new Blob([uint8Array], {
-    type: 'application/octet-stream', // TODO: make this the correct type
-  });
-}
 
 // global initialization
 

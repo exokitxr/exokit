@@ -1,4 +1,5 @@
 const path = require('path');
+const {URL} = require('url');
 const {isMainThread, parentPort} = require('worker_threads');
 const {process} = global;
 
@@ -14,9 +15,22 @@ for (const k in exokitNode) {
   bindings[k] = exokitNode[k];
 }
 
-const isAndroid = bindings.nativePlatform === 'android';
-const glslVersion = isAndroid ? '300 es' : '330';
+URL.createObjectURL = blob => {
+  const url = 'blob:' + GlobalContext.xrState.blobId[0]++;
+  bindings.nativeCache.set(url, blob.buffer);
+  return url;
+};
+URL.revokeObjectURL = url => {
+  bindings.nativeCache.delete(url);
+};
+URL.lookupObjectURL = url => {
+  const uint8Array = bindings.nativeCache.get(url);
+  return uint8Array && new Blob([uint8Array], {
+    type: 'application/octet-stream', // TODO: make this the correct type
+  });
+}
 
+const glslVersion = bindings.nativePlatform === 'android' ? '300 es' : '330';
 const _decorateGlIntercepts = gl => {
   gl.createShader = (createShader => function(type) {
     const result = createShader.call(this, type);
