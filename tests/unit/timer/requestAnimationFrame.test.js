@@ -10,8 +10,6 @@ describe('requestAnimationFrame', () => {
     return await window.evalAsync(`
       const assert = require('assert');
       window.assert = assert;
-      const sinon = require('sinon');
-      window.sinon = sinon;
       1;
     `);
   });
@@ -54,9 +52,9 @@ describe('requestAnimationFrame', () => {
 
   it('catches errors', async () => {
     return await window.evalAsync(`new Promise((accept, reject) => {
-      const spy = sinon.spy();
+      let callCount = 0;
       function step () {
-        spy();
+        callCount++;
         console.log(doesnotexist);
       }
 
@@ -64,7 +62,7 @@ describe('requestAnimationFrame', () => {
       window.requestAnimationFrame(step);
 
       setTimeout(() => {
-        assert.equal(spy.callCount, 2);
+        assert.equal(callCount, 2);
 
         accept();
       }, 100);
