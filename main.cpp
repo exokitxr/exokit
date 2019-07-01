@@ -38,6 +38,7 @@ std::vector<const char *> getDefaultArguments() {
 
   std::vector<const char *> result = {
     "node",
+    "--experimental-vm-modules",
 #ifndef ANDROID
     ".",
 #else
