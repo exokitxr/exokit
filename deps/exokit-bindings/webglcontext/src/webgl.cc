@@ -934,6 +934,18 @@ ColorMaskState &ColorMaskState::operator=(const ColorMaskState &colorMaskState) 
   return *this;
 }
 
+size_t getArrayBufferViewElementSize(Local<ArrayBufferView> arrayBufferView) {
+  if (arrayBufferView->IsFloat64Array()) {
+    return 8;
+  } else if (arrayBufferView->IsFloat32Array() || arrayBufferView->IsUint32Array() || arrayBufferView->IsInt32Array()) {
+    return 4;
+  } else if (arrayBufferView->IsUint16Array() || arrayBufferView->IsInt16Array()) {
+    return 2;
+  } else {
+    return 1;
+  }
+}
+
 std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initialize(Isolate *isolate) {
   // Nan::EscapableHandleScope scope;
 
@@ -2935,18 +2947,6 @@ int getImageFormat(Local<Value> arg) {
     } else {
       return -1;
     }
-  }
-}
-
-size_t getArrayBufferViewElementSize(Local<ArrayBufferView> arrayBufferView) {
-  if (arrayBufferView->IsFloat64Array()) {
-    return 8;
-  } else if (arrayBufferView->IsFloat32Array() || arrayBufferView->IsUint32Array() || arrayBufferView->IsInt32Array()) {
-    return 4;
-  } else if (arrayBufferView->IsUint16Array() || arrayBufferView->IsInt16Array()) {
-    return 2;
-  } else {
-    return 1;
   }
 }
 
