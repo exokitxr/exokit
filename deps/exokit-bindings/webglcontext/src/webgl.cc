@@ -3400,7 +3400,6 @@ NAN_METHOD(WebGLRenderingContext::LinkProgram) {
   glLinkProgram(programId);
 }
 
-
 NAN_METHOD(WebGLRenderingContext::GetProgramParameter) {
   GLint programId = TO_INT32(JS_OBJ(info[0])->Get(JS_STR("id")));
   int pname = TO_INT32(info[1]);
@@ -3409,21 +3408,27 @@ NAN_METHOD(WebGLRenderingContext::GetProgramParameter) {
   switch (pname) {
     case GL_DELETE_STATUS:
     case GL_LINK_STATUS:
-    case GL_VALIDATE_STATUS:
+    case GL_VALIDATE_STATUS: {
       glGetProgramiv(programId, pname, &value);
       info.GetReturnValue().Set(JS_BOOL(static_cast<bool>(value)));
       break;
+    }
     case GL_ATTACHED_SHADERS:
     case GL_ACTIVE_ATTRIBUTES:
     case GL_ACTIVE_UNIFORMS:
+    case GL_TRANSFORM_FEEDBACK_BUFFER_MODE:
+    case GL_TRANSFORM_FEEDBACK_VARYINGS:
+    case GL_ACTIVE_UNIFORM_BLOCKS: {
       glGetProgramiv(programId, pname, &value);
-      info.GetReturnValue().Set(JS_FLOAT(static_cast<long>(value)));
+      info.GetReturnValue().Set(JS_INT(value));
       break;
-    default:
+    }
+    default: {
       Nan::ThrowTypeError("GetProgramParameter: Invalid Enum");
+      break;
+    }
   }
 }
-
 
 NAN_METHOD(WebGLRenderingContext::GetUniformLocation) {
   GLint programId = TO_INT32(JS_OBJ(info[0])->Get(JS_STR("id")));
