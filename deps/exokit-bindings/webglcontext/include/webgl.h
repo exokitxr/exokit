@@ -480,6 +480,8 @@ public:
   static NAN_METHOD(PauseTransformFeedback);
   static NAN_METHOD(ResumeTransformFeedback);
 
+  static NAN_METHOD(GetInternalformatParameter);
+
   static NAN_METHOD(CreateSampler);
   static NAN_METHOD(DeleteSampler);
   static NAN_METHOD(IsSampler);

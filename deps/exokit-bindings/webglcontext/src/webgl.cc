@@ -5355,6 +5355,8 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGL2RenderingContext::Initia
   Nan::SetMethod(proto, "pauseTransformFeedback", glCallWrap<PauseTransformFeedback>);
   Nan::SetMethod(proto, "resumeTransformFeedback", glCallWrap<ResumeTransformFeedback>);
 
+  Nan::SetMethod(proto, "getInternalformatParameter", glCallWrap<GetInternalformatParameter>);
+
   Nan::SetMethod(proto, "createSampler", glCallWrap<CreateSampler>);
   Nan::SetMethod(proto, "deleteSampler", glCallWrap<DeleteSampler>);
   Nan::SetMethod(proto, "isSampler", glCallWrap<IsSampler>);
@@ -5552,6 +5554,28 @@ NAN_METHOD(WebGL2RenderingContext::PauseTransformFeedback) {
 
 NAN_METHOD(WebGL2RenderingContext::ResumeTransformFeedback) {
   glResumeTransformFeedback();
+}
+
+NAN_METHOD(WebGL2RenderingContext::GetInternalformatParameter) {
+  GLenum target = TO_UINT32(info[0]);
+  GLenum internalformat = TO_UINT32(info[1]);
+  GLenum pname = TO_UINT32(info[2]);
+
+  if (pname == GL_SAMPLES) {
+    GLint numSamples = 0;
+    glGetInternalformativ(target, internalformat, GL_NUM_SAMPLE_COUNTS, 1, &numSamples);
+
+    GLsizei bufSize = numSamples;
+    Local<ArrayBuffer> paramsArrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), bufSize * sizeof(GLint));
+    Local<Int32Array> paramsInt32Array = Int32Array::New(paramsArrayBuffer, 0, bufSize);
+    if (numSamples > 0) {
+      glGetInternalformativ(target, internalformat, GL_SAMPLES, bufSize, (GLint *)paramsArrayBuffer->GetContents().Data());
+    }
+
+    info.GetReturnValue().Set(paramsInt32Array);
+  } else {
+    info.GetReturnValue().Set(Nan::Null());
+  }
 }
 
 NAN_METHOD(WebGL2RenderingContext::CreateSampler) {
