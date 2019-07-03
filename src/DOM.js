@@ -862,18 +862,20 @@ class Element extends Node {
     }
   }
   insertBefore(childNode, nextSibling) {
-    const index = this.childNodes.indexOf(nextSibling);
+    let index = this.childNodes.indexOf(nextSibling);
     if (index !== -1) {
-      this.childNodes.splice(index, 0, childNode);
-      childNode.parentNode = this;
-
-      if (this._children) {
-        this._children.update();
-      }
-
-      this._emit('children', [childNode], [], this.childNodes[index - 1] || null, this.childNodes[index + 1] || null);
-      this.ownerDocument._emit('domchange');
+      index = this.childNodes.length;
     }
+
+    this.childNodes.splice(index, 0, childNode);
+    childNode.parentNode = this;
+
+    if (this._children) {
+      this._children.update();
+    }
+
+    this._emit('children', [childNode], [], this.childNodes[index - 1] || null, this.childNodes[index + 1] || null);
+    this.ownerDocument._emit('domchange');
   }
   insertAdjacentHTML(position, text) {
     const _getEls = text => parse5.parseFragment(text, {
