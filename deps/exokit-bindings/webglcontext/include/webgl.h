@@ -215,7 +215,8 @@ public:
   static NAN_METHOD(CreateTexture);
   static NAN_METHOD(BindTexture);
   static NAN_METHOD(FlipTextureData);
-  static NAN_METHOD(TexImage2D);
+  // static NAN_METHOD(TexImage2D);
+  // static NAN_METHOD(TexImage3D);
   static NAN_METHOD(CompressedTexImage2D);
   static NAN_METHOD(TexParameteri);
   static NAN_METHOD(TexParameterf);
@@ -314,7 +315,8 @@ public:
   static NAN_METHOD(GetShaderSource);
   static NAN_METHOD(ValidateProgram);
 
-  static NAN_METHOD(TexSubImage2D);
+  // static NAN_METHOD(TexSubImage2D);
+  // static NAN_METHOD(TexSubImage3D);
   static NAN_METHOD(TexStorage2D);
   static NAN_METHOD(TexStorage3D);
 
