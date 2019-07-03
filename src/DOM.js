@@ -864,7 +864,7 @@ class Element extends Node {
   insertBefore(childNode, nextSibling) {
     let index = this.childNodes.indexOf(nextSibling);
     if (index !== -1) {
-      index = 0;
+      index = this.childNodes.length;
     }
 
     this.childNodes.splice(index, 0, childNode);
