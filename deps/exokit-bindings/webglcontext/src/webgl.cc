@@ -5590,7 +5590,7 @@ NAN_METHOD(WebGL2RenderingContext::IsSampler) {
 
 NAN_METHOD(WebGL2RenderingContext::BindSampler) {
   GLuint unit = TO_UINT32(info[0]);
-  GLuint sampler = TO_UINT32(JS_OBJ(info[1])->Get(JS_STR("id")));
+  GLuint sampler = info[0]->IsObject() ? TO_UINT32(JS_OBJ(info[1])->Get(JS_STR("id"))) : 0;
 
   glBindSampler(unit, sampler);
 }
