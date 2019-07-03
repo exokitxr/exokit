@@ -152,7 +152,7 @@ class Worker extends EventTarget {
 
   self.URL = URL;
   self.Location = Location;
-  const location = new Location(options.url);
+  const location = new Location(args.options.url);
   Object.defineProperty(self, 'location', {
     get() {
       return location;
