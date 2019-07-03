@@ -39,6 +39,7 @@ function initDocument (document, window) {
   document.head = head;
   document.body = body;
   document.location = window.location;
+  document.URL = window.location.href;
   document.cookie = '';
   document.referrer = '';
   document.createElement = (tagName, options = {}) => {
