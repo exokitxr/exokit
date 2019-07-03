@@ -3328,7 +3328,7 @@ NAN_METHOD(WebGLRenderingContext::BindBuffer) {
 NAN_METHOD(WebGLRenderingContext::BindBufferBase) {
   GLenum target = TO_UINT32(info[0]);
   GLuint index = TO_UINT32(info[1]);
-  GLuint buffer = TO_UINT32(JS_OBJ(info[2])->Get(JS_STR("id")));
+  GLuint buffer = info[2]->IsObject() ? TO_UINT32(JS_OBJ(info[2])->Get(JS_STR("id"))) : 0;
 
   glBindBufferBase(target, index, buffer);
 }
