@@ -875,20 +875,6 @@ class Element extends Node {
       this.ownerDocument._emit('domchange');
     }
   }
-  insertAfter(childNode, nextSibling) {
-    const index = this.childNodes.indexOf(nextSibling);
-    if (index !== -1) {
-      this.childNodes.splice(index + 1, 0, childNode);
-      childNode.parentNode = this;
-
-      if (this._children) {
-        this._children.update();
-      }
-
-      this._emit('children', [childNode], [], this.childNodes[index] || null, this.childNodes[index + 2] || null);
-      this.ownerDocument._emit('domchange');
-    }
-  }
   insertAdjacentHTML(position, text) {
     const _getEls = text => parse5.parseFragment(text, {
       locationInfo: true,
