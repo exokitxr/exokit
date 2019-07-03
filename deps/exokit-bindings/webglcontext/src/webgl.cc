@@ -1381,6 +1381,307 @@ void TexSubImage(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   }
 }
 
+template<int d>
+void glCompressedTexImage(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLsizei imageSize, const GLvoid *data);
+template<>
+void glCompressedTexImage<2>(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLsizei imageSize, const GLvoid *data) {
+  glCompressedTexImage2D(target, level, internalformat, width, height, border, imageSize, data);
+}
+template<>
+void glCompressedTexImage<3>(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLsizei imageSize, const GLvoid *data) {
+  glCompressedTexImage3D(target, level, internalformat, width, height, depth, border, imageSize, data);
+}
+template<int d>
+void CompressedTexImage(const Nan::FunctionCallbackInfo<v8::Value>& info) {
+  Local<Value> target;
+  Local<Value> level;
+  Local<Value> internalformat;
+  Local<Value> width;
+  Local<Value> height;
+  Local<Value> depth;
+  Local<Value> border;
+  if (d == 2) {
+    target = info[0];
+    level = info[1];
+    internalformat = info[2];
+    width = info[3];
+    height = info[4];
+    border = info[5];
+  } else {
+    target = info[0];
+    level = info[1];
+    internalformat = info[2];
+    width = info[3];
+    height = info[4];
+    depth = info[5];
+    border = info[6];
+  }
+
+  int targetV = TO_INT32(target);
+  int levelV = TO_INT32(level);
+  int internalformatV = TO_INT32(internalformat);
+  int widthV = TO_INT32(width);
+  int heightV = TO_INT32(height);
+  int depthV = d == 3 ? TO_INT32(depth) : 0;
+  int borderV = TO_INT32(border);
+
+  if (d == 2) {
+    if (info.Length() == 7) {
+      Local<Value> data = info[6];
+
+      char *dataV;
+      size_t dataLengthV;
+      if (data->IsArrayBufferView()) {
+        Local<ArrayBufferView> arrayBufferView = Local<ArrayBufferView>::Cast(data);
+        Local<ArrayBuffer> buffer = arrayBufferView->Buffer();
+        dataV = (char *)buffer->GetContents().Data() + arrayBufferView->ByteOffset();
+        dataLengthV = arrayBufferView->ByteLength();
+      } else if (info[6]->IsNull()) {
+        dataV = nullptr;
+        dataLengthV = 0;
+      } else {
+        return Nan::ThrowError("compressedTexImage2D: invalid arguments");
+      }
+
+      glCompressedTexImage<d>(targetV, levelV, internalformatV, widthV, heightV, depthV, borderV, dataLengthV, dataV);
+    } else if (info.Length() >= 7) {
+      if (info[6]->IsNumber() && info[7]->IsNumber()) {
+        Local<Value> imageSize = info[6];
+        Local<Value> offset = info[7];
+
+        GLsizei imageSizeV = TO_UINT32(imageSize);
+        GLintptr offsetV = (GLintptr)TO_UINT32(offset);
+
+        glCompressedTexImage<d>(targetV, levelV, internalformatV, widthV, heightV, depthV, borderV, imageSizeV, (GLvoid *)offsetV);
+      } else if (info[6]->IsArrayBufferView()) {
+        Local<Value> data = info[6];
+        Local<Value> srcOffset = info[7];
+        Local<Value> srcLengthOverride = info[8];
+
+        Local<ArrayBufferView> arrayBufferView = Local<ArrayBufferView>::Cast(data);
+        Local<ArrayBuffer> buffer = arrayBufferView->Buffer();
+        char *dataV = (char *)buffer->GetContents().Data() + arrayBufferView->ByteOffset();
+        size_t dataLengthV = arrayBufferView->ByteLength();
+        size_t elementSize = getArrayBufferViewElementSize(arrayBufferView);
+        if (srcOffset->IsNumber()) {
+          GLuint srcOffsetV = TO_UINT32(srcOffset);
+          dataV += srcOffsetV * elementSize;
+        }
+        if (srcLengthOverride->IsNumber()) {
+          GLuint srcLengthOverrideV = TO_UINT32(srcLengthOverride);
+          size_t newDataLengthV = srcLengthOverrideV * elementSize;
+          if (newDataLengthV <= dataLengthV) {
+            dataLengthV = newDataLengthV;
+          } else {
+            return Nan::ThrowError("compressedTexImage2D: invalid srcLengthOverride");
+          }
+        }
+
+        glCompressedTexImage<d>(targetV, levelV, internalformatV, widthV, heightV, depthV, borderV, dataLengthV, dataV);
+      } else {
+        return Nan::ThrowError("compressedTexImage2D: invalid arguments");
+      }
+    } else {
+      return Nan::ThrowError("compressedTexImage2D: invalid arguments");
+    }
+  } else {
+    if (info.Length() >= 8) {
+      if (info[7]->IsNumber() && info[8]->IsNumber()) {
+        Local<Value> imageSize = info[6];
+        Local<Value> offset = info[7];
+
+        GLsizei imageSizeV = TO_UINT32(imageSize);
+        GLintptr offsetV = (GLintptr)TO_UINT32(offset);
+
+        glCompressedTexImage<d>(targetV, levelV, internalformatV, widthV, heightV, depthV, borderV, imageSizeV, (GLvoid *)offsetV);
+      } else if (info[7]->IsArrayBufferView()) {
+        Local<Value> data = info[7];
+        Local<Value> srcOffset = info[8];
+        Local<Value> srcLengthOverride = info[9];
+
+        Local<ArrayBufferView> arrayBufferView = Local<ArrayBufferView>::Cast(data);
+        Local<ArrayBuffer> buffer = arrayBufferView->Buffer();
+        char *dataV = (char *)buffer->GetContents().Data() + arrayBufferView->ByteOffset();
+        size_t dataLengthV = arrayBufferView->ByteLength();
+        size_t elementSize = getArrayBufferViewElementSize(arrayBufferView);
+        if (srcOffset->IsNumber()) {
+          GLuint srcOffsetV = TO_UINT32(srcOffset);
+          dataV += srcOffsetV * elementSize;
+        }
+        if (srcLengthOverride->IsNumber()) {
+          GLuint srcLengthOverrideV = TO_UINT32(srcLengthOverride);
+          size_t newDataLengthV = srcLengthOverrideV * elementSize;
+          if (newDataLengthV <= dataLengthV) {
+            dataLengthV = newDataLengthV;
+          } else {
+            return Nan::ThrowError("compressedTexImage3D: invalid srcLengthOverride");
+          }
+        }
+
+        glCompressedTexImage<d>(targetV, levelV, internalformatV, widthV, heightV, depthV, borderV, dataLengthV, dataV);
+      } else {
+        return Nan::ThrowError("compressedTexImage3D: invalid arguments");
+      }
+    } else {
+      return Nan::ThrowError("compressedTexImage3D: invalid arguments");
+    }
+  }
+}
+
+template<int d>
+void glCompressedTexSubImage(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLsizei imageSize, const GLvoid *data);
+template<>
+void glCompressedTexSubImage<2>(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLsizei imageSize, const GLvoid *data) {
+  glCompressedTexSubImage2D(target, level, xoffset, yoffset, width, height, format, imageSize, data);
+}
+template<>
+void glCompressedTexSubImage<3>(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLsizei imageSize, const GLvoid *data) {
+  glCompressedTexSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, imageSize, data);
+}
+template<int d>
+void CompressedTexSubImage(const Nan::FunctionCallbackInfo<v8::Value>& info) {
+  Local<Value> target;
+  Local<Value> level;
+  Local<Value> xoffset;
+  Local<Value> yoffset;
+  Local<Value> zoffset;
+  Local<Value> width;
+  Local<Value> height;
+  Local<Value> depth;
+  Local<Value> format;
+  if (d == 2) {
+    target = info[0];
+    level = info[1];
+    xoffset = info[2];
+    yoffset = info[3];
+    width = info[4];
+    height = info[5];
+    format = info[6];
+  } else {
+    target = info[0];
+    level = info[1];
+    xoffset = info[2];
+    yoffset = info[3];
+    zoffset = info[4];
+    width = info[5];
+    height = info[6];
+    depth = info[7];
+    format = info[8];
+  }
+
+  int targetV = TO_INT32(target);
+  int levelV = TO_INT32(level);
+  int xoffsetV = TO_INT32(xoffset);
+  int yoffsetV = TO_INT32(yoffset);
+  int zoffsetV = d == 3 ? TO_INT32(zoffset) : 0;
+  int widthV = TO_INT32(width);
+  int heightV = TO_INT32(height);
+  int depthV = d == 3 ? TO_INT32(depth) : 0;
+  int formatV = TO_INT32(format);
+
+  if (d == 2) {
+    if (info.Length() == 8) {
+      Local<Value> data = info[7];
+
+      char *dataV;
+      size_t dataLengthV;
+      if (data->IsArrayBufferView()) {
+        Local<ArrayBufferView> arrayBufferView = Local<ArrayBufferView>::Cast(data);
+        Local<ArrayBuffer> buffer = arrayBufferView->Buffer();
+        dataV = (char *)buffer->GetContents().Data() + arrayBufferView->ByteOffset();
+        dataLengthV = arrayBufferView->ByteLength();
+      } else if (info[6]->IsNull()) {
+        dataV = nullptr;
+        dataLengthV = 0;
+      } else {
+        return Nan::ThrowError("compressedTexImage2D: invalid arguments");
+      }
+
+      glCompressedTexSubImage<d>(targetV, levelV, xoffsetV, yoffsetV, zoffsetV, widthV, heightV, depthV, formatV, dataLengthV, dataV);
+    } else if (info[7]->IsNumber() && info[8]->IsNumber()) {
+      Local<Value> imageSize = info[7];
+      Local<Value> offset = info[8];
+
+      GLsizei imageSizeV = TO_UINT32(imageSize);
+      GLintptr offsetV = (GLintptr)TO_UINT32(offset);
+
+      glCompressedTexSubImage<d>(targetV, levelV, xoffsetV, yoffsetV, zoffsetV, widthV, heightV, depthV, formatV, imageSizeV, (GLvoid *)offsetV);
+    } else if (info.Length() >= 8) {
+      if (info[7]->IsArrayBufferView()) {
+        Local<Value> data = info[7];
+        Local<Value> srcOffset = info[8];
+        Local<Value> srcLengthOverride = info[9];
+
+        Local<ArrayBufferView> arrayBufferView = Local<ArrayBufferView>::Cast(data);
+        Local<ArrayBuffer> buffer = arrayBufferView->Buffer();
+        char *dataV = (char *)buffer->GetContents().Data() + arrayBufferView->ByteOffset();
+        size_t dataLengthV = arrayBufferView->ByteLength();
+        size_t elementSize = getArrayBufferViewElementSize(arrayBufferView);
+        if (srcOffset->IsNumber()) {
+          GLuint srcOffsetV = TO_UINT32(srcOffset);
+          dataV += srcOffsetV * elementSize;
+        }
+        if (srcLengthOverride->IsNumber()) {
+          GLuint srcLengthOverrideV = TO_UINT32(srcLengthOverride);
+          size_t newDataLengthV = srcLengthOverrideV * elementSize;
+          if (newDataLengthV <= dataLengthV) {
+            dataLengthV = newDataLengthV;
+          } else {
+            return Nan::ThrowError("compressedTexSubImage2D: invalid srcLengthOverride");
+          }
+        }
+
+        glCompressedTexSubImage<d>(targetV, levelV, xoffsetV, yoffsetV, zoffsetV, widthV, heightV, depthV, formatV, dataLengthV, dataV);
+      } else {
+        return Nan::ThrowError("compressedTexSubImage2D: invalid arguments");
+      }
+    } else {
+      return Nan::ThrowError("compressedTexSubImage2D: invalid arguments");
+    }
+  } else {
+    if (info.Length() >= 10) {
+      if (info[9]->IsNumber() && info[10]->IsNumber()) {
+        Local<Value> imageSize = info[9];
+        Local<Value> offset = info[10];
+
+        GLsizei imageSizeV = TO_UINT32(imageSize);
+        GLintptr offsetV = (GLintptr)TO_UINT32(offset);
+
+        glCompressedTexSubImage<d>(targetV, levelV, xoffsetV, yoffsetV, zoffsetV, widthV, heightV, depthV, formatV, imageSizeV, (GLvoid *)offsetV);
+      } else if (info[9]->IsArrayBufferView()) {
+        Local<Value> data = info[9];
+        Local<Value> srcOffset = info[10];
+        Local<Value> srcLengthOverride = info[11];
+
+        Local<ArrayBufferView> arrayBufferView = Local<ArrayBufferView>::Cast(data);
+        Local<ArrayBuffer> buffer = arrayBufferView->Buffer();
+        char *dataV = (char *)buffer->GetContents().Data() + arrayBufferView->ByteOffset();
+        size_t dataLengthV = arrayBufferView->ByteLength();
+        size_t elementSize = getArrayBufferViewElementSize(arrayBufferView);
+        if (srcOffset->IsNumber()) {
+          GLuint srcOffsetV = TO_UINT32(srcOffset);
+          dataV += srcOffsetV * elementSize;
+        }
+        if (srcLengthOverride->IsNumber()) {
+          GLuint srcLengthOverrideV = TO_UINT32(srcLengthOverride);
+          size_t newDataLengthV = srcLengthOverrideV * elementSize;
+          if (newDataLengthV <= dataLengthV) {
+            dataLengthV = newDataLengthV;
+          } else {
+            return Nan::ThrowError("compressedTexSubImage3D: invalid srcLengthOverride");
+          }
+        }
+
+        glCompressedTexSubImage<d>(targetV, levelV, xoffsetV, yoffsetV, zoffsetV, widthV, heightV, depthV, formatV, dataLengthV, dataV);
+      } else {
+        return Nan::ThrowError("compressedTexSubImage3D: invalid arguments");
+      }
+    } else {
+      return Nan::ThrowError("compressedTexSubImage3D: invalid arguments");
+    }
+  }
+}
+
 std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initialize(Isolate *isolate) {
   #if defined(ANDROID) || defined(LUMIN)
   if(!extensionFunctionsInitialized){
@@ -1481,7 +1782,10 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
   // Nan::SetMethod(proto, "flipTextureData", glCallWrap<FlipTextureData>);
   Nan::SetMethod(proto, "texImage2D", glCallWrap<TexImage<2>>);
   Nan::SetMethod(proto, "texImage3D", glCallWrap<TexImage<3>>);
-  Nan::SetMethod(proto, "compressedTexImage2D", glCallWrap<CompressedTexImage2D>);
+  Nan::SetMethod(proto, "compressedTexImage2D", glCallWrap<CompressedTexImage<2>>);
+  Nan::SetMethod(proto, "compressedTexImage3D", glCallWrap<CompressedTexImage<3>>);
+  Nan::SetMethod(proto, "compressedTexSubImage2D", glCallWrap<CompressedTexSubImage<2>>);
+  Nan::SetMethod(proto, "compressedTexSubImage3D", glCallWrap<CompressedTexSubImage<3>>);
   Nan::SetMethod(proto, "texParameteri", glCallWrap<TexParameteri>);
   Nan::SetMethod(proto, "texParameterf", glCallWrap<TexParameterf>);
   Nan::SetMethod(proto, "clear", glCallWrap<Clear>);
@@ -3380,44 +3684,6 @@ int getImageFormat(Local<Value> arg) {
     } else {
       return -1;
     }
-  }
-}
-
-NAN_METHOD(WebGLRenderingContext::CompressedTexImage2D) {
-  Isolate *isolate = Isolate::GetCurrent();
-
-  if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber() && info[3]->IsNumber() && info[4]->IsNumber() && info[5]->IsNumber()) {
-    char *dataV;
-    size_t dataLengthV;
-    if (info[6]->IsArrayBufferView()) {
-      Local<ArrayBufferView> arrayBufferView = Local<ArrayBufferView>::Cast(info[6]);
-      Local<ArrayBuffer> buffer = arrayBufferView->Buffer();
-      dataV = (char *)buffer->GetContents().Data() + arrayBufferView->ByteOffset();
-      dataLengthV = arrayBufferView->ByteLength();
-    } else if (info[6]->IsNull()) {
-      dataV = nullptr;
-      dataLengthV = 0;
-    } else {
-      return Nan::ThrowError("compressedTexImage2D: invalid arguments");
-    }
-
-    Local<Value> target = info[0];
-    Local<Value> level = info[1];
-    Local<Value> internalformat = info[2];
-    Local<Value> width = info[3];
-    Local<Value> height = info[4];
-    Local<Value> border = info[5];
-
-    int targetV = TO_INT32(target);
-    int levelV = TO_INT32(level);
-    int internalformatV = TO_INT32(internalformat);
-    int widthV = TO_INT32(width);
-    int heightV = TO_INT32(height);
-    int borderV = TO_INT32(border);
-
-    glCompressedTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, dataLengthV, dataV);
-  } else {
-    Nan::ThrowError("compressedTexImage2D: invalid arguments");
   }
 }
 

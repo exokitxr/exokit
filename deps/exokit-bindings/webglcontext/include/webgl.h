@@ -217,7 +217,10 @@ public:
   static NAN_METHOD(FlipTextureData);
   // static NAN_METHOD(TexImage2D);
   // static NAN_METHOD(TexImage3D);
-  static NAN_METHOD(CompressedTexImage2D);
+  // static NAN_METHOD(CompressedTexImage2D);
+  // static NAN_METHOD(CompressedTexImage3D);
+  // static NAN_METHOD(CompressedTexSubImage2D);
+  // static NAN_METHOD(CompressedTexSubImage3D);
   static NAN_METHOD(TexParameteri);
   static NAN_METHOD(TexParameterf);
   static NAN_METHOD(Clear);
