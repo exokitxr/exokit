@@ -2198,7 +2198,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   htmlString,
                   hidden: true,
                   xrOffsetBuffer: this.xrOffset._buffer,
-                  onnavigate(href) {
+                  onnavigate: (href) => {
                     this.readyState = null;
 
                     this.setAttribute('src', href);
