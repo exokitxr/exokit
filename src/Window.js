@@ -115,7 +115,6 @@ const {
   createImageBitmap,
 } = require('./DOM');
 const {History} = require('./History');
-const {Location} = require('./Location');
 const XR = require('./XR');
 const DevTools = require('./DevTools');
 const utils = require('./utils');
@@ -466,16 +465,6 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
     set(devicePixelRatio) {},
   });
   window.document = null;
-  const location = new Location(options.url);
-  Object.defineProperty(window, 'location', {
-    get() {
-      return location;
-    },
-    set(href) {
-      href = href + '';
-      location.href = href;
-    },
-  });
   window.history = new History(location.href);
   window.matchMedia = media => ({
     media,

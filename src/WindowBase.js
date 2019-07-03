@@ -21,6 +21,7 @@ const {Buffer} = global;
 
 const {CustomEvent, DragEvent, ErrorEvent, Event, EventTarget, KeyboardEvent, MessageEvent, MouseEvent, WheelEvent, PromiseRejectionEvent} = require('./Event');
 const {MediaDevices, Clipboard, Navigator} = require('./Navigator');
+const {Location} = require('./Location');
 const {FileReader} = require('./File');
 const {XMLHttpRequest, FormData} = require('window-xhr');
 const fetch = require('window-fetch');
@@ -150,6 +151,17 @@ class Worker extends EventTarget {
   self.EventTarget = EventTarget;
 
   self.URL = URL;
+  self.Location = Location;
+  const location = new Location(args.options.url);
+  Object.defineProperty(self, 'location', {
+    get() {
+      return location;
+    },
+    set(href) {
+      href = href + '';
+      location.href = href;
+    },
+  });
 
   self.MediaDevices = MediaDevices;
   self.Clipboard = Clipboard;
