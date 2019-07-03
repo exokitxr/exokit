@@ -862,18 +862,20 @@ class Element extends Node {
     }
   }
   insertBefore(childNode, nextSibling) {
-    const index = this.childNodes.indexOf(nextSibling);
+    let index = this.childNodes.indexOf(nextSibling);
     if (index !== -1) {
-      this.childNodes.splice(index, 0, childNode);
-      childNode.parentNode = this;
-
-      if (this._children) {
-        this._children.update();
-      }
-
-      this._emit('children', [childNode], [], this.childNodes[index - 1] || null, this.childNodes[index + 1] || null);
-      this.ownerDocument._emit('domchange');
+      index = 0;
     }
+
+    this.childNodes.splice(index, 0, childNode);
+    childNode.parentNode = this;
+
+    if (this._children) {
+      this._children.update();
+    }
+
+    this._emit('children', [childNode], [], this.childNodes[index - 1] || null, this.childNodes[index + 1] || null);
+    this.ownerDocument._emit('domchange');
   }
   insertAfter(childNode, nextSibling) {
     const index = this.childNodes.indexOf(nextSibling);
