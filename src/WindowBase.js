@@ -98,6 +98,7 @@ class Worker extends EventTarget {
       args: {
         src,
         options: {
+          url: src,
           baseUrl: utils._getBaseUrl(src, baseUrl),
         },
         xrState: args.xrState,
