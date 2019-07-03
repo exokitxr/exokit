@@ -101,6 +101,7 @@ class Worker extends EventTarget {
           url: src,
           baseUrl: utils._getBaseUrl(src, baseUrl),
         },
+        args: args.options.args,
         xrState: args.xrState,
       },
     });
