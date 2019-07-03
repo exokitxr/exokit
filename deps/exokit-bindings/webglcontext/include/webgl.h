@@ -316,6 +316,7 @@ public:
 
   static NAN_METHOD(TexSubImage2D);
   static NAN_METHOD(TexStorage2D);
+  static NAN_METHOD(TexStorage3D);
 
   static NAN_METHOD(ReadPixels);
   static NAN_METHOD(GetTexParameter);

@@ -1135,6 +1135,7 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
 
   Nan::SetMethod(proto, "texSubImage2D", glCallWrap<TexSubImage2D>);
   Nan::SetMethod(proto, "texStorage2D", glCallWrap<TexStorage2D>);
+  Nan::SetMethod(proto, "texStorage3D", glCallWrap<TexStorage3D>);
 
   Nan::SetMethod(proto, "readPixels", glCallWrap<ReadPixels>);
   Nan::SetMethod(proto, "getTexParameter", glCallWrap<GetTexParameter>);
@@ -4424,6 +4425,18 @@ NAN_METHOD(WebGLRenderingContext::TexStorage2D) {
   GLsizei height = TO_UINT32(info[4]);
 
   glTexStorage2D(target, levels, internalFormat, width, height);
+}
+
+NAN_METHOD(WebGLRenderingContext::TexStorage3D) {
+  WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
+  GLenum target = TO_UINT32(info[0]);
+  GLint levels = TO_INT32(info[1]);
+  GLenum internalFormat = TO_UINT32(info[2]);
+  GLsizei width = TO_UINT32(info[3]);
+  GLsizei height = TO_UINT32(info[4]);
+  GLsizei depth = TO_UINT32(info[5]);
+
+  glTexStorage3D(target, levels, internalFormat, width, height, depth);
 }
 
 NAN_METHOD(WebGLRenderingContext::ReadPixels) {
