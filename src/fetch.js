@@ -5,7 +5,7 @@ const {Response} = windowFetch;
 const GlobalContext = require('./GlobalContext');
 
 const protocols = {};
-['http', 'https', 'data', 'blob'].forEach(p => {
+['http', 'https', 'file', 'data', 'blob'].forEach(p => {
   protocols[p] = windowFetch;
 });
 
