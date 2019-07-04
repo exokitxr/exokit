@@ -78,10 +78,10 @@
     "rimraf": "^2.6.2",
     "unescape": "^1.0.1",
     "webgl-to-opengl": "0.0.16",
-    "window-fetch": "0.0.12",
+    "window-fetch": "0.0.13",
     "window-ls": "0.0.1",
     "window-selector": "0.0.7",
-    "window-xhr": "0.0.39",
+    "window-xhr": "0.0.40",
     "ws": "^6.2.0"
   },
   "optionalDependencies": {
