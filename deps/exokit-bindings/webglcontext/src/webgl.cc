@@ -4555,6 +4555,18 @@ NAN_METHOD(WebGLRenderingContext::GetParameter) {
   GLenum name = TO_INT32(info[0]);
 
   switch (name) {
+    case GL_RED_BITS:
+    case GL_GREEN_BITS:
+    case GL_BLUE_BITS:
+    case GL_ALPHA_BITS:
+    case GL_STENCIL_BITS: {
+      info.GetReturnValue().Set(JS_INT(8));
+      break;
+    }
+    case GL_DEPTH_BITS: {
+      info.GetReturnValue().Set(JS_INT(24));
+      break;
+    }
     case GL_BLEND:
     case GL_CULL_FACE:
     case GL_DEPTH_TEST:
@@ -4571,7 +4583,6 @@ NAN_METHOD(WebGLRenderingContext::GetParameter) {
       info.GetReturnValue().Set(JS_BOOL(static_cast<bool>(params)));
       break;
     }
-    case GL_ALPHA_BITS:
     case GL_BLEND_DST_ALPHA:
     case GL_BLEND_DST_RGB:
     case GL_BLEND_EQUATION:
@@ -4579,13 +4590,10 @@ NAN_METHOD(WebGLRenderingContext::GetParameter) {
     // case GL_BLEND_EQUATION_RGB: // === GL_BLEND_EQUATION
     case GL_BLEND_SRC_ALPHA:
     case GL_BLEND_SRC_RGB:
-    case GL_BLUE_BITS:
     case GL_CULL_FACE_MODE:
-    case GL_DEPTH_BITS:
     case GL_DEPTH_FUNC:
     case GL_FRONT_FACE:
     case GL_GENERATE_MIPMAP_HINT:
-    case GL_GREEN_BITS:
     case GL_IMPLEMENTATION_COLOR_READ_FORMAT:
     case GL_IMPLEMENTATION_COLOR_READ_TYPE:
     case GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS:
@@ -4599,7 +4607,6 @@ NAN_METHOD(WebGLRenderingContext::GetParameter) {
     case GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS:
     case GL_MAX_VERTEX_UNIFORM_VECTORS:
     case GL_PACK_ALIGNMENT:
-    case GL_RED_BITS:
     case GL_SAMPLE_BUFFERS:
     case GL_SAMPLES:
     case GL_STENCIL_BACK_FAIL:
@@ -4609,7 +4616,6 @@ NAN_METHOD(WebGLRenderingContext::GetParameter) {
     case GL_STENCIL_BACK_REF:
     case GL_STENCIL_BACK_VALUE_MASK:
     case GL_STENCIL_BACK_WRITEMASK:
-    case GL_STENCIL_BITS:
     case GL_STENCIL_CLEAR_VALUE:
     case GL_STENCIL_FAIL:
     case GL_STENCIL_FUNC:
