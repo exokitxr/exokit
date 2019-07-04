@@ -1571,13 +1571,14 @@ void TexSubImage(const Nan::FunctionCallbackInfo<v8::Value>& info) {
     levelV = TO_INT32(info[1]);
     xoffsetV = TO_INT32(info[2]);
     yoffsetV = TO_INT32(info[3]);
-    widthV = TO_UINT32(info[4]);
-    heightV = TO_UINT32(info[5]);
-    depthV = TO_UINT32(info[6]);
-    formatV = TO_INT32(info[7]);
-    typeV = TO_INT32(info[8]);
-    pixels = info[9];
-    srcOffset = info[10];
+    zoffsetV = TO_INT32(info[4]);
+    widthV = TO_UINT32(info[5]);
+    heightV = TO_UINT32(info[6]);
+    depthV = TO_UINT32(info[7]);
+    formatV = TO_INT32(info[8]);
+    typeV = TO_INT32(info[9]);
+    pixels = info[10];
+    srcOffset = info[11];
   }
 
   if (pixels->IsArrayBufferView() && srcOffset->IsNumber()) {
