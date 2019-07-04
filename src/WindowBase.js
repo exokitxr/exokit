@@ -59,7 +59,7 @@ consoleStream._writev = (chunks, callback) => {
 global.console = new Console(consoleStream);
 
 URL.createObjectURL = blob => {
-  const url = 'blob:' + GlobalContext.xrState.blobId[0]++;
+  const url = 'blob:' + global.location.protocol + '//' + global.location.host + '/' + GlobalContext.xrState.blobId[0]++;
   nativeCache.set(url, blob.buffer);
   return url;
 };

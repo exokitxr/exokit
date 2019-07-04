@@ -10,7 +10,6 @@ const {
 } = require('worker_threads');
 
 const {createImageBitmap} = require('./DOM.js');
-const fetch = require('window-fetch');
 const {XMLHttpRequest} = require('window-xhr');
 const WebSocket = require('ws/lib/websocket');
 const {FileReader} = require('./File.js');
@@ -30,7 +29,6 @@ global.self = global;
 global.addEventListener = (type, fn) => global.on(type, fn);
 global.removeEventListener = (type, fn) => global.removeListener(type, fn);
 global.location = url.parse(filename);
-global.fetch = (s, options) => fetch(_normalizeUrl(s), options);
 global.XMLHttpRequest = XMLHttpRequest;
 global.WebSocket = WebSocket;
 global.importScripts = importScripts;
