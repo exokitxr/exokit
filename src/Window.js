@@ -519,7 +519,6 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
   window.localStorage = new LocalStorage(path.join(options.dataPath, '.localStorage'));
   window.sessionStorage = new LocalStorage(path.join(options.dataPath, '.sessionStorage'));
   window.indexedDB = indexedDB;
-  window.performance = performance;
   window.screen = new Screen(window);
   window.scrollTo = function(x = 0, y = 0) {
     this.scrollX = x;

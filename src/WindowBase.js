@@ -8,6 +8,7 @@ const {URL} = url;
 const vm = require('vm');
 const util = require('util');
 const crypto = require('crypto');
+const {performance} = require('perf_hooks');
 const {
   Worker: WorkerBase,
   workerData: {
@@ -166,8 +167,6 @@ class Worker extends EventTarget {
     },
   });
 
-  self.MediaDevices = MediaDevices;
-  self.Clipboard = Clipboard;
   self.Navigator = Navigator;
   self.navigator = new Navigator();
 
@@ -217,6 +216,9 @@ class Worker extends EventTarget {
   })(XMLHttpRequest);
   self.WebSocket = WebSocket;
   self.FileReader = FileReader;
+
+  self.performance = performance;
+
   self.crypto = {
     getRandomValues(typedArray) {
       crypto.randomFillSync(Buffer.from(typedArray.buffer, typedArray.byteOffset, typedArray.byteLength));
@@ -253,6 +255,9 @@ class Worker extends EventTarget {
   };
 
   self.Worker = Worker;
+
+  self.MediaDevices = MediaDevices;
+  self.Clipboard = Clipboard;
 
   self.postMessage = (message, transferList) => parentPort.postMessage({
     method: 'postMessage',
