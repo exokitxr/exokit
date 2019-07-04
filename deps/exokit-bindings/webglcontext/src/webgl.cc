@@ -1411,7 +1411,7 @@ void TexImage(const Nan::FunctionCallbackInfo<v8::Value>& info) {
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbos[1]);
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, targetV, gl->HasTextureBinding(gl->activeTexture, targetV) ? gl->GetTextureBinding(gl->activeTexture, targetV) : 0, 0);
 
-    const bool flipY = gl->HasPixelStoreiBinding(UNPACK_FLIP_Y_WEBGL) ? (bool)gl->GetPixelStoreiBinding(UNPACK_FLIP_Y_WEBGL) : false;
+    const bool flipY = d == 2 && gl->HasPixelStoreiBinding(UNPACK_FLIP_Y_WEBGL) ? (bool)gl->GetPixelStoreiBinding(UNPACK_FLIP_Y_WEBGL) : false;
     if (flipY) {
       glBlitFramebuffer(
         0, 0, widthV, heightV,
@@ -1462,7 +1462,7 @@ void TexImage(const Nan::FunctionCallbackInfo<v8::Value>& info) {
       pixelsV2 = pixelsV;
     }
 
-    const bool flipY = gl->HasPixelStoreiBinding(UNPACK_FLIP_Y_WEBGL) ? (bool)gl->GetPixelStoreiBinding(UNPACK_FLIP_Y_WEBGL) : false;
+    const bool flipY = d == 2 && gl->HasPixelStoreiBinding(UNPACK_FLIP_Y_WEBGL) ? (bool)gl->GetPixelStoreiBinding(UNPACK_FLIP_Y_WEBGL) : false;
     if (flipY && !pixels->IsArrayBufferView()) {
       unique_ptr<char[]> pixelsV3Buffer(new char[widthV * heightV * pixelSize]);
 
@@ -1604,23 +1604,21 @@ void TexSubImage(const Nan::FunctionCallbackInfo<v8::Value>& info) {
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbos[1]);
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, targetV, gl->HasTextureBinding(gl->activeTexture, targetV) ? gl->GetTextureBinding(gl->activeTexture, targetV) : 0, 0);
 
-    if (d == 2) {
-      const bool flipY = gl->HasPixelStoreiBinding(UNPACK_FLIP_Y_WEBGL) ? (bool)gl->GetPixelStoreiBinding(UNPACK_FLIP_Y_WEBGL) : false;
-      if (flipY) {
-        glBlitFramebuffer(
-          0, 0, widthV, heightV,
-          xoffsetV, yoffsetV, xoffsetV + widthV, yoffsetV + heightV,
-          GL_COLOR_BUFFER_BIT,
-          GL_NEAREST
-        );
-      } else {
-        glBlitFramebuffer(
-          0, heightV, widthV, 0,
-          xoffsetV, yoffsetV, xoffsetV + widthV, yoffsetV + heightV,
-          GL_COLOR_BUFFER_BIT,
-          GL_NEAREST
-        );
-      }
+    const bool flipY = d == 2 && gl->HasPixelStoreiBinding(UNPACK_FLIP_Y_WEBGL) ? (bool)gl->GetPixelStoreiBinding(UNPACK_FLIP_Y_WEBGL) : false;
+    if (flipY) {
+      glBlitFramebuffer(
+        0, 0, widthV, heightV,
+        xoffsetV, yoffsetV, xoffsetV + widthV, yoffsetV + heightV,
+        GL_COLOR_BUFFER_BIT,
+        GL_NEAREST
+      );
+    } else {
+      glBlitFramebuffer(
+        0, heightV, widthV, 0,
+        xoffsetV, yoffsetV, xoffsetV + widthV, yoffsetV + heightV,
+        GL_COLOR_BUFFER_BIT,
+        GL_NEAREST
+      );
     }
 
     // glCopyTexSubImage2D(targetV, levelV, xoffsetV, yoffsetV, 0, 0, widthV, heightV);
@@ -1651,7 +1649,7 @@ void TexSubImage(const Nan::FunctionCallbackInfo<v8::Value>& info) {
       pixelsV2 = pixelsV;
     }
 
-    const bool flipY = gl->HasPixelStoreiBinding(UNPACK_FLIP_Y_WEBGL) ? (bool)gl->GetPixelStoreiBinding(UNPACK_FLIP_Y_WEBGL) : false;
+    const bool flipY = d == 2 && gl->HasPixelStoreiBinding(UNPACK_FLIP_Y_WEBGL) ? (bool)gl->GetPixelStoreiBinding(UNPACK_FLIP_Y_WEBGL) : false;
     if (flipY && !pixels->IsArrayBufferView()) {
       unique_ptr<char[]> pixelsV3Buffer(new char[widthV * heightV * pixelSize]);
       flipImageData(pixelsV3Buffer.get(), pixelsV2, widthV, heightV, pixelSize);
