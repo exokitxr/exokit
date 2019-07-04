@@ -1468,7 +1468,7 @@ void TexImage(const Nan::FunctionCallbackInfo<v8::Value>& info) {
 
       flipImageData(pixelsV3Buffer.get(), pixelsV2, widthV, heightV, pixelSize);
 
-      glTexImage2D(targetV, levelV, internalformatV, widthV, heightV, borderV, formatV, typeV, pixelsV3Buffer.get());
+      glTexImage<d>(targetV, levelV, internalformatV, widthV, heightV, depthV, borderV, formatV, typeV, pixelsV3Buffer.get());
     } else if (formatV == GL_LUMINANCE || formatV == GL_ALPHA) {
       unique_ptr<char[]> pixelsV3Buffer(new char[widthV * heightV * 4]);
 
@@ -1488,7 +1488,7 @@ void TexImage(const Nan::FunctionCallbackInfo<v8::Value>& info) {
         expandLuminance<unsigned char>(pixelsV3Buffer.get(), pixelsV2, widthV, heightV);
       }
 
-      glTexImage2D(targetV, levelV, GL_RGBA8, widthV, heightV, borderV, GL_RGBA, typeV, pixelsV3Buffer.get());
+      glTexImage<d>(targetV, levelV, GL_RGBA8, widthV, heightV, depthV, borderV, GL_RGBA, typeV, pixelsV3Buffer.get());
     } else if (formatV == GL_LUMINANCE_ALPHA) {
       unique_ptr<char[]> pixelsV3Buffer(new char[widthV * heightV * 4]);
 
