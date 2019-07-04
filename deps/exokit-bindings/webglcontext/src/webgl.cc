@@ -2192,7 +2192,7 @@ NAN_METHOD(WebGLRenderingContext::ClearDirty) {
 // GL CALLS
 
 // A 32-bit and 64-bit compatible way of converting a pointer to a GLuint.
-static GLuint ToGLuint(const void* ptr) {
+static GLuint toGLuint(const void* ptr) {
   return static_cast<GLuint>(reinterpret_cast<size_t>(ptr));
 }
 
@@ -4617,7 +4617,7 @@ NAN_METHOD(WebGLRenderingContext::GetVertexAttribOffset) {
 
   glGetVertexAttribPointerv(index, pname, &ret);
 
-  info.GetReturnValue().Set(JS_INT(ToGLuint(ret)));
+  info.GetReturnValue().Set(JS_INT(toGLuint(ret)));
 }
 
 NAN_METHOD(WebGLRenderingContext::GetShaderPrecisionFormat) {
