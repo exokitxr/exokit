@@ -1102,6 +1102,132 @@ size_t getArrayBufferViewElementSize(Local<ArrayBufferView> arrayBufferView) {
   }
 }
 
+// A 32-bit and 64-bit compatible way of converting a pointer to a GLuint.
+static GLuint toGLuint(const void* ptr) {
+  return static_cast<GLuint>(reinterpret_cast<size_t>(ptr));
+}
+
+template<typename Type>
+inline Type* getArrayData(Local<Value> arg, int* num = NULL) {
+  Type *data=NULL;
+  if (num) {
+    *num = 0;
+  }
+
+  if (!arg->IsNull()) {
+    if (arg->IsArrayBufferView()) {
+      Local<ArrayBufferView> arr = Local<ArrayBufferView>::Cast(arg);
+      if (num) {
+        *num = arr->ByteLength()/sizeof(Type);
+      }
+      data = reinterpret_cast<Type*>((char *)arr->Buffer()->GetContents().Data() + arr->ByteOffset());
+    } else {
+      Nan::ThrowError("Bad array argument");
+    }
+  }
+
+  return data;
+}
+
+inline GLuint getImageTexture(Local<Value> arg) {
+  GLuint tex = 0;
+
+  if (arg->IsObject()) {
+    Local<String> textureString = String::NewFromUtf8(Isolate::GetCurrent(), "texture", NewStringType::kInternalized).ToLocalChecked();
+    Local<Value> textureVal = Local<Object>::Cast(arg)->Get(textureString);
+
+    if (textureVal->IsObject()) {
+      Local<String> idString = String::NewFromUtf8(Isolate::GetCurrent(), "id", NewStringType::kInternalized).ToLocalChecked();
+      Local<Value> idVal = Local<Object>::Cast(textureVal)->Get(idString);
+
+      if (idVal->IsNumber()) {
+        tex = TO_UINT32(idVal);
+      }
+    }
+  }
+  return tex;
+}
+
+inline void *getImageData(Local<Value> arg) {
+  void *pixels = nullptr;
+
+  if (!arg->IsNull()) {
+    Local<Object> obj = Local<Object>::Cast(arg);
+    if (obj->IsObject()) {
+      if (obj->IsArrayBufferView()) {
+        pixels = getArrayData<unsigned char>(obj);
+      } else {
+        Local<String> dataString = String::NewFromUtf8(Isolate::GetCurrent(), "data", NewStringType::kInternalized).ToLocalChecked();
+        if (Nan::Has(obj, dataString).FromJust()) {
+          Local<Value> data = obj->Get(dataString);
+          pixels = getArrayData<unsigned char>(data);
+        } else {
+          Nan::ThrowError("Bad texture argument");
+          // pixels = node::Buffer::Data(Nan::Get(obj, JS_STR("data")).ToLocalChecked());
+        }
+      }
+    } else {
+      Nan::ThrowError("Bad texture argument");
+    }
+  }
+  return pixels;
+}
+
+inline void reformatImageData(char *dstData, char *srcData, size_t dstPixelSize, size_t srcPixelSize, size_t numPixels) {
+  if (dstPixelSize < srcPixelSize) {
+    // size_t clipSize = srcPixelSize - dstPixelSize;
+    for (size_t i = 0; i < numPixels; i++) {
+      memcpy(dstData + i * dstPixelSize, srcData + i * srcPixelSize, dstPixelSize);
+      /* for (size_t j = 0; j < dstPixelSize; j++) {
+        dstData[i * dstPixelSize + j] = srcData[i * srcPixelSize + srcPixelSize - clipSize - 1 - j];
+      } */
+      // memcpy(dstData + i * dstPixelSize, srcData + i * srcPixelSize + clipSize, dstPixelSize);
+    }
+  } else if (dstPixelSize > srcPixelSize) {
+    size_t clipSize = dstPixelSize - srcPixelSize;
+    for (size_t i = 0; i < numPixels; i++) {
+      memcpy(dstData + i * dstPixelSize, srcData + i * srcPixelSize, srcPixelSize);
+      memset(dstData + i * dstPixelSize + srcPixelSize, 0xFF, clipSize);
+    }
+  } else {
+    // the call was pointless, but fulfill the contract anyway
+    memcpy(dstData, srcData, dstPixelSize * numPixels);
+  }
+}
+
+void flipImageData(char *dstData, char *srcData, size_t width, size_t height, size_t pixelSize) {
+  size_t stride = width * pixelSize;
+  size_t size = width * height * pixelSize;
+  for (size_t i = 0; i < height; i++) {
+    memcpy(dstData + (i * stride), srcData + size - stride - (i * stride), stride);
+  }
+}
+
+template <typename T>
+void expandLuminance(char *dstData, char *srcData, size_t width, size_t height) {
+  size_t size = width * height;
+  for (size_t i = 0; i < size; i++) {
+    T value = ((T *)srcData)[i];
+    ((T *)dstData)[i * 4 + 0] = value;
+    ((T *)dstData)[i * 4 + 1] = value;
+    ((T *)dstData)[i * 4 + 2] = value;
+    ((T *)dstData)[i * 4 + 3] = value;
+  }
+}
+
+template <typename T>
+void expandLuminanceAlpha(char *dstData, char *srcData, size_t width, size_t height) {
+  size_t size = width * height;
+  for (size_t i = 0; i < size; i++) {
+    T luminance = ((T *)srcData)[i*2 + 0];
+    T alpha = ((T *)srcData)[i*2 + 1];
+    ((T *)dstData)[i * 4 + 0] = luminance;
+    ((T *)dstData)[i * 4 + 1] = luminance;
+    ((T *)dstData)[i * 4 + 2] = luminance;
+    ((T *)dstData)[i * 4 + 3] = alpha;
+  }
+}
+
 // templates
 
 template<int d>
@@ -2190,132 +2316,6 @@ NAN_METHOD(WebGLRenderingContext::ClearDirty) {
 }
 
 // GL CALLS
-
-// A 32-bit and 64-bit compatible way of converting a pointer to a GLuint.
-static GLuint toGLuint(const void* ptr) {
-  return static_cast<GLuint>(reinterpret_cast<size_t>(ptr));
-}
-
-template<typename Type>
-inline Type* getArrayData(Local<Value> arg, int* num = NULL) {
-  Type *data=NULL;
-  if (num) {
-    *num = 0;
-  }
-
-  if (!arg->IsNull()) {
-    if (arg->IsArrayBufferView()) {
-      Local<ArrayBufferView> arr = Local<ArrayBufferView>::Cast(arg);
-      if (num) {
-        *num = arr->ByteLength()/sizeof(Type);
-      }
-      data = reinterpret_cast<Type*>((char *)arr->Buffer()->GetContents().Data() + arr->ByteOffset());
-    } else {
-      Nan::ThrowError("Bad array argument");
-    }
-  }
-
-  return data;
-}
-
-inline GLuint getImageTexture(Local<Value> arg) {
-  GLuint tex = 0;
-
-  if (arg->IsObject()) {
-    Local<String> textureString = String::NewFromUtf8(Isolate::GetCurrent(), "texture", NewStringType::kInternalized).ToLocalChecked();
-    Local<Value> textureVal = Local<Object>::Cast(arg)->Get(textureString);
-
-    if (textureVal->IsObject()) {
-      Local<String> idString = String::NewFromUtf8(Isolate::GetCurrent(), "id", NewStringType::kInternalized).ToLocalChecked();
-      Local<Value> idVal = Local<Object>::Cast(textureVal)->Get(idString);
-
-      if (idVal->IsNumber()) {
-        tex = TO_UINT32(idVal);
-      }
-    }
-  }
-  return tex;
-}
-
-inline void *getImageData(Local<Value> arg) {
-  void *pixels = nullptr;
-
-  if (!arg->IsNull()) {
-    Local<Object> obj = Local<Object>::Cast(arg);
-    if (obj->IsObject()) {
-      if (obj->IsArrayBufferView()) {
-        pixels = getArrayData<unsigned char>(obj);
-      } else {
-        Local<String> dataString = String::NewFromUtf8(Isolate::GetCurrent(), "data", NewStringType::kInternalized).ToLocalChecked();
-        if (Nan::Has(obj, dataString).FromJust()) {
-          Local<Value> data = obj->Get(dataString);
-          pixels = getArrayData<unsigned char>(data);
-        } else {
-          Nan::ThrowError("Bad texture argument");
-          // pixels = node::Buffer::Data(Nan::Get(obj, JS_STR("data")).ToLocalChecked());
-        }
-      }
-    } else {
-      Nan::ThrowError("Bad texture argument");
-    }
-  }
-  return pixels;
-}
-
-inline void reformatImageData(char *dstData, char *srcData, size_t dstPixelSize, size_t srcPixelSize, size_t numPixels) {
-  if (dstPixelSize < srcPixelSize) {
-    // size_t clipSize = srcPixelSize - dstPixelSize;
-    for (size_t i = 0; i < numPixels; i++) {
-      memcpy(dstData + i * dstPixelSize, srcData + i * srcPixelSize, dstPixelSize);
-      /* for (size_t j = 0; j < dstPixelSize; j++) {
-        dstData[i * dstPixelSize + j] = srcData[i * srcPixelSize + srcPixelSize - clipSize - 1 - j];
-      } */
-      // memcpy(dstData + i * dstPixelSize, srcData + i * srcPixelSize + clipSize, dstPixelSize);
-    }
-  } else if (dstPixelSize > srcPixelSize) {
-    size_t clipSize = dstPixelSize - srcPixelSize;
-    for (size_t i = 0; i < numPixels; i++) {
-      memcpy(dstData + i * dstPixelSize, srcData + i * srcPixelSize, srcPixelSize);
-      memset(dstData + i * dstPixelSize + srcPixelSize, 0xFF, clipSize);
-    }
-  } else {
-    // the call was pointless, but fulfill the contract anyway
-    memcpy(dstData, srcData, dstPixelSize * numPixels);
-  }
-}
-
-void flipImageData(char *dstData, char *srcData, size_t width, size_t height, size_t pixelSize) {
-  size_t stride = width * pixelSize;
-  size_t size = width * height * pixelSize;
-  for (size_t i = 0; i < height; i++) {
-    memcpy(dstData + (i * stride), srcData + size - stride - (i * stride), stride);
-  }
-}
-
-template <typename T>
-void expandLuminance(char *dstData, char *srcData, size_t width, size_t height) {
-  size_t size = width * height;
-  for (size_t i = 0; i < size; i++) {
-    T value = ((T *)srcData)[i];
-    ((T *)dstData)[i * 4 + 0] = value;
-    ((T *)dstData)[i * 4 + 1] = value;
-    ((T *)dstData)[i * 4 + 2] = value;
-    ((T *)dstData)[i * 4 + 3] = value;
-  }
-}
-
-template <typename T>
-void expandLuminanceAlpha(char *dstData, char *srcData, size_t width, size_t height) {
-  size_t size = width * height;
-  for (size_t i = 0; i < size; i++) {
-    T luminance = ((T *)srcData)[i*2 + 0];
-    T alpha = ((T *)srcData)[i*2 + 1];
-    ((T *)dstData)[i * 4 + 0] = luminance;
-    ((T *)dstData)[i * 4 + 1] = luminance;
-    ((T *)dstData)[i * 4 + 2] = luminance;
-    ((T *)dstData)[i * 4 + 3] = alpha;
-  }
-}
 
 NAN_METHOD(WebGLRenderingContext::Uniform1f) {
   if (info[0]->IsObject()) {
