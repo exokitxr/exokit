@@ -78,10 +78,10 @@
     "rimraf": "^2.6.2",
     "unescape": "^1.0.1",
     "webgl-to-opengl": "0.0.16",
-    "window-fetch": "0.0.12",
+    "window-fetch": "0.0.13",
     "window-ls": "0.0.1",
     "window-selector": "0.0.7",
-    "window-xhr": "0.0.39",
+    "window-xhr": "0.0.40",
     "ws": "^6.2.0"
   },
   "optionalDependencies": {
@@ -93,7 +93,6 @@
     "express": "^4.16.3",
     "mocha": "^6.0.0-1",
     "serve": "^9.4.0",
-    "shx": "^0.3.2",
-    "sinon": "^6.1.4"
+    "shx": "^0.3.2"
   }
 }
