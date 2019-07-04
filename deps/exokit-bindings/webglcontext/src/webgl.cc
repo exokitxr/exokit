@@ -910,6 +910,8 @@ void setGlConstants(T &proto) {
   //JS_GL_SET_CONSTANT("MAX_CLIENT_WAIT_TIMEOUT_WEBGL", MAX_CLIENT_WAIT_TIMEOUT_WEBGL);
 }
 
+// state tracking
+
 ViewportState::ViewportState(GLint x, GLint y, GLsizei w, GLsizei h, bool valid) : x(x), y(y), w(w), h(h), valid(valid) {}
 
 ViewportState &ViewportState::operator=(const ViewportState &viewportState) {
@@ -934,6 +936,160 @@ ColorMaskState &ColorMaskState::operator=(const ColorMaskState &colorMaskState) 
   return *this;
 }
 
+// utils
+
+inline bool hasWidthHeight(Local<Value> &value) {
+  MaybeLocal<Object> valueObject(Nan::To<Object>(value));
+  if (!valueObject.IsEmpty()) {
+    Local<String> widthString = Nan::New<String>("width", sizeof("width") - 1).ToLocalChecked();
+    Local<String> heightString = Nan::New<String>("height", sizeof("height") - 1).ToLocalChecked();
+
+    MaybeLocal<Number> widthValue(Nan::To<Number>(valueObject.ToLocalChecked()->Get(widthString)));
+    MaybeLocal<Number> heightValue(Nan::To<Number>(valueObject.ToLocalChecked()->Get(heightString)));
+    return !widthValue.IsEmpty() && !heightValue.IsEmpty();
+  } else {
+    return false;
+  }
+}
+
+size_t getFormatSize(int format) {
+  switch (format) {
+    case GL_RED:
+    case GL_RED_INTEGER:
+    case GL_DEPTH_COMPONENT:
+    case GL_LUMINANCE:
+    case GL_ALPHA:
+      return 1;
+    case GL_RG:
+    case GL_RG_INTEGER:
+    case GL_DEPTH_STENCIL:
+    case GL_LUMINANCE_ALPHA:
+      return 2;
+    case GL_RGB:
+    case GL_RGB_INTEGER:
+      return 3;
+    case GL_RGBA:
+    case GL_RGBA_INTEGER:
+      return 4;
+    default:
+      return 4;
+  }
+}
+
+size_t getTypeSize(int type) {
+  switch (type) {
+    case GL_UNSIGNED_BYTE:
+    case GL_BYTE:
+      return 1;
+    case GL_UNSIGNED_SHORT:
+    case GL_SHORT:
+    case GL_HALF_FLOAT:
+    case GL_UNSIGNED_SHORT_5_6_5:
+    case GL_UNSIGNED_SHORT_4_4_4_4:
+    case GL_UNSIGNED_SHORT_5_5_5_1:
+      return 2;
+    case GL_UNSIGNED_INT:
+    case GL_INT:
+    case GL_FLOAT:
+    case GL_UNSIGNED_INT_2_10_10_10_REV:
+    case GL_UNSIGNED_INT_10F_11F_11F_REV:
+    case GL_UNSIGNED_INT_5_9_9_9_REV:
+    case GL_UNSIGNED_INT_24_8:
+    case GL_FLOAT_32_UNSIGNED_INT_24_8_REV:
+      return 4;
+    default:
+      return 4;
+  }
+}
+
+int formatMap[] = {
+  GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE,
+  GL_RGBA8_SNORM, GL_RGBA, GL_BYTE,
+  GL_RGBA4, GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4,
+  GL_RGB10_A2, GL_RGBA, GL_UNSIGNED_INT_2_10_10_10_REV,
+  GL_RGB5_A1, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1,
+  GL_RGBA16F, GL_RGBA, GL_HALF_FLOAT,
+  GL_RGBA16F, GL_RGBA, GL_HALF_FLOAT_OES,
+  GL_RGBA32F, GL_RGBA, GL_FLOAT,
+  GL_RGBA8UI, GL_RGBA_INTEGER, GL_UNSIGNED_BYTE,
+  GL_RGBA8I, GL_RGBA_INTEGER, GL_BYTE,
+  GL_RGBA16UI, GL_RGBA_INTEGER, GL_UNSIGNED_SHORT,
+  GL_RGBA16I, GL_RGBA_INTEGER, GL_SHORT,
+  GL_RGBA32UI, GL_RGBA_INTEGER, GL_UNSIGNED_INT,
+  GL_RGBA32I, GL_RGBA_INTEGER, GL_INT,
+  GL_RGB10_A2UI, GL_RGBA_INTEGER, GL_UNSIGNED_INT_2_10_10_10_REV,
+  GL_RGB8, GL_RGB, GL_UNSIGNED_BYTE,
+  GL_RGB8_SNORM, GL_RGB, GL_BYTE,
+  GL_RGB565, GL_RGB, GL_UNSIGNED_SHORT_5_6_5,
+  GL_R11F_G11F_B10F, GL_RGB, GL_UNSIGNED_INT_10F_11F_11F_REV,
+  GL_RGB9_E5, GL_RGB, GL_UNSIGNED_INT_5_9_9_9_REV,
+  GL_RGB16F, GL_RGB, GL_HALF_FLOAT,
+  GL_RGB16F, GL_RGB, GL_HALF_FLOAT_OES,
+  GL_RGB32F, GL_RGB, GL_FLOAT,
+  GL_RGB8UI, GL_RGB_INTEGER, GL_UNSIGNED_BYTE,
+  GL_RGB8I, GL_RGB_INTEGER, GL_BYTE,
+  GL_RGB16UI, GL_RGB_INTEGER, GL_UNSIGNED_SHORT,
+  GL_RGB16I, GL_RGB_INTEGER, GL_SHORT,
+  GL_RGB32UI, GL_RGB_INTEGER, GL_UNSIGNED_INT,
+  GL_RGB32I, GL_RGB_INTEGER, GL_INT,
+  GL_RG8, GL_RG, GL_UNSIGNED_BYTE,
+  GL_RG8_SNORM, GL_RG, GL_BYTE,
+  GL_RG16F, GL_RG, GL_HALF_FLOAT,
+  GL_RG16F, GL_RG, GL_HALF_FLOAT_OES,
+  GL_RG32F, GL_RG, GL_FLOAT,
+  GL_RG8UI, GL_RG_INTEGER, GL_UNSIGNED_BYTE,
+  GL_RG8I, GL_RG_INTEGER, GL_BYTE,
+  GL_RG16UI, GL_RG_INTEGER, GL_UNSIGNED_SHORT,
+  GL_RG16I, GL_RG_INTEGER, GL_SHORT,
+  GL_RG32UI, GL_RG_INTEGER, GL_UNSIGNED_INT,
+  GL_RG32I, GL_RG_INTEGER, GL_INT,
+  GL_R8, GL_RED, GL_UNSIGNED_BYTE,
+  GL_R8_SNORM, GL_RED, GL_BYTE,
+  GL_R16F, GL_RED, GL_HALF_FLOAT,
+  GL_R16F, GL_RED, GL_HALF_FLOAT_OES,
+  GL_R32F, GL_RED, GL_FLOAT,
+  GL_R8UI, GL_RED_INTEGER, GL_UNSIGNED_BYTE,
+  GL_R8I, GL_RED_INTEGER, GL_BYTE,
+  GL_R16UI, GL_RED_INTEGER, GL_UNSIGNED_SHORT,
+  GL_R16I, GL_RED_INTEGER, GL_SHORT,
+  GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT,
+  GL_R32I, GL_RED_INTEGER, GL_INT,
+};
+
+int normalizeInternalFormat(int internalformat, int format, int type) {
+  if (internalformat == GL_RED || internalformat == GL_RG || internalformat == GL_RGB || internalformat == GL_RGBA) {
+    for (size_t i = 0; i < sizeof(formatMap)/3; i++) {
+      int b = formatMap[i * 3 + 1];
+      int c = formatMap[i * 3 + 2];
+      if (format == b && type == c) {
+        int a = formatMap[i * 3 + 0];
+        internalformat = a;
+        break;
+      }
+    }
+  }
+  return internalformat;
+}
+
+int getImageFormat(Local<Value> arg) {
+  if (arg->IsArrayBufferView()) {
+    return -1;
+  } else {
+    Local<Value> constructorName = JS_OBJ(JS_OBJ(arg)->Get(JS_STR("constructor")))->Get(JS_STR("name"));
+    if (
+      constructorName->StrictEquals(JS_STR("HTMLImageElement")) ||
+      constructorName->StrictEquals(JS_STR("HTMLVideoElement")) ||
+      constructorName->StrictEquals(JS_STR("ImageData")) ||
+      constructorName->StrictEquals(JS_STR("ImageBitmap")) ||
+      constructorName->StrictEquals(JS_STR("HTMLCanvasElement"))
+    ) {
+      return GL_RGBA;
+    } else {
+      return -1;
+    }
+  }
+}
+
 size_t getArrayBufferViewElementSize(Local<ArrayBufferView> arrayBufferView) {
   if (arrayBufferView->IsFloat64Array()) {
     return 8;
@@ -945,6 +1101,8 @@ size_t getArrayBufferViewElementSize(Local<ArrayBufferView> arrayBufferView) {
     return 1;
   }
 }
+
+// templates
 
 template<int d>
 void glTexImage(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const GLvoid *data);
@@ -1681,6 +1839,8 @@ void CompressedTexSubImage(const Nan::FunctionCallbackInfo<v8::Value>& info) {
     }
   }
 }
+
+// initialize
 
 std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initialize(Isolate *isolate) {
   #if defined(ANDROID) || defined(LUMIN)
@@ -3539,158 +3699,6 @@ NAN_METHOD(WebGLRenderingContext::FlipTextureData) {
   }
   memcpy(pixels, texPixels, num);
 } */
-
-inline bool hasWidthHeight(Local<Value> &value) {
-  MaybeLocal<Object> valueObject(Nan::To<Object>(value));
-  if (!valueObject.IsEmpty()) {
-    Local<String> widthString = Nan::New<String>("width", sizeof("width") - 1).ToLocalChecked();
-    Local<String> heightString = Nan::New<String>("height", sizeof("height") - 1).ToLocalChecked();
-
-    MaybeLocal<Number> widthValue(Nan::To<Number>(valueObject.ToLocalChecked()->Get(widthString)));
-    MaybeLocal<Number> heightValue(Nan::To<Number>(valueObject.ToLocalChecked()->Get(heightString)));
-    return !widthValue.IsEmpty() && !heightValue.IsEmpty();
-  } else {
-    return false;
-  }
-}
-
-size_t getFormatSize(int format) {
-  switch (format) {
-    case GL_RED:
-    case GL_RED_INTEGER:
-    case GL_DEPTH_COMPONENT:
-    case GL_LUMINANCE:
-    case GL_ALPHA:
-      return 1;
-    case GL_RG:
-    case GL_RG_INTEGER:
-    case GL_DEPTH_STENCIL:
-    case GL_LUMINANCE_ALPHA:
-      return 2;
-    case GL_RGB:
-    case GL_RGB_INTEGER:
-      return 3;
-    case GL_RGBA:
-    case GL_RGBA_INTEGER:
-      return 4;
-    default:
-      return 4;
-  }
-}
-
-size_t getTypeSize(int type) {
-  switch (type) {
-    case GL_UNSIGNED_BYTE:
-    case GL_BYTE:
-      return 1;
-    case GL_UNSIGNED_SHORT:
-    case GL_SHORT:
-    case GL_HALF_FLOAT:
-    case GL_UNSIGNED_SHORT_5_6_5:
-    case GL_UNSIGNED_SHORT_4_4_4_4:
-    case GL_UNSIGNED_SHORT_5_5_5_1:
-      return 2;
-    case GL_UNSIGNED_INT:
-    case GL_INT:
-    case GL_FLOAT:
-    case GL_UNSIGNED_INT_2_10_10_10_REV:
-    case GL_UNSIGNED_INT_10F_11F_11F_REV:
-    case GL_UNSIGNED_INT_5_9_9_9_REV:
-    case GL_UNSIGNED_INT_24_8:
-    case GL_FLOAT_32_UNSIGNED_INT_24_8_REV:
-      return 4;
-    default:
-      return 4;
-  }
-}
-
-int formatMap[] = {
-  GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE,
-  GL_RGBA8_SNORM, GL_RGBA, GL_BYTE,
-  GL_RGBA4, GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4,
-  GL_RGB10_A2, GL_RGBA, GL_UNSIGNED_INT_2_10_10_10_REV,
-  GL_RGB5_A1, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1,
-  GL_RGBA16F, GL_RGBA, GL_HALF_FLOAT,
-  GL_RGBA16F, GL_RGBA, GL_HALF_FLOAT_OES,
-  GL_RGBA32F, GL_RGBA, GL_FLOAT,
-  GL_RGBA8UI, GL_RGBA_INTEGER, GL_UNSIGNED_BYTE,
-  GL_RGBA8I, GL_RGBA_INTEGER, GL_BYTE,
-  GL_RGBA16UI, GL_RGBA_INTEGER, GL_UNSIGNED_SHORT,
-  GL_RGBA16I, GL_RGBA_INTEGER, GL_SHORT,
-  GL_RGBA32UI, GL_RGBA_INTEGER, GL_UNSIGNED_INT,
-  GL_RGBA32I, GL_RGBA_INTEGER, GL_INT,
-  GL_RGB10_A2UI, GL_RGBA_INTEGER, GL_UNSIGNED_INT_2_10_10_10_REV,
-  GL_RGB8, GL_RGB, GL_UNSIGNED_BYTE,
-  GL_RGB8_SNORM, GL_RGB, GL_BYTE,
-  GL_RGB565, GL_RGB, GL_UNSIGNED_SHORT_5_6_5,
-  GL_R11F_G11F_B10F, GL_RGB, GL_UNSIGNED_INT_10F_11F_11F_REV,
-  GL_RGB9_E5, GL_RGB, GL_UNSIGNED_INT_5_9_9_9_REV,
-  GL_RGB16F, GL_RGB, GL_HALF_FLOAT,
-  GL_RGB16F, GL_RGB, GL_HALF_FLOAT_OES,
-  GL_RGB32F, GL_RGB, GL_FLOAT,
-  GL_RGB8UI, GL_RGB_INTEGER, GL_UNSIGNED_BYTE,
-  GL_RGB8I, GL_RGB_INTEGER, GL_BYTE,
-  GL_RGB16UI, GL_RGB_INTEGER, GL_UNSIGNED_SHORT,
-  GL_RGB16I, GL_RGB_INTEGER, GL_SHORT,
-  GL_RGB32UI, GL_RGB_INTEGER, GL_UNSIGNED_INT,
-  GL_RGB32I, GL_RGB_INTEGER, GL_INT,
-  GL_RG8, GL_RG, GL_UNSIGNED_BYTE,
-  GL_RG8_SNORM, GL_RG, GL_BYTE,
-  GL_RG16F, GL_RG, GL_HALF_FLOAT,
-  GL_RG16F, GL_RG, GL_HALF_FLOAT_OES,
-  GL_RG32F, GL_RG, GL_FLOAT,
-  GL_RG8UI, GL_RG_INTEGER, GL_UNSIGNED_BYTE,
-  GL_RG8I, GL_RG_INTEGER, GL_BYTE,
-  GL_RG16UI, GL_RG_INTEGER, GL_UNSIGNED_SHORT,
-  GL_RG16I, GL_RG_INTEGER, GL_SHORT,
-  GL_RG32UI, GL_RG_INTEGER, GL_UNSIGNED_INT,
-  GL_RG32I, GL_RG_INTEGER, GL_INT,
-  GL_R8, GL_RED, GL_UNSIGNED_BYTE,
-  GL_R8_SNORM, GL_RED, GL_BYTE,
-  GL_R16F, GL_RED, GL_HALF_FLOAT,
-  GL_R16F, GL_RED, GL_HALF_FLOAT_OES,
-  GL_R32F, GL_RED, GL_FLOAT,
-  GL_R8UI, GL_RED_INTEGER, GL_UNSIGNED_BYTE,
-  GL_R8I, GL_RED_INTEGER, GL_BYTE,
-  GL_R16UI, GL_RED_INTEGER, GL_UNSIGNED_SHORT,
-  GL_R16I, GL_RED_INTEGER, GL_SHORT,
-  GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT,
-  GL_R32I, GL_RED_INTEGER, GL_INT,
-};
-
-int normalizeInternalFormat(int internalformat, int format, int type) {
-  if (internalformat == GL_RED || internalformat == GL_RG || internalformat == GL_RGB || internalformat == GL_RGBA) {
-    for (size_t i = 0; i < sizeof(formatMap)/3; i++) {
-      int b = formatMap[i * 3 + 1];
-      int c = formatMap[i * 3 + 2];
-      if (format == b && type == c) {
-        int a = formatMap[i * 3 + 0];
-        internalformat = a;
-        break;
-      }
-    }
-  }
-  return internalformat;
-}
-
-int getImageFormat(Local<Value> arg) {
-  if (arg->IsArrayBufferView()) {
-    return -1;
-  } else {
-    Local<Value> constructorName = JS_OBJ(JS_OBJ(arg)->Get(JS_STR("constructor")))->Get(JS_STR("name"));
-    if (
-      constructorName->StrictEquals(JS_STR("HTMLImageElement")) ||
-      constructorName->StrictEquals(JS_STR("HTMLVideoElement")) ||
-      constructorName->StrictEquals(JS_STR("ImageData")) ||
-      constructorName->StrictEquals(JS_STR("ImageBitmap")) ||
-      constructorName->StrictEquals(JS_STR("HTMLCanvasElement"))
-    ) {
-      return GL_RGBA;
-    } else {
-      return -1;
-    }
-  }
-}
 
 NAN_METHOD(WebGLRenderingContext::TexParameteri) {
   int target = TO_INT32(info[0]);
