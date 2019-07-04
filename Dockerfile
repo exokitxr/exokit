@@ -16,7 +16,7 @@ RUN \
   mv node-v12.2.0-linux-x64 node
 RUN \
   export PATH="$PATH:$(pwd)/node/bin" && \
-  npm install --unsafe-perm --no-optional . && \
+  npm install --unsafe-perm . && \
   export TEST_ENV=ci && \
   npm run test
 RUN \
