@@ -5029,9 +5029,9 @@ NAN_METHOD(WebGLRenderingContext::RenderbufferStorage) {
 }
 
 NAN_METHOD(WebGLRenderingContext::RenderbufferStorageMultisample) {
-  GLenum target = TO_INT32(info[0]);
+  GLenum target = TO_UINT32(info[0]);
   GLsizei samples = TO_UINT32(info[1]);
-  GLenum internalformat = TO_INT32(info[2]);
+  GLenum internalformat = TO_UINT32(info[2]);
   GLsizei width = TO_UINT32(info[3]);
   GLsizei height = TO_UINT32(info[4]);
 
