@@ -232,6 +232,7 @@ public:
   static NAN_METHOD(CreateBuffer);
   static NAN_METHOD(BindBuffer);
   static NAN_METHOD(BindBufferBase);
+  static NAN_METHOD(BindBufferRange);
   static NAN_METHOD(CreateFramebuffer);
   static NAN_METHOD(BindFramebuffer);
   static NAN_METHOD(BindFramebufferRaw);

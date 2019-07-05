@@ -2091,6 +2091,7 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
   Nan::SetMethod(proto, "createBuffer", glCallWrap<CreateBuffer>);
   Nan::SetMethod(proto, "bindBuffer", glCallWrap<BindBuffer>);
   Nan::SetMethod(proto, "bindBufferBase", glCallWrap<BindBufferBase>);
+  Nan::SetMethod(proto, "bindBufferRange", glCallWrap<BindBufferRange>);
   Nan::SetMethod(proto, "bufferData", glCallWrap<BufferData>);
   Nan::SetMethod(proto, "bufferSubData", glCallWrap<BufferSubData>);
   Nan::SetMethod(proto, "readBuffer", glCallWrap<ReadBuffer>);
@@ -3920,6 +3921,16 @@ NAN_METHOD(WebGLRenderingContext::BindBufferBase) {
   GLuint buffer = info[2]->IsObject() ? TO_UINT32(JS_OBJ(info[2])->Get(JS_STR("id"))) : 0;
 
   glBindBufferBase(target, index, buffer);
+}
+
+NAN_METHOD(WebGLRenderingContext::BindBufferRange) {
+  GLenum target = TO_UINT32(info[0]);
+  GLuint index = TO_UINT32(info[1]);
+  GLuint buffer = info[2]->IsObject() ? TO_UINT32(JS_OBJ(info[2])->Get(JS_STR("id"))) : 0;
+  GLintptr offset = TO_UINT32(info[3]);
+  GLsizei size = TO_UINT32(info[4]);
+
+  glBindBufferRange(target, index, buffer, offset, size);
 }
 
 NAN_METHOD(WebGLRenderingContext::CreateFramebuffer) {
