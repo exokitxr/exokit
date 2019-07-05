@@ -236,6 +236,7 @@ public:
   static NAN_METHOD(BindFramebuffer);
   static NAN_METHOD(BindFramebufferRaw);
   static NAN_METHOD(FramebufferTexture2D);
+  static NAN_METHOD(FramebufferTextureLayer);
   static NAN_METHOD(BlitFramebuffer);
   static NAN_METHOD(InvalidateFramebuffer);
   static NAN_METHOD(InvalidateSubFramebuffer);

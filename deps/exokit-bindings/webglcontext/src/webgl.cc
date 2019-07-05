@@ -2084,6 +2084,7 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
   Nan::SetMethod(proto, "bindFramebuffer", glCallWrap<BindFramebuffer>);
   Nan::SetMethod(proto, "bindFramebufferRaw", glCallWrap<BindFramebufferRaw>);
   Nan::SetMethod(proto, "framebufferTexture2D", glCallWrap<FramebufferTexture2D>);
+  Nan::SetMethod(proto, "framebufferTextureLayer", glCallWrap<FramebufferTextureLayer>);
   Nan::SetMethod(proto, "blitFramebuffer", glCallWrap<BlitFramebuffer>);
   Nan::SetMethod(proto, "invalidateFramebuffer", glCallWrap<InvalidateFramebuffer>);
   Nan::SetMethod(proto, "invalidateSubFramebuffer", glCallWrap<InvalidateSubFramebuffer>);
@@ -3963,6 +3964,18 @@ NAN_METHOD(WebGLRenderingContext::FramebufferTexture2D) {
   GLint level = TO_INT32(info[4]);
 
   glFramebufferTexture2D(target, attachment, textarget, texture, level);
+
+  // info.GetReturnValue().Set(Nan::Undefined());
+}
+
+NAN_METHOD(WebGLRenderingContext::FramebufferTextureLayer) {
+  GLenum target = TO_UINT32(info[0]);
+  GLenum attachment = TO_INT32(info[1]);
+  GLuint texture = info[2]->IsObject() ? TO_UINT32(JS_OBJ(info[2])->Get(JS_STR("id"))) : 0;
+  GLint level = TO_INT32(info[3]);
+  GLint layer = TO_INT32(info[4]);
+
+  glFramebufferTextureLayer(target, attachment, texture, level, layer);
 
   // info.GetReturnValue().Set(Nan::Undefined());
 }
