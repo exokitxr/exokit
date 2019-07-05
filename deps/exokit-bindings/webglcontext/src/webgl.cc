@@ -2055,9 +2055,14 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
   Nan::SetMethod(proto, "linkProgram", glCallWrap<LinkProgram>);
   Nan::SetMethod(proto, "getProgramParameter", glCallWrap<GetProgramParameter>);
   Nan::SetMethod(proto, "getUniformLocation", glCallWrap<GetUniformLocation>);
+  Nan::SetMethod(proto, "getUniformIndices", glCallWrap<GetUniformIndices>);
+  Nan::SetMethod(proto, "getActiveUniforms", glCallWrap<GetActiveUniforms>);
   Nan::SetMethod(proto, "getUniformBlockIndex", glCallWrap<GetUniformBlockIndex>);
   Nan::SetMethod(proto, "uniformBlockBinding", glCallWrap<UniformBlockBinding>);
+  Nan::SetMethod(proto, "getActiveUniformBlockName", glCallWrap<GetActiveUniformBlockName>);
+  Nan::SetMethod(proto, "getActiveUniformBlockParameter", glCallWrap<GetActiveUniformBlockParameter>);
   Nan::SetMethod(proto, "getUniform", glCallWrap<GetUniform>);
+  Nan::SetMethod(proto, "getFragDataLocation", glCallWrap<GetFragDataLocation>);
   Nan::SetMethod(proto, "clearColor", glCallWrap<ClearColor>);
   Nan::SetMethod(proto, "clearDepth", glCallWrap<ClearDepth>);
 
@@ -2079,12 +2084,18 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
   Nan::SetMethod(proto, "bindFramebuffer", glCallWrap<BindFramebuffer>);
   Nan::SetMethod(proto, "bindFramebufferRaw", glCallWrap<BindFramebufferRaw>);
   Nan::SetMethod(proto, "framebufferTexture2D", glCallWrap<FramebufferTexture2D>);
+  Nan::SetMethod(proto, "framebufferTextureLayer", glCallWrap<FramebufferTextureLayer>);
   Nan::SetMethod(proto, "blitFramebuffer", glCallWrap<BlitFramebuffer>);
+  Nan::SetMethod(proto, "invalidateFramebuffer", glCallWrap<InvalidateFramebuffer>);
+  Nan::SetMethod(proto, "invalidateSubFramebuffer", glCallWrap<InvalidateSubFramebuffer>);
   Nan::SetMethod(proto, "createBuffer", glCallWrap<CreateBuffer>);
   Nan::SetMethod(proto, "bindBuffer", glCallWrap<BindBuffer>);
   Nan::SetMethod(proto, "bindBufferBase", glCallWrap<BindBufferBase>);
+  Nan::SetMethod(proto, "bindBufferRange", glCallWrap<BindBufferRange>);
   Nan::SetMethod(proto, "bufferData", glCallWrap<BufferData>);
   Nan::SetMethod(proto, "bufferSubData", glCallWrap<BufferSubData>);
+  Nan::SetMethod(proto, "copyBufferSubData", glCallWrap<CopyBufferSubData>);
+  Nan::SetMethod(proto, "readBuffer", glCallWrap<ReadBuffer>);
   Nan::SetMethod(proto, "enable", glCallWrap<Enable>);
   Nan::SetMethod(proto, "blendEquation", glCallWrap<BlendEquation>);
   Nan::SetMethod(proto, "blendFunc", glCallWrap<BlendFunc>);
@@ -2117,6 +2128,10 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
   Nan::SetMethod(proto, "vertexAttribDivisorANGLE", glCallWrap<VertexAttribDivisorANGLE>);
   Nan::SetMethod(proto, "drawBuffers", glCallWrap<DrawBuffers>);
   Nan::SetMethod(proto, "drawBuffersWEBGL", glCallWrap<DrawBuffersWEBGL>);
+  Nan::SetMethod(proto, "clearBufferfv", glCallWrap<ClearBufferfv>);
+  Nan::SetMethod(proto, "clearBufferiv", glCallWrap<ClearBufferiv>);
+  Nan::SetMethod(proto, "clearBufferuiv", glCallWrap<ClearBufferuiv>);
+  Nan::SetMethod(proto, "clearBufferfi", glCallWrap<ClearBufferfi>);
 
   Nan::SetMethod(proto, "blendColor", glCallWrap<BlendColor>);
   Nan::SetMethod(proto, "blendEquationSeparate", glCallWrap<BlendEquationSeparate>);
@@ -2165,6 +2180,7 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
   Nan::SetMethod(proto, "isSync", glCallWrap<IsSync>);
 
   Nan::SetMethod(proto, "renderbufferStorage", glCallWrap<RenderbufferStorage>);
+  Nan::SetMethod(proto, "renderbufferStorageMultisample", glCallWrap<RenderbufferStorageMultisample>);
   Nan::SetMethod(proto, "getShaderSource", glCallWrap<GetShaderSource>);
   Nan::SetMethod(proto, "validateProgram", glCallWrap<ValidateProgram>);
 
@@ -2184,7 +2200,7 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
   Nan::SetMethod(proto, "getProgramInfoLog", glCallWrap<GetProgramInfoLog>);
   Nan::SetMethod(proto, "getRenderbufferParameter", glCallWrap<GetRenderbufferParameter>);
   Nan::SetMethod(proto, "getVertexAttrib", glCallWrap<GetVertexAttrib>);
-  Nan::SetMethod(proto, "getShaderPrecisionFormat", glCallWrap<GetShaderPrecisionFormat>);
+  Nan::SetMethod(proto, "getFragDataLocation", glCallWrap<GetFragDataLocation>);
   Nan::SetMethod(proto, "getSupportedExtensions", glCallWrap<GetSupportedExtensions>);
   Nan::SetMethod(proto, "getExtension", glCallWrap<GetExtension>);
   Nan::SetMethod(proto, "getContextAttributes", glCallWrap<GetContextAttributes>);
@@ -3583,7 +3599,7 @@ NAN_METHOD(WebGLRenderingContext::GetProgramParameter) {
       break;
     }
     default: {
-      Nan::ThrowTypeError("GetProgramParameter: Invalid Enum");
+      Nan::ThrowTypeError("getProgramParameter: Invalid Enum");
       break;
     }
   }
@@ -3604,6 +3620,78 @@ NAN_METHOD(WebGLRenderingContext::GetUniformLocation) {
   }
 }
 
+NAN_METHOD(WebGLRenderingContext::GetUniformIndices) {
+  GLint programId = TO_INT32(JS_OBJ(info[0])->Get(JS_STR("id")));
+  Local<Array> uniformNames = Local<Array>::Cast(info[1]);
+
+  std::vector<std::string> uniformNamesV(uniformNames->Length());
+  std::vector<GLchar *> uniformNamesV2(uniformNames->Length());
+  for (int i = 0; i < uniformNames->Length(); i++) {
+    Local<Value> uniformName = uniformNames->Get(i);
+    if (uniformName->IsString()) {
+      Nan::Utf8String uniformNameUtf8String(Local<String>::Cast(uniformName));
+      uniformNamesV[i] = std::string(*uniformNameUtf8String, uniformNameUtf8String.length());
+      uniformNamesV2[i] = (GLchar *)uniformNamesV[i].data();
+    } else {
+      return Nan::ThrowTypeError("getUniformIndices: invalid arguments");
+    }
+  }
+  std::vector<GLuint> uniformIndices(uniformNamesV2.size());
+
+  glGetUniformIndices(programId, uniformNamesV.size(), uniformNamesV2.data(), uniformIndices.data());
+
+  Local<Array> result = Nan::New<Array>(uniformIndices.size());
+  for (size_t i = 0; i < uniformIndices.size(); i++) {
+    result->Set(i, JS_INT(uniformIndices[i]));
+  }
+  return info.GetReturnValue().Set(result);
+}
+
+NAN_METHOD(WebGLRenderingContext::GetActiveUniforms) {
+  GLint programId = TO_INT32(JS_OBJ(info[0])->Get(JS_STR("id")));
+  Local<Array> uniformIndices;
+  if (info[1]->IsArray()) {
+    uniformIndices = Local<Array>::Cast(info[1]);
+  } else if (info[1]->IsNumber()) {
+    uniformIndices = Nan::New<Array>(1);
+    uniformIndices->Set(0, info[1]);
+  }
+  GLenum pname = TO_UINT32(info[2]);
+
+  std::vector<GLuint> uniformIndicesV(uniformIndices->Length());
+  for (int i = 0; i < uniformIndices->Length(); i++) {
+    uniformIndicesV[i] = TO_UINT32(uniformIndices->Get(i));
+  }
+  std::vector<GLint> params(uniformIndicesV.size());
+
+  switch (pname) {
+    case GL_UNIFORM_TYPE:
+    case GL_UNIFORM_SIZE:
+    case GL_UNIFORM_BLOCK_INDEX:
+    case GL_UNIFORM_OFFSET:
+    case GL_UNIFORM_ARRAY_STRIDE:
+    case GL_UNIFORM_MATRIX_STRIDE: {
+      glGetActiveUniformsiv(programId, uniformIndicesV.size(), uniformIndicesV.data(), pname, params.data());
+      Local<Array> result = Nan::New<Array>(params.size());
+      for (size_t i = 0; i < params.size(); i++) {
+        result->Set(i, JS_INT(params[i]));
+      }
+      return info.GetReturnValue().Set(result);
+    }
+    case GL_UNIFORM_IS_ROW_MAJOR: {
+      glGetActiveUniformsiv(programId, uniformIndicesV.size(), uniformIndicesV.data(), pname, params.data());
+      Local<Array> result = Nan::New<Array>(params.size());
+      for (size_t i = 0; i < params.size(); i++) {
+        result->Set(i, JS_INT(params[i]));
+      }
+      return info.GetReturnValue().Set(result);
+    }
+    default: {
+      return info.GetReturnValue().Set(Nan::Null());
+    }
+  }
+}
+
 NAN_METHOD(WebGLRenderingContext::GetUniformBlockIndex) {
   GLint programId = TO_INT32(JS_OBJ(info[0])->Get(JS_STR("id")));
   Nan::Utf8String uniformBlockName(Local<String>::Cast(info[1]));
@@ -3619,6 +3707,57 @@ NAN_METHOD(WebGLRenderingContext::UniformBlockBinding) {
   GLuint uniformBlockBinding = TO_UINT32(info[2]);
 
   glUniformBlockBinding(programId, uniformBlockIndex, uniformBlockBinding);
+}
+
+NAN_METHOD(WebGLRenderingContext::GetActiveUniformBlockName) {
+  GLint programId = TO_INT32(JS_OBJ(info[0])->Get(JS_STR("id")));
+  GLuint uniformBlockIndex = TO_UINT32(info[1]);
+
+  const GLsizei bufSize = 4096;
+  GLsizei length = 0;
+  std::vector<GLchar> uniformBlockName(bufSize);
+
+  glGetActiveUniformBlockName(programId, uniformBlockIndex, bufSize, &length, uniformBlockName.data());
+
+  Local<String> result = Nan::New<String>(uniformBlockName.data(), length).ToLocalChecked();
+  info.GetReturnValue().Set(result);
+}
+
+NAN_METHOD(WebGLRenderingContext::GetActiveUniformBlockParameter) {
+  GLint programId = TO_INT32(JS_OBJ(info[0])->Get(JS_STR("id")));
+  GLuint uniformBlockIndex = TO_UINT32(info[1]);
+  GLenum pname = TO_UINT32(info[2]);
+
+  switch (pname) {
+    case GL_UNIFORM_BLOCK_BINDING:
+    case GL_UNIFORM_BLOCK_DATA_SIZE:
+    case GL_UNIFORM_BLOCK_ACTIVE_UNIFORMS: {
+      GLint param;
+      glGetActiveUniformBlockiv(programId, uniformBlockIndex, pname, &param);
+      return info.GetReturnValue().Set(JS_INT(param));
+    }
+    case GL_UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES: {
+      GLint numUniforms = 0;
+      glGetActiveUniformBlockiv(programId, uniformBlockIndex, GL_UNIFORM_BLOCK_ACTIVE_UNIFORMS, &numUniforms);
+
+      Local<ArrayBuffer> activeUniformIndicesArrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), numUniforms * sizeof(GLuint));
+      Local<Uint32Array> activeUniformIndicesUint32Array = Uint32Array::New(activeUniformIndicesArrayBuffer, 0, numUniforms);
+      if (numUniforms > 0) {
+        glGetActiveUniformBlockiv(programId, uniformBlockIndex, GL_UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES, (GLint *)activeUniformIndicesArrayBuffer->GetContents().Data());
+      }
+
+      return info.GetReturnValue().Set(activeUniformIndicesUint32Array);
+    }
+    case GL_UNIFORM_BLOCK_REFERENCED_BY_VERTEX_SHADER:
+    case GL_UNIFORM_BLOCK_REFERENCED_BY_FRAGMENT_SHADER: {
+      GLint param;
+      glGetActiveUniformBlockiv(programId, uniformBlockIndex, pname, &param);
+      return info.GetReturnValue().Set(JS_BOOL(static_cast<bool>(param)));
+    }
+    default: {
+      return info.GetReturnValue().Set(Nan::Null());
+    }
+  }
 }
 
 NAN_METHOD(WebGLRenderingContext::ClearColor) {
@@ -3785,6 +3924,16 @@ NAN_METHOD(WebGLRenderingContext::BindBufferBase) {
   glBindBufferBase(target, index, buffer);
 }
 
+NAN_METHOD(WebGLRenderingContext::BindBufferRange) {
+  GLenum target = TO_UINT32(info[0]);
+  GLuint index = TO_UINT32(info[1]);
+  GLuint buffer = info[2]->IsObject() ? TO_UINT32(JS_OBJ(info[2])->Get(JS_STR("id"))) : 0;
+  GLintptr offset = TO_UINT32(info[3]);
+  GLsizei size = TO_UINT32(info[4]);
+
+  glBindBufferRange(target, index, buffer, offset, size);
+}
+
 NAN_METHOD(WebGLRenderingContext::CreateFramebuffer) {
   GLuint framebuffer;
   glGenFramebuffers(1, &framebuffer);
@@ -3831,6 +3980,18 @@ NAN_METHOD(WebGLRenderingContext::FramebufferTexture2D) {
   // info.GetReturnValue().Set(Nan::Undefined());
 }
 
+NAN_METHOD(WebGLRenderingContext::FramebufferTextureLayer) {
+  GLenum target = TO_UINT32(info[0]);
+  GLenum attachment = TO_INT32(info[1]);
+  GLuint texture = info[2]->IsObject() ? TO_UINT32(JS_OBJ(info[2])->Get(JS_STR("id"))) : 0;
+  GLint level = TO_INT32(info[3]);
+  GLint layer = TO_INT32(info[4]);
+
+  glFramebufferTextureLayer(target, attachment, texture, level, layer);
+
+  // info.GetReturnValue().Set(Nan::Undefined());
+}
+
 NAN_METHOD(WebGLRenderingContext::BlitFramebuffer) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
 
@@ -3857,6 +4018,34 @@ NAN_METHOD(WebGLRenderingContext::BlitFramebuffer) {
   gl->dirty = true;
 
   // info.GetReturnValue().Set(Nan::Undefined());
+}
+
+NAN_METHOD(WebGLRenderingContext::InvalidateFramebuffer) {
+  GLenum target = TO_UINT32(info[0]);
+  Local<Array> attachments = Local<Array>::Cast(info[1]);
+
+  std::vector<GLenum> attachmentsV(attachments->Length());
+  for (int i = 0; i < attachments->Length(); i++) {
+    attachmentsV[i] = TO_UINT32(attachments->Get(i));
+  }
+
+  glInvalidateFramebuffer(target, attachmentsV.size(), attachmentsV.data());
+}
+
+NAN_METHOD(WebGLRenderingContext::InvalidateSubFramebuffer) {
+  GLenum target = TO_UINT32(info[0]);
+  Local<Array> attachments = Local<Array>::Cast(info[1]);
+  GLint x = TO_UINT32(info[2]);
+  GLint y = TO_UINT32(info[3]);
+  GLsizei width = TO_UINT32(info[4]);
+  GLsizei height = TO_UINT32(info[5]);
+
+  std::vector<GLenum> attachmentsV(attachments->Length());
+  for (int i = 0; i < attachments->Length(); i++) {
+    attachmentsV[i] = TO_UINT32(attachments->Get(i));
+  }
+
+  glInvalidateSubFramebuffer(target, attachmentsV.size(), attachmentsV.data(), x, y, width, height);
 }
 
 NAN_METHOD(WebGLRenderingContext::BufferData) {
@@ -3936,6 +4125,20 @@ NAN_METHOD(WebGLRenderingContext::BufferSubData) {
   glBufferSubData(target, dstOffset, size, data);
 }
 
+NAN_METHOD(WebGLRenderingContext::CopyBufferSubData) {
+  GLenum readTarget = TO_UINT32(info[0]);
+  GLenum writeTarget = TO_UINT32(info[1]);
+  GLintptr readOffset = TO_INT32(info[2]);
+  GLintptr writeOffset = TO_INT32(info[3]);
+  GLsizei size = TO_INT32(info[4]);
+
+  glCopyBufferSubData(readTarget, writeTarget, readOffset, writeOffset, size);
+}
+
+NAN_METHOD(WebGLRenderingContext::ReadBuffer) {
+  GLenum src = TO_UINT32(info[0]);
+  glReadBuffer(src);
+}
 
 NAN_METHOD(WebGLRenderingContext::BlendEquation) {
   GLint mode = TO_INT32(info[0]);
@@ -4290,6 +4493,90 @@ NAN_METHOD(WebGLRenderingContext::DrawBuffersWEBGL) {
   glDrawBuffers(numBuffers, buffers);
 
   // info.GetReturnValue().Set(Nan::Undefined());
+}
+
+NAN_METHOD(WebGLRenderingContext::ClearBufferfv) {
+  GLenum buffer = TO_UINT32(info[0]);
+  GLint drawBuffer = TO_INT32(info[1]);
+  Local<Value> valuesValue = info[3];
+  GLint srcOffset = info[4]->IsNumber() ? TO_INT32(info[1]) : 0;
+
+  if (valuesValue->IsArray()) {
+    Local<Array> valuesArray = Local<Array>::Cast(valuesValue);
+    size_t length = std::max<size_t>(valuesArray->Length() - srcOffset, 0);
+    if (length > 0) {
+      std::vector<GLfloat> values(length);
+      for (size_t i = 0; i < length; i++) {
+        values[i] = TO_FLOAT(valuesArray->Get(i + srcOffset));
+      }
+      glClearBufferfv(buffer, drawBuffer, values.data());
+    }
+  } else if (valuesValue->IsFloat32Array()) {
+    Local<Float32Array> valuesFloat32Array = Local<Float32Array>::Cast(valuesValue);
+    GLfloat *values = (GLfloat *)((char *)valuesFloat32Array->Buffer()->GetContents().Data() + valuesFloat32Array->ByteOffset());
+    glClearBufferfv(buffer, drawBuffer, values);
+  } else {
+    Nan::ThrowError("ClearBufferfv: Invalid arguments");
+  }
+}
+
+NAN_METHOD(WebGLRenderingContext::ClearBufferiv) {
+  GLenum buffer = TO_UINT32(info[0]);
+  GLint drawBuffer = TO_INT32(info[1]);
+  Local<Value> valuesValue = info[3];
+  GLint srcOffset = info[4]->IsNumber() ? TO_INT32(info[1]) : 0;
+
+  if (valuesValue->IsArray()) {
+    Local<Array> valuesArray = Local<Array>::Cast(valuesValue);
+    size_t length = std::max<size_t>(valuesArray->Length() - srcOffset, 0);
+    if (length > 0) {
+      std::vector<GLint> values(length);
+      for (size_t i = 0; i < length; i++) {
+        values[i] = TO_INT32(valuesArray->Get(i + srcOffset));
+      }
+      glClearBufferiv(buffer, drawBuffer, values.data());
+    }
+  } else if (valuesValue->IsInt32Array()) {
+    Local<Int32Array> valuesInt32Array = Local<Int32Array>::Cast(valuesValue);
+    GLint *values = (GLint *)((char *)valuesInt32Array->Buffer()->GetContents().Data() + valuesInt32Array->ByteOffset());
+    glClearBufferiv(buffer, drawBuffer, values);
+  } else {
+    Nan::ThrowError("ClearBufferiv: Invalid arguments");
+  }
+}
+
+NAN_METHOD(WebGLRenderingContext::ClearBufferuiv) {
+  GLenum buffer = TO_UINT32(info[0]);
+  GLint drawBuffer = TO_INT32(info[1]);
+  Local<Value> valuesValue = info[3];
+  GLint srcOffset = info[4]->IsNumber() ? TO_INT32(info[1]) : 0;
+
+  if (valuesValue->IsArray()) {
+    Local<Array> valuesArray = Local<Array>::Cast(valuesValue);
+    size_t length = std::max<size_t>(valuesArray->Length() - srcOffset, 0);
+    if (length > 0) {
+      std::vector<GLuint> values(length);
+      for (size_t i = 0; i < length; i++) {
+        values[i] = TO_UINT32(valuesArray->Get(i + srcOffset));
+      }
+      glClearBufferuiv(buffer, drawBuffer, values.data());
+    }
+  } else if (valuesValue->IsUint32Array()) {
+    Local<Uint32Array> valuesUint32Array = Local<Uint32Array>::Cast(valuesValue);
+    GLuint *values = (GLuint *)((char *)valuesUint32Array->Buffer()->GetContents().Data() + valuesUint32Array->ByteOffset());
+    glClearBufferuiv(buffer, drawBuffer, values);
+  } else {
+    Nan::ThrowError("ClearBufferiv: Invalid arguments");
+  }
+}
+
+NAN_METHOD(WebGLRenderingContext::ClearBufferfi) {
+  GLenum buffer = TO_UINT32(info[0]);
+  GLint drawBuffer = TO_INT32(info[1]);
+  GLfloat depth = TO_FLOAT(info[2]);
+  GLint stencil = TO_INT32(info[3]);
+
+  glClearBufferfi(buffer, drawBuffer, depth, stencil);
 }
 
 NAN_METHOD(WebGLRenderingContext::BlendColor) {
@@ -4739,8 +5026,16 @@ NAN_METHOD(WebGLRenderingContext::RenderbufferStorage) {
   GLsizei height = TO_UINT32(info[3]);
 
   glRenderbufferStorage(target, internalformat, width, height);
+}
 
-  // info.GetReturnValue().Set(Nan::Undefined());
+NAN_METHOD(WebGLRenderingContext::RenderbufferStorageMultisample) {
+  GLenum target = TO_UINT32(info[0]);
+  GLsizei samples = TO_UINT32(info[1]);
+  GLenum internalformat = TO_UINT32(info[2]);
+  GLsizei width = TO_UINT32(info[3]);
+  GLsizei height = TO_UINT32(info[4]);
+
+  glRenderbufferStorageMultisample(target, samples, internalformat, width, height);
 }
 
 NAN_METHOD(WebGLRenderingContext::GetShaderSource) {
@@ -5371,8 +5666,17 @@ NAN_METHOD(WebGLRenderingContext::GetVertexAttrib) {
     default:
       Nan::ThrowError("GetVertexAttrib: Invalid Enum");
   }
+}
 
-  //info.GetReturnValue().Set(Nan::Undefined());
+NAN_METHOD(WebGLRenderingContext::GetFragDataLocation) {
+  GLuint program = TO_UINT32(JS_OBJ(info[0])->Get(JS_STR("id")));
+  Local<String> name = Local<String>::Cast(info[1]);
+
+  Nan::Utf8String nameUtf8String(Local<String>::Cast(info[0]));
+  const char *nameV = *nameUtf8String;
+
+  GLint result = glGetFragDataLocation(program, nameV);
+  info.GetReturnValue().Set(result);
 }
 
 const char *webglExtensions[] = {
