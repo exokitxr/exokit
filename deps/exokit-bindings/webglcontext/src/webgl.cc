@@ -2096,6 +2096,7 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
   Nan::SetMethod(proto, "bufferData", glCallWrap<BufferData>);
   Nan::SetMethod(proto, "bufferSubData", glCallWrap<BufferSubData>);
   Nan::SetMethod(proto, "copyBufferSubData", glCallWrap<CopyBufferSubData>);
+  Nan::SetMethod(proto, "getBufferSubData", glCallWrap<GetBufferSubData>);
   Nan::SetMethod(proto, "readBuffer", glCallWrap<ReadBuffer>);
   Nan::SetMethod(proto, "enable", glCallWrap<Enable>);
   Nan::SetMethod(proto, "blendEquation", glCallWrap<BlendEquation>);
@@ -4128,6 +4129,33 @@ NAN_METHOD(WebGLRenderingContext::CopyBufferSubData) {
   GLsizei size = TO_INT32(info[4]);
 
   glCopyBufferSubData(readTarget, writeTarget, readOffset, writeOffset, size);
+}
+
+NAN_METHOD(WebGLRenderingContext::GetBufferSubData) {
+  GLenum target = TO_UINT32(info[0]);
+  GLintptr srcByteOffset = TO_INT32(info[1]);
+  Local<ArrayBufferView> dstData = Local<ArrayBufferView>::Cast(info[2]);
+  char *data = (char *)dstData->Buffer()->GetContents().Data() + dstData->ByteOffset();
+  size_t dataLength = dstData->ByteLength();
+  if (info[3]->IsNumber()) {
+    GLuint dstOffset = TO_UINT32(info[3]);
+    data += dstOffset;
+    dataLength -= dstOffset;
+  }
+  if (info[4]->IsNumber()) {
+    GLuint length = TO_UINT32(info[4]);
+    dataLength = std::min<size_t>(dataLength, length);
+  }
+
+#if defined(ANDROID) && !defined(LUMIN)
+  void *mapping = glMapBufferRange(target, srcByteOffset, dataLength, GL_MAP_READ_BIT);
+  if (mapping != nullptr) {
+    memcpy(data, mapping, dataLength);
+    glUnmapBuffer(target);
+  }
+#else
+  glGetBufferSubData(target, srcByteOffset, dataLength, data);
+#endif
 }
 
 NAN_METHOD(WebGLRenderingContext::ReadBuffer) {
