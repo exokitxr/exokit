@@ -2125,6 +2125,10 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
   Nan::SetMethod(proto, "vertexAttribDivisorANGLE", glCallWrap<VertexAttribDivisorANGLE>);
   Nan::SetMethod(proto, "drawBuffers", glCallWrap<DrawBuffers>);
   Nan::SetMethod(proto, "drawBuffersWEBGL", glCallWrap<DrawBuffersWEBGL>);
+  Nan::SetMethod(proto, "clearBufferfv", glCallWrap<ClearBufferfv>);
+  Nan::SetMethod(proto, "clearBufferiv", glCallWrap<ClearBufferiv>);
+  Nan::SetMethod(proto, "clearBufferuiv", glCallWrap<ClearBufferuiv>);
+  Nan::SetMethod(proto, "clearBufferfi", glCallWrap<ClearBufferfi>);
 
   Nan::SetMethod(proto, "blendColor", glCallWrap<BlendColor>);
   Nan::SetMethod(proto, "blendEquationSeparate", glCallWrap<BlendEquationSeparate>);
@@ -4454,6 +4458,90 @@ NAN_METHOD(WebGLRenderingContext::DrawBuffersWEBGL) {
   glDrawBuffers(numBuffers, buffers);
 
   // info.GetReturnValue().Set(Nan::Undefined());
+}
+
+NAN_METHOD(WebGLRenderingContext::ClearBufferfv) {
+  GLenum buffer = TO_UINT32(info[0]);
+  GLint drawBuffer = TO_INT32(info[1]);
+  Local<Value> valuesValue = info[3];
+  GLint srcOffset = info[4]->IsNumber() ? TO_INT32(info[1]) : 0;
+
+  if (valuesValue->IsArray()) {
+    Local<Array> valuesArray = Local<Array>::Cast(valuesValue);
+    size_t length = std::max<size_t>(valuesArray->Length() - srcOffset, 0);
+    if (length > 0) {
+      std::vector<GLfloat> values(length);
+      for (size_t i = 0; i < length; i++) {
+        values[i] = TO_FLOAT(valuesArray->Get(i + srcOffset));
+      }
+      glClearBufferfv(buffer, drawBuffer, values.data());
+    }
+  } else if (valuesValue->IsFloat32Array()) {
+    Local<Float32Array> valuesFloat32Array = Local<Float32Array>::Cast(valuesValue);
+    GLfloat *values = (GLfloat *)((char *)valuesFloat32Array->Buffer()->GetContents().Data() + valuesFloat32Array->ByteOffset());
+    glClearBufferfv(buffer, drawBuffer, values);
+  } else {
+    Nan::ThrowError("ClearBufferfv: Invalid arguments");
+  }
+}
+
+NAN_METHOD(WebGLRenderingContext::ClearBufferiv) {
+  GLenum buffer = TO_UINT32(info[0]);
+  GLint drawBuffer = TO_INT32(info[1]);
+  Local<Value> valuesValue = info[3];
+  GLint srcOffset = info[4]->IsNumber() ? TO_INT32(info[1]) : 0;
+
+  if (valuesValue->IsArray()) {
+    Local<Array> valuesArray = Local<Array>::Cast(valuesValue);
+    size_t length = std::max<size_t>(valuesArray->Length() - srcOffset, 0);
+    if (length > 0) {
+      std::vector<GLint> values(length);
+      for (size_t i = 0; i < length; i++) {
+        values[i] = TO_INT32(valuesArray->Get(i + srcOffset));
+      }
+      glClearBufferiv(buffer, drawBuffer, values.data());
+    }
+  } else if (valuesValue->IsInt32Array()) {
+    Local<Int32Array> valuesInt32Array = Local<Int32Array>::Cast(valuesValue);
+    GLint *values = (GLint *)((char *)valuesInt32Array->Buffer()->GetContents().Data() + valuesInt32Array->ByteOffset());
+    glClearBufferiv(buffer, drawBuffer, values);
+  } else {
+    Nan::ThrowError("ClearBufferiv: Invalid arguments");
+  }
+}
+
+NAN_METHOD(WebGLRenderingContext::ClearBufferuiv) {
+  GLenum buffer = TO_UINT32(info[0]);
+  GLint drawBuffer = TO_INT32(info[1]);
+  Local<Value> valuesValue = info[3];
+  GLint srcOffset = info[4]->IsNumber() ? TO_INT32(info[1]) : 0;
+
+  if (valuesValue->IsArray()) {
+    Local<Array> valuesArray = Local<Array>::Cast(valuesValue);
+    size_t length = std::max<size_t>(valuesArray->Length() - srcOffset, 0);
+    if (length > 0) {
+      std::vector<GLuint> values(length);
+      for (size_t i = 0; i < length; i++) {
+        values[i] = TO_UINT32(valuesArray->Get(i + srcOffset));
+      }
+      glClearBufferuiv(buffer, drawBuffer, values.data());
+    }
+  } else if (valuesValue->IsUint32Array()) {
+    Local<Uint32Array> valuesUint32Array = Local<Uint32Array>::Cast(valuesValue);
+    GLuint *values = (GLuint *)((char *)valuesUint32Array->Buffer()->GetContents().Data() + valuesUint32Array->ByteOffset());
+    glClearBufferuiv(buffer, drawBuffer, values);
+  } else {
+    Nan::ThrowError("ClearBufferiv: Invalid arguments");
+  }
+}
+
+NAN_METHOD(WebGLRenderingContext::ClearBufferfi) {
+  GLenum buffer = TO_UINT32(info[0]);
+  GLint drawBuffer = TO_INT32(info[1]);
+  GLfloat depth = TO_FLOAT(info[2]);
+  GLint stencil = TO_INT32(info[3]);
+
+  glClearBufferfi(buffer, drawBuffer, depth, stencil);
 }
 
 NAN_METHOD(WebGLRenderingContext::BlendColor) {
