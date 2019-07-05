@@ -244,6 +244,7 @@ public:
   static NAN_METHOD(BufferData);
   static NAN_METHOD(BufferSubData);
   static NAN_METHOD(CopyBufferSubData);
+  static NAN_METHOD(GetBufferSubData);
   static NAN_METHOD(ReadBuffer);
   static NAN_METHOD(BlendEquation);
   static NAN_METHOD(BlendFunc);
