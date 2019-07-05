@@ -2094,6 +2094,7 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
   Nan::SetMethod(proto, "bindBufferRange", glCallWrap<BindBufferRange>);
   Nan::SetMethod(proto, "bufferData", glCallWrap<BufferData>);
   Nan::SetMethod(proto, "bufferSubData", glCallWrap<BufferSubData>);
+  Nan::SetMethod(proto, "copyBufferSubData", glCallWrap<CopyBufferSubData>);
   Nan::SetMethod(proto, "readBuffer", glCallWrap<ReadBuffer>);
   Nan::SetMethod(proto, "enable", glCallWrap<Enable>);
   Nan::SetMethod(proto, "blendEquation", glCallWrap<BlendEquation>);
@@ -4122,6 +4123,16 @@ NAN_METHOD(WebGLRenderingContext::BufferSubData) {
   }
 
   glBufferSubData(target, dstOffset, size, data);
+}
+
+NAN_METHOD(WebGLRenderingContext::CopyBufferSubData) {
+  GLenum readTarget = TO_UINT32(info[0]);
+  GLenum writeTarget = TO_UINT32(info[1]);
+  GLintptr readOffset = TO_INT32(info[2]);
+  GLintptr writeOffset = TO_INT32(info[3]);
+  GLsizei size = TO_INT32(info[4]);
+
+  glCopyBufferSubData(readTarget, writeTarget, readOffset, writeOffset, size);
 }
 
 NAN_METHOD(WebGLRenderingContext::ReadBuffer) {

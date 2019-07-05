@@ -243,6 +243,7 @@ public:
   static NAN_METHOD(InvalidateSubFramebuffer);
   static NAN_METHOD(BufferData);
   static NAN_METHOD(BufferSubData);
+  static NAN_METHOD(CopyBufferSubData);
   static NAN_METHOD(ReadBuffer);
   static NAN_METHOD(BlendEquation);
   static NAN_METHOD(BlendFunc);
@@ -349,6 +350,7 @@ public:
   static NAN_METHOD(GetRenderbufferParameter);
   static NAN_METHOD(GetUniform);
   static NAN_METHOD(GetVertexAttrib);
+  static NAN_METHOD(GetIndexedParameter);
   static NAN_METHOD(GetFragDataLocation);
   static NAN_METHOD(GetSupportedExtensions);
   static NAN_METHOD(GetExtension);
