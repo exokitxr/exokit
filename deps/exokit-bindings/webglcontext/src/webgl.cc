@@ -2062,6 +2062,7 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
   Nan::SetMethod(proto, "getActiveUniformBlockName", glCallWrap<GetActiveUniformBlockName>);
   Nan::SetMethod(proto, "getActiveUniformBlockParameter", glCallWrap<GetActiveUniformBlockParameter>);
   Nan::SetMethod(proto, "getUniform", glCallWrap<GetUniform>);
+  Nan::SetMethod(proto, "getIndexedParameter", glCallWrap<GetIndexedParameter>);
   Nan::SetMethod(proto, "getFragDataLocation", glCallWrap<GetFragDataLocation>);
   Nan::SetMethod(proto, "clearColor", glCallWrap<ClearColor>);
   Nan::SetMethod(proto, "clearDepth", glCallWrap<ClearDepth>);
@@ -5659,6 +5660,66 @@ NAN_METHOD(WebGLRenderingContext::GetVertexAttrib) {
     }
     default: {
       Nan::ThrowError("GetVertexAttrib: Invalid Enum");
+      break;
+    }
+  }
+}
+
+NAN_METHOD(WebGLRenderingContext::GetIndexedParameter) {
+  GLenum target = TO_UINT32(info[0]);
+  GLuint index = TO_UINT32(info[1]);
+
+  switch (target) {
+    case GL_TRANSFORM_FEEDBACK_BUFFER_BINDING: {
+      GLint data;
+      glGetIntegeri_v(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING, index, &data);
+      if (data != 0) {
+        Local<Object> result = Nan::New<Object>();
+        result->Set(JS_STR("id"), JS_INT(data));
+        info.GetReturnValue().Set(result);
+      } else {
+        info.GetReturnValue().Set(Nan::Null());
+      }
+      break;
+    }
+    case GL_TRANSFORM_FEEDBACK_BUFFER_SIZE: {
+      GLint64 data;
+      glGetInteger64i_v(GL_TRANSFORM_FEEDBACK_BUFFER_SIZE, index, &data);
+      info.GetReturnValue().Set(JS_INT(static_cast<GLint>(data)));
+      break;
+    }
+    case GL_TRANSFORM_FEEDBACK_BUFFER_START: {
+      GLint64 data;
+      glGetInteger64i_v(GL_TRANSFORM_FEEDBACK_BUFFER_START, index, &data);
+      info.GetReturnValue().Set(JS_INT(static_cast<GLint>(data)));
+      break;
+    }
+    case GL_UNIFORM_BUFFER_BINDING: {
+      GLint data;
+      glGetIntegeri_v(GL_UNIFORM_BUFFER_BINDING, index, &data);
+      if (data != 0) {
+        Local<Object> result = Nan::New<Object>();
+        result->Set(JS_STR("id"), JS_INT(data));
+        info.GetReturnValue().Set(result);
+      } else {
+        info.GetReturnValue().Set(Nan::Null());
+      }
+      break;
+    }
+    case GL_UNIFORM_BUFFER_SIZE: {
+      GLint64 data;
+      glGetInteger64i_v(GL_UNIFORM_BUFFER_SIZE, index, &data);
+      info.GetReturnValue().Set(JS_INT(static_cast<GLint>(data)));
+      break;
+    }
+    case GL_UNIFORM_BUFFER_START: {
+      GLint64 data;
+      glGetInteger64i_v(GL_UNIFORM_BUFFER_START, index, &data);
+      info.GetReturnValue().Set(JS_INT(static_cast<GLint>(data)));
+      break;
+    }
+    default: {
+      info.GetReturnValue().Set(Nan::Null());
       break;
     }
   }

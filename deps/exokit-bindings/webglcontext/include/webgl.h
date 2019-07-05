@@ -350,6 +350,7 @@ public:
   static NAN_METHOD(GetRenderbufferParameter);
   static NAN_METHOD(GetUniform);
   static NAN_METHOD(GetVertexAttrib);
+  static NAN_METHOD(GetIndexedParameter);
   static NAN_METHOD(GetFragDataLocation);
   static NAN_METHOD(GetSupportedExtensions);
   static NAN_METHOD(GetExtension);
