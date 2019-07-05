@@ -4479,7 +4479,7 @@ NAN_METHOD(WebGLRenderingContext::GetTexParameter) {
 
   glGetTexParameteriv(target, pname, &value);
 
-  info.GetReturnValue().Set(Nan::New<Number>(value));
+  info.GetReturnValue().Set(JS_INT(value));
 }
 
 NAN_METHOD(WebGLRenderingContext::GetActiveAttrib) {
@@ -5021,8 +5021,10 @@ NAN_METHOD(WebGLRenderingContext::GetVertexAttrib) {
       info.GetReturnValue().Set(createTypedArray<Float32Array>(4, vertex_attribs));
       break;
     }
-    default:
+    default: {
       Nan::ThrowError("GetVertexAttrib: Invalid Enum");
+      break;
+    }
   }
 
   //info.GetReturnValue().Set(Nan::Undefined());
