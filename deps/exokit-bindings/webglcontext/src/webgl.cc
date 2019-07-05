@@ -3390,14 +3390,14 @@ NAN_METHOD(WebGLRenderingContext::FramebufferTexture2D) {
 NAN_METHOD(WebGLRenderingContext::BlitFramebuffer) {
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(info.This());
 
-  int sx = TO_UINT32(info[0]);
-  int sy = TO_UINT32(info[1]);
-  int sw = TO_UINT32(info[2]);
-  int sh = TO_UINT32(info[3]);
-  int dx = TO_UINT32(info[4]);
-  int dy = TO_UINT32(info[5]);
-  int dw = TO_UINT32(info[6]);
-  int dh = TO_UINT32(info[7]);
+  int sx = TO_INT32(info[0]);
+  int sy = TO_INT32(info[1]);
+  int sw = TO_INT32(info[2]);
+  int sh = TO_INT32(info[3]);
+  int dx = TO_INT32(info[4]);
+  int dy = TO_INT32(info[5]);
+  int dw = TO_INT32(info[6]);
+  int dh = TO_INT32(info[7]);
   GLbitfield mask = TO_UINT32(info[8]);
   GLenum filter = TO_UINT32(info[9]);
 
