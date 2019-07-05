@@ -8,6 +8,7 @@ const {URL} = url;
 const vm = require('vm');
 const util = require('util');
 const crypto = require('crypto');
+const {performance} = require('perf_hooks');
 const {
   Worker: WorkerBase,
   workerData: {
@@ -21,6 +22,7 @@ const {Buffer} = global;
 
 const {CustomEvent, DragEvent, ErrorEvent, Event, EventTarget, KeyboardEvent, MessageEvent, MouseEvent, WheelEvent, PromiseRejectionEvent} = require('./Event');
 const {MediaDevices, Clipboard, Navigator} = require('./Navigator');
+const {Location} = require('./Location');
 const {FileReader} = require('./File');
 const {XMLHttpRequest, FormData} = require('window-xhr');
 const {fetch} = require('./fetch');
@@ -82,8 +84,11 @@ class Worker extends EventTarget {
       initModule: path.join(__dirname, 'Worker.js'),
       args: {
         src,
-        baseUrl: utils._getBaseUrl(src, GlobalContext.baseUrl),
-        args,
+        options: {
+          url: src,
+          baseUrl: utils._getBaseUrl(src, GlobalContext.baseUrl),
+        },
+        args: args.options.args,
         xrState: args.xrState,
       },
     });
@@ -136,9 +141,18 @@ class Worker extends EventTarget {
   self.EventTarget = EventTarget;
 
   self.URL = URL;
+  self.Location = Location;
+  const location = new Location(args.options.url);
+  Object.defineProperty(self, 'location', {
+    get() {
+      return location;
+    },
+    set(href) {
+      href = href + '';
+      location.href = href;
+    },
+  });
 
-  self.MediaDevices = MediaDevices;
-  self.Clipboard = Clipboard;
   self.Navigator = Navigator;
   self.navigator = new Navigator();
 
@@ -167,6 +181,9 @@ class Worker extends EventTarget {
   })(XMLHttpRequest);
   self.WebSocket = WebSocket;
   self.FileReader = FileReader;
+
+  self.performance = performance;
+
   self.crypto = {
     getRandomValues(typedArray) {
       crypto.randomFillSync(Buffer.from(typedArray.buffer, typedArray.byteOffset, typedArray.byteLength));
@@ -203,6 +220,9 @@ class Worker extends EventTarget {
   };
 
   self.Worker = Worker;
+
+  self.MediaDevices = MediaDevices;
+  self.Clipboard = Clipboard;
 
   self.postMessage = (message, transferList) => parentPort.postMessage({
     method: 'postMessage',

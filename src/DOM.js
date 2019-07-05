@@ -862,32 +862,20 @@ class Element extends Node {
     }
   }
   insertBefore(childNode, nextSibling) {
-    const index = this.childNodes.indexOf(nextSibling);
+    let index = this.childNodes.indexOf(nextSibling);
     if (index !== -1) {
-      this.childNodes.splice(index, 0, childNode);
-      childNode.parentNode = this;
-
-      if (this._children) {
-        this._children.update();
-      }
-
-      this._emit('children', [childNode], [], this.childNodes[index - 1] || null, this.childNodes[index + 1] || null);
-      this.ownerDocument._emit('domchange');
+      index = this.childNodes.length;
     }
-  }
-  insertAfter(childNode, nextSibling) {
-    const index = this.childNodes.indexOf(nextSibling);
-    if (index !== -1) {
-      this.childNodes.splice(index + 1, 0, childNode);
-      childNode.parentNode = this;
 
-      if (this._children) {
-        this._children.update();
-      }
+    this.childNodes.splice(index, 0, childNode);
+    childNode.parentNode = this;
 
-      this._emit('children', [childNode], [], this.childNodes[index] || null, this.childNodes[index + 2] || null);
-      this.ownerDocument._emit('domchange');
+    if (this._children) {
+      this._children.update();
     }
+
+    this._emit('children', [childNode], [], this.childNodes[index - 1] || null, this.childNodes[index + 1] || null);
+    this.ownerDocument._emit('domchange');
   }
   insertAdjacentHTML(position, text) {
     const _getEls = text => parse5.parseFragment(text, {
@@ -2198,7 +2186,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   htmlString,
                   hidden: true,
                   xrOffsetBuffer: this.xrOffset._buffer,
-                  onnavigate(href) {
+                  onnavigate: (href) => {
                     this.readyState = null;
 
                     this.setAttribute('src', href);

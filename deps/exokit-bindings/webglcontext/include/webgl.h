@@ -206,8 +206,12 @@ public:
   static NAN_METHOD(LinkProgram);
   static NAN_METHOD(GetProgramParameter);
   static NAN_METHOD(GetUniformLocation);
+  static NAN_METHOD(GetUniformIndices);
+  static NAN_METHOD(GetActiveUniforms);
   static NAN_METHOD(GetUniformBlockIndex);
   static NAN_METHOD(UniformBlockBinding);
+  static NAN_METHOD(GetActiveUniformBlockName);
+  static NAN_METHOD(GetActiveUniformBlockParameter);
   static NAN_METHOD(ClearColor);
   static NAN_METHOD(ClearDepth);
   static NAN_METHOD(Disable);
@@ -215,8 +219,12 @@ public:
   static NAN_METHOD(CreateTexture);
   static NAN_METHOD(BindTexture);
   static NAN_METHOD(FlipTextureData);
-  static NAN_METHOD(TexImage2D);
-  static NAN_METHOD(CompressedTexImage2D);
+  // static NAN_METHOD(TexImage2D);
+  // static NAN_METHOD(TexImage3D);
+  // static NAN_METHOD(CompressedTexImage2D);
+  // static NAN_METHOD(CompressedTexImage3D);
+  // static NAN_METHOD(CompressedTexSubImage2D);
+  // static NAN_METHOD(CompressedTexSubImage3D);
   static NAN_METHOD(TexParameteri);
   static NAN_METHOD(TexParameterf);
   static NAN_METHOD(Clear);
@@ -224,13 +232,19 @@ public:
   static NAN_METHOD(CreateBuffer);
   static NAN_METHOD(BindBuffer);
   static NAN_METHOD(BindBufferBase);
+  static NAN_METHOD(BindBufferRange);
   static NAN_METHOD(CreateFramebuffer);
   static NAN_METHOD(BindFramebuffer);
   static NAN_METHOD(BindFramebufferRaw);
   static NAN_METHOD(FramebufferTexture2D);
+  static NAN_METHOD(FramebufferTextureLayer);
   static NAN_METHOD(BlitFramebuffer);
+  static NAN_METHOD(InvalidateFramebuffer);
+  static NAN_METHOD(InvalidateSubFramebuffer);
   static NAN_METHOD(BufferData);
   static NAN_METHOD(BufferSubData);
+  static NAN_METHOD(CopyBufferSubData);
+  static NAN_METHOD(ReadBuffer);
   static NAN_METHOD(BlendEquation);
   static NAN_METHOD(BlendFunc);
   static NAN_METHOD(EnableVertexAttribArray);
@@ -262,6 +276,10 @@ public:
   static NAN_METHOD(VertexAttribDivisorANGLE);
   static NAN_METHOD(DrawBuffers);
   static NAN_METHOD(DrawBuffersWEBGL);
+  static NAN_METHOD(ClearBufferfv);
+  static NAN_METHOD(ClearBufferiv);
+  static NAN_METHOD(ClearBufferuiv);
+  static NAN_METHOD(ClearBufferfi);
 
   static NAN_METHOD(BlendColor);
   static NAN_METHOD(BlendEquationSeparate);
@@ -311,11 +329,14 @@ public:
   static NAN_METHOD(IsSync);
 
   static NAN_METHOD(RenderbufferStorage);
+  static NAN_METHOD(RenderbufferStorageMultisample);
   static NAN_METHOD(GetShaderSource);
   static NAN_METHOD(ValidateProgram);
 
-  static NAN_METHOD(TexSubImage2D);
+  // static NAN_METHOD(TexSubImage2D);
+  // static NAN_METHOD(TexSubImage3D);
   static NAN_METHOD(TexStorage2D);
+  static NAN_METHOD(TexStorage3D);
 
   static NAN_METHOD(ReadPixels);
   static NAN_METHOD(GetTexParameter);
@@ -329,6 +350,8 @@ public:
   static NAN_METHOD(GetRenderbufferParameter);
   static NAN_METHOD(GetUniform);
   static NAN_METHOD(GetVertexAttrib);
+  static NAN_METHOD(GetIndexedParameter);
+  static NAN_METHOD(GetFragDataLocation);
   static NAN_METHOD(GetSupportedExtensions);
   static NAN_METHOD(GetExtension);
   static NAN_METHOD(GetContextAttributes);
@@ -479,6 +502,8 @@ public:
   static NAN_METHOD(GetTransformFeedbackVarying);
   static NAN_METHOD(PauseTransformFeedback);
   static NAN_METHOD(ResumeTransformFeedback);
+
+  static NAN_METHOD(GetInternalformatParameter);
 
   static NAN_METHOD(CreateSampler);
   static NAN_METHOD(DeleteSampler);
