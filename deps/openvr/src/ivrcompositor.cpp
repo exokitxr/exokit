@@ -277,7 +277,7 @@ NAN_METHOD(IVRCompositor::RequestGetPoses) {
 
       {
         vr::VRSkeletalSummaryData_t skeletalSummaryData;
-        vr::EVRInputError error = GetSkeletalSummaryData(obj->leftHandAnimActionHandle, &skeletalSummaryData);
+        vr::EVRInputError error = vr::VRInput()->GetSkeletalSummaryData(obj->leftHandAnimActionHandle, &skeletalSummaryData);
         if (error) {
           exerr << "failed to get left hand anim skeletal summary data" << std::endl;
         }
@@ -317,7 +317,7 @@ NAN_METHOD(IVRCompositor::RequestGetPoses) {
       }
       {
         vr::VRSkeletalSummaryData_t skeletalSummaryData;
-        vr::EVRInputError error = GetSkeletalSummaryData(obj->rightHandAnimActionHandle, &skeletalSummaryData);
+        vr::EVRInputError error = vr::VRInput()->GetSkeletalSummaryData(obj->rightHandAnimActionHandle, &skeletalSummaryData);
         if (error) {
           exerr << "failed to get right hand anim skeletal summary data" << std::endl;
         }
