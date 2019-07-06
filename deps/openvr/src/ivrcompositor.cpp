@@ -282,8 +282,8 @@ NAN_METHOD(IVRCompositor::RequestGetPoses) {
           exerr << "failed to get left hand anim skeletal summary data" << std::endl;
         }
         exout << "left finger curls:";
-        for (int i = 0; i < VRFinger_Count; i++) {
-          exout << skeletalSummaryData.flFingerCurl[i] << (i != (VRFinger_Count-1) ? "," : "");
+        for (int i = 0; i < vr::EVRFinger::VRFinger_Count; i++) {
+          exout << skeletalSummaryData.flFingerCurl[i] << (i != (vr::EVRFinger::VRFinger_Count-1) ? "," : "");
         }
         exout << std::endl;
 
@@ -322,8 +322,8 @@ NAN_METHOD(IVRCompositor::RequestGetPoses) {
           exerr << "failed to get right hand anim skeletal summary data" << std::endl;
         }
         exout << "right finger curls:";
-        for (int i = 0; i < VRFinger_Count; i++) {
-          exout << skeletalSummaryData.flFingerCurl[i] << (i != (VRFinger_Count-1) ? "," : "");
+        for (int i = 0; i < vr::EVRFinger::VRFinger_Count; i++) {
+          exout << skeletalSummaryData.flFingerCurl[i] << (i != (vr::EVRFinger::VRFinger_Count-1) ? "," : "");
         }
         exout << std::endl;
 
