@@ -288,7 +288,7 @@ NAN_METHOD(IVRCompositor::RequestGetPoses) {
       memcpy(rightControllerArray, identityMatrix, sizeof(identityMatrix));
 
       {
-        InputPoseActionData_t inputPoseActionData;
+        vr::InputPoseActionData_t inputPoseActionData;
         vr::EVRInputError error = vr::VRInput()->GetPoseActionDataForNextFrame(obj->poseActionHandle, vr::ETrackingUniverseOrigin::TrackingUniverseStanding, &inputPoseActionData, sizeof(inputPoseActionData), obj->hmdInputSourceHandle);
         if (error) {
           exerr << "failed to get hmd pose data: " << error << std::endl;
@@ -313,7 +313,7 @@ NAN_METHOD(IVRCompositor::RequestGetPoses) {
           std::endl;
       }
       {
-        InputPoseActionData_t inputPoseActionData;
+        vr::InputPoseActionData_t inputPoseActionData;
         vr::EVRInputError error = vr::VRInput()->GetPoseActionDataForNextFrame(obj->poseActionHandle, vr::ETrackingUniverseOrigin::TrackingUniverseStanding, &inputPoseActionData, sizeof(inputPoseActionData), obj->leftHandInputSourceHandle);
         if (error) {
           exerr << "failed to get left hand pose data: " << error << std::endl;
@@ -377,7 +377,7 @@ NAN_METHOD(IVRCompositor::RequestGetPoses) {
         }
       }
       {
-        InputPoseActionData_t inputPoseActionData;
+        vr::InputPoseActionData_t inputPoseActionData;
         vr::EVRInputError error = vr::VRInput()->GetPoseActionDataForNextFrame(obj->poseActionHandle, vr::ETrackingUniverseOrigin::TrackingUniverseStanding, &inputPoseActionData, sizeof(inputPoseActionData), obj->leftHandInputSourceHandle);
         if (error) {
           exerr << "failed to get left hand pose data: " << error << std::endl;
