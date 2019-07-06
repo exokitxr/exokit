@@ -102,33 +102,27 @@ IVRCompositor::IVRCompositor(vr::IVRCompositor *self)
 : self_(self)
 {
   {
-    vr::EVRInputError error = vr::VRInput()->GetActionHandle("/actions/main/in/LeftHand", &leftHandActionHandle);
+    vr::EVRInputError error = vr::VRInput()->GetActionHandle("/actions/default/in/Pose", &poseActionHandle);
     if (error != vr::EVRInputError::VRInputError_None) {
       Nan::ThrowError("Failed to get left hand action handle");
     }
   }
   {
-    vr::EVRInputError error = vr::VRInput()->GetActionHandle("/actions/main/in/LeftHand_Anim", &leftHandAnimActionHandle);
+    vr::EVRInputError error = vr::VRInput()->GetActionHandle("/actions/default/in/SkeletonLeftHand", &leftHandAnimActionHandle);
     if (error != vr::EVRInputError::VRInputError_None) {
       Nan::ThrowError("Failed to get left hand anim action handle");
     }
   }
   {
-    vr::EVRInputError error = vr::VRInput()->GetActionHandle("/actions/main/in/RightHand", &rightHandActionHandle);
-    if (error != vr::EVRInputError::VRInputError_None) {
-      Nan::ThrowError("Failed to get right hand action handle");
-    }
-  }
-  {
-    vr::EVRInputError error = vr::VRInput()->GetActionHandle("/actions/main/in/RightHand_Anim", &rightHandAnimActionHandle);
+    vr::EVRInputError error = vr::VRInput()->GetActionHandle("/actions/default/in/SkeletonRightHand", &rightHandAnimActionHandle);
     if (error != vr::EVRInputError::VRInputError_None) {
       Nan::ThrowError("Failed to get right hand anim action handle");
     }
   }
   {
-    vr::EVRInputError error = vr::VRInput()->GetActionSetHandle("/actions/main", &actionSetHandle);
+    vr::EVRInputError error = vr::VRInput()->GetActionSetHandle("/actions/default", &actionSetHandle);
     if (error != vr::EVRInputError::VRInputError_None) {
-      Nan::ThrowError("Failed to get main action set handle");
+      Nan::ThrowError("Failed to get default action set handle");
     }
   }
 }

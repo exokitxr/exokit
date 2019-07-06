@@ -50,9 +50,8 @@ private:
 
   /// Reference to wrapped OpenVR instance.
   vr::IVRCompositor * const self_;
-  vr::VRActionHandle_t leftHandActionHandle;
+  vr::VRActionHandle_t poseActionHandle;
   vr::VRActionHandle_t leftHandAnimActionHandle;
-  vr::VRActionHandle_t rightHandActionHandle;
   vr::VRActionHandle_t rightHandAnimActionHandle;
   vr::VRActionSetHandle_t actionSetHandle;
 };
