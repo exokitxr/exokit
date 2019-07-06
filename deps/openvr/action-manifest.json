@@ -1,0 +1,57 @@
+{
+  "actions": [
+    {
+      "name": "/actions/main/in/LeftHand",
+      "type": "pose",
+      "requirement": "suggested"
+    },
+    {
+      "name": "/actions/main/in/LeftHand_Anim",
+      "type": "skeleton",
+      "skeleton": "/skeleton/hand/left",
+      "requirement": "optional"
+    },
+    {
+      "name": "/actions/driving/out/LeftHand_Vib",
+      "type": "vibration",
+      "requirement": "optional"
+    },
+    {
+      "name": "/actions/main/in/RightHand",
+      "type": "pose",
+      "requirement": "suggested"
+    },
+    {
+      "name": "/actions/main/in/RightHand_Anim",
+      "type": "skeleton",
+      "skeleton": "/skeleton/hand/right",
+      "requirement": "optional"
+    },
+    {
+      "name": "/actions/driving/out/RightHand_Vib",
+      "type": "vibration",
+      "requirement": "optional"
+    }
+  ],
+  "action_sets": [
+    {
+      "name": "/actions/main",
+      "usage": "leftright"
+    }
+  ],
+  "localization" : [
+   {
+       "language_tag": "en",
+
+        "/actions/main" : "Main Actions",
+
+        "/actions/main/in/LeftHand" : "Left Hand",
+        "/actions/main/in/LeftHand_Anim" : "Left Hand Animation",
+        "/actions/main/in/LeftHand_Vib" : "Left Hand Vibration",
+
+        "/actions/main/in/RightHand" : "Right Hand",
+        "/actions/main/in/RightHand_Anim" : "Right Hand Animation",
+        "/actions/main/in/RightHand_Vib" : "Right Hand Vibration"
+    }
+  ]
+}
