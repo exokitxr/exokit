@@ -2,35 +2,29 @@
   "actions": [
     {
       "name": "/actions/main/in/LeftHand",
-      "type": "pose",
-      "requirement": "suggested"
+      "type": "pose"
     },
     {
       "name": "/actions/main/in/LeftHand_Anim",
       "type": "skeleton",
-      "skeleton": "/skeleton/hand/left",
-      "requirement": "optional"
+      "skeleton": "/skeleton/hand/left"
     },
     {
       "name": "/actions/driving/out/LeftHand_Vib",
-      "type": "vibration",
-      "requirement": "optional"
+      "type": "vibration"
     },
     {
       "name": "/actions/main/in/RightHand",
-      "type": "pose",
-      "requirement": "suggested"
+      "type": "pose"
     },
     {
       "name": "/actions/main/in/RightHand_Anim",
       "type": "skeleton",
-      "skeleton": "/skeleton/hand/right",
-      "requirement": "optional"
+      "skeleton": "/skeleton/hand/right"
     },
     {
       "name": "/actions/driving/out/RightHand_Vib",
-      "type": "vibration",
-      "requirement": "optional"
+      "type": "vibration"
     }
   ],
   "action_sets": [
