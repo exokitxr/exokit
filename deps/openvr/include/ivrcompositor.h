@@ -56,6 +56,11 @@ private:
 
   /// Reference to wrapped OpenVR instance.
   vr::IVRCompositor * const self_;
+  VRActionHandle_t leftHandActionHandle;
+  VRActionHandle_t leftHandAnimActionHandle;
+  VRActionHandle_t rightHandActionHandle;
+  VRActionHandle_t rightHandAnimActionHandle;
+  VRActionSetHandle_t actionSetHandle;
 };
 
 NAN_METHOD(NewCompositor);

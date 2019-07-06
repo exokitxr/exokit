@@ -45,6 +45,42 @@ VRPoseRes::~VRPoseRes() {}
 //=============================================================================
 NAN_MODULE_INIT(IVRCompositor::Init)
 {
+  {
+    vr::EVRInputError error = vr::VRInput()->GetActionHandle("/actions/main/in/LeftHand", &leftHandActionHandle);
+    if (error != vr::EVRInputError::EVRInputError_None) {
+      Nan::ThrowError("Failed to get left hand action handle");
+      return;
+    }
+  }
+  {
+    vr::EVRInputError error = vr::VRInput()->GetActionHandle("/actions/main/in/LeftHand_Anim", &leftHandAnimActionHandle);
+    if (error != vr::EVRInputError::EVRInputError_None) {
+      Nan::ThrowError("Failed to get left hand anim action handle");
+      return;
+    }
+  }
+  {
+    vr::EVRInputError error = vr::VRInput()->GetActionHandle("/actions/main/in/RightHand", &rightHandActionHandle);
+    if (error != vr::EVRInputError::EVRInputError_None) {
+      Nan::ThrowError("Failed to get right hand action handle");
+      return;
+    }
+  }
+  {
+    vr::EVRInputError error = vr::VRInput()->GetActionHandle("/actions/main/in/RightHand_Anim", &rightHandAnimActionHandle);
+    if (error != vr::EVRInputError::EVRInputError_None) {
+      Nan::ThrowError("Failed to get right hand anim action handle");
+      return;
+    }
+  }
+  {
+    vr::EVRInputError error = vr::VRInput()->GetActionSetHandle("/actions/main", &actionSetHandle);
+    if (error != vr::EVRInputError::EVRInputError_None) {
+      Nan::ThrowError("Failed to get main action set handle");
+      return;
+    }
+  }
+
   // Create a function template that is called in JS to create this wrapper.
   Local<FunctionTemplate> tpl = Nan::New<FunctionTemplate>(New);
 
