@@ -288,7 +288,7 @@ NAN_METHOD(IVRCompositor::RequestGetPoses) {
         exout << std::endl;
 
         vr::InputSkeletalActionData_t skeletalActionData;
-        vr::EVRInputError error = vr::VRInput()->GetSkeletalActionData(obj->leftHandAnimActionHandle, &skeletalActionData, sizeof(skeletalActionData));
+        vr::VRInput()->GetSkeletalActionData(obj->leftHandAnimActionHandle, &skeletalActionData, sizeof(skeletalActionData));
         if (error) {
           exerr << "failed to get left hand anim skeletal action data" << std::endl;
         }
@@ -321,7 +321,7 @@ NAN_METHOD(IVRCompositor::RequestGetPoses) {
         exout << std::endl;
 
         vr::InputSkeletalActionData_t skeletalActionData;
-        vr::EVRInputError error = vr::VRInput()->GetSkeletalActionData(obj->rightHandAnimActionHandle, &skeletalActionData, sizeof(skeletalActionData));
+        error = vr::VRInput()->GetSkeletalActionData(obj->rightHandAnimActionHandle, &skeletalActionData, sizeof(skeletalActionData));
         if (error) {
           exerr << "failed to get right hand anim skeletal action data" << std::endl;
         }
