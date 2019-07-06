@@ -290,7 +290,7 @@ NAN_METHOD(IVRCompositor::RequestGetPoses) {
             exerr << "failed to get left hand anim skeletal bone data" << std::endl;
           }
 
-          exout << "got left bones " << boneCount << std:endl; // XXX
+          exout << "got left bones " << boneCount << std::endl; // XXX
         }
       }
       {
@@ -312,7 +312,7 @@ NAN_METHOD(IVRCompositor::RequestGetPoses) {
             exerr << "failed to get right hand anim skeletal bone data" << std::endl;
           }
 
-          exout << "got right bones " << boneCount << std:endl; // XXX
+          exout << "got right bones " << boneCount << std::endl; // XXX
         }
       }
 
