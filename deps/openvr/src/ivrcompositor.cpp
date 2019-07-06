@@ -304,8 +304,15 @@ NAN_METHOD(IVRCompositor::RequestGetPoses) {
           if (error) {
             exerr << "failed to get left hand anim skeletal bone data" << std::endl;
           }
-
-          exout << "got left bones " << boneCount << std::endl; // XXX
+          exout << "left bones (" << boneCount << "):" << std::endl;
+          for (size_t i = 0; i < bones.size(); i++) {
+            VRBoneTransform_t &bone = bones[i];
+            HmdVector4_t &position = bone.position;
+            HmdQuaternionf_t &orientation = bone.orientation;
+            exout << "  left bone[" << i << "] " <<
+              position.v[0] << "," << position.v[1] << "," << position.v[2] << "," << position.v[3] << "/"
+              orientation.v[0] << "," << orientation.v[1] << "," << orientation.v[2] << "," << orientation.v[3] << "," << orientation.v[4] << std::endl;
+          }
         }
       }
       {
@@ -337,8 +344,15 @@ NAN_METHOD(IVRCompositor::RequestGetPoses) {
           if (error) {
             exerr << "failed to get right hand anim skeletal bone data" << std::endl;
           }
-
-          exout << "got right bones " << boneCount << std::endl; // XXX
+          exout << "right bones (" << boneCount << "):" << std::endl;
+          for (size_t i = 0; i < bones.size(); i++) {
+            VRBoneTransform_t &bone = bones[i];
+            HmdVector4_t &position = bone.position;
+            HmdQuaternionf_t &orientation = bone.orientation;
+            exout << "  right bone[" << i << "] " <<
+              position.v[0] << "," << position.v[1] << "," << position.v[2] << "," << position.v[3] << "/"
+              orientation.v[0] << "," << orientation.v[1] << "," << orientation.v[2] << "," << orientation.v[3] << "," << orientation.v[4] << std::endl;
+          }
         }
       }
 
