@@ -276,6 +276,17 @@ NAN_METHOD(IVRCompositor::RequestGetPoses) {
       memcpy(rightControllerArray, identityMatrix, sizeof(identityMatrix));
 
       {
+        vr::VRSkeletalSummaryData_t skeletalSummaryData;
+        vr::EVRInputError error = GetSkeletalSummaryData(obj->leftHandAnimActionHandle, &skeletalSummaryData);
+        if (error) {
+          exerr << "failed to get left hand anim skeletal summary data" << std::endl;
+        }
+        exout << "left finger curls:";
+        for (int i = 0; i < VRFinger_Count; i++) {
+          exout << skeletalSummaryData.flFingerCurl[i] << (i != (VRFinger_Count-1) ? "," : "");
+        }
+        exout << std::endl;
+
         vr::InputSkeletalActionData_t skeletalActionData;
         vr::EVRInputError error = vr::VRInput()->GetSkeletalActionData(obj->leftHandAnimActionHandle, &skeletalActionData, sizeof(skeletalActionData));
         if (error) {
@@ -298,6 +309,17 @@ NAN_METHOD(IVRCompositor::RequestGetPoses) {
         }
       }
       {
+        vr::VRSkeletalSummaryData_t skeletalSummaryData;
+        vr::EVRInputError error = GetSkeletalSummaryData(obj->rightHandAnimActionHandle, &skeletalSummaryData);
+        if (error) {
+          exerr << "failed to get right hand anim skeletal summary data" << std::endl;
+        }
+        exout << "right finger curls:";
+        for (int i = 0; i < VRFinger_Count; i++) {
+          exout << skeletalSummaryData.flFingerCurl[i] << (i != (VRFinger_Count-1) ? "," : "");
+        }
+        exout << std::endl;
+
         vr::InputSkeletalActionData_t skeletalActionData;
         vr::EVRInputError error = vr::VRInput()->GetSkeletalActionData(obj->rightHandAnimActionHandle, &skeletalActionData, sizeof(skeletalActionData));
         if (error) {
