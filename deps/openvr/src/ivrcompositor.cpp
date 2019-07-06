@@ -310,8 +310,8 @@ NAN_METHOD(IVRCompositor::RequestGetPoses) {
             vr::HmdVector4_t &position = bone.position;
             vr::HmdQuaternionf_t &orientation = bone.orientation;
             exout << "  left bone[" << i << "] " <<
-              position.v[0] << "," << position.v[1] << "," << position.v[2] << "," << position.v[3] << "/"
-              orientation.v[0] << "," << orientation.v[1] << "," << orientation.v[2] << "," << orientation.v[3] << "," << orientation.v[4] << std::endl;
+              position.v[0] << "," << position.v[1] << "," << position.v[2] << "," << position.v[3] << "/" <<
+              orientation.x << "," << orientation.y << "," << orientation.z << "," << orientation.w << std::endl;
           }
         }
       }
@@ -350,8 +350,8 @@ NAN_METHOD(IVRCompositor::RequestGetPoses) {
             vr::HmdVector4_t &position = bone.position;
             vr::HmdQuaternionf_t &orientation = bone.orientation;
             exout << "  right bone[" << i << "] " <<
-              position.v[0] << "," << position.v[1] << "," << position.v[2] << "," << position.v[3] << "/"
-              orientation.v[0] << "," << orientation.v[1] << "," << orientation.v[2] << "," << orientation.v[3] << "," << orientation.v[4] << std::endl;
+              position.v[0] << "," << position.v[1] << "," << position.v[2] << "," << position.v[3] << "/" <<
+              orientation.x << "," << orientation.y << "," << orientation.z << "," << orientation.w << std::endl;
           }
         }
       }
