@@ -305,16 +305,16 @@ NAN_METHOD(IVRCompositor::RequestGetPoses) {
         hmdArray[1 * 4 + 3] = 0;
         hmdArray[2 * 4 + 3] = 0;
         hmdArray[3 * 4 + 3] = 1;
-        exout << "left matrix: " <<
-          hmdArray[0] << "," << hmdArray[1] << ","<< hmdArray[2] << "," << hmdArray[3] << ","
-          hmdArray[4] << "," << hmdArray[5] << ","<< hmdArray[6] << "," << hmdArray[7] << ","
-          hmdArray[8] << "," << hmdArray[9] << ","<< hmdArray[10] << "," << hmdArray[11] << ","
+        exout << "hmd matrix: " <<
+          hmdArray[0] << "," << hmdArray[1] << ","<< hmdArray[2] << "," << hmdArray[3] << "," <<
+          hmdArray[4] << "," << hmdArray[5] << ","<< hmdArray[6] << "," << hmdArray[7] << "," <<
+          hmdArray[8] << "," << hmdArray[9] << ","<< hmdArray[10] << "," << hmdArray[11] << "," <<
           hmdArray[12] << "," << hmdArray[13] << ","<< hmdArray[14] << "," << hmdArray[15] <<
           std::endl;
       }
       {
         vr::InputPoseActionData_t inputPoseActionData;
-        vr::EVRInputError error = vr::VRInput()->GetPoseActionDataForNextFrame(obj->poseActionHandle, vr::ETrackingUniverseOrigin::TrackingUniverseStanding, &inputPoseActionData, sizeof(inputPoseActionData), obj->leftHandInputSourceHandle);
+        vr::EVRInputError error = vr::VRInput()->GetPoseActionDataForNextFrame(obj->poseActionHandle, vr::ETrackingUniverseOrigin::TrackingUniverseStanding, &inputPoseActionData, sizeof(inputPoseActionData), obj->rightHandInputSourceHandle);
         if (error) {
           exerr << "failed to get left hand pose data: " << error << std::endl;
         }
@@ -331,9 +331,9 @@ NAN_METHOD(IVRCompositor::RequestGetPoses) {
         hmdArray[2 * 4 + 3] = 0;
         hmdArray[3 * 4 + 3] = 1;
         exout << "left matrix: " <<
-          hmdArray[0] << "," << hmdArray[1] << ","<< hmdArray[2] << "," << hmdArray[3] << ","
-          hmdArray[4] << "," << hmdArray[5] << ","<< hmdArray[6] << "," << hmdArray[7] << ","
-          hmdArray[8] << "," << hmdArray[9] << ","<< hmdArray[10] << "," << hmdArray[11] << ","
+          hmdArray[0] << "," << hmdArray[1] << ","<< hmdArray[2] << "," << hmdArray[3] << "," <<
+          hmdArray[4] << "," << hmdArray[5] << ","<< hmdArray[6] << "," << hmdArray[7] << "," <<
+          hmdArray[8] << "," << hmdArray[9] << ","<< hmdArray[10] << "," << hmdArray[11] << "," <<
           hmdArray[12] << "," << hmdArray[13] << ","<< hmdArray[14] << "," << hmdArray[15] <<
           std::endl;
 
@@ -378,9 +378,9 @@ NAN_METHOD(IVRCompositor::RequestGetPoses) {
       }
       {
         vr::InputPoseActionData_t inputPoseActionData;
-        vr::EVRInputError error = vr::VRInput()->GetPoseActionDataForNextFrame(obj->poseActionHandle, vr::ETrackingUniverseOrigin::TrackingUniverseStanding, &inputPoseActionData, sizeof(inputPoseActionData), obj->leftHandInputSourceHandle);
+        vr::EVRInputError error = vr::VRInput()->GetPoseActionDataForNextFrame(obj->poseActionHandle, vr::ETrackingUniverseOrigin::TrackingUniverseStanding, &inputPoseActionData, sizeof(inputPoseActionData), obj->rightHandInputSourceHandle);
         if (error) {
-          exerr << "failed to get left hand pose data: " << error << std::endl;
+          exerr << "failed to get right hand pose data: " << error << std::endl;
         }
         const vr::TrackedDevicePose_t &trackedDevicePose = inputPoseActionData.pose;
         const vr::HmdMatrix34_t &matrix = trackedDevicePose.mDeviceToAbsoluteTracking;
@@ -394,15 +394,15 @@ NAN_METHOD(IVRCompositor::RequestGetPoses) {
         hmdArray[1 * 4 + 3] = 0;
         hmdArray[2 * 4 + 3] = 0;
         hmdArray[3 * 4 + 3] = 1;
-        exout << "left matrix: " <<
-          hmdArray[0] << "," << hmdArray[1] << ","<< hmdArray[2] << "," << hmdArray[3] << ","
-          hmdArray[4] << "," << hmdArray[5] << ","<< hmdArray[6] << "," << hmdArray[7] << ","
-          hmdArray[8] << "," << hmdArray[9] << ","<< hmdArray[10] << "," << hmdArray[11] << ","
+        exout << "right matrix: " <<
+          hmdArray[0] << "," << hmdArray[1] << ","<< hmdArray[2] << "," << hmdArray[3] << "," <<
+          hmdArray[4] << "," << hmdArray[5] << ","<< hmdArray[6] << "," << hmdArray[7] << "," <<
+          hmdArray[8] << "," << hmdArray[9] << ","<< hmdArray[10] << "," << hmdArray[11] << "," <<
           hmdArray[12] << "," << hmdArray[13] << ","<< hmdArray[14] << "," << hmdArray[15] <<
           std::endl;
 
         vr::VRSkeletalSummaryData_t skeletalSummaryData;
-        vr::EVRInputError error = vr::VRInput()->GetSkeletalSummaryData(obj->rightHandAnimActionHandle, vr::EVRSummaryType::VRSummaryType_FromDevice, &skeletalSummaryData);
+        error = vr::VRInput()->GetSkeletalSummaryData(obj->rightHandAnimActionHandle, vr::EVRSummaryType::VRSummaryType_FromDevice, &skeletalSummaryData);
         if (error) {
           exerr << "failed to get right hand anim skeletal summary data: " << error << std::endl;
         }
