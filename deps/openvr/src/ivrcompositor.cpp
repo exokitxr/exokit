@@ -270,6 +270,8 @@ NAN_METHOD(IVRCompositor::RequestGetPoses) {
       TrackedDevicePoseArray trackedDevicePoseArray;
 	    obj->self_->WaitGetPoses(trackedDevicePoseArray.data(), static_cast<uint32_t>(trackedDevicePoseArray.size()), nullptr, 0);
 
+      vr::VRInput()->UpdateActionState();
+
       const float identityMatrix[] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
       memcpy(hmdArray, identityMatrix, sizeof(identityMatrix));
       memcpy(leftControllerArray, identityMatrix, sizeof(identityMatrix));
