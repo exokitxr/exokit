@@ -62,7 +62,7 @@ NAN_METHOD(VR_Init)
   }
 
   {
-    vr::EVRInputError result = vr::IVRInput::SetActionManifestPath(actionManifestPathString);
+    vr::EVRInputError result = vr::VRInput()->SetActionManifestPath(actionManifestPathString);
     if (result != vr::EVRInputError::VRInputError_None) {
       Local<Value> err = Exception::Error(String::NewFromUtf8(Isolate::GetCurrent(), "Failed to initialize action manifest path"));
       Nan::ThrowError(err);
