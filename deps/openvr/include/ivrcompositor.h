@@ -50,7 +50,6 @@ private:
 
   /// Reference to wrapped OpenVR instance.
   vr::IVRCompositor * const self_;
-  vr::VRInputValueHandle_t hmdInputSourceHandle;
   vr::VRInputValueHandle_t leftHandInputSourceHandle;
   vr::VRInputValueHandle_t rightHandInputSourceHandle;
   vr::VRActionHandle_t poseActionHandle;
