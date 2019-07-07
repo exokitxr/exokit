@@ -372,7 +372,7 @@ NAN_METHOD(IVRCompositor::RequestGetPoses) {
 
         vr::VRSkeletalSummaryData_t skeletalSummaryData;
         error = vr::VRInput()->GetSkeletalSummaryData(obj->rightHandAnimActionHandle, vr::EVRSummaryType::VRSummaryType_FromDevice, &skeletalSummaryData);
-        if (error) {
+        if (error != vr::EVRInputError::VRInputError_None) {
           exerr << "failed to get right hand anim skeletal summary data: " << error << std::endl;
         }
         exout << "right finger curls:";
