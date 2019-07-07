@@ -228,7 +228,7 @@
           fingerMeshes[j] = fingerMesh;
         }
 
-        const _makeBoneMesh = j => {
+        const _makeBoneMesh = () => {
           const geometry = new THREE.BoxBufferGeometry(0.01, 0.01, 0.01);
           // geometry.addAttribute('offsetPosition', new THREE.BufferAttribute(new Float32Array(3), 3));
           // geometry.addAttribute('offsetQuaternion', new THREE.BufferAttribute(new Float32Array(4), 4));
@@ -248,7 +248,7 @@
         };
         const boneMeshes = Array(31);
         for (let j = 0; j < 31; j++) {
-          const boneMesh = _makeBoneMesh(j);
+          const boneMesh = _makeBoneMesh();
           mesh.add(boneMesh);
           boneMeshes[j] = boneMesh;
         }
