@@ -58,7 +58,7 @@ const localFloat32TrackerPoseArrays = (() => {
 })();
 const localFloat32MatrixArray = new Float32Array(16);
 const localFovArray = new Float32Array(4);
-const localGamepadArray = new Float32Array(24);
+const localGamepadArray = new Float32Array(26);
 
 // oculus desktop
 const zeroMatrix = new THREE.Matrix4();
@@ -266,7 +266,7 @@ const xrState = (() => {
       }
       return result;
     })(),
-    axes: _makeTypedArray(Float32Array, 10),
+    axes: _makeTypedArray(Float32Array, 15),
   });
   result.gamepads = (() => {
     const result = Array(2 + maxNumTrackers);
@@ -775,9 +775,10 @@ const _startTopRenderLoop = () => {
         gamepad.buttons[3].touched[0] = localGamepadArray[7]; // menu
         gamepad.buttons[4].touched[0] = localGamepadArray[6]; // system
 
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 15; i++) {
           gamepad.axes[i] = localGamepadArray[11+i];
         }
+
         gamepad.buttons[1].value[0] = gamepad.axes[2]; // trigger
       } else {
         gamepad.connected[0] = 0;
