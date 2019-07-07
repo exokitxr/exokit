@@ -137,37 +137,6 @@
       const controllerGaugeFrontMaterial = new THREE.MeshBasicMaterial({
         color: 0x42a5f5,
       });
-      const _makeFingerMesh = () => {
-        const gaugeBackMesh = (() => {
-          const geometry = new THREE.BoxBufferGeometry(0.01, 0.1, 0.01)
-            // .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.1/2, -0.01/2));
-          const material = controllerGaugeBackMaterial;
-          const mesh = new THREE.Mesh(geometry, material);
-          // mesh.position.y = -0.1/2;
-          mesh.frustumCulled = false;
-          return mesh;
-        })();
-        const gaugeFrontMesh = (() => {
-          const geometry = new THREE.BoxBufferGeometry(0.01, 0.1, 0.01)
-            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.1/2, 0.01/2));
-          const material = controllerGaugeFrontMaterial;
-          const mesh = new THREE.Mesh(geometry, material);
-          mesh.position.y = -0.1/2;
-          mesh.frustumCulled = false;
-          return mesh;
-        })();
-        gaugeBackMesh.add(gaugeFrontMesh);
-        gaugeBackMesh.setValue = value => {
-          if (value > 0) {
-            gaugeFrontMesh.scale.y = value;
-            gaugeFrontMesh.updateMatrixWorld();
-            gaugeFrontMesh.visible = true;
-          } else {
-            gaugeFrontMesh.visible = false;
-          }
-        };
-        return gaugeBackMesh;
-      };
       const _makeControllerMesh = i => {
         const geometry = new THREE.BoxBufferGeometry(0.05, 0.1, 0.01)
           /* .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
@@ -179,16 +148,68 @@
         // mesh.updateMatrixWorld();
         // mesh.visible = true;
         mesh.frustumCulled = false;
-
+        mesh.matrixAutoUpdate = false;
+        
+        const _makeFingerMesh = () => {
+          const gaugeBackMesh = (() => {
+            const geometry = new THREE.BoxBufferGeometry(0.01, 0.1, 0.01)
+              // .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.1/2, -0.01/2));
+            const material = controllerGaugeBackMaterial;
+            const mesh = new THREE.Mesh(geometry, material);
+            // mesh.position.y = -0.1/2;
+            mesh.frustumCulled = false;
+            // mesh.matrixAutoUpdate = false;
+            return mesh;
+          })();
+          const gaugeFrontMesh = (() => {
+            const geometry = new THREE.BoxBufferGeometry(0.01, 0.1, 0.01)
+              .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.1/2, 0.01/2));
+            const material = controllerGaugeFrontMaterial;
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.y = -0.1/2;
+            mesh.frustumCulled = false;
+            mesh.matrixAutoUpdate = false;
+            return mesh;
+          })();
+          gaugeBackMesh.add(gaugeFrontMesh);
+          gaugeBackMesh.setValue = value => {
+            if (value > 0) {
+              gaugeFrontMesh.scale.y = value;
+              gaugeFrontMesh.updateMatrix();
+              gaugeFrontMesh.updateMatrixWorld();
+              gaugeFrontMesh.visible = true;
+            } else {
+              gaugeFrontMesh.visible = false;
+            }
+          };
+          return gaugeBackMesh;
+        };
         const fingerMeshes = Array(5);
         for (let j = 0; j < 5; j++) {
           const fingerMesh = _makeFingerMesh();
           fingerMesh.position.y = 0.1;
-          fingerMesh.position.x = -0.2 + j*0.1;
+          fingerMesh.position.x = (-0.2 + j*0.1) * (i === 0 ? 1 : -1);
+          // fingerMesh.visible = false;
           mesh.add(fingerMesh);
           fingerMeshes[j] = fingerMesh;
         }
-        
+
+        const _makeBoneMesh = () => {
+          const geometry = new THREE.BoxBufferGeometry(0.01, 0.01, 0.01);
+          const material = handMaterial;
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.visible = false;
+          mesh.frustumCulled = false;
+          mesh.matrixAutoUpdate = false;
+          return mesh;
+        };
+        const boneMeshes = Array(31);
+        for (let j = 0; j < 31; j++) {
+          const boneMesh = _makeBoneMesh();
+          mesh.add(boneMesh);
+          boneMeshes[j] = boneMesh;
+        }
+
         mesh.update = frame => {
           if (session && frame) {
             const trackedPointerInputSources = session.getInputSources().filter(inputSource => inputSource.targetRayMode === 'tracked-pointer');
@@ -197,14 +218,32 @@
             if (inputSource && inputSource.connected) {
               const pose = frame.getPose(inputSource.targetRaySpace);
               mesh.matrix.fromArray(pose.transform.inverse.matrix);
-              mesh.matrix.decompose(mesh.position, mesh.quaternion, mesh.scale);
+              mesh.matrixWorld.copy(mesh.matrix);
+              // mesh.matrix.decompose(mesh.position, mesh.quaternion, mesh.scale);
+              // mesh.updateMatrixWorld();
+              // mesh.matrix.decompose(mesh.position, mesh.quaternion, mesh.scale);
             
               const gamepad = navigator.getGamepads()[i];
-              const {axes} = gamepad;
+              const {axes, bones} = gamepad;
               for (let j = 0; j < 5; j++) {
-                fingerMeshes[j].setValue(axes[10+j]);
+                const fingerMesh = fingerMeshes[j];
+                fingerMesh.updateMatrixWorld();
+                fingerMesh.setValue(axes[10+j]);
               }
-              
+
+              for (let j = 0; j < 31; j++) {
+                const boneMesh = boneMeshes[j];
+                const boneStartIndex = j*16;
+                if (!isNaN(bones[boneStartIndex])) {
+                  boneMesh.matrix.fromArray(bones, boneStartIndex);
+                  boneMesh.matrixWorld.copy(boneMesh.matrix);
+                  // boneMesh.updateMatrixWorld();
+                  boneMesh.visible = true;
+                } else {
+                  boneMesh.visible = false;
+                }
+              }
+
               mesh.visible = true;
             } else {
               mesh.visible = false;
