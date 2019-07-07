@@ -12,86 +12,6 @@ using namespace v8;
 using TrackedDevicePoseArray = std::array<vr::TrackedDevicePose_t, vr::k_unMaxTrackedDeviceCount>;
 using TrackedDeviceIndexArray = std::array<vr::TrackedDeviceIndex_t, vr::k_unMaxTrackedDeviceCount>;
 
-std::vector<float> composeMatrix(
-  const vr::HmdVector4_t &position = vr::HmdVector4_t{0, 0, 0, 1},
-  const vr::HmdQuaternionf_t &quaternion = vr::HmdQuaternionf_t{0, 0, 0, 1},
-  const vr::HmdVector4_t &scale = vr::HmdVector4_t{1, 1, 1, 1}
-) {
-  std::vector<float> result(16);
-
-  float	*te = result.data();
-
-  float x = quaternion.x, y = quaternion.y, z = quaternion.z, w = quaternion.w;
-  float x2 = x + x,	y2 = y + y, z2 = z + z;
-  float xx = x * x2, xy = x * y2, xz = x * z2;
-  float yy = y * y2, yz = y * z2, zz = z * z2;
-  float wx = w * x2, wy = w * y2, wz = w * z2;
-
-  float sx = scale.v[0], sy = scale.v[1], sz = scale.v[2];
-
-  te[ 0 ] = ( 1 - ( yy + zz ) ) * sx;
-  te[ 1 ] = ( xy + wz ) * sx;
-  te[ 2 ] = ( xz - wy ) * sx;
-  te[ 3 ] = 0;
-
-  te[ 4 ] = ( xy - wz ) * sy;
-  te[ 5 ] = ( 1 - ( xx + zz ) ) * sy;
-  te[ 6 ] = ( yz + wx ) * sy;
-  te[ 7 ] = 0;
-
-  te[ 8 ] = ( xz + wy ) * sz;
-  te[ 9 ] = ( yz - wx ) * sz;
-  te[ 10 ] = ( 1 - ( xx + yy ) ) * sz;
-  te[ 11 ] = 0;
-
-  te[ 12 ] = position.v[0];
-  te[ 13 ] = position.v[1];
-  te[ 14 ] = position.v[2];
-  te[ 15 ] = 1;
-
-  return result;
-}
-
-MLMat4f multiplyMatrices(const std::vector<float> &a, const std::vector<float> &b) {
-  std::vector<float> result;
-  
-  const float *ae = a.data();
-  const float *be = b.data();
-  float *te = result.data();
-
-  float a11 = ae[ 0 ], a12 = ae[ 4 ], a13 = ae[ 8 ], a14 = ae[ 12 ];
-  float a21 = ae[ 1 ], a22 = ae[ 5 ], a23 = ae[ 9 ], a24 = ae[ 13 ];
-  float a31 = ae[ 2 ], a32 = ae[ 6 ], a33 = ae[ 10 ], a34 = ae[ 14 ];
-  float a41 = ae[ 3 ], a42 = ae[ 7 ], a43 = ae[ 11 ], a44 = ae[ 15 ];
-
-  float b11 = be[ 0 ], b12 = be[ 4 ], b13 = be[ 8 ], b14 = be[ 12 ];
-  float b21 = be[ 1 ], b22 = be[ 5 ], b23 = be[ 9 ], b24 = be[ 13 ];
-  float b31 = be[ 2 ], b32 = be[ 6 ], b33 = be[ 10 ], b34 = be[ 14 ];
-  float b41 = be[ 3 ], b42 = be[ 7 ], b43 = be[ 11 ], b44 = be[ 15 ];
-
-  te[ 0 ] = a11 * b11 + a12 * b21 + a13 * b31 + a14 * b41;
-  te[ 4 ] = a11 * b12 + a12 * b22 + a13 * b32 + a14 * b42;
-  te[ 8 ] = a11 * b13 + a12 * b23 + a13 * b33 + a14 * b43;
-  te[ 12 ] = a11 * b14 + a12 * b24 + a13 * b34 + a14 * b44;
-
-  te[ 1 ] = a21 * b11 + a22 * b21 + a23 * b31 + a24 * b41;
-  te[ 5 ] = a21 * b12 + a22 * b22 + a23 * b32 + a24 * b42;
-  te[ 9 ] = a21 * b13 + a22 * b23 + a23 * b33 + a24 * b43;
-  te[ 13 ] = a21 * b14 + a22 * b24 + a23 * b34 + a24 * b44;
-
-  te[ 2 ] = a31 * b11 + a32 * b21 + a33 * b31 + a34 * b41;
-  te[ 6 ] = a31 * b12 + a32 * b22 + a33 * b32 + a34 * b42;
-  te[ 10 ] = a31 * b13 + a32 * b23 + a33 * b33 + a34 * b43;
-  te[ 14 ] = a31 * b14 + a32 * b24 + a33 * b34 + a34 * b44;
-
-  te[ 3 ] = a41 * b11 + a42 * b21 + a43 * b31 + a44 * b41;
-  te[ 7 ] = a41 * b12 + a42 * b22 + a43 * b32 + a44 * b42;
-  te[ 11 ] = a41 * b13 + a42 * b23 + a43 * b33 + a44 * b43;
-  te[ 15 ] = a41 * b14 + a42 * b24 + a43 * b34 + a44 * b44;
-  
-  return result;
-}
-
 //=============================================================================
 NAN_MODULE_INIT(IVRSystem::Init)
 {
@@ -945,7 +865,7 @@ NAN_METHOD(IVRSystem::GetControllerState)
             hmdArray[3 * 4 + 3] = 1;
           } */
 
-          for (size_t i = 0; i < (5 + 31*16); i++) {
+          for (size_t i = 0; i < (5 + 31*(3+4)); i++) {
             buttonsData[21 + i] = std::numeric_limits<float>::quiet_NaN();
           }
           
@@ -973,12 +893,18 @@ NAN_METHOD(IVRSystem::GetControllerState)
               error = vr::VRInput()->GetSkeletalBoneData(obj->handAnimActionHandles[side], vr::EVRSkeletalTransformSpace::VRSkeletalTransformSpace_Model, vr::EVRSkeletalMotionRange::VRSkeletalMotionRange_WithController, bones.data(), boneCount);
               if (error == vr::EVRInputError::VRInputError_None) {
                 // exout << "left bones (" << boneCount << "):" << std::endl;
-                for (size_t j = 0; j < bones.size(); j++) {
+                int index = 21 + 5;
+                for (int j = 0; j < bones.size(); j++) {
                   vr::VRBoneTransform_t &bone = bones[j];
                   vr::HmdVector4_t &position = bone.position;
                   vr::HmdQuaternionf_t &orientation = bone.orientation;
-                  std::vector<float> matrix = composeMatrix(position, orientation);
-                  memcpy(buttonsData + 21 + 5 + j*16, matrix.data(), 16*sizeof(float));
+                  buttonsData[index++] = position.v[0];
+                  buttonsData[index++] = position.v[1];
+                  buttonsData[index++] = position.v[2];
+                  buttonsData[index++] = orientation.x;
+                  buttonsData[index++] = orientation.y;
+                  buttonsData[index++] = orientation.z;
+                  buttonsData[index++] = orientation.w;
                 }
               } else {
                 exerr << "failed to get hand anim skeletal bone data: " << error << std::endl;
