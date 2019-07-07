@@ -284,7 +284,7 @@ NAN_METHOD(IVRCompositor::RequestGetPoses) {
       {
         vr::InputPoseActionData_t inputPoseActionData;
         vr::EVRInputError error = vr::VRInput()->GetPoseActionDataForNextFrame(obj->poseActionHandle, vr::ETrackingUniverseOrigin::TrackingUniverseStanding, &inputPoseActionData, sizeof(inputPoseActionData), obj->rightHandInputSourceHandle);
-        if (error) {
+        if (error != vr::EVRInputError::VRInputError_None) {
           exerr << "failed to get left hand pose data: " << error << std::endl;
         }
         const vr::TrackedDevicePose_t &trackedDevicePose = inputPoseActionData.pose;
@@ -308,7 +308,7 @@ NAN_METHOD(IVRCompositor::RequestGetPoses) {
 
         vr::VRSkeletalSummaryData_t skeletalSummaryData;
         error = vr::VRInput()->GetSkeletalSummaryData(obj->leftHandAnimActionHandle, vr::EVRSummaryType::VRSummaryType_FromDevice, &skeletalSummaryData);
-        if (error) {
+        if (error != vr::EVRInputError::VRInputError_None) {
           exerr << "failed to get left hand anim skeletal summary data: " << error << std::endl;
         }
         exout << "left finger curls:";
@@ -318,20 +318,20 @@ NAN_METHOD(IVRCompositor::RequestGetPoses) {
         exout << std::endl;
 
         vr::InputSkeletalActionData_t skeletalActionData;
-        vr::VRInput()->GetSkeletalActionData(obj->leftHandAnimActionHandle, &skeletalActionData, sizeof(skeletalActionData));
-        if (error) {
+        error = vr::VRInput()->GetSkeletalActionData(obj->leftHandAnimActionHandle, &skeletalActionData, sizeof(skeletalActionData));
+        if (error != vr::EVRInputError::VRInputError_None) {
           exerr << "failed to get left hand anim skeletal action data: " << error << std::endl;
         }
         if (skeletalActionData.bActive) {
           uint32_t boneCount = 0;
           error = vr::VRInput()->GetBoneCount(obj->leftHandAnimActionHandle, &boneCount);
-          if (error) {
+          if (error != vr::EVRInputError::VRInputError_None) {
             exerr << "failed to get left hand anim bone count" << std::endl;
           }
 
           std::vector<vr::VRBoneTransform_t> bones(boneCount);
           error = vr::VRInput()->GetSkeletalBoneData(obj->leftHandAnimActionHandle, vr::EVRSkeletalTransformSpace::VRSkeletalTransformSpace_Model, vr::EVRSkeletalMotionRange::VRSkeletalMotionRange_WithController, bones.data(), boneCount);
-          if (error) {
+          if (error != vr::EVRInputError::VRInputError_None) {
             exerr << "failed to get left hand anim skeletal bone data: " << error << std::endl;
           }
           exout << "left bones (" << boneCount << "):" << std::endl;
@@ -348,7 +348,7 @@ NAN_METHOD(IVRCompositor::RequestGetPoses) {
       {
         vr::InputPoseActionData_t inputPoseActionData;
         vr::EVRInputError error = vr::VRInput()->GetPoseActionDataForNextFrame(obj->poseActionHandle, vr::ETrackingUniverseOrigin::TrackingUniverseStanding, &inputPoseActionData, sizeof(inputPoseActionData), obj->rightHandInputSourceHandle);
-        if (error) {
+        if (error != vr::EVRInputError::VRInputError_None) {
           exerr << "failed to get right hand pose data: " << error << std::endl;
         }
         const vr::TrackedDevicePose_t &trackedDevicePose = inputPoseActionData.pose;
@@ -383,19 +383,19 @@ NAN_METHOD(IVRCompositor::RequestGetPoses) {
 
         vr::InputSkeletalActionData_t skeletalActionData;
         error = vr::VRInput()->GetSkeletalActionData(obj->rightHandAnimActionHandle, &skeletalActionData, sizeof(skeletalActionData));
-        if (error) {
+        if (error != vr::EVRInputError::VRInputError_None) {
           exerr << "failed to get right hand anim skeletal action data: " << error << std::endl;
         }
         if (skeletalActionData.bActive) {
           uint32_t boneCount = 0;
           error = vr::VRInput()->GetBoneCount(obj->rightHandAnimActionHandle, &boneCount);
-          if (error) {
+          if (error != vr::EVRInputError::VRInputError_None) {
             exerr << "failed to get right hand anim bone count" << std::endl;
           }
 
           std::vector<vr::VRBoneTransform_t> bones(boneCount);
           error = vr::VRInput()->GetSkeletalBoneData(obj->rightHandAnimActionHandle, vr::EVRSkeletalTransformSpace::VRSkeletalTransformSpace_Model, vr::EVRSkeletalMotionRange::VRSkeletalMotionRange_WithController, bones.data(), boneCount);
-          if (error) {
+          if (error!= vr::EVRInputError::VRInputError_None) {
             exerr << "failed to get right hand anim skeletal bone data: " << error << std::endl;
           }
           exout << "right bones (" << boneCount << "):" << std::endl;
