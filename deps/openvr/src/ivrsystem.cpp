@@ -896,14 +896,16 @@ NAN_METHOD(IVRSystem::GetControllerState)
                 for (int j = 0; j < bones.size(); j++) {
                   vr::VRBoneTransform_t &bone = bones[j];
                   vr::HmdVector4_t &position = bone.position;
-                  vr::HmdQuaternionf_t &orientation = bone.orientation;
-                  buttonsData[index++] = position.v[0];
-                  buttonsData[index++] = position.v[1];
-                  buttonsData[index++] = position.v[2];
-                  buttonsData[index++] = orientation.x;
-                  buttonsData[index++] = orientation.y;
-                  buttonsData[index++] = orientation.z;
-                  buttonsData[index++] = orientation.w;
+                  if (position.v[0] != 0 || position.v[1] != 0 || position.v[2] != 0) { 
+                    vr::HmdQuaternionf_t &orientation = bone.orientation;
+                    buttonsData[index++] = position.v[0];
+                    buttonsData[index++] = position.v[1];
+                    buttonsData[index++] = position.v[2];
+                    buttonsData[index++] = orientation.x;
+                    buttonsData[index++] = orientation.y;
+                    buttonsData[index++] = orientation.z;
+                    buttonsData[index++] = orientation.w;
+                  }
                 }
               } else {
                 exerr << "failed to get hand anim skeletal bone data: " << error << std::endl;
