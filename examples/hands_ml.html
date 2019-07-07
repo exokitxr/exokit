@@ -24,7 +24,7 @@
   <h1>hands_ml.html example</h1> 
   <script src="three.js"></script>
   <script>
-    let container, scene, camera, session;
+    let container, scene, camera, session, controllerMeshes, handMeshes;
     // let handTracker;
 
     function init() {
@@ -128,6 +128,101 @@
       const handMaterial =  new THREE.MeshPhongMaterial({
         color: 0xFF0000,
       });
+      const controllerMaterial = new THREE.MeshBasicMaterial({
+        color: 0x66bb6a,
+      });
+      const controllerGaugeBackMaterial = new THREE.MeshBasicMaterial({
+        color: 0x666666,
+      });
+      const controllerGaugeFrontMaterial = new THREE.MeshBasicMaterial({
+        color: 0x42a5f5,
+      });
+      const _makeFingerMesh = () => {
+        const gaugeBackMesh = (() => {
+          const geometry = new THREE.BoxBufferGeometry(0.01, 0.1, 0.01)
+            // .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.1/2, -0.01/2));
+          const material = controllerGaugeBackMaterial;
+          const mesh = new THREE.Mesh(geometry, material);
+          // mesh.position.y = -0.1/2;
+          mesh.frustumCulled = false;
+          return mesh;
+        })();
+        const gaugeFrontMesh = (() => {
+          const geometry = new THREE.BoxBufferGeometry(0.01, 0.1, 0.01)
+            .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.1/2, 0.01/2));
+          const material = controllerGaugeFrontMaterial;
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.position.y = -0.1/2;
+          mesh.frustumCulled = false;
+          return mesh;
+        })();
+        gaugeBackMesh.add(gaugeFrontMesh);
+        gaugeBackMesh.setValue = value => {
+          if (value > 0) {
+            gaugeFrontMesh.scale.y = value;
+            gaugeFrontMesh.updateMatrixWorld();
+            gaugeFrontMesh.visible = true;
+          } else {
+            gaugeFrontMesh.visible = false;
+          }
+        };
+        return gaugeBackMesh;
+      };
+      const _makeControllerMesh = i => {
+        const geometry = new THREE.BoxBufferGeometry(0.05, 0.1, 0.01)
+          /* .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+          .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -0.5)); */
+        const material = controllerMaterial;
+
+        const mesh = new THREE.Mesh(geometry, material);
+        // mesh.position.y = -1;
+        // mesh.updateMatrixWorld();
+        // mesh.visible = true;
+        mesh.frustumCulled = false;
+
+        const fingerMeshes = Array(5);
+        for (let j = 0; j < 5; j++) {
+          const fingerMesh = _makeFingerMesh();
+          fingerMesh.position.y = 0.1;
+          fingerMesh.position.x = -0.2 + j*0.1;
+          mesh.add(fingerMesh);
+          fingerMeshes[j] = fingerMesh;
+        }
+        
+        mesh.update = frame => {
+          if (session && frame) {
+            const trackedPointerInputSources = session.getInputSources().filter(inputSource => inputSource.targetRayMode === 'tracked-pointer');
+            const inputSource = trackedPointerInputSources[i];
+
+            if (inputSource && inputSource.connected) {
+              console.log('input source onnected', i);
+              const pose = frame.getPose(inputSource.targetRaySpace);
+              mesh.matrix.fromArray(pose.transform.inverse.matrix);
+              mesh.matrix.decompose(mesh.position, mesh.quaternion, mesh.scale);
+            
+              const gamepad = navigator.getGamepads()[i];
+              const {axes} = gamepad;
+              for (let j = 0; j < 5; j++) {
+                fingerMeshes[j].setValue(axes[10+j]);
+              }
+              
+              mesh.visible = true;
+            } else {
+              mesh.visible = false;
+            }
+          }
+        };
+        
+        return mesh;
+      };
+      controllerMeshes = [
+        _makeControllerMesh(0),
+        _makeControllerMesh(1),
+      ];
+      for (let i = 0; i < controllerMeshes.length; i++) {
+        scene.add(controllerMeshes[i]);
+      }
+
       const _makeHandMesh = i => {
         const geometry = new THREE.BufferGeometry();
 
@@ -147,106 +242,101 @@
         mesh.update = frame => {
           if (session && frame) {
             const handInputSources = session.getInputSources().filter(inputSource => inputSource.targetRayMode === 'hand');
-            // console.log('got hand input sources', handInputSources.length);
-            if (handInputSources.length > 0) {
-              const inputSource = handInputSources[i];
+            const inputSource = handInputSources[i];
 
-              if (inputSource.connected) {
-                let positionIndex = 0;
-                let normalIndex = 0;
-                let indexIndex = 0;
+            if (inputSource && inputSource.connected) {
+              let positionIndex = 0;
+              let normalIndex = 0;
+              let indexIndex = 0;
 
-                const _shiftIndex = array => {
-                  for (let l = 0; l < array.length; l++) {
-                    array[l] += positionIndex / 3;
-                  }
-                };
+              const _shiftIndex = array => {
+                for (let l = 0; l < array.length; l++) {
+                  array[l] += positionIndex / 3;
+                }
+              };
 
-                const pose = frame.getPose(inputSource.targetRaySpace);
-                const {wrist, fingers} = inputSource;
-                const allFingers = [wrist].concat(fingers);
-                for (let j = 0; j < allFingers.length; j++) {
-                  const bones = allFingers[j];
-                  for (let k = 0; k < bones.length; k++) {
-                    const positionFloat32Array = bones[k];
-                    if (positionFloat32Array && isFinite(positionFloat32Array[0])) {
-                      const newGeometry = boneGeometry.clone()
-                        .applyMatrix(
-                          localMatrix.makeTranslation(positionFloat32Array[0], positionFloat32Array[1], positionFloat32Array[2])
-                        );
+              const pose = frame.getPose(inputSource.targetRaySpace);
+              const {wrist, fingers} = inputSource;
+              const allFingers = [wrist].concat(fingers);
+              for (let j = 0; j < allFingers.length; j++) {
+                const bones = allFingers[j];
+                for (let k = 0; k < bones.length; k++) {
+                  const positionFloat32Array = bones[k];
+                  if (positionFloat32Array && isFinite(positionFloat32Array[0])) {
+                    const newGeometry = boneGeometry.clone()
+                      .applyMatrix(
+                        localMatrix.makeTranslation(positionFloat32Array[0], positionFloat32Array[1], positionFloat32Array[2])
+                      );
 
-                      _shiftIndex(newGeometry.index.array);
+                    _shiftIndex(newGeometry.index.array);
 
-                      positions.set(newGeometry.attributes.position.array, positionIndex);
-                      positionIndex += newGeometry.attributes.position.array.length;
+                    positions.set(newGeometry.attributes.position.array, positionIndex);
+                    positionIndex += newGeometry.attributes.position.array.length;
 
-                      normals.set(newGeometry.attributes.normal.array, normalIndex);
-                      normalIndex += newGeometry.attributes.normal.array.length;
+                    normals.set(newGeometry.attributes.normal.array, normalIndex);
+                    normalIndex += newGeometry.attributes.normal.array.length;
 
-                      indices.set(newGeometry.index.array, indexIndex);
-                      indexIndex += newGeometry.index.array.length;
-                    }
+                    indices.set(newGeometry.index.array, indexIndex);
+                    indexIndex += newGeometry.index.array.length;
                   }
                 }
-
-                /* if (pointer) {
-                  const newGeometry = pointerGeometry.clone()
-                    .applyMatrix(
-                      localMatrix
-                        .compose(
-                          localVector.fromArray(pointer.position),
-                          localQuaternion.fromArray(pointer.rotation),
-                          localVector2.set(1, 1, 1),
-                        )
-                    );
-
-                  _shiftIndex(newGeometry.index.array);
-
-                  positions.set(newGeometry.attributes.position.array, positionIndex);
-                  positionIndex += newGeometry.attributes.position.array.length;
-
-                  normals.set(newGeometry.attributes.normal.array, normalIndex);
-                  normalIndex += newGeometry.attributes.normal.array.length;
-
-                  indices.set(newGeometry.index.array, indexIndex);
-                  indexIndex += newGeometry.index.array.length;
-                }
-
-                if (grip) {
-                  const newGeometry = pointerGeometry.clone()
-                    .applyMatrix(
-                      localMatrix
-                        .compose(
-                          localVector.fromArray(grip.position),
-                          localQuaternion.fromArray(grip.rotation),
-                          localVector2.set(1, 1, 1),
-                        )
-                    );
-
-                  _shiftIndex(newGeometry.index.array);
-
-                  positions.set(newGeometry.attributes.position.array, positionIndex);
-                  positionIndex += newGeometry.attributes.position.array.length;
-
-                  normals.set(newGeometry.attributes.normal.array, normalIndex);
-                  normalIndex += newGeometry.attributes.normal.array.length;
-
-                  indices.set(newGeometry.index.array, indexIndex);
-                  indexIndex += newGeometry.index.array.length;
-                } */
-
-                positionAttribute.needsUpdate = true;
-                indexAttribute.needsUpdate = true;
-                geometry.setDrawRange(0, indexIndex);
-
-                mesh.matrix.fromArray(pose.transform.inverse.matrix);
-                mesh.matrix.decompose(mesh.position, mesh.quaternion, mesh.scale);
-                mesh.updateMatrixWorld(true);
-                
-                mesh.visible = true;
-              } else {
-                mesh.visible = false;
               }
+
+              /* if (pointer) {
+                const newGeometry = pointerGeometry.clone()
+                  .applyMatrix(
+                    localMatrix
+                      .compose(
+                        localVector.fromArray(pointer.position),
+                        localQuaternion.fromArray(pointer.rotation),
+                        localVector2.set(1, 1, 1),
+                      )
+                  );
+
+                _shiftIndex(newGeometry.index.array);
+
+                positions.set(newGeometry.attributes.position.array, positionIndex);
+                positionIndex += newGeometry.attributes.position.array.length;
+
+                normals.set(newGeometry.attributes.normal.array, normalIndex);
+                normalIndex += newGeometry.attributes.normal.array.length;
+
+                indices.set(newGeometry.index.array, indexIndex);
+                indexIndex += newGeometry.index.array.length;
+              }
+
+              if (grip) {
+                const newGeometry = pointerGeometry.clone()
+                  .applyMatrix(
+                    localMatrix
+                      .compose(
+                        localVector.fromArray(grip.position),
+                        localQuaternion.fromArray(grip.rotation),
+                        localVector2.set(1, 1, 1),
+                      )
+                  );
+
+                _shiftIndex(newGeometry.index.array);
+
+                positions.set(newGeometry.attributes.position.array, positionIndex);
+                positionIndex += newGeometry.attributes.position.array.length;
+
+                normals.set(newGeometry.attributes.normal.array, normalIndex);
+                normalIndex += newGeometry.attributes.normal.array.length;
+
+                indices.set(newGeometry.index.array, indexIndex);
+                indexIndex += newGeometry.index.array.length;
+              } */
+
+              positionAttribute.needsUpdate = true;
+              indexAttribute.needsUpdate = true;
+              geometry.setDrawRange(0, indexIndex);
+
+              mesh.matrix.fromArray(pose.transform.inverse.matrix);
+              mesh.matrix.decompose(mesh.position, mesh.quaternion, mesh.scale);
+              mesh.updateMatrixWorld(true);
+              
+              mesh.visible = true;
             } else {
               mesh.visible = false;
             }
@@ -355,6 +445,9 @@
     }
 
     function animate(time, frame) {
+      for (let i = 0; i < controllerMeshes.length; i++) {
+        controllerMeshes[i].update(frame);
+      }
       for (let i = 0; i < handMeshes.length; i++) {
         handMeshes[i].update(frame);
       }
