@@ -892,7 +892,6 @@ NAN_METHOD(IVRSystem::GetControllerState)
               std::vector<vr::VRBoneTransform_t> bones(boneCount);
               error = vr::VRInput()->GetSkeletalBoneData(obj->handAnimActionHandles[side], vr::EVRSkeletalTransformSpace::VRSkeletalTransformSpace_Model, vr::EVRSkeletalMotionRange::VRSkeletalMotionRange_WithController, bones.data(), boneCount);
               if (error == vr::EVRInputError::VRInputError_None) {
-                // exout << "left bones (" << boneCount << "):" << std::endl;
                 int index = 21 + 5;
                 for (int j = 0; j < bones.size(); j++) {
                   vr::VRBoneTransform_t &bone = bones[j];
