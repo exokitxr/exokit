@@ -979,9 +979,6 @@ NAN_METHOD(IVRSystem::GetControllerState)
                   vr::HmdQuaternionf_t &orientation = bone.orientation;
                   std::vector<float> matrix = composeMatrix(position, orientation);
                   memcpy(buttonsData + 21 + 5 + j*16, matrix.data(), 16*sizeof(float));
-                  /* exout << "bone[" << i << "] " <<
-                    position.v[0] << "," << position.v[1] << "," << position.v[2] << "," << position.v[3] << "/" <<
-                    orientation.x << "," << orientation.y << "," << orientation.z << "," << orientation.w << std::endl; */
                 }
               } else {
                 exerr << "failed to get hand anim skeletal bone data: " << error << std::endl;
