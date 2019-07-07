@@ -125,6 +125,9 @@ private:
 
   /// Reference to wrapped OpenVR instance.
   vr::IVRSystem * const self_;
+  vr::VRInputValueHandle_t handInputSourceHandles[2];
+  vr::VRActionHandle_t poseActionHandle;
+  vr::VRActionHandle_t handAnimActionHandles[2];
 
   friend class IVRCompositor;
 };
