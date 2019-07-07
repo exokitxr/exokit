@@ -26,6 +26,26 @@
   <script>
     let container, scene, camera, session, controllerMeshes, handMeshes;
     // let handTracker;
+    
+    const boneVsh = `
+      uniform vec3 offsetPosition;
+      uniform vec4 offsetQuaternion;
+      vec3 applyVectorQuaternion(vec3 v, vec4 q) {
+        // return vec + 2.0 * cross( cross( vec, quat.xyz ) + quat.w * vec, quat.xyz );
+        return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v);
+      }
+      void main() {
+        // vec3 modelPos = position + offsetPosition;
+        vec3 modelPos = (modelMatrix * vec4(applyVectorQuaternion(position, offsetQuaternion) + offsetPosition, 1.)).xyz;
+        // modelPos = applyVectorQuaternion(modelPos, offsetQuaternion) + offsetPosition;
+        gl_Position = projectionMatrix * viewMatrix * vec4(modelPos, 1.);
+      }
+    `;
+    const boneFsh = `
+      void main() {
+        gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+      }
+    `;
 
     function init() {
       container = document.createElement('div');
@@ -128,6 +148,20 @@
       const handMaterial =  new THREE.MeshPhongMaterial({
         color: 0xFF0000,
       });
+      const boneMaterial = new THREE.ShaderMaterial({
+        uniforms: {
+          offsetPosition: {
+            type: 'v3',
+            value: new THREE.Vector3(),
+          },
+          offsetQuaternion: {
+            type: 'v4',
+            value: new THREE.Vector4(),
+          },
+        },
+        vertexShader: boneVsh,
+        fragmentShader: boneFsh,
+      });
       const controllerMaterial = new THREE.MeshBasicMaterial({
         color: 0x66bb6a,
       });
@@ -153,7 +187,7 @@
         const _makeFingerMesh = () => {
           const gaugeBackMesh = (() => {
             const geometry = new THREE.BoxBufferGeometry(0.01, 0.1, 0.01)
-              // .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.1/2, -0.01/2));
+              .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -0.01/2));
             const material = controllerGaugeBackMaterial;
             const mesh = new THREE.Mesh(geometry, material);
             // mesh.position.y = -0.1/2;
@@ -194,18 +228,27 @@
           fingerMeshes[j] = fingerMesh;
         }
 
-        const _makeBoneMesh = () => {
+        const _makeBoneMesh = j => {
           const geometry = new THREE.BoxBufferGeometry(0.01, 0.01, 0.01);
-          const material = handMaterial;
+          // geometry.addAttribute('offsetPosition', new THREE.BufferAttribute(new Float32Array(3), 3));
+          // geometry.addAttribute('offsetQuaternion', new THREE.BufferAttribute(new Float32Array(4), 4));
+          const material = boneMaterial;
           const mesh = new THREE.Mesh(geometry, material);
           mesh.visible = false;
           mesh.frustumCulled = false;
           mesh.matrixAutoUpdate = false;
+          mesh.onBeforeRender = () => {
+            material.uniforms.offsetPosition.value.fromArray(mesh.offsetPosition);
+            // material.uniforms.offsetPosition.value.set(j*0.1, i*0.1, 0);
+            material.uniforms.offsetQuaternion.value.fromArray(mesh.offsetQuaternion);
+          };
+          mesh.offsetPosition = new Float32Array(3);
+          mesh.offsetQuaternion = new Float32Array(4);
           return mesh;
         };
         const boneMeshes = Array(31);
         for (let j = 0; j < 31; j++) {
-          const boneMesh = _makeBoneMesh();
+          const boneMesh = _makeBoneMesh(j);
           mesh.add(boneMesh);
           boneMeshes[j] = boneMesh;
         }
@@ -233,11 +276,13 @@
 
               for (let j = 0; j < 31; j++) {
                 const boneMesh = boneMeshes[j];
-                const boneStartIndex = j*16;
+                const boneStartIndex = j*(3+4);
                 if (!isNaN(bones[boneStartIndex])) {
-                  boneMesh.matrix.fromArray(bones, boneStartIndex);
-                  boneMesh.matrixWorld.copy(boneMesh.matrix);
+                  // boneMesh.matrix.fromArray(bones, boneStartIndex);
+                  boneMesh.matrixWorld.copy(mesh.matrixWorld);
                   // boneMesh.updateMatrixWorld();
+                  boneMesh.offsetPosition.set(bones.slice(boneStartIndex, boneStartIndex + 3));
+                  boneMesh.offsetQuaternion.set(bones.slice(boneStartIndex + 3, boneStartIndex + (3+4)));
                   boneMesh.visible = true;
                 } else {
                   boneMesh.visible = false;
