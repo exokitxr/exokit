@@ -12,6 +12,86 @@ using namespace v8;
 using TrackedDevicePoseArray = std::array<vr::TrackedDevicePose_t, vr::k_unMaxTrackedDeviceCount>;
 using TrackedDeviceIndexArray = std::array<vr::TrackedDeviceIndex_t, vr::k_unMaxTrackedDeviceCount>;
 
+std::vector<float> composeMatrix(
+  const vr::HmdVector4_t &position = vr::HmdVector4_t{0, 0, 0, 1},
+  const vr::HmdQuaternionf_t &quaternion = vr::HmdQuaternionf_t{0, 0, 0, 1},
+  const vr::HmdVector4_t &scale = vr::HmdVector4_t{1, 1, 1, 1}
+) {
+  std::vector<float> result(16);
+
+  float	*te = result.data();
+
+  float x = quaternion.x, y = quaternion.y, z = quaternion.z, w = quaternion.w;
+  float x2 = x + x,	y2 = y + y, z2 = z + z;
+  float xx = x * x2, xy = x * y2, xz = x * z2;
+  float yy = y * y2, yz = y * z2, zz = z * z2;
+  float wx = w * x2, wy = w * y2, wz = w * z2;
+
+  float sx = scale.v[0], sy = scale.v[1], sz = scale.v[2];
+
+  te[ 0 ] = ( 1 - ( yy + zz ) ) * sx;
+  te[ 1 ] = ( xy + wz ) * sx;
+  te[ 2 ] = ( xz - wy ) * sx;
+  te[ 3 ] = 0;
+
+  te[ 4 ] = ( xy - wz ) * sy;
+  te[ 5 ] = ( 1 - ( xx + zz ) ) * sy;
+  te[ 6 ] = ( yz + wx ) * sy;
+  te[ 7 ] = 0;
+
+  te[ 8 ] = ( xz + wy ) * sz;
+  te[ 9 ] = ( yz - wx ) * sz;
+  te[ 10 ] = ( 1 - ( xx + yy ) ) * sz;
+  te[ 11 ] = 0;
+
+  te[ 12 ] = position.v[0];
+  te[ 13 ] = position.v[1];
+  te[ 14 ] = position.v[2];
+  te[ 15 ] = 1;
+
+  return result;
+}
+
+MLMat4f multiplyMatrices(const std::vector<float> &a, const std::vector<float> &b) {
+  std::vector<float> result;
+  
+  const float *ae = a.data();
+  const float *be = b.data();
+  float *te = result.data();
+
+  float a11 = ae[ 0 ], a12 = ae[ 4 ], a13 = ae[ 8 ], a14 = ae[ 12 ];
+  float a21 = ae[ 1 ], a22 = ae[ 5 ], a23 = ae[ 9 ], a24 = ae[ 13 ];
+  float a31 = ae[ 2 ], a32 = ae[ 6 ], a33 = ae[ 10 ], a34 = ae[ 14 ];
+  float a41 = ae[ 3 ], a42 = ae[ 7 ], a43 = ae[ 11 ], a44 = ae[ 15 ];
+
+  float b11 = be[ 0 ], b12 = be[ 4 ], b13 = be[ 8 ], b14 = be[ 12 ];
+  float b21 = be[ 1 ], b22 = be[ 5 ], b23 = be[ 9 ], b24 = be[ 13 ];
+  float b31 = be[ 2 ], b32 = be[ 6 ], b33 = be[ 10 ], b34 = be[ 14 ];
+  float b41 = be[ 3 ], b42 = be[ 7 ], b43 = be[ 11 ], b44 = be[ 15 ];
+
+  te[ 0 ] = a11 * b11 + a12 * b21 + a13 * b31 + a14 * b41;
+  te[ 4 ] = a11 * b12 + a12 * b22 + a13 * b32 + a14 * b42;
+  te[ 8 ] = a11 * b13 + a12 * b23 + a13 * b33 + a14 * b43;
+  te[ 12 ] = a11 * b14 + a12 * b24 + a13 * b34 + a14 * b44;
+
+  te[ 1 ] = a21 * b11 + a22 * b21 + a23 * b31 + a24 * b41;
+  te[ 5 ] = a21 * b12 + a22 * b22 + a23 * b32 + a24 * b42;
+  te[ 9 ] = a21 * b13 + a22 * b23 + a23 * b33 + a24 * b43;
+  te[ 13 ] = a21 * b14 + a22 * b24 + a23 * b34 + a24 * b44;
+
+  te[ 2 ] = a31 * b11 + a32 * b21 + a33 * b31 + a34 * b41;
+  te[ 6 ] = a31 * b12 + a32 * b22 + a33 * b32 + a34 * b42;
+  te[ 10 ] = a31 * b13 + a32 * b23 + a33 * b33 + a34 * b43;
+  te[ 14 ] = a31 * b14 + a32 * b24 + a33 * b34 + a34 * b44;
+
+  te[ 3 ] = a41 * b11 + a42 * b21 + a43 * b31 + a44 * b41;
+  te[ 7 ] = a41 * b12 + a42 * b22 + a43 * b32 + a44 * b42;
+  te[ 11 ] = a41 * b13 + a42 * b23 + a43 * b33 + a44 * b43;
+  te[ 15 ] = a41 * b14 + a42 * b24 + a43 * b34 + a44 * b44;
+  
+  return result;
+}
+
 //=============================================================================
 NAN_MODULE_INIT(IVRSystem::Init)
 {
@@ -818,31 +898,32 @@ NAN_METHOD(IVRSystem::GetControllerState)
         vr::VRControllerState_t controllerState;
         if (obj->self_->GetControllerState(i, &controllerState, sizeof(controllerState))) {
           Local<Float32Array> buttons = Local<Float32Array>::Cast(info[1]);
-          
-          buttons->Set(0, Number::New(Isolate::GetCurrent(), 1));
+          float *buttonsData = (float *)((char *)buttons->Buffer()->GetContents().Data() + buttons->ByteOffset());
 
-          buttons->Set(1, Number::New(Isolate::GetCurrent(), (controllerState.ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_System)) ? 1 : 0));
-          buttons->Set(2, Number::New(Isolate::GetCurrent(), (controllerState.ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_ApplicationMenu)) ? 1 : 0));
-          buttons->Set(3, Number::New(Isolate::GetCurrent(), (controllerState.ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_Grip)) ? 1 : 0));
-          buttons->Set(4, Number::New(Isolate::GetCurrent(), (controllerState.ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad)) ? 1 : 0));
-          buttons->Set(5, Number::New(Isolate::GetCurrent(), (controllerState.ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger)) ? 1 : 0));
+          buttonsData[0] = 1;
 
-          buttons->Set(6, Number::New(Isolate::GetCurrent(), (controllerState.ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_System)) ? 1 : 0));
-          buttons->Set(7, Number::New(Isolate::GetCurrent(), (controllerState.ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_ApplicationMenu)) ? 1 : 0));
-          buttons->Set(8, Number::New(Isolate::GetCurrent(), (controllerState.ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_Grip)) ? 1 : 0));
-          buttons->Set(9, Number::New(Isolate::GetCurrent(), (controllerState.ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad)) ? 1 : 0));
-          buttons->Set(10, Number::New(Isolate::GetCurrent(), (controllerState.ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger)) ? 1 : 0));
+          buttonsData[1] = (controllerState.ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_System)) ? 1 : 0;
+          buttonsData[2] = (controllerState.ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_ApplicationMenu)) ? 1 : 0;
+          buttonsData[3] = (controllerState.ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_Grip)) ? 1 : 0;
+          buttonsData[4] = (controllerState.ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad)) ? 1 : 0;
+          buttonsData[5] = (controllerState.ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger)) ? 1 : 0;
 
-          buttons->Set(11, Number::New(Isolate::GetCurrent(), controllerState.rAxis[0].x));
-          buttons->Set(12, Number::New(Isolate::GetCurrent(), controllerState.rAxis[0].y));
-          buttons->Set(13, Number::New(Isolate::GetCurrent(), controllerState.rAxis[1].x));
-          buttons->Set(14, Number::New(Isolate::GetCurrent(), controllerState.rAxis[1].y));
-          buttons->Set(15, Number::New(Isolate::GetCurrent(), controllerState.rAxis[2].x));
-          buttons->Set(16, Number::New(Isolate::GetCurrent(), controllerState.rAxis[2].y));
-          buttons->Set(17, Number::New(Isolate::GetCurrent(), controllerState.rAxis[3].x));
-          buttons->Set(18, Number::New(Isolate::GetCurrent(), controllerState.rAxis[3].y));
-          buttons->Set(19, Number::New(Isolate::GetCurrent(), controllerState.rAxis[4].x));
-          buttons->Set(20, Number::New(Isolate::GetCurrent(), controllerState.rAxis[4].y));
+          buttonsData[6] = (controllerState.ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_System)) ? 1 : 0;
+          buttonsData[7] = (controllerState.ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_ApplicationMenu)) ? 1 : 0;
+          buttonsData[8] = (controllerState.ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_Grip)) ? 1 : 0;
+          buttonsData[9] = (controllerState.ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad)) ? 1 : 0;
+          buttonsData[10] = (controllerState.ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger)) ? 1 : 0;
+
+          buttonsData[11] = controllerState.rAxis[0].x;
+          buttonsData[12] = controllerState.rAxis[0].y;
+          buttonsData[13] = controllerState.rAxis[1].x;
+          buttonsData[14] = controllerState.rAxis[1].y;
+          buttonsData[15] = controllerState.rAxis[2].x;
+          buttonsData[16] = controllerState.rAxis[2].y;
+          buttonsData[17] = controllerState.rAxis[3].x;
+          buttonsData[18] = controllerState.rAxis[3].y;
+          buttonsData[19] = controllerState.rAxis[4].x;
+          buttonsData[20] = controllerState.rAxis[4].y;
           
           /* {
             vr::InputPoseActionData_t inputPoseActionData;
@@ -864,44 +945,51 @@ NAN_METHOD(IVRSystem::GetControllerState)
             hmdArray[3 * 4 + 3] = 1;
           } */
 
+          for (size_t i = 0; i < (5 + 31*16); i++) {
+            buttonsData[21 + i] = std::numeric_limits<float>::quiet_NaN();
+          }
+          
           vr::VRSkeletalSummaryData_t skeletalSummaryData;
           vr::EVRInputError error = vr::VRInput()->GetSkeletalSummaryData(obj->handAnimActionHandles[side], vr::EVRSummaryType::VRSummaryType_FromDevice, &skeletalSummaryData);
           if (error == vr::EVRInputError::VRInputError_None) {
             for (int j = 0; j < 5; j++) {
-              buttons->Set(21 + j, Number::New(Isolate::GetCurrent(), skeletalSummaryData.flFingerCurl[j]));
+              buttonsData[21 + j] = skeletalSummaryData.flFingerCurl[j];
             }
           } else {
-            exerr << "failed to get left hand anim skeletal summary data: " << error << std::endl;
+            exerr << "failed to get hand anim skeletal summary data: " << error << std::endl;
           }
-          
-          /* vr::InputSkeletalActionData_t skeletalActionData;
-          error = vr::VRInput()->GetSkeletalActionData(obj->handAnimActionHandles[i], &skeletalActionData, sizeof(skeletalActionData));
+
+          vr::InputSkeletalActionData_t skeletalActionData;
+          error = vr::VRInput()->GetSkeletalActionData(obj->handAnimActionHandles[side], &skeletalActionData, sizeof(skeletalActionData));
           if (error == vr::EVRInputError::VRInputError_None) {
             if (skeletalActionData.bActive) {
               uint32_t boneCount = 0;
-              error = vr::VRInput()->GetBoneCount(obj->handAnimActionHandles[i], &boneCount);
+              error = vr::VRInput()->GetBoneCount(obj->handAnimActionHandles[side], &boneCount);
               if (error != vr::EVRInputError::VRInputError_None) {
-                exerr << "failed to get left hand anim bone count" << std::endl;
+                exerr << "failed to get hand anim bone count" << std::endl;
               }
 
               std::vector<vr::VRBoneTransform_t> bones(boneCount);
-              error = vr::VRInput()->GetSkeletalBoneData(obj->handAnimActionHandles[i], vr::EVRSkeletalTransformSpace::VRSkeletalTransformSpace_Model, vr::EVRSkeletalMotionRange::VRSkeletalMotionRange_WithController, bones.data(), boneCount);
-              if (error != vr::EVRInputError::VRInputError_None) {
-                exerr << "failed to get left hand anim skeletal bone data: " << error << std::endl;
-              }
-              exout << "left bones (" << boneCount << "):" << std::endl;
-              for (size_t i = 0; i < bones.size(); i++) {
-                vr::VRBoneTransform_t &bone = bones[i];
-                vr::HmdVector4_t &position = bone.position;
-                vr::HmdQuaternionf_t &orientation = bone.orientation;
-                exout << "  left bone[" << i << "] " <<
-                  position.v[0] << "," << position.v[1] << "," << position.v[2] << "," << position.v[3] << "/" <<
-                  orientation.x << "," << orientation.y << "," << orientation.z << "," << orientation.w << std::endl;
+              error = vr::VRInput()->GetSkeletalBoneData(obj->handAnimActionHandles[side], vr::EVRSkeletalTransformSpace::VRSkeletalTransformSpace_Model, vr::EVRSkeletalMotionRange::VRSkeletalMotionRange_WithController, bones.data(), boneCount);
+              if (error == vr::EVRInputError::VRInputError_None) {
+                // exout << "left bones (" << boneCount << "):" << std::endl;
+                for (size_t j = 0; j < bones.size(); j++) {
+                  vr::VRBoneTransform_t &bone = bones[j];
+                  vr::HmdVector4_t &position = bone.position;
+                  vr::HmdQuaternionf_t &orientation = bone.orientation;
+                  std::vector<float> matrix = composeMatrix(position, orientation);
+                  memcpy(buttonsData + 21 + 5 + j*16, matrix.data(), 16*sizeof(float));
+                  /* exout << "bone[" << i << "] " <<
+                    position.v[0] << "," << position.v[1] << "," << position.v[2] << "," << position.v[3] << "/" <<
+                    orientation.x << "," << orientation.y << "," << orientation.z << "," << orientation.w << std::endl; */
+                }
+              } else {
+                exerr << "failed to get hand anim skeletal bone data: " << error << std::endl;
               }
             }
           } else {
-            exerr << "failed to get left hand anim skeletal action data: " << error << std::endl;
-          } */
+            exerr << "failed to get hand anim skeletal action data: " << error << std::endl;
+          }
 
           return info.GetReturnValue().Set(Nan::New<Boolean>(true));
         }

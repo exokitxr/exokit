@@ -143,6 +143,7 @@ class Gamepad {
     this.pose = new GamepadPose(xrGamepad.position, xrGamepad.orientation);
     this.axes = xrGamepad.axes;
     this.hapticActuators = hapticActuator ? [hapticActuator] : [];
+    this.bones = xrGamepad.bones;
   }
 
   get connected() {
