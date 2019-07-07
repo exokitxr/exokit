@@ -35,10 +35,7 @@
         return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v);
       }
       void main() {
-        // vec3 modelPos = position + offsetPosition;
-        vec3 modelPos = (modelMatrix * vec4(applyVectorQuaternion(position, offsetQuaternion) + offsetPosition, 1.)).xyz;
-        // modelPos = applyVectorQuaternion(modelPos, offsetQuaternion) + offsetPosition;
-        gl_Position = projectionMatrix * viewMatrix * vec4(modelPos, 1.);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(applyVectorQuaternion(position, offsetQuaternion) + offsetPosition, 1.);
       }
     `;
     const boneFsh = `
