@@ -256,7 +256,7 @@ const xrState = (() => {
       return result;
     })(),
     buttons: (() => {
-      const result = Array(6);
+      const result = Array(10);
       for (let i = 0; i < result.length; i++) {
         result[i] = {
           pressed: _makeTypedArray(Uint32Array, 1),
@@ -266,7 +266,7 @@ const xrState = (() => {
       }
       return result;
     })(),
-    axes: _makeTypedArray(Float32Array, 15),
+    axes: _makeTypedArray(Float32Array, 10),
     bones: _makeTypedArray(Float32Array, 31*16),
   });
   result.gamepads = (() => {
