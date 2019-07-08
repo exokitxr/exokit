@@ -162,12 +162,20 @@
       const controllerMaterial = new THREE.MeshBasicMaterial({
         color: 0x66bb6a,
       });
-      const controllerGaugeBackMaterial = new THREE.MeshBasicMaterial({
+      const controllerGaugeBackMaterials = new THREE.MeshBasicMaterial({
         color: 0x666666,
       });
-      const controllerGaugeFrontMaterial = new THREE.MeshBasicMaterial({
-        color: 0x42a5f5,
-      });
+      const controllerGaugeFrontMaterials = {
+        normal: new THREE.MeshBasicMaterial({
+          color: 0x01579b,
+        }),
+        touched: new THREE.MeshBasicMaterial({
+          color: 0x03a9f4,
+        }),
+        pressed: new THREE.MeshBasicMaterial({
+          color: 0x81d4fa,
+        }),
+      };
       const _makeControllerMesh = i => {
         const geometry = new THREE.BoxBufferGeometry(0.05, 0.1, 0.01)
           /* .applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
@@ -185,7 +193,7 @@
           const gaugeBackMesh = (() => {
             const geometry = new THREE.BoxBufferGeometry(0.01, 0.1, 0.01)
               .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -0.01/2));
-            const material = controllerGaugeBackMaterial;
+            const material = controllerGaugeBackMaterials.normal;
             const mesh = new THREE.Mesh(geometry, material);
             // mesh.position.y = -0.1/2;
             mesh.frustumCulled = false;
@@ -203,12 +211,20 @@
             return mesh;
           })();
           gaugeBackMesh.add(gaugeFrontMesh);
-          gaugeBackMesh.setValue = value => {
+          gaugeBackMesh.setValue = (value, touched, pressed) => {
             if (value > 0) {
               gaugeFrontMesh.scale.y = value;
               gaugeFrontMesh.updateMatrix();
               gaugeFrontMesh.updateMatrixWorld();
               gaugeFrontMesh.visible = true;
+
+              if (touched) {
+                gaugeFrontMesh.material = controllerGaugeFrontMaterials.touched;
+              } else if (pressed) {
+                gaugeFrontMesh.material = controllerGaugeFrontMaterials.pressed;
+              } else {
+                gaugeFrontMesh.material = controllerGaugeFrontMaterials.normal;
+              }
             } else {
               gaugeFrontMesh.visible = false;
             }
@@ -264,11 +280,12 @@
               // mesh.matrix.decompose(mesh.position, mesh.quaternion, mesh.scale);
             
               const gamepad = navigator.getGamepads()[i];
-              const {axes, bones} = gamepad;
+              const {buttons, bones} = gamepad;
               for (let j = 0; j < 5; j++) {
+                const button = buttons[5+j];
                 const fingerMesh = fingerMeshes[j];
                 fingerMesh.updateMatrixWorld();
-                fingerMesh.setValue(axes[10+j]);
+                fingerMesh.setValue(button.value, button.touched, button.pressed);
               }
 
               for (let j = 0; j < 31; j++) {
