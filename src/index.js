@@ -776,14 +776,18 @@ const _startTopRenderLoop = () => {
         gamepad.buttons[3].touched[0] = localGamepadArray[7]; // menu
         gamepad.buttons[4].touched[0] = localGamepadArray[6]; // system
 
-        gamepad.axes.set(localGamepadArray.slice(11, 11 + 15));
-        /* for (let i = 0; i < 15; i++) {
-          gamepad.axes[i] = localGamepadArray[11+i];
-        } */
-
+        gamepad.axes.set(localGamepadArray.slice(11, 21));
         gamepad.buttons[1].value[0] = gamepad.axes[2]; // trigger
-        
-        gamepad.bones.set(localGamepadArray.slice(11 + 15, 11 + 15 + 31*(3+4)));
+
+        for (let i = 0; i < 5; i++) {
+          const button = gamepad.buttons[5 + i];
+          const value = localGamepadArray[21 + i];
+          button.value[0] = value;
+          button.touched[0] = value >= 0.1;
+          button.pressed[0] = value >= 0.5;
+        }
+
+        gamepad.bones.set(localGamepadArray.slice(26, 26 + 31*(3+4)));
       } else {
         gamepad.connected[0] = 0;
       }
