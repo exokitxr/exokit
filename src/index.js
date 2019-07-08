@@ -782,8 +782,8 @@ const _startTopRenderLoop = () => {
           const button = gamepad.buttons[5 + i];
           const value = localGamepadArray[21 + i];
           button.value[0] = value;
-          button.touched[0] = value >= 0.1;
-          button.pressed[0] = value >= 0.5;
+          button.touched[0] = value >= 0.5 ? 1 : 0;
+          button.pressed[0] = value >= 0.9 ? 1 : 0;
         }
 
         gamepad.bones.set(localGamepadArray.slice(26, 26 + 31*(3+4)));
