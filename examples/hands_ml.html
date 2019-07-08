@@ -162,7 +162,7 @@
       const controllerMaterial = new THREE.MeshBasicMaterial({
         color: 0x66bb6a,
       });
-      const controllerGaugeBackMaterials = new THREE.MeshBasicMaterial({
+      const controllerGaugeBackMaterial = new THREE.MeshBasicMaterial({
         color: 0x666666,
       });
       const controllerGaugeFrontMaterials = {
@@ -173,7 +173,7 @@
           color: 0x03a9f4,
         }),
         pressed: new THREE.MeshBasicMaterial({
-          color: 0x81d4fa,
+          color: 0xffffff,
         }),
       };
       const _makeControllerMesh = i => {
@@ -193,7 +193,7 @@
           const gaugeBackMesh = (() => {
             const geometry = new THREE.BoxBufferGeometry(0.01, 0.1, 0.01)
               .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0, -0.01/2));
-            const material = controllerGaugeBackMaterials.normal;
+            const material = controllerGaugeBackMaterial;
             const mesh = new THREE.Mesh(geometry, material);
             // mesh.position.y = -0.1/2;
             mesh.frustumCulled = false;
@@ -203,7 +203,7 @@
           const gaugeFrontMesh = (() => {
             const geometry = new THREE.BoxBufferGeometry(0.01, 0.1, 0.01)
               .applyMatrix(new THREE.Matrix4().makeTranslation(0, 0.1/2, 0.01/2));
-            const material = controllerGaugeFrontMaterial;
+            const material = controllerGaugeFrontMaterials.normal;
             const mesh = new THREE.Mesh(geometry, material);
             mesh.position.y = -0.1/2;
             mesh.frustumCulled = false;
@@ -218,10 +218,10 @@
               gaugeFrontMesh.updateMatrixWorld();
               gaugeFrontMesh.visible = true;
 
-              if (touched) {
-                gaugeFrontMesh.material = controllerGaugeFrontMaterials.touched;
-              } else if (pressed) {
+              if (pressed) {
                 gaugeFrontMesh.material = controllerGaugeFrontMaterials.pressed;
+              } else if (touched) {
+                gaugeFrontMesh.material = controllerGaugeFrontMaterials.touched;
               } else {
                 gaugeFrontMesh.material = controllerGaugeFrontMaterials.normal;
               }
