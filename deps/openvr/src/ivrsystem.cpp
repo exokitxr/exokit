@@ -875,9 +875,9 @@ NAN_METHOD(IVRSystem::GetControllerState)
             for (int j = 0; j < 5; j++) {
               buttonsData[21 + j] = skeletalSummaryData.flFingerCurl[j];
             }
-          } else {
+          } /* else {
             exerr << "failed to get hand anim skeletal summary data: " << error << std::endl;
-          }
+          } */
 
           vr::InputSkeletalActionData_t skeletalActionData;
           error = vr::VRInput()->GetSkeletalActionData(obj->handAnimActionHandles[side], &skeletalActionData, sizeof(skeletalActionData));
@@ -885,35 +885,35 @@ NAN_METHOD(IVRSystem::GetControllerState)
             if (skeletalActionData.bActive) {
               uint32_t boneCount = 0;
               error = vr::VRInput()->GetBoneCount(obj->handAnimActionHandles[side], &boneCount);
-              if (error != vr::EVRInputError::VRInputError_None) {
-                exerr << "failed to get hand anim bone count" << std::endl;
-              }
-
-              std::vector<vr::VRBoneTransform_t> bones(boneCount);
-              error = vr::VRInput()->GetSkeletalBoneData(obj->handAnimActionHandles[side], vr::EVRSkeletalTransformSpace::VRSkeletalTransformSpace_Model, vr::EVRSkeletalMotionRange::VRSkeletalMotionRange_WithController, bones.data(), boneCount);
               if (error == vr::EVRInputError::VRInputError_None) {
-                int index = 21 + 5;
-                for (int j = 0; j < bones.size(); j++) {
-                  vr::VRBoneTransform_t &bone = bones[j];
-                  vr::HmdVector4_t &position = bone.position;
-                  if (position.v[0] != 0 || position.v[1] != 0 || position.v[2] != 0) { 
-                    vr::HmdQuaternionf_t &orientation = bone.orientation;
-                    buttonsData[index++] = position.v[0];
-                    buttonsData[index++] = position.v[1];
-                    buttonsData[index++] = position.v[2];
-                    buttonsData[index++] = orientation.x;
-                    buttonsData[index++] = orientation.y;
-                    buttonsData[index++] = orientation.z;
-                    buttonsData[index++] = orientation.w;
+                std::vector<vr::VRBoneTransform_t> bones(boneCount);
+                error = vr::VRInput()->GetSkeletalBoneData(obj->handAnimActionHandles[side], vr::EVRSkeletalTransformSpace::VRSkeletalTransformSpace_Model, vr::EVRSkeletalMotionRange::VRSkeletalMotionRange_WithController, bones.data(), boneCount);
+                if (error == vr::EVRInputError::VRInputError_None) {
+                  int index = 21 + 5;
+                  for (int j = 0; j < bones.size(); j++) {
+                    vr::VRBoneTransform_t &bone = bones[j];
+                    vr::HmdVector4_t &position = bone.position;
+                    if (position.v[0] != 0 || position.v[1] != 0 || position.v[2] != 0) { 
+                      vr::HmdQuaternionf_t &orientation = bone.orientation;
+                      buttonsData[index++] = position.v[0];
+                      buttonsData[index++] = position.v[1];
+                      buttonsData[index++] = position.v[2];
+                      buttonsData[index++] = orientation.x;
+                      buttonsData[index++] = orientation.y;
+                      buttonsData[index++] = orientation.z;
+                      buttonsData[index++] = orientation.w;
+                    }
                   }
-                }
-              } else {
-                exerr << "failed to get hand anim skeletal bone data: " << error << std::endl;
-              }
+                } /* else {
+                  exerr << "failed to get hand anim skeletal bone data: " << error << std::endl;
+                } */
+              } /* else {
+                exerr << "failed to get hand anim bone count" << std::endl;
+              } */
             }
-          } else {
+          } /* else {
             exerr << "failed to get hand anim skeletal action data: " << error << std::endl;
-          }
+          } */
 
           return info.GetReturnValue().Set(Nan::New<Boolean>(true));
         }
