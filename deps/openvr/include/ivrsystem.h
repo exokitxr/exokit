@@ -122,6 +122,8 @@ private:
   /// virtual void AcknowledgeQuit_UserPrompt() = 0;
   static NAN_METHOD(AcknowledgeQuit_UserPrompt);
 
+  static NAN_METHOD(GetModelName);
+
   /// Create a singleton reference to a constructor function.
   static inline Nan::Persistent<v8::Function>& constructor()
   {

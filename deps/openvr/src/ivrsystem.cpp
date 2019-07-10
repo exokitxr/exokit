@@ -5,6 +5,8 @@
 #include <node.h>
 #include <openvr.h>
 
+#include <defines.h>
+
 using namespace v8;
 
 using TrackedDevicePoseArray = std::array<vr::TrackedDevicePose_t, vr::k_unMaxTrackedDeviceCount>;
@@ -927,3 +929,26 @@ NAN_METHOD(IVRSystem::AcknowledgeQuit_UserPrompt)
 
   obj->self_->AcknowledgeQuit_UserPrompt();
 }
+
+NAN_METHOD(IVRSystem::GetModelName)
+{
+  IVRSystem* obj = ObjectWrap::Unwrap<IVRSystem>(info.Holder());
+
+  if (info.Length() != 1)
+  {
+    Nan::ThrowError("Wrong number of arguments.");
+    return;
+  }
+
+  uint32_t hand = TO_UINT32(info[0]);
+  vr::ETrackedControllerRole role = static_cast<vr::ETrackedControllerRole>(hand + 1);
+  vr::TrackedDeviceIndex_t deviceClass = obj->self_->GetTrackedDeviceIndexForControllerRole(role);
+
+  char buf[4096];
+  vr::TrackedPropertyError error;
+  GetTrackedDeviceIndexForControllerRole(index + 1);
+  uint32_t size = GetStringTrackedDeviceProperty(deviceClass, vr::ETrackedDeviceProperty::Prop_ModelNumber_String, buf, sizeof(buf), &error);
+  Local<String> modelName = Nan::New<String>(buf, size)->ToLocalChecked();
+  info.GetReturnValue().Set(modelName);
+}
+
