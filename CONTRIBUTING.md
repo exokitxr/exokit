@@ -51,7 +51,7 @@ under the [MIT License](LICENSE).
 
 # Update Documentation
 
-If you catch a typo or error in the [documentation](https://github.com/exokitxr/exokit/tree/master/docs), we'd greatly appreciate a
+If you catch a typo or error in the [documentation](https://exokit.org/docs/), we'd greatly appreciate a
 pull request.
 
 
