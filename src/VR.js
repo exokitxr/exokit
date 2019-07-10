@@ -727,11 +727,10 @@ function getGamepads() {
     if (!globalGamepads) {
       globalGamepads = _makeGlobalGamepads();
     }
+    const gamepads = globalGamepads.main.slice();
 
     globalGamepads.main[0].id = getControllerID(hmdType, 'left');
     globalGamepads.main[1].id = getControllerID(hmdType, 'right');
-
-    const gamepads = globalGamepads.main.slice();
 
     if (hmdType === 'openvr') {
       for (let i = 0; i < globalGamepads.tracker.length; i++) {
