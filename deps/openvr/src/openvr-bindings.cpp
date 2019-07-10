@@ -16,7 +16,7 @@ vr::IVRSystem *vrSystem;
 // inline IVRSystem *VR_Init( EVRInitError *peError, EVRApplicationType eApplicationType );
 NAN_METHOD(VR_Init)
 {
-  if (info.Length() != 1)
+  if (info.Length() != 2)
   {
     Nan::ThrowError("Wrong number of arguments.");
     return;
@@ -28,6 +28,12 @@ NAN_METHOD(VR_Init)
     return;
   }
 
+  if (!info[1]->IsString())
+  {
+    Nan::ThrowTypeError("Argument[1] must be a string.");
+    return;
+  }
+
   uint32_t applicationType = TO_UINT32(info[0]);
   // TODO: is there a better way to do this?
   constexpr uint32_t applicationTypeMax = vr::VRApplication_Max;
@@ -36,6 +42,10 @@ NAN_METHOD(VR_Init)
     Nan::ThrowTypeError("Argument[0] was out of enum range (EVRApplicationType).");
     return;
   }
+
+  Local<String> actionManifestPath = Local<String>::Cast(info[1]);
+  Nan::Utf8String actionManifestPathUtf8String(actionManifestPath);
+  const char *actionManifestPathString = *actionManifestPathUtf8String;
 
   // Perform the actual wrapped call.
   vr::EVRInitError error;
@@ -51,6 +61,15 @@ NAN_METHOD(VR_Init)
     Local<Object>::Cast(err)->Set(String::NewFromUtf8(Isolate::GetCurrent(), "code"), Number::New(Isolate::GetCurrent(), error));
     Nan::ThrowError(err);
     return;
+  }
+
+  {
+    vr::EVRInputError result = vr::VRInput()->SetActionManifestPath(actionManifestPathString);
+    if (result != vr::EVRInputError::VRInputError_None) {
+      Local<Value> err = Exception::Error(String::NewFromUtf8(Isolate::GetCurrent(), "Failed to initialize action manifest path"));
+      Nan::ThrowError(err);
+      return;
+    }
   }
 
   // Wrap the resulting system in the correct wrapper and return it.
@@ -99,7 +118,7 @@ NAN_METHOD(VR_IsRuntimeInstalled)
   info.GetReturnValue().Set(Nan::New<Boolean>(result));
 }
 
-//=============================================================================
+/* //=============================================================================
 /// VR_INTERFACE const char *VR_CALLTYPE VR_RuntimePath();
 NAN_METHOD(VR_RuntimePath)
 {
@@ -111,7 +130,7 @@ NAN_METHOD(VR_RuntimePath)
 
   const char *result = vr::VR_RuntimePath();
   info.GetReturnValue().Set(Nan::New<String>(result).ToLocalChecked());
-}
+} */
 
 //=============================================================================
 /// VR_INTERFACE const char *VR_CALLTYPE VR_GetVRInitErrorAsSymbol( EVRInitError error );
@@ -185,7 +204,7 @@ Local<Object> makeOpenVR() {
   exports->Set(Nan::New("VR_Shutdown").ToLocalChecked(), Nan::GetFunction(Nan::New<v8::FunctionTemplate>(VR_Shutdown)).ToLocalChecked());
   exports->Set(Nan::New("VR_IsHmdPresent").ToLocalChecked(), Nan::GetFunction(Nan::New<v8::FunctionTemplate>(VR_IsHmdPresent)).ToLocalChecked());
   exports->Set(Nan::New("VR_IsRuntimeInstalled").ToLocalChecked(), Nan::GetFunction(Nan::New<v8::FunctionTemplate>(VR_IsRuntimeInstalled)).ToLocalChecked());
-  exports->Set(Nan::New("VR_RuntimePath").ToLocalChecked(), Nan::GetFunction(Nan::New<v8::FunctionTemplate>(VR_RuntimePath)).ToLocalChecked());
+  // exports->Set(Nan::New("VR_RuntimePath").ToLocalChecked(), Nan::GetFunction(Nan::New<v8::FunctionTemplate>(VR_RuntimePath)).ToLocalChecked());
   exports->Set(Nan::New("VR_GetVRInitErrorAsSymbol").ToLocalChecked(), Nan::GetFunction(Nan::New<v8::FunctionTemplate>(VR_GetVRInitErrorAsSymbol)).ToLocalChecked());
   exports->Set(Nan::New("VR_GetVRInitErrorAsEnglishDescription").ToLocalChecked(), Nan::GetFunction(Nan::New<v8::FunctionTemplate>(VR_GetVRInitErrorAsEnglishDescription)).ToLocalChecked());
   exports->Set(Nan::New("VR_GetInitToken").ToLocalChecked(), Nan::GetFunction(Nan::New<v8::FunctionTemplate>(VR_GetInitToken)).ToLocalChecked());

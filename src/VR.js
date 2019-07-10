@@ -134,7 +134,7 @@ class Gamepad {
 
     this.mapping = 'standard';
     this.buttons = (() => {
-      const result = Array(5);
+      const result = Array(xrGamepad.buttons.length);
       for (let i = 0; i < result.length; i++) {
         result[i] = new GamepadButton(xrGamepad.buttons[i].value, xrGamepad.buttons[i].pressed, xrGamepad.buttons[i].touched);
       }
@@ -143,6 +143,7 @@ class Gamepad {
     this.pose = new GamepadPose(xrGamepad.position, xrGamepad.orientation);
     this.axes = xrGamepad.axes;
     this.hapticActuators = hapticActuator ? [hapticActuator] : [];
+    this.bones = xrGamepad.bones;
   }
 
   get connected() {

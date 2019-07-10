@@ -3,13 +3,7 @@
 
 #include <nan.h>
 #include <v8.h>
-
-// Forward declaration of OpenVR class.
-// We only need the pointer here, so this is cleaner than importing the header.
-namespace vr
-{
-class IVRSystem;
-}
+#include <openvr.h>
 
 class IVRSystem : public Nan::ObjectWrap
 {
@@ -136,6 +130,9 @@ private:
 
   /// Reference to wrapped OpenVR instance.
   vr::IVRSystem * const self_;
+  vr::VRInputValueHandle_t handInputSourceHandles[2];
+  vr::VRActionHandle_t poseActionHandle;
+  vr::VRActionHandle_t handAnimActionHandles[2];
 
   friend class IVRCompositor;
 };

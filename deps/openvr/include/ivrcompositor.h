@@ -3,16 +3,10 @@
 
 #include <nan.h>
 #include <v8.h>
+#include <openvr.h>
 
 #include <webgl.h>
 #include <windowsystem.h>
-
-// Forward declaration of OpenVR class.
-// We only need the pointer here, so this is cleaner than importing the header.
-namespace vr
-{
-class IVRCompositor;
-}
 
 namespace vr {
   class VRPoseRes;
@@ -59,6 +53,7 @@ private:
 
   /// Reference to wrapped OpenVR instance.
   vr::IVRCompositor * const self_;
+  vr::VRActionSetHandle_t actionSetHandle;
 };
 
 NAN_METHOD(NewCompositor);
