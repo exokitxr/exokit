@@ -708,6 +708,8 @@ const controllerIDs = {
   fake: 'OpenVR Gamepad',
   openvr: 'OpenVR Gamepad',
   openvrTracker: 'OpenVR Tracker',
+  indexLeft: 'Valve Index (Left)',
+  indexRight: 'Valve Index (Right)',
   oculusLeft: 'Oculus Touch (Left)',
   oculusRight: 'Oculus Touch (Right)',
   // oculusMobile: 'Oculus Go',
@@ -726,8 +728,9 @@ function getGamepads() {
     let hmdType = getHMDType();
     if (hmdType === 'openvr') {
       const vrSystem = nativeOpenVR.GetGlobalSystem();
-      const model = vrSystem.GetModelName();
-      console.log('got model name'); // XXX
+      if (/^Knuckles/.test(vrSystem.GetModelName(0) || vrSystem.GetModelName(1))) {
+        hmdType = 'index';
+      }
     }
 
     if (!globalGamepads) {
