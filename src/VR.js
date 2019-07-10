@@ -583,26 +583,25 @@ class FakeXRDisplay {
     if (!globalGamepads) {
       globalGamepads = _makeGlobalGamepads();
     }
-    if (updateGamepads) {
-      for (let i = 0; i < globalGamepads.main.length; i++) {
-        const gamepad = globalGamepads.main[i];
-        localVector.copy(this.position)
-          .add(
-            localVector2.set(-0.3 + i*0.6, -0.3, -0.35)
-              .applyQuaternion(this.quaternion)
-          ).toArray(gamepad.pose.position);
-        this.quaternion.toArray(gamepad.pose.orientation); // XXX updates xrState
 
-        localMatrix2
-          .compose(
-            localVector.fromArray(gamepad.pose.position),
-            localQuaternion.fromArray(gamepad.pose.orientation),
-            localVector2.set(1, 1, 1)
-          )
-          .toArray(gamepad.pose._localPointerMatrix);
+    for (let i = 0; i < globalGamepads.main.length; i++) {
+      const gamepad = globalGamepads.main[i];
+      localVector.copy(this.position)
+        .add(
+          localVector2.set(-0.3 + i*0.6, -0.3, -0.35)
+            .applyQuaternion(this.quaternion)
+        ).toArray(gamepad.pose.position);
+      this.quaternion.toArray(gamepad.pose.orientation); // XXX updates xrState
 
-        gamepad.connected = true;
-      }
+      localMatrix2
+        .compose(
+          localVector.fromArray(gamepad.pose.position),
+          localQuaternion.fromArray(gamepad.pose.orientation),
+          localVector2.set(1, 1, 1)
+        )
+        .toArray(gamepad.pose._localPointerMatrix);
+
+      gamepad.connected = true;
     }
   }
 
