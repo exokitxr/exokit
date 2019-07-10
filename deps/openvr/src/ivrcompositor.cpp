@@ -44,8 +44,7 @@ VRPoseRes::VRPoseRes(Local<Function> cb) : cb(cb) {}
 VRPoseRes::~VRPoseRes() {}
 
 //=============================================================================
-NAN_MODULE_INIT(IVRCompositor::Init)
-{
+void IVRCompositor::Init(Nan::Persistent<v8::Function> &constructor) {
   // Create a function template that is called in JS to create this wrapper.
   Local<FunctionTemplate> tpl = Nan::New<FunctionTemplate>(New);
 
@@ -61,7 +60,7 @@ NAN_MODULE_INIT(IVRCompositor::Init)
   Nan::SetPrototypeMethod(tpl, "Submit", Submit);
 
   // Set a static constructor function to reference the `New` function template.
-  constructor().Reset(Nan::GetFunction(tpl).ToLocalChecked());
+  constructor.Reset(Nan::GetFunction(tpl).ToLocalChecked());
 
   uv_sem_init(&vr::reqSem, 0);
   uv_loop_t *loop = windowsystembase::GetEventLoop();

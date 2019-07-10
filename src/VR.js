@@ -567,8 +567,7 @@ class FakeXRDisplay {
     GlobalContext.xrState.fakeVrDisplayEnabled[0] = 1;
   }
 
-  pushUpdate() {
-    // update hmd
+  pushHmdUpdate(position = this.position, quaternion = this.quaternion) {
     this.position.toArray(GlobalContext.xrState.position);
     this.quaternion.toArray(GlobalContext.xrState.orientation);
 
@@ -580,11 +579,12 @@ class FakeXRDisplay {
       .getInverse(localMatrix)
       .toArray(GlobalContext.xrState.leftViewMatrix);
     GlobalContext.xrState.rightViewMatrix.set(GlobalContext.xrState.leftViewMatrix);
-
-    // update gamepads
+  }
+  pushGamepadsUpdate(position = this.position, quaternion = this.quaternion) {
     if (!globalGamepads) {
       globalGamepads = _makeGlobalGamepads();
     }
+
     for (let i = 0; i < globalGamepads.main.length; i++) {
       const gamepad = globalGamepads.main[i];
       localVector.copy(this.position)
@@ -604,6 +604,11 @@ class FakeXRDisplay {
 
       gamepad.connected = true;
     }
+  }
+
+  pushUpdate() {
+    this.pushHmdUpdate();
+    this.pushGamepadsUpdate();
   }
 
   get width() {
@@ -709,6 +714,8 @@ const controllerIDs = {
   fake: 'OpenVR Gamepad',
   openvr: 'OpenVR Gamepad',
   openvrTracker: 'OpenVR Tracker',
+  indexLeft: 'Valve Index (Left)',
+  indexRight: 'Valve Index (Right)',
   oculusLeft: 'Oculus Touch (Left)',
   oculusRight: 'Oculus Touch (Right)',
   // oculusMobile: 'Oculus Go',
@@ -724,15 +731,21 @@ function getControllerID(hmdType, hand) {
 }
 function getGamepads() {
   if (GlobalContext.xrState.isPresenting[0]) {
-    const hmdType = getHMDType();
+    let hmdType = getHMDType();
+    if (hmdType === 'openvr') {
+      const vrSystem = nativeOpenVR.GetGlobalSystem();
+      if (/^Knuckles/.test(vrSystem.GetModelName(0) || vrSystem.GetModelName(1))) {
+        hmdType = 'index';
+      }
+    }
+
     if (!globalGamepads) {
       globalGamepads = _makeGlobalGamepads();
     }
+    const gamepads = globalGamepads.main.slice();
 
     globalGamepads.main[0].id = getControllerID(hmdType, 'left');
     globalGamepads.main[1].id = getControllerID(hmdType, 'right');
-
-    const gamepads = globalGamepads.main.slice();
 
     if (hmdType === 'openvr') {
       for (let i = 0; i < globalGamepads.tracker.length; i++) {

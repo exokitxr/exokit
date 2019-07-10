@@ -5,7 +5,7 @@
 #include <node.h>
 #include <openvr.h>
 
-#include <exout>
+#include <defines.h>
 
 using namespace v8;
 
@@ -13,8 +13,7 @@ using TrackedDevicePoseArray = std::array<vr::TrackedDevicePose_t, vr::k_unMaxTr
 using TrackedDeviceIndexArray = std::array<vr::TrackedDeviceIndex_t, vr::k_unMaxTrackedDeviceCount>;
 
 //=============================================================================
-NAN_MODULE_INIT(IVRSystem::Init)
-{
+void IVRSystem::Init(Nan::Persistent<v8::Function> &constructor) {
   // Create a function template that is called in JS to create this wrapper.
   Local<FunctionTemplate> tpl = Nan::New<FunctionTemplate>(New);
 
@@ -80,8 +79,10 @@ NAN_MODULE_INIT(IVRSystem::Init)
   Nan::SetPrototypeMethod(tpl, "AcknowledgeQuit_Exiting", AcknowledgeQuit_Exiting);
   Nan::SetPrototypeMethod(tpl, "AcknowledgeQuit_UserPrompt", AcknowledgeQuit_UserPrompt);
 
+  Nan::SetPrototypeMethod(tpl, "GetModelName", GetModelName);
+
   // Set a static constructor function to reference the `New` function template.
-  constructor().Reset(Nan::GetFunction(tpl).ToLocalChecked());
+  constructor.Reset(Nan::GetFunction(tpl).ToLocalChecked());
 }
 
 //=============================================================================
@@ -99,21 +100,18 @@ IVRSystem::IVRSystem(vr::IVRSystem *self)
 {
   {
     vr::EVRInputError error = vr::VRInput()->GetInputSourceHandle("/user/hand/left", &handInputSourceHandles[0]);
-    // std::cout << "got left hand handle " << handInputSourceHandles[0] << std::endl;
     if (error != vr::EVRInputError::VRInputError_None) {
       Nan::ThrowError("Failed to get left hand input source handle");
     }
   }
   {
     vr::EVRInputError error = vr::VRInput()->GetInputSourceHandle("/user/hand/right", &handInputSourceHandles[1]);
-    // std::cout << "got right hand handle " << handInputSourceHandles[1] << std::endl;
     if (error != vr::EVRInputError::VRInputError_None) {
       Nan::ThrowError("Failed to get right hand input source handle");
     }
   }
   {
     vr::EVRInputError error = vr::VRInput()->GetActionHandle("/actions/default/in/Pose", &poseActionHandle);
-    // std::cout << "got pose action handle " << poseActionHandle << std::endl;
     if (error != vr::EVRInputError::VRInputError_None) {
       Nan::ThrowError("Failed to get left hand action handle");
     }
@@ -1032,3 +1030,25 @@ NAN_METHOD(IVRSystem::AcknowledgeQuit_UserPrompt)
 
   obj->self_->AcknowledgeQuit_UserPrompt();
 }
+
+NAN_METHOD(IVRSystem::GetModelName)
+{
+  IVRSystem* obj = ObjectWrap::Unwrap<IVRSystem>(info.Holder());
+
+  if (info.Length() != 1)
+  {
+    Nan::ThrowError("Wrong number of arguments.");
+    return;
+  }
+
+  uint32_t hand = TO_UINT32(info[0]);
+  vr::ETrackedControllerRole role = static_cast<vr::ETrackedControllerRole>(hand + 1);
+  vr::TrackedDeviceIndex_t deviceClass = obj->self_->GetTrackedDeviceIndexForControllerRole(role);
+
+  char buf[4096];
+  vr::TrackedPropertyError error;
+  uint32_t size = obj->self_->GetStringTrackedDeviceProperty(deviceClass, vr::ETrackedDeviceProperty::Prop_ModelNumber_String, buf, sizeof(buf), &error);
+  Local<String> modelName = Nan::New<String>(buf, size).ToLocalChecked();
+  info.GetReturnValue().Set(modelName);
+}
+
