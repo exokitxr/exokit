@@ -723,7 +723,13 @@ function getControllerID(hmdType, hand) {
 }
 function getGamepads() {
   if (GlobalContext.xrState.isPresenting[0]) {
-    const hmdType = getHMDType();
+    let hmdType = getHMDType();
+    if (hmdType === 'openvr') {
+      const vrSystem = nativeOpenVR.GetGlobalSystem();
+      const model = vrSystem.GetModelName();
+      console.log('got model name'); // XXX
+    }
+
     if (!globalGamepads) {
       globalGamepads = _makeGlobalGamepads();
     }
