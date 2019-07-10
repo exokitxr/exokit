@@ -862,29 +862,50 @@ NAN_METHOD(BlitTopFrameBuffer) {
 
 NAN_METHOD(BlitChildFrameBuffer) {
   Local<Object> glObj = Local<Object>::Cast(info[0]);
-  GLuint fbo1 = TO_UINT32(info[1]);
-  GLuint fbo2 = TO_UINT32(info[2]);
-  int sw = TO_UINT32(info[3]);
-  int sh = TO_UINT32(info[4]);
-  int dw = TO_UINT32(info[5]);
-  int dh = TO_UINT32(info[6]);
-  bool color = TO_BOOL(info[7]);
-  bool depth = TO_BOOL(info[8]);
-  bool stencil = TO_BOOL(info[9]);
+  GLuint srcTex = TO_UINT32(info[1]);
+  GLuint srcDepthTex = TO_UINT32(info[2]);
+  bool isMultisampleSrc = Local<Boolean>::Cast(info[3])->Value();
+  GLuint tex = TO_UINT32(info[4]);
+  GLuint depthTex = TO_UINT32(info[5]);
+  bool isMultisampleDst = Local<Boolean>::Cast(info[6])->Value();
+  int sw = TO_UINT32(info[7]);
+  int sh = TO_UINT32(info[8]);
+  int dw = TO_UINT32(info[9]);
+  int dh = TO_UINT32(info[10]);
 
-  glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo1);
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo2);
+  GLuint readFbo;
+  glGenFramebuffers(1, &readFbo);
+  glBindFramebuffer(GL_READ_FRAMEBUFFER, readFbo);
+  glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, isMultisampleSrc ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, srcTex, 0);
+  if (srcDepthTex != 0) {
+    glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, isMultisampleSrc ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, srcDepthTex, 0);
+  }
+
+  GLuint drawFbo = 0;
+  if (tex != 0) {
+    glGenFramebuffers(1, &drawFbo);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, drawFbo);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, isMultisampleDst ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, tex, 0);
+    if (depthTex != 0) {
+      glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, isMultisampleDst ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, depthTex, 0);
+    }
+  } else {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+  }
 
   glBlitFramebuffer(
     0, 0,
     sw, sh,
     0, 0,
     dw, dh,
-    (color ? GL_COLOR_BUFFER_BIT : 0) |
-    (depth ? GL_DEPTH_BUFFER_BIT : 0) |
-    (stencil ? GL_STENCIL_BUFFER_BIT : 0),
-    (depth || stencil) ? GL_NEAREST : GL_LINEAR
+    GL_COLOR_BUFFER_BIT | (srcDepthTex ? (GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT) : 0),
+    srcDepthTex ? GL_NEAREST : GL_LINEAR
   );
+
+  glDeleteFramebuffers(1, &readFbo);
+  if (drawFbo != 0) {
+    glDeleteFramebuffers(1, &drawFbo);
+  }
 
   WebGLRenderingContext *gl = ObjectWrap::Unwrap<WebGLRenderingContext>(glObj);
   if (gl->HasFramebufferBinding(GL_READ_FRAMEBUFFER)) {

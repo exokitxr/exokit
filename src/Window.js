@@ -1038,22 +1038,18 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
     if (!layered && GlobalContext.xrState.aaEnabled[0]) {
       const width = GlobalContext.xrState.renderWidth[0]*2;
       const height = GlobalContext.xrState.renderHeight[0];
+      const {msTex, msDepthTex, tex, depthTex} = vrPresentState.glContext.framebuffer;
 
-      nativeWindow.blitChildFrameBuffer(context, vrPresentState.glContext.framebuffer.msFbo, vrPresentState.glContext.framebuffer.fbo, width, height, width, height, true, false, false);
-      nativeWindow.blitChildFrameBuffer(context, vrPresentState.glContext.framebuffer.msFbo, vrPresentState.glContext.framebuffer.fbo, width, height, width, height, false, true, true);
+      nativeWindow.blitChildFrameBuffer(context, msTex, msDepthTex, true, tex, depthTex, false, width, height, width, height);
     }
 
     // blit to window
     if (!context.canvas.ownerDocument.hidden) {
       if (vrPresentState.hmdType === 'fake' || vrPresentState.hmdType === 'oculus' || vrPresentState.hmdType === 'openvr') {
-        // NOTE: we blit from fbo instead of msFbo, so this will be lagged by a frame in the multisample case
-        if (GlobalContext.xrState.aaEnabled[0]) { // fbo will not be bound by default in the aaEnabled case
-          nativeWindow.bindVrChildFbo(vrPresentState.glContext, vrPresentState.fbo, GlobalContext.xrState.tex[0], GlobalContext.xrState.depthTex[0]);
-        }
         const width = GlobalContext.xrState.renderWidth[0]*2;
         const height = GlobalContext.xrState.renderHeight[0];
         const {width: dWidth, height: dHeight} = nativeWindow.getFramebufferSize(windowHandle);
-        nativeWindow.blitChildFrameBuffer(context, vrPresentState.fbo, 0, width, height, dWidth, dHeight, true, false, false);
+        nativeWindow.blitChildFrameBuffer(context, GlobalContext.xrState.tex[0], 0, false, 0, 0, false, width, height, dWidth, dHeight);
       }
       
       _swapBuffers(context, windowHandle);
@@ -1061,9 +1057,9 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
   };
   const _composeNormalContext = (context, windowHandle) => {
     if (!context.canvas.ownerDocument.hidden) {
-      const {canvas: {width, height}, framebuffer: {msFbo}} = context;
+      const {canvas: {width, height}, framebuffer: {msFbo, msTex}} = context;
       if (msFbo !== 0) {
-        nativeWindow.blitChildFrameBuffer(context, msFbo, 0, width, height, width, height, true, false, false);
+        nativeWindow.blitChildFrameBuffer(context, msTex, 0, true, 0, 0, false, width, height, width, height);
       }
       _swapBuffers(context, windowHandle);
     }
