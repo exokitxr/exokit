@@ -444,7 +444,6 @@ const _waitHandleRequest = ({type, keypath}) => {
       xrState.renderWidth[0] = halfWidth;
       xrState.renderHeight[0] = height;
     } else if (hmdType === 'openvr') {
-      const vrContext = nativeBindings.nativeOpenVR.getContext();
       const system = nativeBindings.nativeOpenVR.VR_Init(nativeBindings.nativeOpenVR.EVRApplicationType.Scene, path.join(__dirname, '..', 'deps', 'openvr', 'actions.json'));
       const compositor = nativeBindings.nativeOpenVR.NewCompositor();
       // const lmContext = topVrPresentState.lmContext || (nativeLm && new nativeLm());
