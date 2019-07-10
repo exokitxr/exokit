@@ -10,6 +10,8 @@
 
 using namespace v8;
 
+vr::IVRSystem *vrSystem;
+
 //=============================================================================
 // inline IVRSystem *VR_Init( EVRInitError *peError, EVRApplicationType eApplicationType );
 NAN_METHOD(VR_Init)
@@ -37,13 +39,13 @@ NAN_METHOD(VR_Init)
 
   // Perform the actual wrapped call.
   vr::EVRInitError error;
-  vr::IVRSystem *system = vr::VR_Init(
+  vrSystem = vr::VR_Init(
     &error,
     static_cast<vr::EVRApplicationType>(applicationType)
   );
 
   // If the VR system failed to initialize, immediately raise a node exception.
-  if (system == nullptr)
+  if (vrSystem == nullptr)
   {
     Local<Value> err = Exception::Error(String::NewFromUtf8(Isolate::GetCurrent(), vr::VR_GetVRInitErrorAsEnglishDescription(error)));
     Local<Object>::Cast(err)->Set(String::NewFromUtf8(Isolate::GetCurrent(), "code"), Number::New(Isolate::GetCurrent(), error));
@@ -52,7 +54,7 @@ NAN_METHOD(VR_Init)
   }
 
   // Wrap the resulting system in the correct wrapper and return it.
-  auto result = IVRSystem::NewInstance(system);
+  auto result = IVRSystem::NewInstance(vrSystem);
   info.GetReturnValue().Set(result);
 }
 
