@@ -946,7 +946,7 @@ NAN_METHOD(IVRSystem::GetModelName)
 
   char buf[4096];
   vr::TrackedPropertyError error;
-  uint32_t size = vr::GetStringTrackedDeviceProperty(deviceClass, vr::ETrackedDeviceProperty::Prop_ModelNumber_String, buf, sizeof(buf), &error);
+  uint32_t size = obj->self_->GetStringTrackedDeviceProperty(deviceClass, vr::ETrackedDeviceProperty::Prop_ModelNumber_String, buf, sizeof(buf), &error);
   Local<String> modelName = Nan::New<String>(buf, size).ToLocalChecked();
   info.GetReturnValue().Set(modelName);
 }
