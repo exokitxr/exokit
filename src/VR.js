@@ -566,7 +566,7 @@ class FakeXRDisplay {
     GlobalContext.xrState.fakeVrDisplayEnabled[0] = 1;
   }
 
-  pushUpdate() {
+  pushUpdate({updateGamepads = true} = {}) {
     // update hmd
     this.position.toArray(GlobalContext.xrState.position);
     this.quaternion.toArray(GlobalContext.xrState.orientation);
@@ -584,24 +584,26 @@ class FakeXRDisplay {
     if (!globalGamepads) {
       globalGamepads = _makeGlobalGamepads();
     }
-    for (let i = 0; i < globalGamepads.main.length; i++) {
-      const gamepad = globalGamepads.main[i];
-      localVector.copy(this.position)
-        .add(
-          localVector2.set(-0.3 + i*0.6, -0.3, -0.35)
-            .applyQuaternion(this.quaternion)
-        ).toArray(gamepad.pose.position);
-      this.quaternion.toArray(gamepad.pose.orientation); // XXX updates xrState
+    if (updateGamepads) {
+      for (let i = 0; i < globalGamepads.main.length; i++) {
+        const gamepad = globalGamepads.main[i];
+        localVector.copy(this.position)
+          .add(
+            localVector2.set(-0.3 + i*0.6, -0.3, -0.35)
+              .applyQuaternion(this.quaternion)
+          ).toArray(gamepad.pose.position);
+        this.quaternion.toArray(gamepad.pose.orientation); // XXX updates xrState
 
-      localMatrix2
-        .compose(
-          localVector.fromArray(gamepad.pose.position),
-          localQuaternion.fromArray(gamepad.pose.orientation),
-          localVector2.set(1, 1, 1)
-        )
-        .toArray(gamepad.pose._localPointerMatrix);
+        localMatrix2
+          .compose(
+            localVector.fromArray(gamepad.pose.position),
+            localQuaternion.fromArray(gamepad.pose.orientation),
+            localVector2.set(1, 1, 1)
+          )
+          .toArray(gamepad.pose._localPointerMatrix);
 
-      gamepad.connected = true;
+        gamepad.connected = true;
+      }
     }
   }
 
