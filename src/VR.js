@@ -566,8 +566,7 @@ class FakeXRDisplay {
     GlobalContext.xrState.fakeVrDisplayEnabled[0] = 1;
   }
 
-  pushUpdate({updateGamepads = true} = {}) {
-    // update hmd
+  pushHmdUpdate(position = this.position, quaternion = this.quaternion) {
     this.position.toArray(GlobalContext.xrState.position);
     this.quaternion.toArray(GlobalContext.xrState.orientation);
 
@@ -579,8 +578,8 @@ class FakeXRDisplay {
       .getInverse(localMatrix)
       .toArray(GlobalContext.xrState.leftViewMatrix);
     GlobalContext.xrState.rightViewMatrix.set(GlobalContext.xrState.leftViewMatrix);
-
-    // update gamepads
+  }
+  pushGamepadsUpdate(position = this.position, quaternion = this.quaternion) {
     if (!globalGamepads) {
       globalGamepads = _makeGlobalGamepads();
     }
@@ -605,6 +604,11 @@ class FakeXRDisplay {
         gamepad.connected = true;
       }
     }
+  }
+
+  pushUpdate() {
+    this.pushHmdUpdate(this.position, this.quaternion);
+    this.pushGamepadsUpdate(this.position, this.quaternion);
   }
 
   get width() {
