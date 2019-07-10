@@ -606,8 +606,8 @@ class FakeXRDisplay {
   }
 
   pushUpdate() {
-    this.pushHmdUpdate(this.position, this.quaternion);
-    this.pushGamepadsUpdate(this.position, this.quaternion);
+    this.pushHmdUpdate();
+    this.pushGamepadsUpdate();
   }
 
   get width() {
