@@ -13,8 +13,7 @@ using TrackedDevicePoseArray = std::array<vr::TrackedDevicePose_t, vr::k_unMaxTr
 using TrackedDeviceIndexArray = std::array<vr::TrackedDeviceIndex_t, vr::k_unMaxTrackedDeviceCount>;
 
 //=============================================================================
-NAN_MODULE_INIT(IVRSystem::Init)
-{
+void IVRSystem::Init(Nan::Persistent<v8::Function> &constructor) {
   // Create a function template that is called in JS to create this wrapper.
   Local<FunctionTemplate> tpl = Nan::New<FunctionTemplate>(New);
 
@@ -80,8 +79,10 @@ NAN_MODULE_INIT(IVRSystem::Init)
   Nan::SetPrototypeMethod(tpl, "AcknowledgeQuit_Exiting", AcknowledgeQuit_Exiting);
   Nan::SetPrototypeMethod(tpl, "AcknowledgeQuit_UserPrompt", AcknowledgeQuit_UserPrompt);
 
+  Nan::SetPrototypeMethod(tpl, "GetModelName", GetModelName);
+
   // Set a static constructor function to reference the `New` function template.
-  constructor().Reset(Nan::GetFunction(tpl).ToLocalChecked());
+  constructor.Reset(Nan::GetFunction(tpl).ToLocalChecked());
 }
 
 //=============================================================================

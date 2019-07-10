@@ -14,7 +14,7 @@ class IVRSystem;
 class IVRSystem : public Nan::ObjectWrap
 {
 public:
-  static NAN_MODULE_INIT(Init);
+  static void Init(Nan::Persistent<v8::Function> &constructor);
 
   // Static factory construction method for other node addons to use.
   static v8::Local<v8::Object> NewInstance(vr::IVRSystem *system);
@@ -127,7 +127,10 @@ private:
   /// Create a singleton reference to a constructor function.
   static inline Nan::Persistent<v8::Function>& constructor()
   {
-    static Nan::Persistent<v8::Function> the_constructor;
+    static thread_local Nan::Persistent<v8::Function> the_constructor;
+    if (the_constructor.IsEmpty()) {
+      Init(the_constructor);
+    }
     return the_constructor;
   }
 
