@@ -563,8 +563,6 @@ class FakeXRDisplay {
   constructor() {
     this.position = new THREE.Vector3();
     this.quaternion = new THREE.Quaternion();
-
-    GlobalContext.xrState.fakeVrDisplayEnabled[0] = 1;
   }
 
   pushHmdUpdate(position = this.position, quaternion = this.quaternion) {
@@ -605,10 +603,16 @@ class FakeXRDisplay {
       gamepad.connected = true;
     }
   }
-
   pushUpdate() {
     this.pushHmdUpdate();
     this.pushGamepadsUpdate();
+  }
+
+  enable() {
+    GlobalContext.xrState.fakeVrDisplayEnabled[0] = 1;
+  }
+  disable() {
+    GlobalContext.xrState.fakeVrDisplayEnabled[0] = 0;
   }
 
   get width() {
