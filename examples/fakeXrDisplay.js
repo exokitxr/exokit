@@ -2,6 +2,7 @@
 
 window._makeFakeXrDisplay = () => {
   const fakeXrDisplay = new FakeXRDisplay();
+  fakeXrDisplay.enable();
   fakeXrDisplay.enter = async ({renderer, animate, layers}) => {
     const {domElement: canvas} = renderer;
 
