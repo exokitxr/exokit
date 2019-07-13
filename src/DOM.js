@@ -2129,10 +2129,10 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   removeEventListener() {
                     browser.removeListener && browser.removeListener.apply(browser, arguments); // XXX
                   },
-                  /* destroy() {
+                  destroy() {
                     self.browser.destroy();
                     self.browser = null;
-                  }, */
+                  },
                 };
 
                 const _load = () => {
@@ -2416,12 +2416,16 @@ class HTMLIFrameElement extends HTMLSrcableElement {
     this.browser && this.browser.runJs(jsString, scriptUrl, startLine);
   }
   
-  /* destroy() {
-    if (this.live) {
+  destroy() {
+    if (this.contentWindow) {
+      this.contentWindow.destroy();
+    }
+    
+    /* if (this.live) {
       this._emit('destroy');
       this.live = false;
-    }
-  } */
+    } */
+  }
 }
 module.exports.HTMLIFrameElement = HTMLIFrameElement;
 
