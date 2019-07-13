@@ -578,19 +578,24 @@ class FakeXRDisplay {
       .toArray(GlobalContext.xrState.leftViewMatrix);
     GlobalContext.xrState.rightViewMatrix.set(GlobalContext.xrState.leftViewMatrix);
   }
-  pushGamepadsUpdate(position = this.position, quaternion = this.quaternion) {
+  pushGamepadsUpdate(position, quaternion) {
     if (!globalGamepads) {
       globalGamepads = _makeGlobalGamepads();
     }
 
     for (let i = 0; i < globalGamepads.main.length; i++) {
       const gamepad = globalGamepads.main[i];
-      localVector.copy(this.position)
-        .add(
-          localVector2.set(-0.3 + i*0.6, -0.3, -0.35)
-            .applyQuaternion(this.quaternion)
-        ).toArray(gamepad.pose.position);
-      this.quaternion.toArray(gamepad.pose.orientation); // XXX updates xrState
+      if (i === 1 && position && quaternion) {
+        position.toArray(gamepad.pose.position);
+        quaternion.toArray(gamepad.pose.orientation);
+      } else {
+        localVector.copy(this.position)
+          .add(
+            localVector2.set(-0.3 + i*0.6, -0.3, -0.35)
+              .applyQuaternion(this.quaternion)
+          ).toArray(gamepad.pose.position);
+        this.quaternion.toArray(gamepad.pose.orientation); // XXX updates xrState
+      }
 
       localMatrix2
         .compose(
