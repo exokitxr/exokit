@@ -1172,6 +1172,11 @@ const _startTopRenderLoop = () => {
     }
     prevSyncs.length = 0;
   };
+  const _clearXrFramebuffer = () => {
+    if (topVrPresentState.hmdType !== null) {
+      nativeBindings.nativeWindow.clearFramebuffer(xrState.aaEnabled[0] ? topVrPresentState.msFbo : topVrPresentState.fbo);
+    }
+  };
   const _tickAnimationFrame = window => window.runAsync({
     method: 'tickAnimationFrame',
     syncs: topVrPresentState.hmdType !== null ? [nativeBindings.nativeWindow.getSync()] : [],
@@ -1302,6 +1307,7 @@ const _startTopRenderLoop = () => {
     }
 
     _clearPrevSyncs();
+    _clearXrFramebuffer();
     await _tickAnimationFrames();
 
     if (args.performance) {
