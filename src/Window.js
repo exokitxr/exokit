@@ -515,7 +515,7 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
       intervals[id] = null;
     }
   })(clearInterval);
-  window.event = new Event(); // XXX this needs to track the current event
+  window.event = null;
   window.localStorage = new LocalStorage(path.join(options.dataPath, '.localStorage'));
   window.sessionStorage = new LocalStorage(path.join(options.dataPath, '.sessionStorage'));
   window.indexedDB = indexedDB;
