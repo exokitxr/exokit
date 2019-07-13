@@ -10,7 +10,7 @@
 
 using namespace v8;
 
-vr::IVRSystem *vrSystem;
+vr::IVRSystem *vrSystem = nullptr;
 
 //=============================================================================
 // inline IVRSystem *VR_Init( EVRInitError *peError, EVRApplicationType eApplicationType );
@@ -191,8 +191,12 @@ NAN_METHOD(VR_GetInitToken)
 }
 
 NAN_METHOD(GetGlobalSystem) {
-  auto result = IVRSystem::NewInstance(vrSystem);
-  info.GetReturnValue().Set(result);
+  if (vrSystem != nullptr) {
+    auto result = IVRSystem::NewInstance(vrSystem);
+    info.GetReturnValue().Set(result);
+  } else {
+    info.GetReturnValue().Set(Nan::Null());
+  }
 }
 
 Local<Object> makeOpenVR() {
