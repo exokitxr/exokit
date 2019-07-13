@@ -2086,7 +2086,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                 this.browser = null;
               }
 
-              const context = GlobalContext.contexts.find(context => context.canvas.ownerDocument === this.ownerDocument);
+              const context = GlobalContext.contexts.find(context => ['WebGLRenderingContext', 'WebGL2RenderingContext'].includes(context.constructor.name) && context.canvas.ownerDocument === this.ownerDocument);
               if (context) {
                 const browser = (() => {
                   const width = this.width || context.canvas.ownerDocument.defaultView.innerWidth;
