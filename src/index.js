@@ -1175,7 +1175,6 @@ const _startTopRenderLoop = () => {
   const _tickAnimationFrame = window => window.runAsync({
     method: 'tickAnimationFrame',
     syncs: topVrPresentState.hmdType !== null ? [nativeBindings.nativeWindow.getSync()] : [],
-    top: true,
     layered: true,
   })
     .catch(err => {

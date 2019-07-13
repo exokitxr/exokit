@@ -959,7 +959,7 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
     }
     prevSyncs.length = 0;
   };
-  const _bindXrFramebuffer = (top, layered) => {
+  const _bindXrFramebuffer = layered => {
     if (vrPresentState.glContext) {
       nativeWindow.setCurrentWindowContext(vrPresentState.glContext.getWindowHandle());
 
@@ -972,7 +972,7 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
           nativeWindow.bindVrChildFbo(vrPresentState.glContext, vrPresentState.fbo, GlobalContext.xrState.tex[0], GlobalContext.xrState.depthTex[0]);
         }
         
-        vrPresentState.glContext.setClearEnabled(top);
+        vrPresentState.glContext.setClearEnabled(false);
       } else {
         if (GlobalContext.xrState.aaEnabled[0]) {
           vrPresentState.glContext.setDefaultFramebuffer(vrPresentState.glContext.framebuffer.msFbo);
@@ -1122,7 +1122,6 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
   const _makeRenderChild = window => (syncs, layered) => window.runAsync({
     method: 'tickAnimationFrame',
     syncs,
-    top: false,
     layered: layered && vrPresentState.layers.some(layer => layer.contentWindow === window),
   });
   const _collectRenders = () => windows.map(_makeRenderChild).concat([_renderLocal]);
@@ -1146,9 +1145,9 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
     };
     _recurse(0);
   });
-  window.tickAnimationFrame = async ({syncs = [], top = true, layered = false}) => {
+  window.tickAnimationFrame = async ({syncs = [], layered = false}) => {
     _clearPrevSyncs();
-    _bindXrFramebuffer(top, layered);
+    _bindXrFramebuffer(layered);
     _emitXrEvents(); 
     return _render(syncs, layered);
   };
