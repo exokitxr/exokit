@@ -738,7 +738,7 @@ function getGamepads() {
     let hmdType = getHMDType();
     if (hmdType === 'openvr') {
       const vrSystem = nativeOpenVR.GetGlobalSystem();
-      if (/^Knuckles/.test(vrSystem.GetModelName(0) || vrSystem.GetModelName(1))) {
+      if (vrSystem && /^Knuckles/.test(vrSystem.GetModelName(0) || vrSystem.GetModelName(1))) {
         hmdType = 'index';
       }
     }
