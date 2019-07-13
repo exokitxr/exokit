@@ -221,12 +221,7 @@ const xrState = (() => {
   result.rightViewMatrix = _makeTypedArray(Float32Array, 16);
   result.rightViewMatrix.set(result.leftViewMatrix);
   result.leftProjectionMatrix = _makeTypedArray(Float32Array, 16);
-  result.leftProjectionMatrix.set(Float32Array.from([
-    0.8000000000000002, 0, 0, 0,
-    0, 1.0000000000000002, 0, 0,
-    0, 0, -1.002002002002002, -1,
-    0, 0, -0.20020020020020018, 0,
-  ]));
+  result.leftProjectionMatrix.set(Float32Array.from([0.5625000000000001, 0, 0, 0, 0, 1.0000000000000002, 0, 0, 0, 0, -1.0002000200020003, -1, 0, 0, -0.20002000200020004, 0]));
   result.rightProjectionMatrix = _makeTypedArray(Float32Array, 16);
   result.rightProjectionMatrix.set(result.leftProjectionMatrix);
   result.leftOffset = _makeTypedArray(Float32Array, 3);
