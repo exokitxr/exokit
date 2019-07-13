@@ -10,7 +10,7 @@
 
 using namespace v8;
 
-vr::IVRSystem *vrSystem;
+vr::IVRSystem *vrSystem = nullptr;
 
 //=============================================================================
 // inline IVRSystem *VR_Init( EVRInitError *peError, EVRApplicationType eApplicationType );
