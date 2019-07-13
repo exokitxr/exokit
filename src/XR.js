@@ -205,9 +205,9 @@ class XRSession extends EventTarget {
   set baseLayer(baseLayer) {
     this.renderState.update({baseLayer});
   }
-  end() {
+  async end() {
+    await this.onexitpresent();
     this.emit('end');
-    return Promise.resolve();
   }
   update() {
     const inputSources = this.getInputSources();
