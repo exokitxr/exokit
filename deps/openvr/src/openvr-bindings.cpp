@@ -191,8 +191,12 @@ NAN_METHOD(VR_GetInitToken)
 }
 
 NAN_METHOD(GetGlobalSystem) {
-  auto result = IVRSystem::NewInstance(vrSystem);
-  info.GetReturnValue().Set(result);
+  if (vrSystem != nullptr) {
+    auto result = IVRSystem::NewInstance(vrSystem);
+    info.GetReturnValue().Set(result);
+  } else {
+    info.GetReturnValue().Set(Nan::Null());
+  }
 }
 
 Local<Object> makeOpenVR() {
