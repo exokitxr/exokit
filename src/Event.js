@@ -32,6 +32,7 @@ class EventTarget extends EventEmitter {
 
   dispatchEvent(event) {
     event.target = this;
+    global.event = event;
 
     const _emit = (node, event) => {
       event.currentTarget = this;
@@ -46,7 +47,6 @@ class EventTarget extends EventEmitter {
     };
     const _recurse = (node, event) => {
       _emit(node, event);
-
       if (event.bubbles && node instanceof GlobalContext.Document) {
         _emit(node.defaultView, event);
       }
@@ -56,6 +56,8 @@ class EventTarget extends EventEmitter {
       }
     };
     _recurse(this, event);
+    
+    global.event = null;
   }
 
   _emit() { // need to call this instead of EventEmitter.prototype.emit because some frameworks override HTMLElement.prototype.emit()
