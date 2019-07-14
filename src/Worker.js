@@ -10,12 +10,13 @@ const {
 } = require('worker_threads');
 
 const {createImageBitmap} = require('./DOM.js');
-const {XMLHttpRequest} = require('window-xhr');
 const WebSocket = require('ws/lib/websocket');
 const {FileReader} = require('./File.js');
+const GlobalContext = require('./GlobalContext');
 
 const {src, baseUrl} = args;
-setBaseUrl(baseUrl);
+GlobalContext.baseUrl = baseUrl;
+
 const _normalizeUrl = src => {
   if (!/^(?:file|data|blob):/.test(src)) {
     return new URL(src, baseUrl).href;
@@ -29,7 +30,6 @@ global.self = global;
 global.addEventListener = (type, fn) => global.on(type, fn);
 global.removeEventListener = (type, fn) => global.removeListener(type, fn);
 global.location = url.parse(filename);
-global.XMLHttpRequest = XMLHttpRequest;
 global.WebSocket = WebSocket;
 global.importScripts = importScripts;
 global.createImageBitmap = createImageBitmap;

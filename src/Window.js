@@ -102,6 +102,7 @@ const {
 GlobalContext.id = id;
 GlobalContext.args = args;
 GlobalContext.version = version;
+GlobalContext.baseUrl = options.baseUrl;
 
 const {_parseDocument, _parseDocumentAst, getBoundDocumentElements, DocumentType, DOMImplementation, initDocument} = require('./Document');
 const {
@@ -119,8 +120,6 @@ const XR = require('./XR');
 const DevTools = require('./DevTools');
 const utils = require('./utils');
 const {_elementGetter, _elementSetter} = utils;
-
-setBaseUrl(options.baseUrl);
 
 const isMac = os.platform() === 'darwin';
 

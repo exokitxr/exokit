@@ -25,7 +25,7 @@ const {MediaDevices, Clipboard, Navigator} = require('./Navigator');
 const {Location} = require('./Location');
 const {FileReader} = require('./File');
 const {XMLHttpRequest, FormData} = require('window-xhr');
-const fetch = require('window-fetch');
+const {fetch} = require('./fetch');
 const {Request, Response, Headers, Blob} = fetch;
 const WebSocket = require('ws/lib/websocket');
 
@@ -37,9 +37,10 @@ const utils = require('./utils');
 const btoa = s => Buffer.from(s, 'binary').toString('base64');
 const atob = s => Buffer.from(s, 'base64').toString('binary');
 
+XMLHttpRequest.setFetchImplementation(fetch);
+
 const {
   nativeConsole,
-  nativeCache,
 } = require('./native-bindings');
 const {process} = global;
 
@@ -57,21 +58,6 @@ consoleStream._writev = (chunks, callback) => {
   callback();
 };
 global.console = new Console(consoleStream);
-
-URL.createObjectURL = blob => {
-  const url = 'blob:' + global.location.protocol + '//' + global.location.host + '/' + GlobalContext.xrState.blobId[0]++;
-  nativeCache.set(url, blob.buffer);
-  return url;
-};
-URL.revokeObjectURL = url => {
-  nativeCache.delete(url);
-};
-URL.lookupObjectURL = url => {
-  const uint8Array = nativeCache.get(url);
-  return uint8Array && new Blob([uint8Array], {
-    type: 'application/octet-stream', // TODO: make this the correct type
-  });
-}
 
 // global initialization
 
@@ -100,7 +86,7 @@ class Worker extends EventTarget {
         src,
         options: {
           url: src,
-          baseUrl: utils._getBaseUrl(src, baseUrl),
+          baseUrl: utils._getBaseUrl(src, GlobalContext.baseUrl),
         },
         args: args.options.args,
         xrState: args.xrState,
@@ -170,19 +156,7 @@ class Worker extends EventTarget {
   self.Navigator = Navigator;
   self.navigator = new Navigator();
 
-  self.fetch = (u, options) => {
-    if (typeof u === 'string') {
-      const blob = URL.lookupObjectURL(u);
-      if (blob) {
-        return Promise.resolve(new Response(blob));
-      } else {
-        u = _normalizeUrl(u);
-        return fetch(u, options);
-      }
-    } else {
-      return fetch(u, options);
-    }
-  };
+  self.fetch = fetch;
   self.Request = Request;
   self.Response = Response;
   self.Headers = Headers;
@@ -190,15 +164,6 @@ class Worker extends EventTarget {
   self.FormData = FormData;
   self.XMLHttpRequest = (Old => {
     class XMLHttpRequest extends Old {
-      open(method, url, async, username, password) {
-        const blob = URL.lookupObjectURL(url);
-        if (blob) {
-          return super.open(method, blob, async, username, password);
-        } else {
-          url = _normalizeUrl(url);
-          return super.open(method, url, async, username, password);
-        }
-      }
       get response() {
         if (this.responseType === 'blob') {
           return new Blob(super.response, {
@@ -273,12 +238,7 @@ class Worker extends EventTarget {
   });
 })(global);
 
-let baseUrl = '';
-function setBaseUrl(newBaseUrl) {
-  baseUrl = newBaseUrl;
-}
-global.setBaseUrl = setBaseUrl;
-const _normalizeUrl = src => utils._normalizeUrl(src, baseUrl);
+const _normalizeUrl = src => utils._normalizeUrl(src, GlobalContext.baseUrl);
 
 const SYNC_REQUEST_BUFFER_SIZE = 5 * 1024 * 1024; // TODO: we can make this unlimited with a streaming buffer + atomics loop
 function getScript(url) {
