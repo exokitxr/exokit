@@ -63,7 +63,7 @@ class ElectronVm extends EventEmitter {
         .pipe(stream)
         .pipe(cp.stdout);
     });
-    const id = Atomics.add(GlobalContext.xrState.id, 0, 1) + 1;
+    const id = Atomics.add(GlobalContext.xrState.id, 0, 1);
     const pipePath = `${PIPE_PREFIX}-${process.pid}-${id}`;
     server.listen(pipePath);
     
