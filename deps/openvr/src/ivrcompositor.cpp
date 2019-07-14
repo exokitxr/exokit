@@ -8,6 +8,7 @@
 #include <openvr.h>
 #include <ivrsystem.h>
 #include <functional>
+#include <exout>
 
 using namespace v8;
 
@@ -43,8 +44,7 @@ VRPoseRes::VRPoseRes(Local<Function> cb) : cb(cb) {}
 VRPoseRes::~VRPoseRes() {}
 
 //=============================================================================
-NAN_MODULE_INIT(IVRCompositor::Init)
-{
+void IVRCompositor::Init(Nan::Persistent<v8::Function> &constructor) {
   // Create a function template that is called in JS to create this wrapper.
   Local<FunctionTemplate> tpl = Nan::New<FunctionTemplate>(New);
 
@@ -60,7 +60,7 @@ NAN_MODULE_INIT(IVRCompositor::Init)
   Nan::SetPrototypeMethod(tpl, "Submit", Submit);
 
   // Set a static constructor function to reference the `New` function template.
-  constructor().Reset(Nan::GetFunction(tpl).ToLocalChecked());
+  constructor.Reset(Nan::GetFunction(tpl).ToLocalChecked());
 
   uv_sem_init(&vr::reqSem, 0);
   uv_loop_t *loop = windowsystembase::GetEventLoop();
@@ -100,7 +100,12 @@ Local<Object> IVRCompositor::NewInstance(vr::IVRCompositor *compositor)
 IVRCompositor::IVRCompositor(vr::IVRCompositor *self)
 : self_(self)
 {
-  // Do nothing.
+  {
+    vr::EVRInputError error = vr::VRInput()->GetActionSetHandle("/actions/default", &actionSetHandle);
+    if (error != vr::EVRInputError::VRInputError_None) {
+      Nan::ThrowError("Failed to get default action set handle");
+    }
+  }
 }
 
 //=============================================================================
@@ -233,6 +238,12 @@ NAN_METHOD(IVRCompositor::RequestGetPoses) {
     vr::reqCbs.push_back([obj, system, hmdArray, leftControllerArray, rightControllerArray, trackerArraysStart, vrPoseRes]() -> void {
       TrackedDevicePoseArray trackedDevicePoseArray;
 	    obj->self_->WaitGetPoses(trackedDevicePoseArray.data(), static_cast<uint32_t>(trackedDevicePoseArray.size()), nullptr, 0);
+
+      vr::VRActiveActionSet_t activeActionSet;
+      activeActionSet.ulActionSet = obj->actionSetHandle;
+      activeActionSet.ulRestrictedToDevice = vr::k_ulInvalidInputValueHandle;
+      activeActionSet.nPriority = 0;
+      vr::VRInput()->UpdateActionState(&activeActionSet, sizeof(activeActionSet), 1);
 
       const float identityMatrix[] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
       memcpy(hmdArray, identityMatrix, sizeof(identityMatrix));

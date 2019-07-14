@@ -5,14 +5,15 @@
 #include <node.h>
 #include <openvr.h>
 
+#include <defines.h>
+
 using namespace v8;
 
 using TrackedDevicePoseArray = std::array<vr::TrackedDevicePose_t, vr::k_unMaxTrackedDeviceCount>;
 using TrackedDeviceIndexArray = std::array<vr::TrackedDeviceIndex_t, vr::k_unMaxTrackedDeviceCount>;
 
 //=============================================================================
-NAN_MODULE_INIT(IVRSystem::Init)
-{
+void IVRSystem::Init(Nan::Persistent<v8::Function> &constructor) {
   // Create a function template that is called in JS to create this wrapper.
   Local<FunctionTemplate> tpl = Nan::New<FunctionTemplate>(New);
 
@@ -78,8 +79,10 @@ NAN_MODULE_INIT(IVRSystem::Init)
   Nan::SetPrototypeMethod(tpl, "AcknowledgeQuit_Exiting", AcknowledgeQuit_Exiting);
   Nan::SetPrototypeMethod(tpl, "AcknowledgeQuit_UserPrompt", AcknowledgeQuit_UserPrompt);
 
+  Nan::SetPrototypeMethod(tpl, "GetModelName", GetModelName);
+
   // Set a static constructor function to reference the `New` function template.
-  constructor().Reset(Nan::GetFunction(tpl).ToLocalChecked());
+  constructor.Reset(Nan::GetFunction(tpl).ToLocalChecked());
 }
 
 //=============================================================================
@@ -95,7 +98,36 @@ Local<Object> IVRSystem::NewInstance(vr::IVRSystem *system)
 IVRSystem::IVRSystem(vr::IVRSystem *self)
 : self_(self)
 {
-  // Do nothing.
+  {
+    vr::EVRInputError error = vr::VRInput()->GetInputSourceHandle("/user/hand/left", &handInputSourceHandles[0]);
+    if (error != vr::EVRInputError::VRInputError_None) {
+      Nan::ThrowError("Failed to get left hand input source handle");
+    }
+  }
+  {
+    vr::EVRInputError error = vr::VRInput()->GetInputSourceHandle("/user/hand/right", &handInputSourceHandles[1]);
+    if (error != vr::EVRInputError::VRInputError_None) {
+      Nan::ThrowError("Failed to get right hand input source handle");
+    }
+  }
+  {
+    vr::EVRInputError error = vr::VRInput()->GetActionHandle("/actions/default/in/Pose", &poseActionHandle);
+    if (error != vr::EVRInputError::VRInputError_None) {
+      Nan::ThrowError("Failed to get left hand action handle");
+    }
+  }
+  {
+    vr::EVRInputError error = vr::VRInput()->GetActionHandle("/actions/default/in/SkeletonLeftHand", &handAnimActionHandles[0]);
+    if (error != vr::EVRInputError::VRInputError_None) {
+      Nan::ThrowError("Failed to get left hand anim action handle");
+    }
+  }
+  {
+    vr::EVRInputError error = vr::VRInput()->GetActionHandle("/actions/default/in/SkeletonRightHand", &handAnimActionHandles[1]);
+    if (error != vr::EVRInputError::VRInputError_None) {
+      Nan::ThrowError("Failed to get right hand anim action handle");
+    }
+  }
 }
 
 //=============================================================================
@@ -784,31 +816,102 @@ NAN_METHOD(IVRSystem::GetControllerState)
         vr::VRControllerState_t controllerState;
         if (obj->self_->GetControllerState(i, &controllerState, sizeof(controllerState))) {
           Local<Float32Array> buttons = Local<Float32Array>::Cast(info[1]);
+          float *buttonsData = (float *)((char *)buttons->Buffer()->GetContents().Data() + buttons->ByteOffset());
+
+          buttonsData[0] = 1;
+
+          buttonsData[1] = (controllerState.ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_System)) ? 1 : 0;
+          buttonsData[2] = (controllerState.ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_ApplicationMenu)) ? 1 : 0;
+          buttonsData[3] = (controllerState.ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_Grip)) ? 1 : 0;
+          buttonsData[4] = (controllerState.ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad)) ? 1 : 0;
+          buttonsData[5] = (controllerState.ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger)) ? 1 : 0;
+
+          buttonsData[6] = (controllerState.ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_System)) ? 1 : 0;
+          buttonsData[7] = (controllerState.ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_ApplicationMenu)) ? 1 : 0;
+          buttonsData[8] = (controllerState.ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_Grip)) ? 1 : 0;
+          buttonsData[9] = (controllerState.ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad)) ? 1 : 0;
+          buttonsData[10] = (controllerState.ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger)) ? 1 : 0;
+
+          buttonsData[11] = controllerState.rAxis[0].x;
+          buttonsData[12] = controllerState.rAxis[0].y;
+          buttonsData[13] = controllerState.rAxis[1].x;
+          buttonsData[14] = controllerState.rAxis[1].y;
+          buttonsData[15] = controllerState.rAxis[2].x;
+          buttonsData[16] = controllerState.rAxis[2].y;
+          buttonsData[17] = controllerState.rAxis[3].x;
+          buttonsData[18] = controllerState.rAxis[3].y;
+          buttonsData[19] = controllerState.rAxis[4].x;
+          buttonsData[20] = controllerState.rAxis[4].y;
           
-          buttons->Set(0, Number::New(Isolate::GetCurrent(), 1));
+          /* {
+            vr::InputPoseActionData_t inputPoseActionData;
+            vr::EVRInputError error = vr::VRInput()->GetPoseActionDataForNextFrame(obj->poseActionHandle, vr::ETrackingUniverseOrigin::TrackingUniverseStanding, &inputPoseActionData, sizeof(inputPoseActionData), obj->handInputSourceHandles[i]);
+            if (error != vr::EVRInputError::VRInputError_None) {
+              exerr << "failed to get left hand pose data: " << error << std::endl;
+            }
+            const vr::TrackedDevicePose_t &trackedDevicePose = inputPoseActionData.pose;
+            const vr::HmdMatrix34_t &matrix = trackedDevicePose.mDeviceToAbsoluteTracking;
+            float hmdArray[16];
+            for (unsigned int v = 0; v < 4; v++) {
+              for (unsigned int u = 0; u < 3; u++) {
+                hmdArray[v * 4 + u] = matrix.m[u][v];
+              }
+            }
+            hmdArray[0 * 4 + 3] = 0;
+            hmdArray[1 * 4 + 3] = 0;
+            hmdArray[2 * 4 + 3] = 0;
+            hmdArray[3 * 4 + 3] = 1;
+          } */
 
-          buttons->Set(1, Number::New(Isolate::GetCurrent(), (controllerState.ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_System)) ? 1 : 0));
-          buttons->Set(2, Number::New(Isolate::GetCurrent(), (controllerState.ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_ApplicationMenu)) ? 1 : 0));
-          buttons->Set(3, Number::New(Isolate::GetCurrent(), (controllerState.ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_Grip)) ? 1 : 0));
-          buttons->Set(4, Number::New(Isolate::GetCurrent(), (controllerState.ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad)) ? 1 : 0));
-          buttons->Set(5, Number::New(Isolate::GetCurrent(), (controllerState.ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger)) ? 1 : 0));
+          for (size_t i = 0; i < (5 + 31*(3+4)); i++) {
+            buttonsData[21 + i] = std::numeric_limits<float>::quiet_NaN();
+          }
+          
+          vr::VRSkeletalSummaryData_t skeletalSummaryData;
+          vr::EVRInputError error = vr::VRInput()->GetSkeletalSummaryData(obj->handAnimActionHandles[side], vr::EVRSummaryType::VRSummaryType_FromDevice, &skeletalSummaryData);
+          if (error == vr::EVRInputError::VRInputError_None) {
+            for (int j = 0; j < 5; j++) {
+              buttonsData[21 + j] = skeletalSummaryData.flFingerCurl[j];
+            }
+          } /* else {
+            exerr << "failed to get hand anim skeletal summary data: " << error << std::endl;
+          } */
 
-          buttons->Set(6, Number::New(Isolate::GetCurrent(), (controllerState.ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_System)) ? 1 : 0));
-          buttons->Set(7, Number::New(Isolate::GetCurrent(), (controllerState.ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_ApplicationMenu)) ? 1 : 0));
-          buttons->Set(8, Number::New(Isolate::GetCurrent(), (controllerState.ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_Grip)) ? 1 : 0));
-          buttons->Set(9, Number::New(Isolate::GetCurrent(), (controllerState.ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad)) ? 1 : 0));
-          buttons->Set(10, Number::New(Isolate::GetCurrent(), (controllerState.ulButtonTouched & vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger)) ? 1 : 0));
-
-          buttons->Set(11, Number::New(Isolate::GetCurrent(), controllerState.rAxis[0].x));
-          buttons->Set(12, Number::New(Isolate::GetCurrent(), controllerState.rAxis[0].y));
-          buttons->Set(13, Number::New(Isolate::GetCurrent(), controllerState.rAxis[1].x));
-          buttons->Set(14, Number::New(Isolate::GetCurrent(), controllerState.rAxis[1].y));
-          buttons->Set(15, Number::New(Isolate::GetCurrent(), controllerState.rAxis[2].x));
-          buttons->Set(16, Number::New(Isolate::GetCurrent(), controllerState.rAxis[2].y));
-          buttons->Set(17, Number::New(Isolate::GetCurrent(), controllerState.rAxis[3].x));
-          buttons->Set(18, Number::New(Isolate::GetCurrent(), controllerState.rAxis[3].y));
-          buttons->Set(19, Number::New(Isolate::GetCurrent(), controllerState.rAxis[4].x));
-          buttons->Set(20, Number::New(Isolate::GetCurrent(), controllerState.rAxis[4].y));
+          vr::InputSkeletalActionData_t skeletalActionData;
+          error = vr::VRInput()->GetSkeletalActionData(obj->handAnimActionHandles[side], &skeletalActionData, sizeof(skeletalActionData));
+          if (error == vr::EVRInputError::VRInputError_None) {
+            if (skeletalActionData.bActive) {
+              uint32_t boneCount = 0;
+              error = vr::VRInput()->GetBoneCount(obj->handAnimActionHandles[side], &boneCount);
+              if (error == vr::EVRInputError::VRInputError_None) {
+                std::vector<vr::VRBoneTransform_t> bones(boneCount);
+                error = vr::VRInput()->GetSkeletalBoneData(obj->handAnimActionHandles[side], vr::EVRSkeletalTransformSpace::VRSkeletalTransformSpace_Model, vr::EVRSkeletalMotionRange::VRSkeletalMotionRange_WithController, bones.data(), boneCount);
+                if (error == vr::EVRInputError::VRInputError_None) {
+                  int index = 21 + 5;
+                  for (int j = 0; j < bones.size(); j++) {
+                    vr::VRBoneTransform_t &bone = bones[j];
+                    vr::HmdVector4_t &position = bone.position;
+                    if (position.v[0] != 0 || position.v[1] != 0 || position.v[2] != 0) { 
+                      vr::HmdQuaternionf_t &orientation = bone.orientation;
+                      buttonsData[index++] = position.v[0];
+                      buttonsData[index++] = position.v[1];
+                      buttonsData[index++] = position.v[2];
+                      buttonsData[index++] = orientation.x;
+                      buttonsData[index++] = orientation.y;
+                      buttonsData[index++] = orientation.z;
+                      buttonsData[index++] = orientation.w;
+                    }
+                  }
+                } /* else {
+                  exerr << "failed to get hand anim skeletal bone data: " << error << std::endl;
+                } */
+              } /* else {
+                exerr << "failed to get hand anim bone count" << std::endl;
+              } */
+            }
+          } /* else {
+            exerr << "failed to get hand anim skeletal action data: " << error << std::endl;
+          } */
 
           return info.GetReturnValue().Set(Nan::New<Boolean>(true));
         }
@@ -927,3 +1030,25 @@ NAN_METHOD(IVRSystem::AcknowledgeQuit_UserPrompt)
 
   obj->self_->AcknowledgeQuit_UserPrompt();
 }
+
+NAN_METHOD(IVRSystem::GetModelName)
+{
+  IVRSystem* obj = ObjectWrap::Unwrap<IVRSystem>(info.Holder());
+
+  if (info.Length() != 1)
+  {
+    Nan::ThrowError("Wrong number of arguments.");
+    return;
+  }
+
+  uint32_t hand = TO_UINT32(info[0]);
+  vr::ETrackedControllerRole role = static_cast<vr::ETrackedControllerRole>(hand + 1);
+  vr::TrackedDeviceIndex_t deviceClass = obj->self_->GetTrackedDeviceIndexForControllerRole(role);
+
+  char buf[4096];
+  vr::TrackedPropertyError error;
+  uint32_t size = obj->self_->GetStringTrackedDeviceProperty(deviceClass, vr::ETrackedDeviceProperty::Prop_ModelNumber_String, buf, sizeof(buf), &error);
+  Local<String> modelName = Nan::New<String>(buf, size).ToLocalChecked();
+  info.GetReturnValue().Set(modelName);
+}
+

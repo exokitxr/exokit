@@ -10,11 +10,13 @@
 
 using namespace v8;
 
+vr::IVRSystem *vrSystem = nullptr;
+
 //=============================================================================
 // inline IVRSystem *VR_Init( EVRInitError *peError, EVRApplicationType eApplicationType );
 NAN_METHOD(VR_Init)
 {
-  if (info.Length() != 1)
+  if (info.Length() != 2)
   {
     Nan::ThrowError("Wrong number of arguments.");
     return;
@@ -23,6 +25,12 @@ NAN_METHOD(VR_Init)
   if (!info[0]->IsNumber())
   {
     Nan::ThrowTypeError("Argument[0] must be a number (EVRApplicationType).");
+    return;
+  }
+
+  if (!info[1]->IsString())
+  {
+    Nan::ThrowTypeError("Argument[1] must be a string.");
     return;
   }
 
@@ -35,15 +43,19 @@ NAN_METHOD(VR_Init)
     return;
   }
 
+  Local<String> actionManifestPath = Local<String>::Cast(info[1]);
+  Nan::Utf8String actionManifestPathUtf8String(actionManifestPath);
+  const char *actionManifestPathString = *actionManifestPathUtf8String;
+
   // Perform the actual wrapped call.
   vr::EVRInitError error;
-  vr::IVRSystem *system = vr::VR_Init(
+  vrSystem = vr::VR_Init(
     &error,
     static_cast<vr::EVRApplicationType>(applicationType)
   );
 
   // If the VR system failed to initialize, immediately raise a node exception.
-  if (system == nullptr)
+  if (vrSystem == nullptr)
   {
     Local<Value> err = Exception::Error(String::NewFromUtf8(Isolate::GetCurrent(), vr::VR_GetVRInitErrorAsEnglishDescription(error)));
     Local<Object>::Cast(err)->Set(String::NewFromUtf8(Isolate::GetCurrent(), "code"), Number::New(Isolate::GetCurrent(), error));
@@ -51,8 +63,17 @@ NAN_METHOD(VR_Init)
     return;
   }
 
+  {
+    vr::EVRInputError result = vr::VRInput()->SetActionManifestPath(actionManifestPathString);
+    if (result != vr::EVRInputError::VRInputError_None) {
+      Local<Value> err = Exception::Error(String::NewFromUtf8(Isolate::GetCurrent(), "Failed to initialize action manifest path"));
+      Nan::ThrowError(err);
+      return;
+    }
+  }
+
   // Wrap the resulting system in the correct wrapper and return it.
-  auto result = IVRSystem::NewInstance(system);
+  auto result = IVRSystem::NewInstance(vrSystem);
   info.GetReturnValue().Set(result);
 }
 
@@ -97,7 +118,7 @@ NAN_METHOD(VR_IsRuntimeInstalled)
   info.GetReturnValue().Set(Nan::New<Boolean>(result));
 }
 
-//=============================================================================
+/* //=============================================================================
 /// VR_INTERFACE const char *VR_CALLTYPE VR_RuntimePath();
 NAN_METHOD(VR_RuntimePath)
 {
@@ -109,7 +130,7 @@ NAN_METHOD(VR_RuntimePath)
 
   const char *result = vr::VR_RuntimePath();
   info.GetReturnValue().Set(Nan::New<String>(result).ToLocalChecked());
-}
+} */
 
 //=============================================================================
 /// VR_INTERFACE const char *VR_CALLTYPE VR_GetVRInitErrorAsSymbol( EVRInitError error );
@@ -169,20 +190,13 @@ NAN_METHOD(VR_GetInitToken)
   info.GetReturnValue().Set(Nan::New<Number>(result));
 }
 
-NAN_METHOD(GetContext)
-{
-  Local<Object> result = Object::New(Isolate::GetCurrent());
-
-  v8::Local<v8::Object> system = v8::Object::New(v8::Isolate::GetCurrent());
-  IVRSystem::Init(system);
-  result->Set(Nan::New("system").ToLocalChecked(), system);
-
-  v8::Local<v8::Object> compositor = v8::Object::New(v8::Isolate::GetCurrent());
-  compositor->Set(Nan::New("NewCompositor").ToLocalChecked(), Nan::GetFunction(Nan::New<v8::FunctionTemplate>(NewCompositor)).ToLocalChecked());
-  IVRCompositor::Init(compositor);
-  result->Set(Nan::New("compositor").ToLocalChecked(), compositor);
-
-  info.GetReturnValue().Set(result);
+NAN_METHOD(GetGlobalSystem) {
+  if (vrSystem != nullptr) {
+    auto result = IVRSystem::NewInstance(vrSystem);
+    info.GetReturnValue().Set(result);
+  } else {
+    info.GetReturnValue().Set(Nan::Null());
+  }
 }
 
 Local<Object> makeOpenVR() {
@@ -194,11 +208,12 @@ Local<Object> makeOpenVR() {
   exports->Set(Nan::New("VR_Shutdown").ToLocalChecked(), Nan::GetFunction(Nan::New<v8::FunctionTemplate>(VR_Shutdown)).ToLocalChecked());
   exports->Set(Nan::New("VR_IsHmdPresent").ToLocalChecked(), Nan::GetFunction(Nan::New<v8::FunctionTemplate>(VR_IsHmdPresent)).ToLocalChecked());
   exports->Set(Nan::New("VR_IsRuntimeInstalled").ToLocalChecked(), Nan::GetFunction(Nan::New<v8::FunctionTemplate>(VR_IsRuntimeInstalled)).ToLocalChecked());
-  exports->Set(Nan::New("VR_RuntimePath").ToLocalChecked(), Nan::GetFunction(Nan::New<v8::FunctionTemplate>(VR_RuntimePath)).ToLocalChecked());
+  // exports->Set(Nan::New("VR_RuntimePath").ToLocalChecked(), Nan::GetFunction(Nan::New<v8::FunctionTemplate>(VR_RuntimePath)).ToLocalChecked());
   exports->Set(Nan::New("VR_GetVRInitErrorAsSymbol").ToLocalChecked(), Nan::GetFunction(Nan::New<v8::FunctionTemplate>(VR_GetVRInitErrorAsSymbol)).ToLocalChecked());
   exports->Set(Nan::New("VR_GetVRInitErrorAsEnglishDescription").ToLocalChecked(), Nan::GetFunction(Nan::New<v8::FunctionTemplate>(VR_GetVRInitErrorAsEnglishDescription)).ToLocalChecked());
   exports->Set(Nan::New("VR_GetInitToken").ToLocalChecked(), Nan::GetFunction(Nan::New<v8::FunctionTemplate>(VR_GetInitToken)).ToLocalChecked());
-  exports->Set(Nan::New("getContext").ToLocalChecked(), Nan::GetFunction(Nan::New<v8::FunctionTemplate>(GetContext)).ToLocalChecked());
+  exports->Set(Nan::New("NewCompositor").ToLocalChecked(), Nan::GetFunction(Nan::New<v8::FunctionTemplate>(NewCompositor)).ToLocalChecked());
+  exports->Set(Nan::New("GetGlobalSystem").ToLocalChecked(), Nan::GetFunction(Nan::New<v8::FunctionTemplate>(GetGlobalSystem)).ToLocalChecked());
 
   return scope.Escape(exports);
 }

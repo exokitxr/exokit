@@ -134,7 +134,7 @@ class Gamepad {
 
     this.mapping = 'standard';
     this.buttons = (() => {
-      const result = Array(5);
+      const result = Array(xrGamepad.buttons.length);
       for (let i = 0; i < result.length; i++) {
         result[i] = new GamepadButton(xrGamepad.buttons[i].value, xrGamepad.buttons[i].pressed, xrGamepad.buttons[i].touched);
       }
@@ -143,6 +143,7 @@ class Gamepad {
     this.pose = new GamepadPose(xrGamepad.position, xrGamepad.orientation);
     this.axes = xrGamepad.axes;
     this.hapticActuators = hapticActuator ? [hapticActuator] : [];
+    this.bones = xrGamepad.bones;
   }
 
   get connected() {
@@ -562,12 +563,9 @@ class FakeXRDisplay {
   constructor() {
     this.position = new THREE.Vector3();
     this.quaternion = new THREE.Quaternion();
-
-    GlobalContext.xrState.fakeVrDisplayEnabled[0] = 1;
   }
 
-  pushUpdate() {
-    // update hmd
+  pushHmdUpdate(position = this.position, quaternion = this.quaternion) {
     this.position.toArray(GlobalContext.xrState.position);
     this.quaternion.toArray(GlobalContext.xrState.orientation);
 
@@ -579,19 +577,25 @@ class FakeXRDisplay {
       .getInverse(localMatrix)
       .toArray(GlobalContext.xrState.leftViewMatrix);
     GlobalContext.xrState.rightViewMatrix.set(GlobalContext.xrState.leftViewMatrix);
-
-    // update gamepads
+  }
+  pushGamepadsUpdate(position, quaternion) {
     if (!globalGamepads) {
       globalGamepads = _makeGlobalGamepads();
     }
+
     for (let i = 0; i < globalGamepads.main.length; i++) {
       const gamepad = globalGamepads.main[i];
-      localVector.copy(this.position)
-        .add(
-          localVector2.set(-0.3 + i*0.6, -0.3, -0.35)
-            .applyQuaternion(this.quaternion)
-        ).toArray(gamepad.pose.position);
-      this.quaternion.toArray(gamepad.pose.orientation); // XXX updates xrState
+      if (i === 1 && position && quaternion) {
+        position.toArray(gamepad.pose.position);
+        quaternion.toArray(gamepad.pose.orientation);
+      } else {
+        localVector.copy(this.position)
+          .add(
+            localVector2.set(-0.3 + i*0.6, -0.3, -0.35)
+              .applyQuaternion(this.quaternion)
+          ).toArray(gamepad.pose.position);
+        this.quaternion.toArray(gamepad.pose.orientation); // XXX updates xrState
+      }
 
       localMatrix2
         .compose(
@@ -603,6 +607,17 @@ class FakeXRDisplay {
 
       gamepad.connected = true;
     }
+  }
+  pushUpdate() {
+    this.pushHmdUpdate();
+    this.pushGamepadsUpdate();
+  }
+
+  enable() {
+    GlobalContext.xrState.fakeVrDisplayEnabled[0] = 1;
+  }
+  disable() {
+    GlobalContext.xrState.fakeVrDisplayEnabled[0] = 0;
   }
 
   get width() {
@@ -708,6 +723,8 @@ const controllerIDs = {
   fake: 'OpenVR Gamepad',
   openvr: 'OpenVR Gamepad',
   openvrTracker: 'OpenVR Tracker',
+  indexLeft: 'Valve Index (Left)',
+  indexRight: 'Valve Index (Right)',
   oculusLeft: 'Oculus Touch (Left)',
   oculusRight: 'Oculus Touch (Right)',
   // oculusMobile: 'Oculus Go',
@@ -723,15 +740,21 @@ function getControllerID(hmdType, hand) {
 }
 function getGamepads() {
   if (GlobalContext.xrState.isPresenting[0]) {
-    const hmdType = getHMDType();
+    let hmdType = getHMDType();
+    if (hmdType === 'openvr') {
+      const vrSystem = nativeOpenVR.GetGlobalSystem();
+      if (vrSystem && /^Knuckles/.test(vrSystem.GetModelName(0) || vrSystem.GetModelName(1))) {
+        hmdType = 'index';
+      }
+    }
+
     if (!globalGamepads) {
       globalGamepads = _makeGlobalGamepads();
     }
+    const gamepads = globalGamepads.main.slice();
 
     globalGamepads.main[0].id = getControllerID(hmdType, 'left');
     globalGamepads.main[1].id = getControllerID(hmdType, 'right');
-
-    const gamepads = globalGamepads.main.slice();
 
     if (hmdType === 'openvr') {
       for (let i = 0; i < globalGamepads.tracker.length; i++) {

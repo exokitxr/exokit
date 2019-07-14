@@ -2086,7 +2086,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                 this.browser = null;
               }
 
-              const context = GlobalContext.contexts.find(context => context.canvas.ownerDocument === this.ownerDocument);
+              const context = GlobalContext.contexts.find(context => ['WebGLRenderingContext', 'WebGL2RenderingContext'].includes(context.constructor.name) && context.canvas.ownerDocument === this.ownerDocument);
               if (context) {
                 const browser = (() => {
                   const width = this.width || context.canvas.ownerDocument.defaultView.innerWidth;
@@ -2129,10 +2129,10 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   removeEventListener() {
                     browser.removeListener && browser.removeListener.apply(browser, arguments); // XXX
                   },
-                  /* destroy() {
+                  destroy() {
                     self.browser.destroy();
                     self.browser = null;
-                  }, */
+                  },
                 };
 
                 const _load = () => {
@@ -2415,13 +2415,17 @@ class HTMLIFrameElement extends HTMLSrcableElement {
   runJs(jsString = '', scriptUrl = '<unknown>', startLine = 1) {
     this.browser && this.browser.runJs(jsString, scriptUrl, startLine);
   }
+  
+  destroy() {
+    if (this.contentWindow) {
+      this.contentWindow.destroy();
+    }
 
-  /* destroy() {
-    if (this.live) {
+    /* if (this.live) {
       this._emit('destroy');
       this.live = false;
-    }
-  } */
+    } */
+  }
 }
 module.exports.HTMLIFrameElement = HTMLIFrameElement;
 
