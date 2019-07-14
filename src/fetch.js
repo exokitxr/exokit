@@ -8,29 +8,25 @@ const protocols = {};
 ['http', 'https', 'file', 'data', 'blob'].forEach(p => {
   protocols[p] = windowFetch;
 });
+const PROTOCOL_REGEX = /^([^:]*):/;
 
-const PROTOCOL_REGEX = /^([^:]*):/
-
+const _protocolFetch = (u, options) => {
+  const match = u.match(PROTOCOL_REGEX);
+  const protocol = match ? match[1] : 'http://';
+  return protocols[protocol](u, options);
+};
 async function fetch(u, options) {
-  let url = u
   if (typeof u === 'string') {
     const blob = URL.lookupObjectURL(u);
     if (blob) {
       return new Response(blob);
     } else {
-      u = utils._normalizeUrl(u, GlobalContext.baseUrl);
+      return _protocolFetch(utils._normalizeUrl(u, GlobalContext.baseUrl), options);
     }
   } else {
     // Fetch is being called with a Request object
     // We should get the URL for matching the protocol
-    url = u.url
-  }
-
-  const protocol = url.match(PROTOCOL_REGEX)[1];
-  if (protocol in protocols) {
-    return protocols[protocol](u, options);
-  } else {
-    throw new Error('unknown protocol');
+    return _protocolFetch(u.url, options);
   }
 }
 
