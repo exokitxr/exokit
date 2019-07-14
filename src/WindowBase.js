@@ -238,10 +238,6 @@ class Worker extends EventTarget {
   });
 })(global);
 
-function setBaseUrl(newBaseUrl) {
-  GlobalContext.baseUrl = newBaseUrl;
-}
-global.setBaseUrl = setBaseUrl;
 const _normalizeUrl = src => utils._normalizeUrl(src, GlobalContext.baseUrl);
 
 const SYNC_REQUEST_BUFFER_SIZE = 5 * 1024 * 1024; // TODO: we can make this unlimited with a streaming buffer + atomics loop

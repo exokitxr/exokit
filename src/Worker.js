@@ -12,9 +12,11 @@ const {
 const {createImageBitmap} = require('./DOM.js');
 const WebSocket = require('ws/lib/websocket');
 const {FileReader} = require('./File.js');
+const GlobalContext = require('./GlobalContext');
 
 const {src, baseUrl} = args;
-setBaseUrl(baseUrl);
+GlobalContext.baseUrl = baseUrl;
+
 const _normalizeUrl = src => {
   if (!/^(?:file|data|blob):/.test(src)) {
     return new URL(src, baseUrl).href;
