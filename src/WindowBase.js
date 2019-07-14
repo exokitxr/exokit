@@ -156,7 +156,7 @@ class Worker extends EventTarget {
   self.Navigator = Navigator;
   self.navigator = new Navigator();
 
-  self.fetch = fetch
+  self.fetch = fetch;
   self.Request = Request;
   self.Response = Response;
   self.Headers = Headers;
