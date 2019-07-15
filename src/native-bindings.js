@@ -381,11 +381,12 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
   }
 };
 bindings.nativeGl = (nativeGl => {
-  function WebGLRenderingContext(canvas, attrs) {
-    const gl = new nativeGl();
-    _decorateGlIntercepts(gl);
-    _onGl3DConstruct(gl, canvas, attrs);
-    return gl;
+  class WebGLRenderingContext extends nativeGl {
+    constructor(canvas, attrs) {
+      super();
+      _decorateGlIntercepts(this);
+      _onGl3DConstruct(this, canvas, attrs);
+    }
   }
   for (const k in nativeGl) {
     WebGLRenderingContext[k] = nativeGl[k];
