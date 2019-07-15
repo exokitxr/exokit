@@ -355,7 +355,7 @@ public:
   static NAN_METHOD(GetFragDataLocation);
   static NAN_METHOD(GetSupportedExtensions);
   static NAN_METHOD(GetExtension);
-  static NAN_METHOD(GetContextAttributes);
+  // static NAN_METHOD(GetContextAttributes);
 
   static NAN_METHOD(CheckFramebufferStatus);
 
