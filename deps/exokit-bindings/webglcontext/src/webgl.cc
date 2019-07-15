@@ -5329,6 +5329,7 @@ NAN_METHOD(WebGLRenderingContext::GetParameter) {
     case GL_MAX_VERTEX_UNIFORM_BLOCKS:
     case GL_MAX_VERTEX_UNIFORM_COMPONENTS:
     case GL_MIN_PROGRAM_TEXEL_OFFSET:
+    case GL_MAX_VIEWS_OVR:
     {
       // return an int
       GLint param;
