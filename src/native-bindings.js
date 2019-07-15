@@ -394,11 +394,12 @@ bindings.nativeGl = (nativeGl => {
   return WebGLRenderingContext;
 })(bindings.nativeGl);
 bindings.nativeGl2 = (nativeGl2 => {
-  function WebGL2RenderingContext(canvas, attrs) {
-    const gl = new nativeGl2();
-    _decorateGlIntercepts(gl);
-    _onGl3DConstruct(gl, canvas, attrs);
-    return gl;
+  class WebGL2RenderingContext extends nativeGl2 {
+    constructor(canvas, attrs) {
+      super();
+      _decorateGlIntercepts(this);
+      _onGl3DConstruct(this, canvas, attrs);
+    }
   }
   for (const k in nativeGl2) {
     WebGL2RenderingContext[k] = nativeGl2[k];
