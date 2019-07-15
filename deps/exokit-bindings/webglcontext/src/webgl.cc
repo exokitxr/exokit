@@ -2206,7 +2206,7 @@ std::pair<Local<Object>, Local<FunctionTemplate>> WebGLRenderingContext::Initial
   Nan::SetMethod(proto, "getFragDataLocation", glCallWrap<GetFragDataLocation>);
   Nan::SetMethod(proto, "getSupportedExtensions", glCallWrap<GetSupportedExtensions>);
   Nan::SetMethod(proto, "getExtension", glCallWrap<GetExtension>);
-  Nan::SetMethod(proto, "getContextAttributes", glCallWrap<GetContextAttributes>);
+  // Nan::SetMethod(proto, "getContextAttributes", glCallWrap<GetContextAttributes>);
 
   Nan::SetMethod(proto, "checkFramebufferStatus", glCallWrap<CheckFramebufferStatus>);
 
@@ -5966,7 +5966,7 @@ NAN_METHOD(WebGLRenderingContext::GetExtension) {
   }
 }
 
-NAN_METHOD(WebGLRenderingContext::GetContextAttributes) {
+/* NAN_METHOD(WebGLRenderingContext::GetContextAttributes) {
   Local<Object> result = Object::New(Isolate::GetCurrent());
   result->Set(JS_STR("alpha"), JS_BOOL(true));
   result->Set(JS_STR("antialias"), JS_BOOL(true));
@@ -5976,7 +5976,7 @@ NAN_METHOD(WebGLRenderingContext::GetContextAttributes) {
   result->Set(JS_STR("preserveDrawingBuffer"), JS_BOOL(false));
   result->Set(JS_STR("stencil"), JS_BOOL(false));
   info.GetReturnValue().Set(result);
-}
+} */
 
 NAN_METHOD(WebGLRenderingContext::CheckFramebufferStatus) {
   GLenum target = TO_INT32(info[0]);
