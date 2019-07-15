@@ -72,13 +72,22 @@ const _decorateGlIntercepts = gl => {
 const _onGl3DConstruct = (gl, canvas, attrs) => {
   const canvasWidth = canvas.width || innerWidth;
   const canvasHeight = canvas.height || innerHeight;
+  attrs = attrs || {};
+  attrs = {
+    alpha: !!attrs.alpha,
+    antialias: !!attrs.antialias,
+    depth: !!attrs.depth,
+    desynchronized: !!attrs.desynchronized,
+    failIfMajorPerformanceCaveat: !!attrs.failIfMajorPerformanceCaveat,
+    powerPreference: attrs.powerPreference || 'default',
+    premultipliedAlpha: !!attrs.premultipliedAlpha,
+    preserveDrawingBuffer: !!attrs.preserveDrawingBuffer,
+    stencil: !!attrs.stencil,
+  };
 
   gl.d = 3;
   gl.canvas = canvas;
-  gl.attrs = {
-    antialias: !!attrs.antialias,
-    desynchronized: !!attrs.desynchronized,
-  };
+  gl.getContextAttributes = () => attrs;
 
   const document = canvas.ownerDocument;
   const window = document.defaultView;
@@ -280,7 +289,7 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
       }
     });
     
-    const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = gl.attrs.desynchronized ? [
+    const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = attrs.desynchronized ? [
       0, 0, 0, 0, 0, 0,
     ] : nativeWindow.createRenderTarget(gl, canvasWidth, canvasHeight);
     if (msFbo) {
@@ -301,7 +310,7 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
       event: gl.framebuffer,
     });
     gl.resize = (width, height) => {
-      if (!gl.attrs.desynchronized && gl.framebuffer.type === 'canvas') {
+      if (!attrs.desynchronized && gl.framebuffer.type === 'canvas') {
         nativeWindow.setCurrentWindowContext(windowHandle);
         const [newFbo, newTex, newDepthTex, newMsFbo, newMsTex, newMsDepthTex] = nativeWindow.resizeRenderTarget(gl, width, height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
 
@@ -364,7 +373,7 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
     gl.id = Atomics.add(GlobalContext.xrState.id, 0) + 1;
     GlobalContext.contexts.push(gl);
 
-    if (gl.attrs.antialias) {
+    if (attrs.antialias) {
       GlobalContext.xrState.aaEnabled[0] = 1;
     }
   } else {
