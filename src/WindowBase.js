@@ -163,7 +163,27 @@ class Worker extends EventTarget {
   self.Blob = Blob;
   self.FormData = FormData;
   self.XMLHttpRequest = XMLHttpRequest;
-  self.WebSocket = WebSocket;
+  self.WebSocket = (Old => {
+    class WebSocket extends Old {
+      constructor(url, protocols, options) {
+        if (typeof protocols === 'string') {
+          protocols = [protocols];
+        }
+        if (typeof protocols == 'object' && !Array.isArray(protocols) && protocols !== null) {
+          options = protocols;
+          protocols = undefined;
+        }
+        options = options || {};
+        options.origin = options.origin || (self.location.protocol + '//' + self.location.host);
+
+        super(url, protocols, options);
+      }
+    }
+    for (const k in Old) {
+      WebSocket[k] = Old[k];
+    }
+    return WebSocket;
+  })(WebSocket);
   self.FileReader = FileReader;
 
   self.performance = performance;
