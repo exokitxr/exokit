@@ -1,4 +1,5 @@
-const {URL} = require('url');;
+const {URL} = require('url');
+const stream = require('stream');
 const utils = require('./utils');
 const windowFetch = require('window-fetch');
 const {Response} = windowFetch;
@@ -19,7 +20,11 @@ async function fetch(u, options) {
   if (typeof u === 'string') {
     const blob = URL.lookupObjectURL(u);
     if (blob) {
-      return new Response(blob);
+      const body = new stream.PassThrough();
+      Promise.resolve().then(() => {
+        body.end(blob.buffer);
+      });
+      return new Response(body);
     } else {
       return _protocolFetch(utils._normalizeUrl(u, GlobalContext.baseUrl), options);
     }
