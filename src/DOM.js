@@ -1832,7 +1832,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
         }
       };
       const _fetch = async url => {
-        const res = await this.ownerDocument.defaultView.fetch(url)
+        const res = await this.ownerDocument.defaultView.fetch(url);
         if (res.status >= 200 && res.status < 300) {
           return await res.text();
         } else {
