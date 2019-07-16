@@ -162,23 +162,7 @@ class Worker extends EventTarget {
   self.Headers = Headers;
   self.Blob = Blob;
   self.FormData = FormData;
-  self.XMLHttpRequest = (Old => {
-    class XMLHttpRequest extends Old {
-      get response() {
-        if (this.responseType === 'blob') {
-          return new Blob(super.response, {
-            type: this.getResponseHeader('content-type') || 'application/octet-stream',
-          });
-        } else {
-          return super.response;
-        }
-      }
-    }
-    for (const k in Old) {
-      XMLHttpRequest[k] = Old[k];
-    }
-    return XMLHttpRequest;
-  })(XMLHttpRequest);
+  self.XMLHttpRequest = XMLHttpRequest;
   self.WebSocket = (Old => {
     class WebSocket extends Old {
       constructor(url, protocols, options) {
