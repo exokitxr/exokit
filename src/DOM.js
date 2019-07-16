@@ -1820,14 +1820,16 @@ class HTMLScriptElement extends HTMLLoadableElement {
       const _getSrc = () => {
         const innerHTML = this.childNodes.length > 0 ? this.childNodes[0].value : '';
         if (innerHTML) {
+          const url = this.ownerDocument.defaultView.location.href;
           return Promise.resolve({
             s: innerHTML,
-            url: this.ownerDocument.defaultView.location.href,
+            url,
           });
         } else {
+          const url = _mapUrl(this.src, this.ownerDocument.defaultView);
           return _fetch(url).then(s => ({
             s,
-            url: _mapUrl(this.src, this.ownerDocument.defaultView),
+            url,
           }));
         }
       };
