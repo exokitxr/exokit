@@ -330,13 +330,28 @@ const _makeAttr = attr => attr && ({ // XXX should be class Attr
 });
 const _makeAttributesProxy = el => new Proxy(el.attrs, {
   get(target, prop) {
-    const propN = parseIntStrict(prop);
-    if (propN !== undefined) {
-      return _makeAttr(target[propN]);
-    } else if (prop === 'length') {
-      return target.length;
+    if (prop === Symbol.iterator) {
+      const {length} = target;
+      let i = 0;
+      return () => ({
+        next() {
+          return i < length ? {
+            value: _makeAttr(target[i++]),
+            done: false,
+          } : {
+            done: true,
+          };
+        },
+      });
     } else {
-      return _makeAttr(target.find(attr => attr.name === prop));
+      const propN = parseIntStrict(prop);
+      if (propN !== undefined) {
+        return _makeAttr(target[propN]);
+      } else if (prop === 'length') {
+        return target.length;
+      } else {
+        return _makeAttr(target.find(attr => attr.name === prop));
+      }
     }
   },
   set(target, prop, value) {
