@@ -1,4 +1,5 @@
 const path = require('path');
+const {URL} = require('url');
 const {isMainThread, parentPort} = require('worker_threads');
 const {process} = global;
 
@@ -14,9 +15,22 @@ for (const k in exokitNode) {
   bindings[k] = exokitNode[k];
 }
 
-const isAndroid = bindings.nativePlatform === 'android';
-const glslVersion = isAndroid ? '300 es' : '330';
+URL.createObjectURL = blob => {
+  const url = 'blob:' + GlobalContext.xrState.blobId[0]++;
+  bindings.nativeCache.set(url, blob.buffer);
+  return url;
+};
+URL.revokeObjectURL = url => {
+  bindings.nativeCache.delete(url);
+};
+URL.lookupObjectURL = url => {
+  const uint8Array = bindings.nativeCache.get(url);
+  return uint8Array && new Blob([uint8Array], {
+    type: 'application/octet-stream', // TODO: make this the correct type
+  });
+}
 
+const glslVersion = bindings.nativePlatform === 'android' ? '300 es' : '330';
 const _decorateGlIntercepts = gl => {
   gl.createShader = (createShader => function(type) {
     const result = createShader.call(this, type);
@@ -58,13 +72,22 @@ const _decorateGlIntercepts = gl => {
 const _onGl3DConstruct = (gl, canvas, attrs) => {
   const canvasWidth = canvas.width || innerWidth;
   const canvasHeight = canvas.height || innerHeight;
+  attrs = attrs || {};
+  attrs = {
+    alpha: !!attrs.alpha,
+    antialias: !!attrs.antialias,
+    depth: !!attrs.depth,
+    desynchronized: !!attrs.desynchronized,
+    failIfMajorPerformanceCaveat: !!attrs.failIfMajorPerformanceCaveat,
+    powerPreference: attrs.powerPreference || 'default',
+    premultipliedAlpha: !!attrs.premultipliedAlpha,
+    preserveDrawingBuffer: !!attrs.preserveDrawingBuffer,
+    stencil: !!attrs.stencil,
+  };
 
   gl.d = 3;
   gl.canvas = canvas;
-  gl.attrs = {
-    antialias: !!attrs.antialias,
-    desynchronized: !!attrs.desynchronized,
-  };
+  gl.getContextAttributes = () => attrs;
 
   const document = canvas.ownerDocument;
   const window = document.defaultView;
@@ -266,7 +289,7 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
       }
     });
     
-    const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = gl.attrs.desynchronized ? [
+    const [fbo, tex, depthTex, msFbo, msTex, msDepthTex] = attrs.desynchronized ? [
       0, 0, 0, 0, 0, 0,
     ] : nativeWindow.createRenderTarget(gl, canvasWidth, canvasHeight);
     if (msFbo) {
@@ -287,7 +310,7 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
       event: gl.framebuffer,
     });
     gl.resize = (width, height) => {
-      if (!gl.attrs.desynchronized && gl.framebuffer.type === 'canvas') {
+      if (!attrs.desynchronized && gl.framebuffer.type === 'canvas') {
         nativeWindow.setCurrentWindowContext(windowHandle);
         const [newFbo, newTex, newDepthTex, newMsFbo, newMsTex, newMsDepthTex] = nativeWindow.resizeRenderTarget(gl, width, height, fbo, tex, depthTex, msFbo, msTex, msDepthTex);
 
@@ -350,7 +373,7 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
     gl.id = Atomics.add(GlobalContext.xrState.id, 0) + 1;
     GlobalContext.contexts.push(gl);
 
-    if (gl.attrs.antialias) {
+    if (attrs.antialias) {
       GlobalContext.xrState.aaEnabled[0] = 1;
     }
   } else {
@@ -358,11 +381,12 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
   }
 };
 bindings.nativeGl = (nativeGl => {
-  function WebGLRenderingContext(canvas, attrs) {
-    const gl = new nativeGl();
-    _decorateGlIntercepts(gl);
-    _onGl3DConstruct(gl, canvas, attrs);
-    return gl;
+  class WebGLRenderingContext extends nativeGl {
+    constructor(canvas, attrs) {
+      super();
+      _decorateGlIntercepts(this);
+      _onGl3DConstruct(this, canvas, attrs);
+    }
   }
   for (const k in nativeGl) {
     WebGLRenderingContext[k] = nativeGl[k];
@@ -370,11 +394,12 @@ bindings.nativeGl = (nativeGl => {
   return WebGLRenderingContext;
 })(bindings.nativeGl);
 bindings.nativeGl2 = (nativeGl2 => {
-  function WebGL2RenderingContext(canvas, attrs) {
-    const gl = new nativeGl2();
-    _decorateGlIntercepts(gl);
-    _onGl3DConstruct(gl, canvas, attrs);
-    return gl;
+  class WebGL2RenderingContext extends nativeGl2 {
+    constructor(canvas, attrs) {
+      super();
+      _decorateGlIntercepts(this);
+      _onGl3DConstruct(this, canvas, attrs);
+    }
   }
   for (const k in nativeGl2) {
     WebGL2RenderingContext[k] = nativeGl2[k];

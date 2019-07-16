@@ -17,7 +17,7 @@ consoleStream._writev = (chunks, callback) => {
 };
 global.console = new Console(consoleStream);
 
-const fetch = require('window-fetch');
+const {fetch} = require('./fetch');
 const {workerData, parentPort} = require('worker_threads');
 const {url, int32Array} = workerData;
 
@@ -41,7 +41,7 @@ const {url, int32Array} = workerData;
   }
 })().catch(err => {
   console.warn('request error', err.stack);
-  
+
   int32Array[1] = 0;
   int32Array[2] = 0;
 }).finally(() => {
