@@ -1884,43 +1884,6 @@ class HTMLScriptElement extends HTMLLoadableElement {
     });
   }
 
-<<<<<<< HEAD
-=======
-  runNow() {
-    this.readyState = 'loading';
-
-    const innerHTML = this.childNodes[0].value;
-    const window = this.ownerDocument.defaultView;
-
-    return this.ownerDocument.resources.addResource((onprogress, cb) => {
-      (async () => {
-        vm.runInThisContext(innerHTML, {
-          filename: window.location.href,
-          lineOffset : this.location && this.location.line !== null ? this.location.line - 1 : 0,
-          columnOffset: this.location && this.location.col !== null ? this.location.col - 1 : 0,
-        });
-      })()
-        .then(() => {
-          this.readyState = 'complete';
-
-          this.dispatchEvent(new Event('load', {target: this}));
-
-          cb();
-        })
-        .catch(err => {
-          this.readyState = 'complete';
-
-          const e = new ErrorEvent('error', {target: this});
-          e.message = err.message;
-          e.stack = err.stack;
-          this.dispatchEvent(e);
-
-          cb(err);
-        });
-    });
-  }
-
->>>>>>> master
   [symbols.runSymbol]() {
     if (this.isRunnable() && !this.readyState) {
       this.loadRunNow();
