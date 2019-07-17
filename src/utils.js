@@ -43,16 +43,6 @@ function _normalizeUrl(src, baseUrl) {
 }
 module.exports._normalizeUrl = _normalizeUrl;
 
-async function _fetch(url) {
-  const res = await fetch(url)
-  if (res.status >= 200 && res.status < 300) {
-    return await res.text();
-  } else {
-    throw new Error('fetch got invalid status code: ' + res.status + ' : ' + url);
-  }
-}
-module.exports._fetch = _fetch;
-
 const _makeHtmlCollectionProxy = (el, query) => new Proxy(el, {
   get(target, prop) {
     const propN = parseIntStrict(prop);
