@@ -2062,6 +2062,8 @@ class HTMLIFrameElement extends HTMLSrcableElement {
     const _resetContentWindowDocument = () => {
       const contentDocument = {
         _emit() {},
+        on() {},
+        removeListener() {},
         open() {},
         write() {},
         close() {},
