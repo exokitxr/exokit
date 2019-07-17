@@ -1809,7 +1809,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
 
 
   isModule() {
-    return this.getAttribute('type') === 'module';
+    return this.type === 'module';
   }
 
   loadRunNow() {
@@ -1820,16 +1820,21 @@ class HTMLScriptElement extends HTMLLoadableElement {
         const innerHTML = this.childNodes.length > 0 ? this.childNodes[0].value : '';
         if (innerHTML) {
           const url = this.ownerDocument.defaultView.location.href;
+          const isModule = this.isModule();
           return Promise.resolve({
             s: innerHTML,
             url,
+            isModule,
           });
         } else {
           const url = _mapUrl(this.src, this.ownerDocument.defaultView);
-          return _fetch(url).then(s => ({
-            s,
-            url,
-          }));
+          const isModule = this.isModule();
+          return _fetch(url)
+            .then(s => ({
+              s,
+              url,
+              isModule,
+            }));
         }
       };
       const _fetch = async url => {
@@ -1842,13 +1847,13 @@ class HTMLScriptElement extends HTMLLoadableElement {
       };
 
       _getSrc()
-        .then(async ({s, url}) => {
+        .then(async ({s, url, isModule}) => {
           const opts = {
             lineOffset : this.location && this.location.line !== null ? this.location.line - 1 : 0,
             columnOffset: this.location && this.location.col !== null ? this.location.col - 1 : 0,
           };
 
-          if (this.getAttribute('type') === 'module') {
+          if (isModule) {
             opts.url = url;
             const script = new vm.SourceTextModule(s, opts);
             await script.link(async (url, {url: baseUrl}) => {
