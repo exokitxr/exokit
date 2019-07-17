@@ -6,8 +6,6 @@ const mkdirp = require('mkdirp');
 const parseIntStrict = require('parse-int');
 
 const symbols = require('./symbols');
-const vm = require('vm');
-const fetch = require('window-fetch');
 
 function _getBaseUrl(u, currentBaseUrl = '') {
   let result;
