@@ -45,13 +45,13 @@
   },
   "homepage": "https://github.com/exokitxr/exokit#readme",
   "dependencies": {
-    "@rgrove/parse-xml": "^1.1.1",
+    "@rgrove/parse-xml": "^2.0.1",
     "cross-env": "^5.2.0",
     "css": "^2.2.4",
     "events": "^3.0.0",
-    "fake-indexeddb": "^2.0.4",
-    "find": "^0.2.9",
-    "he": "^1.1.1",
+    "fake-indexeddb": "^2.1.1",
+    "find": "^0.3.0",
+    "he": "^1.2.0",
     "history": "^4.9.0",
     "hterm-repl": "0.0.10",
     "keycode": "^2.2.0",
@@ -73,27 +73,27 @@
     "native-video-deps": "0.0.35",
     "native-webrtc-deps": "0.0.45",
     "node-ipc": "^9.1.1",
-    "parse-int": "^1.0.2",
-    "parse5": "^5.0.0",
+    "parse-int": "^1.0.3",
+    "parse5": "^5.1.0",
     "redirect-output": "^1.0.0",
-    "rimraf": "^2.6.2",
+    "rimraf": "^2.6.3",
     "unescape": "^1.0.1",
     "webgl-to-opengl": "0.0.16",
     "window-fetch": "0.0.13",
     "window-ls": "0.0.1",
     "window-selector": "0.0.8",
     "window-xhr": "0.0.41",
-    "ws": "^6.2.0"
+    "ws": "^7.1.0"
   },
   "optionalDependencies": {
-    "electron": "^5.0.3"
+    "electron": "^5.0.7"
   },
   "devDependencies": {
-    "chai": "^4.1.2",
-    "eslint": "^5.2.0",
-    "express": "^4.16.3",
-    "mocha": "^6.0.0-1",
-    "serve": "^9.4.0",
+    "chai": "^4.2.0",
+    "eslint": "^6.0.1",
+    "express": "^4.17.1",
+    "mocha": "^6.1.4",
+    "serve": "^11.1.0",
     "shx": "^0.3.2"
   }
 }
