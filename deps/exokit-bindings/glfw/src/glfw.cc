@@ -942,6 +942,10 @@ void ReadPixels(WebGLRenderingContext *gl, unsigned int fbo, int x, int y, int w
   }
 }
 
+NAN_METHOD(HasCurrentWindowContext) {
+  info.GetReturnValue().Set(JS_BOOL(currentWindow != nullptr));
+}
+
 NAN_METHOD(SetCurrentWindowContext) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   SetCurrentWindowContext(window);
@@ -1758,6 +1762,7 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "setClipboard", glfw::SetClipboard);
   Nan::SetMethod(target, "blitTopFrameBuffer", glfw::BlitTopFrameBuffer);
   Nan::SetMethod(target, "blitChildFrameBuffer", glfw::BlitChildFrameBuffer);
+  Nan::SetMethod(target, "hasCurrentWindowContext", glfw::HasCurrentWindowContext);
   Nan::SetMethod(target, "setCurrentWindowContext", glfw::SetCurrentWindowContext);
 #ifdef MAIN_THREAD_POLLING
   Nan::SetMethod(target, "pollEvents", glfw::PollEvents);
