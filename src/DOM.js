@@ -1890,11 +1890,9 @@ class HTMLScriptElement extends HTMLLoadableElement {
     });
   }
 
-  [symbols.runSymbol]() {
+  async [symbols.runSymbol]() {
     if (this.isRunnable() && !this.readyState) {
-      return this.loadRunNow();
-    } else {
-      return Promise.resolve();
+      await this.loadRunNow();
     }
   }
 }
