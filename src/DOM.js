@@ -1807,7 +1807,6 @@ class HTMLScriptElement extends HTMLLoadableElement {
     return !this.type || /^(?:(?:text|application)\/javascript|application\/ecmascript|module)$/.test(this.type);
   }
 
-
   isModule() {
     return this.type === 'module';
   }
