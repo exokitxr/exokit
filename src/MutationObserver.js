@@ -53,65 +53,65 @@ class MutationObserver {
   }
 
   bind(rootEl, options) {
-    let bindings = [];
+    const bindings = new Map();
+    
+    const _addBinding = (el, evt, fn) => {
+      el.on(evt, fn);
 
-    const _recursiveBind = rootEl => {
-      const _bind = el => {
-        if (el.nodeType === Node.ELEMENT_NODE) {
-          if (options.attributes) {
-            const _attribute = (name, value, oldValue) => {
-              this.handleAttribute(el, name, value, oldValue, options);
-            };
-            el.on('attribute', _attribute);
-            bindings.push([el, 'attribute', _attribute]);
-          }
-
-          if (options.childList || options.subtree) {
-            const _children = (addedNodes, removedNodes, previousSibling, nextSibling) => {
-              if (options.childList) {
-                this.handleChildren(el, addedNodes, removedNodes, previousSibling, nextSibling);
-              }
-
-              if (options.subtree) {
-                for (let i = 0; i < removedNodes.length; i++) {
-                  _recursiveUnbind(removedNodes[i]);
-                }
-                for (let i = 0; i < addedNodes.length; i++) {
-                  _recursiveBind(addedNodes[i]);
-                }
-              }
-            };
-            el.on('children', _children);
-            bindings.push([el, 'children', _children]);
-          }
-
-          if (options.characterData) {
-            const _value = () => {
-              this.handleValue(el);
-            };
-            el.on('value', _value);
-            bindings.push([el, 'value', _value]);
-          }
+      let a = bindings.get(el);
+      (a === undefined) && bindings.set(el, a = []);
+      a.push([evt, fn]);
+    };
+    const _bind = el => {
+      if (el.nodeType === Node.ELEMENT_NODE) {
+        if (options.attributes) {
+          _addBinding(el, 'attribute', (name, value, oldValue) => {
+            this.handleAttribute(el, name, value, oldValue, options);
+          });
         }
-      };
+
+        if (options.childList || options.subtree) {
+          _addBinding(el, 'children', (addedNodes, removedNodes, previousSibling, nextSibling) => {
+            if (options.childList) {
+              this.handleChildren(el, addedNodes, removedNodes, previousSibling, nextSibling);
+            }
+
+            if (options.subtree) {
+              for (let i = 0; i < removedNodes.length; i++) {
+                _recursiveUnbind(removedNodes[i]);
+              }
+              for (let i = 0; i < addedNodes.length; i++) {
+                _recursiveBind(addedNodes[i]);
+              }
+            }
+          });
+        }
+
+        if (options.characterData) {
+          _addBinding(el, 'value', () => {
+            this.handleValue(el);
+          });
+        }
+      }
+    };
+    const _recursiveBind = rootEl => {
       if (options.subtree) {
         rootEl.traverse(_bind);
       } else {
         _bind(rootEl);
       }
     };
+    const _unbind = el => {
+      const a = bindings.get(el);
+      if (a !== undefined) {
+        for (let i = 0; i < a.length; i++) {
+          const [evt, fn] = a[i];
+          el.removeListener(evt, fn);
+        }
+        bindings.delete(el);
+      }
+    };
     const _recursiveUnbind = rootEl => {
-      const _unbind = el => {
-        bindings = bindings.filter(binding => {
-          const [el2, evt, fn] = binding;
-          if (el2 === el) {
-            el2.removeListener(evt, fn);
-            return false;
-          } else {
-            return true;
-          }
-        });
-      };
       if (options.subtree) {
         rootEl.traverse(_unbind);
       } else {
