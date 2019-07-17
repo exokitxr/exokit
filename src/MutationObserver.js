@@ -25,7 +25,7 @@ class MutationObserver {
 
     this.queue = [];
     this.bindings = new Map();
-    this.callbacks = new WeakMap();
+    this.listeners = new WeakMap();
   }
 
   observe(el, options) {
@@ -91,7 +91,7 @@ class MutationObserver {
           el.on('value', _value);
         }
 
-        this.callbacks.set(el, [_attribute, _children, _value]);
+        this.listeners.set(el, [_attribute, _children, _value]);
       }
     };
 
@@ -104,13 +104,13 @@ class MutationObserver {
 
   unbind(el, options) {
     const _unbind = el => {
-      const callbacks = this.callbacks.get(el);
-      if (callbacks) {
+      const listeners = this.listeners.get(el);
+      if (listeners) {
         const [
           _attribute,
           _children,
           _value,
-        ] = callbacks;
+        ] = listeners;
         if (_attribute) {
           el.removeListener('attribute', _attribute);
         }
@@ -120,7 +120,7 @@ class MutationObserver {
         if (_value) {
           el.removeListener('value', _value);
         }
-        this.callbacks.delete(el);
+        this.listeners.delete(el);
       }
     };
 
