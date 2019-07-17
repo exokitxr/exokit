@@ -15,7 +15,7 @@ std::mutex windowHandleMutex;
 NATIVEwindow *sharedWindow = nullptr;
 InjectionHandler mainThreadInjectionHandler;
 std::mutex injectionHandlerMapMutex;
-// int lastX = 0, lastY = 0; // XXX track this per-window
+int lastX = -1, lastY = -1; // XXX track this per-window
 uint64_t lastClickTime = 0;
 #ifdef MAIN_THREAD_POLLING
 std::thread::id mainThreadId;
@@ -675,18 +675,28 @@ void APIENTRY cursorPosCB(NATIVEwindow* window, double x, double y) {
   if(x<0 || x>=w) return;
   if(y<0 || y>=h) return;
 
+  int xi = static_cast<int>(x);
+  int yi = static_cast<int>(y);
   int movementX, movementY;
 
   int mode = glfwGetInputMode(window, GLFW_CURSOR);
   if (mode == GLFW_CURSOR_DISABLED) {
-    movementX = x - (w / 2);
-    movementY = y - (h / 2);
+    movementX = xi - (w / 2);
+    movementY = yi - (h / 2);
 
     glfwSetCursorPos(window, w / 2, h / 2);
   } else {
-    movementX = 0;
-    movementY = 0;
+    if (lastX != -1 && lastY != -1) {
+      movementX = xi - lastX;
+      movementY = yi - lastY;
+    } else {
+      movementX = 0;
+      movementY = 0;
+    }
   }
+  
+  lastX = xi;
+  lastY = yi;
 
   QueueEvent(window, [=](std::function<void(int, Local<Value> *)> eventHandlerFn) -> void {
     Local<Object> evt = Nan::New<Object>();
