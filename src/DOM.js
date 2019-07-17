@@ -1804,8 +1804,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
   }
 
   isRunnable() {
-    const {type} = this;
-    return !type || type === 'module' || /^(?:(?:text|application)\/javascript|application\/ecmascript)$/.test(type);
+    return !this.type || /^(?:(?:text|application)\/javascript|application\/ecmascript|module)$/.test(this.type);
   }
 
 
