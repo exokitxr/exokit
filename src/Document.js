@@ -172,6 +172,7 @@ function initDocument (document, window) {
       }
 
       body.childNodes = bodyChildNodes;
+      body._emit('children', Array.from(bodyChildNodes), [], null, null);
 
       try {
         await GlobalContext._runHtml(document.body, window);

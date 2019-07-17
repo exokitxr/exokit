@@ -844,7 +844,7 @@ class Element extends Node {
 
   append() {
     for (let i = 0; i < arguments.length; i++) {
-      const content = arguments[0];
+      const content = arguments[i];
       if (typeof content === 'string') {
         this.appendChild(this.ownerDocument.createTextNode(content));
       } else {
@@ -2063,6 +2063,8 @@ class HTMLIFrameElement extends HTMLSrcableElement {
     const _resetContentWindowDocument = () => {
       const contentDocument = {
         _emit() {},
+        on() {},
+        removeListener() {},
         open() {},
         write() {},
         close() {},
