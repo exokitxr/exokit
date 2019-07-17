@@ -617,7 +617,14 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
   /* window.MediaStreamTrack = MediaStreamTrack;
   window.RTCRtpReceiver = RTCRtpReceiver;
   window.RTCRtpSender = RTCRtpSender; */
-  window.MediaStream = class MediaStream {};
+  window.MediaStream = class MediaStream {
+    getAudioTracks() {
+      return [];
+    }
+    getVideoTracks() {
+      return [];
+    }
+  };
 
   window.RTCPeerConnection = RTCPeerConnection;
   window.webkitRTCPeerConnection = RTCPeerConnection; // for feature detection
