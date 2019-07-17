@@ -1742,7 +1742,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
       }
     });
     this.on('attached', () => {
-      if (this.getAttribute('src') && this.isRunnable() && this.isConnected && !this.readyState) {
+      if (this.ownerDocument.readyState !== 'loading' && this.getAttribute('src') && this.isRunnable() && this.isConnected && !this.readyState) {
         const async = this.getAttribute('async');
         _loadRun(async !== null ? async !== 'false' : true);
       }
@@ -2275,7 +2275,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
       }
     });
     this.on('attached', () => {
-      if (!this.contentWindow) {
+      if (this.ownerDocument.readyState !== 'loading' && !this.contentWindow) {
         _resetContentWindowDocument();
       }
     });
