@@ -1000,15 +1000,20 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
   const _waitLocalSyncs = syncs => {
     if (vrPresentState.glContext) {
       nativeWindow.setCurrentWindowContext(vrPresentState.glContext.getWindowHandle());
-
       for (let i = 0; i < syncs.length; i++) {
         const sync = syncs[i];
         nativeWindow.waitSync(sync);
         prevSyncs.push(sync);
       }
+      return [];
     } else {
-      for (let i = 0; i < syncs.length; i++) {
-        nativeWindow.deleteSync(syncs[i]);
+      if (nativeWindow.hasCurrentWindowContext()) {
+        for (let i = 0; i < syncs.length; i++) {
+          nativeWindow.deleteSync(syncs[i]);
+        }
+        return [];
+      } else {
+        return syncs;
       }
     }
   };
@@ -1118,12 +1123,13 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
       }
     }
 
-    return Promise.resolve(syncs);
+    return syncs;
   };
   const _renderLocal = (syncs, layered) => {
-    _waitLocalSyncs(syncs);
+    syncs = _waitLocalSyncs(syncs);
     _tickLocalRafs();
-    return _composeLocalLayers(layered);
+    syncs.push.apply(syncs, _composeLocalLayers(layered));
+    return Promise.resolve(syncs);
   };
   const _makeRenderChild = window => (syncs, layered) => window.runAsync({
     method: 'tickAnimationFrame',
