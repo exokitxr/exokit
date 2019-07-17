@@ -1742,14 +1742,14 @@ class HTMLScriptElement extends HTMLLoadableElement {
       }
     });
     this.on('attached', () => {
-      if (this.getAttribute('src') && this.isRunnable() && this.isConnected && !this.readyState) {
+      if (this.ownerDocument.readyState !== 'loading' && this.getAttribute('src') && this.isRunnable() && this.isConnected && !this.readyState) {
         const async = this.getAttribute('async');
         _loadRun(async !== null ? async !== 'false' : true);
       }
     });
     this.on('innerHTML', innerHTML => {
       if (this.isRunnable() && this.isConnected && !this.readyState) {
-        this.runNow();
+        this.loadRunNow();
       }
     });
   }
@@ -1804,29 +1804,71 @@ class HTMLScriptElement extends HTMLLoadableElement {
   }
 
   isRunnable() {
-    const {type} = this;
-    return !type || /^(?:(?:text|application)\/javascript|application\/ecmascript)$/.test(type);
+    return !this.type || /^(?:(?:text|application)\/javascript|application\/ecmascript|module)$/.test(this.type);
+  }
+
+  isModule() {
+    return this.type === 'module';
   }
 
   loadRunNow() {
     this.readyState = 'loading';
 
-    const url = _mapUrl(this.src, this.ownerDocument.defaultView);
-
     return this.ownerDocument.resources.addResource((onprogress, cb) => {
-      this.ownerDocument.defaultView.fetch(url)
-        .then(res => {
-          if (res.status >= 200 && res.status < 300) {
-            return res.text();
+      const _getSrc = () => {
+        const innerHTML = this.childNodes.length > 0 ? this.childNodes[0].value : '';
+        if (innerHTML) {
+          const url = this.ownerDocument.defaultView.location.href;
+          const isModule = this.isModule();
+          return Promise.resolve({
+            s: innerHTML,
+            url,
+            isModule,
+          });
+        } else {
+          const url = _mapUrl(this.src, this.ownerDocument.defaultView);
+          const isModule = this.isModule();
+          return _fetch(url)
+            .then(s => ({
+              s,
+              url,
+              isModule,
+            }));
+        }
+      };
+      const _fetch = async url => {
+        const res = await this.ownerDocument.defaultView.fetch(url);
+        if (res.status >= 200 && res.status < 300) {
+          return await res.text();
+        } else {
+          throw new Error('script src got invalid status code: ' + res.status + ' : ' + url);
+        }
+      };
+
+      return _getSrc()
+        .then(async ({s, url, isModule}) => {
+          const opts = {
+            lineOffset : this.location && this.location.line !== null ? this.location.line - 1 : 0,
+            columnOffset: this.location && this.location.col !== null ? this.location.col - 1 : 0,
+          };
+
+          if (isModule) {
+            opts.url = url;
+            const script = new vm.SourceTextModule(s, opts);
+            await script.link(async (url, {url: baseUrl}) => {
+              url = _mapUrl(_normalizeUrl(url, baseUrl), this.ownerDocument.defaultView);
+              const s = await _fetch(url);
+              return new vm.SourceTextModule(s, {
+                url: baseUrl,
+              });
+            });
+            script.instantiate();
+            await script.evaluate();
           } else {
-            return Promise.reject(new Error('script src got invalid status code: ' + res.status + ' : ' + url));
+            opts.filename = url;
+            vm.runInThisContext(s, opts);
           }
         })
-        .then(s => {
-          vm.runInThisContext(s, {
-            filename: url,
-          });
-        })
         .then(() => {
           this.readyState = 'complete';
 
@@ -1847,49 +1889,10 @@ class HTMLScriptElement extends HTMLLoadableElement {
     });
   }
 
-  runNow() {
-    this.readyState = 'loading';
-
-    const innerHTML = this.childNodes[0].value;
-    const window = this.ownerDocument.defaultView;
-
-    return this.ownerDocument.resources.addResource((onprogress, cb) => {
-      (async () => {
-        vm.runInThisContext(innerHTML, {
-          filename: window.location.href,
-          lineOffset : this.location && this.location.line !== null ? this.location.line - 1 : 0,
-          columnOffset: this.location && this.location.col !== null ? this.location.col - 1 : 0,
-        });
-      })()
-        .then(() => {
-          this.readyState = 'complete';
-
-          this.dispatchEvent(new Event('load', {target: this}));
-
-          cb();
-        })
-        .catch(err => {
-          this.readyState = 'complete';
-
-          const e = new ErrorEvent('error', {target: this});
-          e.message = err.message;
-          e.stack = err.stack;
-          this.dispatchEvent(e);
-
-          cb(err);
-        });
-    });
-  }
-
-  [symbols.runSymbol]() {
+  async [symbols.runSymbol]() {
     if (this.isRunnable() && !this.readyState) {
-      if (this.attributes.src) {
-        return this.loadRunNow();
-      } else if (this.childNodes.length > 0) {
-        return this.runNow();
-      }
+      await this.loadRunNow();
     }
-    return Promise.resolve();
   }
 }
 module.exports.HTMLScriptElement = HTMLScriptElement;
@@ -2272,7 +2275,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
       }
     });
     this.on('attached', () => {
-      if (!this.contentWindow) {
+      if (this.ownerDocument.readyState !== 'loading' && !this.contentWindow) {
         _resetContentWindowDocument();
       }
     });

@@ -29,6 +29,9 @@ function _getBaseUrl(u, currentBaseUrl = '') {
 module.exports._getBaseUrl = _getBaseUrl;
 
 function _normalizeUrl(src, baseUrl) {
+  if (/^\/\//.test(src)) {
+    src = new URL(baseUrl).protocol + src;
+  }
   if (!/^(?:https?|data|blob):/.test(src)) {
     return new URL(src, baseUrl).href
       .replace(/^(file:\/\/)\/([a-z]:.*)$/i, '$1$2');
