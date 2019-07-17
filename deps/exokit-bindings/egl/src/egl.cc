@@ -115,6 +115,18 @@ void SetCurrentWindowContext(NATIVEwindow *window) {
   }
 } */
 
+NAN_METHOD(HasCurrentWindowContext) {
+  info.GetReturnValue().Set(JS_BOOL(currentWindow != nullptr));
+}
+
+NAN_METHOD(GetCurrentWindowContext) {
+  if (currentWindow != nullptr) {
+    info.GetReturnValue().Set(pointerToArray(currentWindow));
+  } else {
+    info.GetReturnValue().Set(Nan::Null());
+  }
+}
+
 NAN_METHOD(SetCurrentWindowContext) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   SetCurrentWindowContext(window);
@@ -422,6 +434,8 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "setClipboard", egl::SetClipboard);
   Nan::SetMethod(target, "blitTopFrameBuffer", egl::BlitTopFrameBuffer);
   Nan::SetMethod(target, "blitChildFrameBuffer", egl::BlitChildFrameBuffer);
+  Nan::SetMethod(target, "hasCurrentWindowContext", egl::HasCurrentWindowContext);
+  Nan::SetMethod(target, "getCurrentWindowContext", egl::GetCurrentWindowContext);
   Nan::SetMethod(target, "setCurrentWindowContext", egl::SetCurrentWindowContext);
 
   return scope.Escape(target);
