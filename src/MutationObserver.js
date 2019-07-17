@@ -24,23 +24,24 @@ class MutationObserver {
 
     this.queue = [];
     this.bindings = new Map();
-    this.listeners = new WeakMap();
   }
 
   observe(el, options) {
-    const oldOptions = this.bindings.get(el);
-    if (oldOptions) {
-      this.unbind(el, oldOptions);
-      this.bindings.delete(el);
+    {
+      const unbind = this.bindings.get(el);
+      if (unbind) {
+        unbind();
+        this.bindings.delete(el);
+      }
     }
 
-    this.bind(el, options);
-    this.bindings.set(el, options);
+    const unbind = this.bind(el, options);
+    this.bindings.set(el, unbind);
   }
 
   disconnect() {
-    for (const [el, options] of this.bindings.entries()) {
-      this.unbind(el, options);
+    for (const unbind of this.bindings.values()) {
+      unbind();
     }
     this.bindings.clear();
   }
@@ -51,83 +52,82 @@ class MutationObserver {
     return oldQueue;
   }
 
-  bind(el, options) {
-    const _bind = el => {
-      if (el.nodeType === Node.ELEMENT_NODE) {
-        let _attribute = null;
-        let _children = null;
-        let _value = null;
+  bind(rootEl, options) {
+    let bindings = [];
 
-        if (options.attributes) {
-          _attribute = (name, value, oldValue) => {
-            this.handleAttribute(el, name, value, oldValue, options);
-          };
-          el.on('attribute', _attribute);
-        }
+    const _recursiveBind = rootEl => {
+      const _bind = el => {
+        if (el.nodeType === Node.ELEMENT_NODE) {
+          if (options.attributes) {
+            const _attribute = (name, value, oldValue) => {
+              this.handleAttribute(el, name, value, oldValue, options);
+            };
+            el.on('attribute', _attribute);
+            bindings.push([el, 'attribute', _attribute]);
+          }
 
-        if (options.childList || options.subtree) {
-          _children = (addedNodes, removedNodes, previousSibling, nextSibling) => {
-            if (options.childList) {
-              this.handleChildren(el, addedNodes, removedNodes, previousSibling, nextSibling);
-            }
-
-            if (options.subtree) {
-              for (let i = 0; i < removedNodes.length; i++) {
-                this.unbind(removedNodes[i], options);
+          if (options.childList || options.subtree) {
+            const _children = (addedNodes, removedNodes, previousSibling, nextSibling) => {
+              if (options.childList) {
+                this.handleChildren(el, addedNodes, removedNodes, previousSibling, nextSibling);
               }
-              for (let i = 0; i < addedNodes.length; i++) {
-                this.bind(addedNodes[i], options);
+
+              if (options.subtree) {
+                for (let i = 0; i < removedNodes.length; i++) {
+                  _recursiveUnbind(removedNodes[i]);
+                }
+                for (let i = 0; i < addedNodes.length; i++) {
+                  _recursiveBind(addedNodes[i]);
+                }
               }
-            }
-          };
-          el.on('children', _children);
-        }
+            };
+            el.on('children', _children);
+            bindings.push([el, 'children', _children]);
+          }
 
-        if (options.characterData) {
-          _value = () => {
-            this.handleValue(el);
-          };
-          el.on('value', _value);
+          if (options.characterData) {
+            const _value = () => {
+              this.handleValue(el);
+            };
+            el.on('value', _value);
+            bindings.push([el, 'value', _value]);
+          }
         }
-
-        this.listeners.set(el, [_attribute, _children, _value]);
+      };
+      if (options.subtree) {
+        rootEl.traverse(_bind);
+      } else {
+        _bind(rootEl);
       }
     };
-
-    if (options.subtree) {
-      el.traverse(_bind);
-    } else {
-      _bind(el);
-    }
-  }
-
-  unbind(el, options) {
-    const _unbind = el => {
-      const listeners = this.listeners.get(el);
-      if (listeners) {
-        const [
-          _attribute,
-          _children,
-          _value,
-        ] = listeners;
-        if (_attribute) {
-          el.removeListener('attribute', _attribute);
-        }
-        if (_children) {
-          el.removeListener('children', _children);
-        }
-        if (_value) {
-          el.removeListener('value', _value);
-        }
-        this.listeners.delete(el);
+    const _recursiveUnbind = rootEl => {
+      const _unbind = el => {
+        bindings = bindings.filter(binding => {
+          const [el2, evt, fn] = binding;
+          if (el2 === el) {
+            el2.removeListener(evt, fn);
+            return false;
+          } else {
+            return true;
+          }
+        });
+      };
+      if (options.subtree) {
+        rootEl.traverse(_unbind);
+      } else {
+        _unbind(rootEl);
       }
     };
-
-    if (options.subtree) {
-      el.traverse(_unbind);
-    } else {
-      _unbind(el);
-    }
+    
+    _recursiveBind(rootEl);
+    
+    return () => {
+      for (let i = 0; i < bindings.length; i++) {
+        const [el, evt, fn] = bindings[i];
+        el.removeListener(evt, fn);
+      }
+      bindings.length = 0;
+    };
   }
 
   flush() {
