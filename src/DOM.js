@@ -1846,7 +1846,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
         }
       };
 
-      _getSrc()
+      return _getSrc()
         .then(async ({s, url, isModule}) => {
           const opts = {
             lineOffset : this.location && this.location.line !== null ? this.location.line - 1 : 0,
@@ -1892,9 +1892,10 @@ class HTMLScriptElement extends HTMLLoadableElement {
 
   [symbols.runSymbol]() {
     if (this.isRunnable() && !this.readyState) {
-      this.loadRunNow();
+      return this.loadRunNow();
+    } else {
+      return Promise.resolve();
     }
-    return Promise.resolve();
   }
 }
 module.exports.HTMLScriptElement = HTMLScriptElement;
