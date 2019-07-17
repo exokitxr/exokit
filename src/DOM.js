@@ -2204,7 +2204,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                   parent,
                   top,
                   htmlString,
-                  hidden: true,
+                  hidden: this.d === 3,
                   xrOffsetBuffer: this.xrOffset._buffer,
                   onnavigate: (href) => {
                     this.readyState = null;
@@ -2319,7 +2319,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
 
   get d() {
     const d = parseInt(this.getAttribute('d') + '', 10);
-    return isFinite(d) ? d : 3;
+    return isFinite(d) ? d : null;
   }
   set d(value) {
     if (typeof value === 'number' && isFinite(value)) {
