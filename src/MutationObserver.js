@@ -4,8 +4,7 @@ const {process} = global;
 const emptyNodeList = new NodeList();
 
 class MutationRecord {
-  constructor(type, target, addedNodes, removedNodes, previousSibling, nextSibling,
-              attributeName, attributeNamespace, oldValue) {
+  constructor(type, target, addedNodes, removedNodes, previousSibling, nextSibling, attributeName, attributeNamespace, oldValue) {
     this.type = type;
     this.target = target;
     this.addedNodes = addedNodes;
