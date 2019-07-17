@@ -23,24 +23,27 @@ class MutationObserver {
   constructor(callback) {
     this.callback = callback;
 
-    this.element = null;
-    this.options = {};
     this.queue = [];
-    this.bindings = new WeakMap();
+    this.bindings = new Map();
+    this.callbacks = new WeakMap();
   }
 
-  observe(element, options) {
-    this.element = element;
-    this.options = options || {};
+  observe(el, options) {
+    const oldOptions = this.bindings.get(el);
+    if (oldOptions) {
+      this.unbind(el, oldOptions);
+      this.bindings.delete(el);
+    }
 
-    this.bind(element);
+    this.bind(el, options);
+    this.bindings.set(el, options);
   }
 
   disconnect() {
-    this.unbind(this.element);
-
-    this.element = null;
-    this.options = {};
+    for (const [el, options] of this.bindings.entries()) {
+      this.unbind(el, options);
+    }
+    this.bindings.clear();
   }
 
   takeRecords() {
@@ -49,60 +52,65 @@ class MutationObserver {
     return oldQueue;
   }
 
-  bind(el) {
+  bind(el, options) {
     const _bind = el => {
-      let _attribute = null;
-      let _children = null;
-      let _value = null;
+      if (el.nodeType === Node.ELEMENT_NODE) {
+        let _attribute = null;
+        let _children = null;
+        let _value = null;
 
-      if (this.options.attributes) {
-        _attribute = (name, value, oldValue) => {
-          this.handleAttribute(el, name, value, oldValue);
-        };
-        el.on('attribute', _attribute);
-      }
-
-      _children = (addedNodes, removedNodes, previousSibling, nextSibling) => {
-        // TODO: Check options.childList and notify childList-listening ancestors.
-        this.handleChildren(el, addedNodes, removedNodes, previousSibling, nextSibling);
-
-        if (this.options.subtree) {
-          for (let i = 0; i < removedNodes.length; i++) {
-            this.unbind(removedNodes[i]);
-          }
-          for (let i = 0; i < addedNodes.length; i++) {
-            this.bind(addedNodes[i]);
-          }
+        if (options.attributes) {
+          _attribute = (name, value, oldValue) => {
+            this.handleAttribute(el, name, value, oldValue, options);
+          };
+          el.on('attribute', _attribute);
         }
-      };
-      el.on('children', _children);
 
-      if (this.options.characterData) {
-        _value = () => {
-          this.handleValue(el);
-        };
-        el.on('value', _value);
+        if (options.childList || options.subtree) {
+          _children = (addedNodes, removedNodes, previousSibling, nextSibling) => {
+            if (options.childList) {
+              this.handleChildren(el, addedNodes, removedNodes, previousSibling, nextSibling);
+            }
+
+            if (options.subtree) {
+              for (let i = 0; i < removedNodes.length; i++) {
+                this.unbind(removedNodes[i], options);
+              }
+              for (let i = 0; i < addedNodes.length; i++) {
+                this.bind(addedNodes[i], options);
+              }
+            }
+          };
+          el.on('children', _children);
+        }
+
+        if (options.characterData) {
+          _value = () => {
+            this.handleValue(el);
+          };
+          el.on('value', _value);
+        }
+
+        this.callbacks.set(el, [_attribute, _children, _value]);
       }
-
-      this.bindings.set(el, [_attribute, _children, _value]);
     };
 
-    if (this.options.subtree) {
+    if (options.subtree) {
       el.traverse(_bind);
     } else {
       _bind(el);
     }
   }
 
-  unbind(el) {
+  unbind(el, options) {
     const _unbind = el => {
-      const bindings = this.bindings.get(el);
-      if (bindings) {
+      const callbacks = this.callbacks.get(el);
+      if (callbacks) {
         const [
           _attribute,
           _children,
           _value,
-        ] = bindings;
+        ] = callbacks;
         if (_attribute) {
           el.removeListener('attribute', _attribute);
         }
@@ -112,11 +120,11 @@ class MutationObserver {
         if (_value) {
           el.removeListener('value', _value);
         }
-        this.bindings.delete(el);
+        this.callbacks.delete(el);
       }
     };
 
-    if (this.options.subtree) {
+    if (options.subtree) {
       el.traverse(_unbind);
     } else {
       _unbind(el);
@@ -131,36 +139,39 @@ class MutationObserver {
     }
   }
 
-  handleAttribute(el, name, value, oldValue) {
+  handleAttribute(el, name, value, oldValue, options) {
     // If observing document, only queue mutations if element is part of the DOM (#361).
-    if (this.element === el.ownerDocument && !el.ownerDocument.contains(el)) { return; }
+    // if (this.element === el.ownerDocument && !el.ownerDocument.contains(el)) { return; }
 
     // Respect attribute filter.
-    if (this.options.attributeFilter && !this.options.attributeFilter.includes(name)) {
+    if (options.attributeFilter && !options.attributeFilter.includes(name)) {
       return;
     }
 
-    this.queue.push(new MutationRecord('attributes', el, emptyNodeList, emptyNodeList,
-                                       null, null, name, null, oldValue));
-    process.nextTick(() => { this.flush(); });
+    this.queue.push(new MutationRecord('attributes', el, emptyNodeList, emptyNodeList, null, null, name, null, oldValue));
+    process.nextTick(() => {
+      this.flush();
+    });
   }
 
   handleChildren(el, addedNodes, removedNodes, previousSibling, nextSibling) {
     // If observing document, only queue mutations if element is part of the DOM (#361).
-    if (this.element === el.ownerDocument && !el.ownerDocument.contains(el)) { return; }
+    // if (this.element === el.ownerDocument && !el.ownerDocument.contains(el)) { return; }
 
-    this.queue.push(new MutationRecord('childList', el, addedNodes, removedNodes,
-                                       previousSibling, nextSibling, null, null, null));
-    process.nextTick(() => { this.flush(); });
+    this.queue.push(new MutationRecord('childList', el, addedNodes, removedNodes, previousSibling, nextSibling, null, null, null));
+    process.nextTick(() => {
+      this.flush();
+    });
   }
 
   handleValue(el) {
     // If observing document, only queue mutations if element is part of the DOM (#361).
-    if (this.element === el.ownerDocument && !el.ownerDocument.contains(el)) { return; }
+    // if (this.element === el.ownerDocument && !el.ownerDocument.contains(el)) { return; }
 
-    this.queue.push(new MutationRecord('characterData', el, emptyNodeList, emptyNodeList,
-                                       null, null, null, null, null));
-    process.nextTick(() => { this.flush(); });
+    this.queue.push(new MutationRecord('characterData', el, emptyNodeList, emptyNodeList, null, null, null, null, null));
+    process.nextTick(() => {
+      this.flush();
+    });
   }
 }
 module.exports.MutationObserver = MutationObserver;
