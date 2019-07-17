@@ -946,6 +946,14 @@ NAN_METHOD(HasCurrentWindowContext) {
   info.GetReturnValue().Set(JS_BOOL(currentWindow != nullptr));
 }
 
+NAN_METHOD(GetCurrentWindowContext) {
+  if (currentWindow != nullptr) {
+    info.GetReturnValue().Set(pointerToArray(currentWindow));
+  } else {
+    info.GetReturnValue().Set(Nan::Null());
+  }
+}
+
 NAN_METHOD(SetCurrentWindowContext) {
   NATIVEwindow *window = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
   SetCurrentWindowContext(window);
@@ -1763,6 +1771,7 @@ Local<Object> makeWindow() {
   Nan::SetMethod(target, "blitTopFrameBuffer", glfw::BlitTopFrameBuffer);
   Nan::SetMethod(target, "blitChildFrameBuffer", glfw::BlitChildFrameBuffer);
   Nan::SetMethod(target, "hasCurrentWindowContext", glfw::HasCurrentWindowContext);
+  Nan::SetMethod(target, "getCurrentWindowContext", glfw::GetCurrentWindowContext);
   Nan::SetMethod(target, "setCurrentWindowContext", glfw::SetCurrentWindowContext);
 #ifdef MAIN_THREAD_POLLING
   Nan::SetMethod(target, "pollEvents", glfw::PollEvents);
