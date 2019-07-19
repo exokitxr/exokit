@@ -1720,4 +1720,6 @@ CanvasRenderingContext2D::CanvasRenderingContext2D() :
   clearPaint.setBlendMode(SkBlendMode::kSrc);
 }
 
-CanvasRenderingContext2D::~CanvasRenderingContext2D () {}
+CanvasRenderingContext2D::~CanvasRenderingContext2D () {
+  // XXX need to destroy the texture here
+}
