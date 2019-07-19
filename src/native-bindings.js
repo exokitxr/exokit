@@ -430,7 +430,6 @@ const _onGl2DConstruct = (ctx, canvas, attrs) => {
   })();
 
   if (windowHandle) {
-    console.log('set 2d window handle 1');
     ctx.setWindowHandle(windowHandle);
     ctx.setTexture(canvasWidth, canvasHeight);
 
