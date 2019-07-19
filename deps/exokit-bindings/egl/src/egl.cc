@@ -317,20 +317,6 @@ NAN_METHOD(InitWindow3D) {
   info.GetReturnValue().Set(result);
 }
 
-NAN_METHOD(InitWindow2D) {
-  NATIVEwindow *windowHandle = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-  
-  SetCurrentWindowContext(windowHandle);
-
-  GLuint tex;
-  glGenTextures(1, &tex);
-
-  Local<Array> result = Nan::New<Array>(2);
-  result->Set(0, pointerToArray(windowHandle));
-  result->Set(1, JS_INT(tex));
-  info.GetReturnValue().Set(result);
-}
-
 NATIVEwindow *CreateWindowHandle(unsigned int width, unsigned int height, bool initialVisible) {
   return CreateNativeWindow(width, height, initialVisible);
 }
@@ -408,7 +394,6 @@ Local<Object> makeWindow() {
   windowsystembase::Decorate(target);
 
   Nan::SetMethod(target, "initWindow3D", egl::InitWindow3D);
-  Nan::SetMethod(target, "initWindow2D", egl::InitWindow2D);
 
   Nan::SetMethod(target, "createWindowHandle", egl::CreateWindowHandle);
   Nan::SetMethod(target, "destroyWindowHandle", egl::DestroyWindowHandle);
