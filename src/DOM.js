@@ -2526,7 +2526,12 @@ class HTMLCanvasElement extends HTMLElement {
   getContext(contextType, attrs = {}) {
     if (contextType === '2d') {
       if (this._context) {
-        this._context.destroy();
+        const windowHandle = this._context.getWindowHandle();
+        const window = this.ownerDocument.defaultView;
+        const canvas2dWindowHandle = window[symbols.canvas2dWindowHandle];
+        if (!_windowHandleEquals(windowHandle, canvas2dWindowHandle)) {
+          this._context.destroy();
+        }
         this._context = null;
       }
 
