@@ -142,6 +142,9 @@ Local<Object> CanvasRenderingContext2D::Initialize(Isolate *isolate, Local<Value
   Nan::SetMethod(proto, "destroy", Destroy);
   Nan::SetMethod(proto, "getWindowHandle", GetWindowHandle);
   Nan::SetMethod(proto, "setWindowHandle", SetWindowHandle);
+  Nan::SetMethod(proto, "makeGrContext", MakeGrContext);
+  Nan::SetMethod(proto, "getGrContext", GetGrContext);
+  Nan::SetMethod(proto, "setGrContext", SetGrContext);
 
   Local<Function> ctorFn = Nan::GetFunction(ctor).ToLocalChecked();
   ctorFn->Set(JS_STR("ImageData"), imageDataCons);
@@ -1562,21 +1565,35 @@ NAN_METHOD(CanvasRenderingContext2D::GetWindowHandle) {
 
 NAN_METHOD(CanvasRenderingContext2D::SetWindowHandle) {
   CanvasRenderingContext2D *ctx = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
-  if (info[0]->IsArray()) {
-    ctx->windowHandle = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
-    
-    windowsystem::SetCurrentWindowContext(ctx->windowHandle);
-    
-    // You've already created your OpenGL context and bound it.
-    // Leaving interface as null makes Skia extract pointers to OpenGL functions for the current
-    // context in a platform-specific way. Alternatively, you may create your own GrGLInterface and
-    // initialize it however you like to attach to an alternate OpenGL implementation or intercept
-    // Skia's OpenGL calls.
-    // const GrGLInterface *interface = nullptr;
-    ctx->grContext = GrContext::MakeGL(nullptr);
-  } else {
-    ctx->windowHandle = nullptr;
-  }
+  ctx->windowHandle = (NATIVEwindow *)arrayToPointer(Local<Array>::Cast(info[0]));
+  
+  // windowsystem::SetCurrentWindowContext(ctx->windowHandle);
+}
+
+NAN_METHOD(CanvasRenderingContext2D::MakeGrContext) {
+  CanvasRenderingContext2D *ctx = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+
+  // You've already created your OpenGL context and bound it.
+  // Leaving interface as null makes Skia extract pointers to OpenGL functions for the current
+  // context in a platform-specific way. Alternatively, you may create your own GrGLInterface and
+  // initialize it however you like to attach to an alternate OpenGL implementation or intercept
+  // Skia's OpenGL calls.
+  // const GrGLInterface *interface = nullptr;
+  ctx->grContext = GrContext::MakeGL(nullptr);
+  sk_sp<GrContext> *grContext = &ctx->grContext;
+  info.GetReturnValue().Set(pointerToArray(grContext));
+}
+
+NAN_METHOD(CanvasRenderingContext2D::GetGrContext) {
+  CanvasRenderingContext2D *ctx = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+  sk_sp<GrContext> *grContext = &ctx->grContext;
+  info.GetReturnValue().Set(pointerToArray(grContext));
+}
+
+NAN_METHOD(CanvasRenderingContext2D::SetGrContext) {
+  CanvasRenderingContext2D *ctx = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
+  sk_sp<GrContext> *grContext = (sk_sp<GrContext> *)arrayToPointer(Local<Array>::Cast(info[0]));
+  ctx->grContext = *grContext;
 }
 
 NAN_METHOD(CanvasRenderingContext2D::SetTexture) {
