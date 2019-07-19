@@ -1581,12 +1581,15 @@ NAN_METHOD(CanvasRenderingContext2D::SetWindowHandle) {
 
 NAN_METHOD(CanvasRenderingContext2D::SetTexture) {
   CanvasRenderingContext2D *ctx = ObjectWrap::Unwrap<CanvasRenderingContext2D>(info.This());
-  if (info[0]->IsNumber() && info[1]->IsNumber() && info[2]->IsNumber()) {
-    GLuint tex = TO_UINT32(info[0]);
-    int width = TO_INT32(info[1]);
-    int height = TO_INT32(info[2]);
-    
-    ctx->tex = tex;
+  if (info[0]->IsNumber() && info[1]->IsNumber()) {
+    int width = TO_INT32(info[0]);
+    int height = TO_INT32(info[1]);
+
+    GLuint tex = ctx->tex;
+    if (tex == 0) {
+      glGenTextures(1, &tex);
+      ctx->tex = tex;
+    }
 
     glBindTexture(GL_TEXTURE_2D, tex);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
