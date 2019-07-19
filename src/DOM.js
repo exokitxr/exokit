@@ -48,6 +48,7 @@ const _loadPromise = el => new Promise((accept, reject) => {
   el.on('load', load);
   el.on('error', error);
 });
+const _windowHandleEquals = (a, b) => a[0] === b[0] && a[1] === b[1];
 
 const EMPTY_ARRAY = [];
 
