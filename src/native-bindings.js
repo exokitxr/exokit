@@ -416,21 +416,29 @@ const _onGl2DConstruct = (ctx, canvas, attrs) => {
 
   const window = canvas.ownerDocument.defaultView;
 
-  const windowHandle = (() => {
+  const windowSpec = (() => {
     if (!window[symbols.optionsSymbol].args.nogl) {
       let windowHandle = window[symbols.canvas2dWindowHandle];
+      let grContext = window[symbols.canvas2dGrContext];
       if (!windowHandle) {
         windowHandle = nativeWindow.createWindowHandle(16, 16, false);
         window[symbols.canvas2dWindowHandle] = windowHandle;
+
+        nativeWindow.setCurrentWindowContext(windowHandle);
+        grContext = ctx.makeGrContext();
+        window[symbols.canvas2dGrContext] = grContext;
       }
-      return windowHandle;
+      return [windowHandle, grContext];
     } else {
       return null;
     }
   })();
 
-  if (windowHandle) {
+  if (windowSpec) {
+    const [windowHandle, grContext] = windowSpec;
     ctx.setWindowHandle(windowHandle);
+    nativeWindow.setCurrentWindowContext(windowHandle);
+    ctx.setGrContext(grContext);
     ctx.setTexture(canvasWidth, canvasHeight);
 
     ctx.destroy = (destroy => function() {
