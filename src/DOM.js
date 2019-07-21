@@ -1859,7 +1859,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
               url = _mapUrl(_normalizeUrl(url, baseUrl), this.ownerDocument.defaultView);
               const s = await _fetch(url);
               return new vm.SourceTextModule(s, {
-                url: baseUrl,
+                url,
               });
             });
             script.instantiate();
