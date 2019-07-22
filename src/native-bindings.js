@@ -418,24 +418,29 @@ const _onGl2DConstruct = (ctx, canvas, attrs) => {
 
   const windowSpec = (() => {
     if (!window[symbols.optionsSymbol].args.nogl) {
-      try {
-        const windowHandle = nativeWindow.createWindowHandle(canvasWidth, canvasHeight, false);
-        return nativeWindow.initWindow2D(windowHandle);
-      } catch (err) {
-        console.warn(err.message);
-        return null;
+      let windowHandle = window[symbols.canvas2dWindowHandle];
+      let grContext = window[symbols.canvas2dGrContext];
+      if (!windowHandle) {
+        windowHandle = nativeWindow.createWindowHandle(16, 16, false);
+        window[symbols.canvas2dWindowHandle] = windowHandle;
+
+        nativeWindow.setCurrentWindowContext(windowHandle);
+        grContext = ctx.makeGrContext();
+        window[symbols.canvas2dGrContext] = grContext;
       }
+      return [windowHandle, grContext];
     } else {
       return null;
     }
   })();
 
   if (windowSpec) {
-    const [windowHandle, tex] = windowSpec;
-
+    const [windowHandle, grContext] = windowSpec;
     ctx.setWindowHandle(windowHandle);
-    ctx.setTexture(tex, canvasWidth, canvasHeight);
-    
+    nativeWindow.setCurrentWindowContext(windowHandle);
+    ctx.setGrContext(grContext);
+    ctx.setTexture(canvasWidth, canvasHeight);
+
     ctx.destroy = (destroy => function() {
       destroy.call(this);
       

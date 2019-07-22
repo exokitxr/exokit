@@ -48,6 +48,13 @@ const _loadPromise = el => new Promise((accept, reject) => {
   el.on('load', load);
   el.on('error', error);
 });
+const _windowHandleEquals = (a, b) => {
+  if (a && b) {
+    return a[0] === b[0] && a[1] === b[1];
+  } else {
+    return !a && !b;
+  }
+};
 
 const EMPTY_ARRAY = [];
 
@@ -2525,7 +2532,12 @@ class HTMLCanvasElement extends HTMLElement {
   getContext(contextType, attrs = {}) {
     if (contextType === '2d') {
       if (this._context) {
-        this._context.destroy();
+        const windowHandle = this._context.getWindowHandle();
+        const window = this.ownerDocument.defaultView;
+        const canvas2dWindowHandle = window[symbols.canvas2dWindowHandle];
+        if (!_windowHandleEquals(windowHandle, canvas2dWindowHandle)) {
+          this._context.destroy();
+        }
         this._context = null;
       }
 

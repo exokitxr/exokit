@@ -167,6 +167,9 @@ public:
   static NAN_METHOD(Destroy);
   static NAN_METHOD(GetWindowHandle);
   static NAN_METHOD(SetWindowHandle);
+  static NAN_METHOD(MakeGrContext);
+  static NAN_METHOD(GetGrContext);
+  static NAN_METHOD(SetGrContext);
   static NAN_METHOD(SetTexture);
 
   static bool isImageType(Local<Value> arg);
