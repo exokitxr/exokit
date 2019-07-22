@@ -35,9 +35,9 @@ public:
   GLuint msDepthTex;
   GLuint tex;
   GLuint depthTex;
-  float *viewports[2];
-  float *modelView[2];
-  float *projection[2];
+  std::vector<float> viewports[2];
+  std::vector<float> modelView[2];
+  std::vector<float> projection[2];
 };
 
 class ComposeGlShader : public GlShader {
