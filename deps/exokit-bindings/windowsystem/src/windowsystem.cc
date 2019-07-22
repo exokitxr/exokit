@@ -1095,15 +1095,15 @@ void ComposeLayer(WebGLRenderingContext *gl, const LayerSpec &layer) {
     glUniform1i(planeGlShader->texLocation, 0);
 
     {
-      glUniformMatrix4fv(planeGlShader->modelViewMatrixLocation, 1, false, layer.modelView[0]);
-      glUniformMatrix4fv(planeGlShader->projectionMatrixLocation, 1, false, layer.projection[0]);
+      glUniformMatrix4fv(planeGlShader->modelViewMatrixLocation, 1, false, layer.modelView[0].data());
+      glUniformMatrix4fv(planeGlShader->projectionMatrixLocation, 1, false, layer.projection[0].data());
 
       glViewport(layer.viewports[0][0], layer.viewports[0][1], layer.viewports[0][2], layer.viewports[0][3]);
       glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
     }
     {
-      glUniformMatrix4fv(planeGlShader->modelViewMatrixLocation, 1, false, layer.modelView[1]);
-      glUniformMatrix4fv(planeGlShader->projectionMatrixLocation, 1, false, layer.projection[1]);
+      glUniformMatrix4fv(planeGlShader->modelViewMatrixLocation, 1, false, layer.modelView[1].data());
+      glUniformMatrix4fv(planeGlShader->projectionMatrixLocation, 1, false, layer.projection[1].data());
 
       glViewport(layer.viewports[1][0], layer.viewports[1][1], layer.viewports[1][2], layer.viewports[1][3]);
       glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
@@ -1255,13 +1255,13 @@ NAN_METHOD(ComposeLayers) {
             const float renderWidth = TO_FLOAT(renderWidthFloat32Array->Get(0));
             Local<Float32Array> renderHeightFloat32Array = Local<Float32Array>::Cast(xrStateObj->Get(JS_STR("renderHeight")));
             const float renderHeight = TO_FLOAT(renderHeightFloat32Array->Get(0));
-            float leftViewport[] = {
+            std::vector<float> leftViewport = {
               0,
               0,
               renderWidth,
               renderHeight,
             };
-            float rightViewport[] = {
+            std::vector<float> rightViewport = {
               renderWidth,
               0,
               renderWidth,
@@ -1289,9 +1289,11 @@ NAN_METHOD(ComposeLayers) {
             }
 
             Local<Float32Array> leftProjectionMatrixFloat32Array = Local<Float32Array>::Cast(xrStateObj->Get(JS_STR("leftProjectionMatrix")));
-            float *leftProjectionMatrix = (float *)((char *)leftProjectionMatrixFloat32Array->Buffer()->GetContents().Data() + leftProjectionMatrixFloat32Array->ByteOffset());
+            std::vector<float> leftProjectionMatrix(16);
+            memcpy(leftProjectionMatrix.data(), (char *)leftProjectionMatrixFloat32Array->Buffer()->GetContents().Data() + leftProjectionMatrixFloat32Array->ByteOffset(), 16 * sizeof(float));
             Local<Float32Array> rightProjectionMatrixFloat32Array = Local<Float32Array>::Cast(xrStateObj->Get(JS_STR("rightProjectionMatrix")));
-            float *rightProjectionMatrix = (float *)((char *)rightProjectionMatrixFloat32Array->Buffer()->GetContents().Data() + rightProjectionMatrixFloat32Array->ByteOffset());
+            std::vector<float> rightProjectionMatrix(16);
+            memcpy(rightProjectionMatrix.data(), (char *)rightProjectionMatrixFloat32Array->Buffer()->GetContents().Data() + rightProjectionMatrixFloat32Array->ByteOffset(), 16 * sizeof(float));
 
             layers.push_back(LayerSpec{
               LayerType::IFRAME_2D,
@@ -1302,16 +1304,16 @@ NAN_METHOD(ComposeLayers) {
               tex,
               0,
               { // viewports
-                leftViewport,
-                rightViewport,
+                std::move(leftViewport),
+                std::move(rightViewport),
               },
               { // modelView
-                leftViewMatrix.data(),
-                rightViewMatrix.data(),
+                std::move(leftViewMatrix),
+                std::move(rightViewMatrix),
               },
               { // projection
-                leftProjectionMatrix,
-                rightProjectionMatrix,
+                std::move(leftProjectionMatrix),
+                std::move(rightProjectionMatrix),
               }
             });
             break;
