@@ -197,6 +197,9 @@ const _makeWindow = (options = {}, handlers = {}) => {
   window.on('hapticPulse', e => {
     options.onhapticpulse && options.onhapticpulse(e);
   });
+  window.on('paymentRequest', e => {
+    options.onpaymentrequest && options.onpaymentrequest(e);
+  });
   window.on('error', err => {
     console.warn(err.stack);
   });
