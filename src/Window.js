@@ -291,6 +291,32 @@ class CustomElementRegistry {
   }
 }
 
+class PaymentRequest {
+  constructor(methodData, details, options) {
+    this.methodData = methodData;
+    this.details = details;
+    this.options = options;
+  }
+
+  async show() {
+    const {methodData, details, options} = this;
+
+    const listeners = window.listeners('paymentrequest');
+    if (listeners.length > 0) {
+      parentPort.postMessage({
+        method: 'paymentRequest',
+        event: {
+          methodData,
+          details,
+          options,
+        },
+      });
+    } else {
+      throw new Error('no payment request handler');
+    }
+  }
+}
+
 class MonitorManager {
   getList() {
     return nativeWindow.getMonitors();
@@ -856,6 +882,7 @@ const _makeRequestAnimationFrame = window => (fn, priority = 0) => {
   window.StereoPannerNode = StereoPannerNode;
   window.createImageBitmap = createImageBitmap;
   window.Worker = Worker;
+  window.PaymentRequest = PaymentRequest;
   window.requestAnimationFrame = _makeRequestAnimationFrame(window);
   window.cancelAnimationFrame = id => {
     const index = rafCbs.findIndex(r => r && r[symbols.idSymbol] === id);
