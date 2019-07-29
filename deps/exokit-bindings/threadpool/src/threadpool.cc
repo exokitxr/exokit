@@ -75,15 +75,23 @@ void ThreadPool::queueWork(std::function<void()> workFn, std::function<void()> c
 void ThreadPool::asyncFn(uv_async_t *handle) {
   ThreadPool *threadPool = (ThreadPool *)handle->data;
 
-  std::function<void()> queueEntry;
-  {
-    std::lock_guard<std::mutex> lock(threadPool->mutex);
+  for (;;) {
+    std::function<void()> queueEntry;
+    {
+      std::lock_guard<std::mutex> lock(threadPool->mutex);
 
-    queueEntry = threadPool->resQueue.front();
-    threadPool->resQueue.pop_front();
+      if (threadPool->resQueue.size() > 0) {
+        queueEntry = threadPool->resQueue.front();
+        threadPool->resQueue.pop_front();
+      }
+    }
+
+    if (queueEntry) {
+      queueEntry();
+    } else {
+      break;
+    }
   }
-
-  queueEntry();
 }
 
 thread_local ThreadPool *windowThreadPool = nullptr;
