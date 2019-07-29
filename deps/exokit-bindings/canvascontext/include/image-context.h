@@ -1,9 +1,13 @@
 #ifndef _CANVASCONTEXT_IMAGE_H_
 #define _CANVASCONTEXT_IMAGE_H_
 
+#include <string>
+#include <thread>
+
 #include <v8.h>
 #include <node.h>
 #include <nan.h>
+
 #include <defines.h>
 #include <canvas/include/Context.h>
 #include <canvas/include/Image.h>
@@ -14,8 +18,6 @@
 #include <nanosvg.h>
 #include <nanosvgrast.h>
 #include <windowsystem.h>
-#include <string>
-#include <thread>
 
 using namespace v8;
 using namespace node;
