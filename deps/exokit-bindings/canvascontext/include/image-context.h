@@ -18,6 +18,7 @@
 #include <nanosvg.h>
 #include <nanosvgrast.h>
 #include <windowsystem.h>
+#include <threadpool.h>
 
 using namespace v8;
 using namespace node;
@@ -29,7 +30,6 @@ public:
   unsigned int GetHeight();
   unsigned int GetNumChannels();
   // unsigned char *GetData();
-  static void RunInMainThread(uv_async_t *handle);
   void Load(Local<ArrayBuffer> arrayBuffer, size_t byteOffset, size_t byteLength, Local<Function> cbFn);
   // void Set(canvas::Image *image);
 
@@ -52,7 +52,6 @@ private:
   bool loading;
   bool hasCbFn;
   std::string error;
-  uv_async_t threadAsyncHandle;
   uv_sem_t sem;
 
   friend class CanvasRenderingContext2D;
