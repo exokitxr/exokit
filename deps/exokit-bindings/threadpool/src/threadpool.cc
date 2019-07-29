@@ -6,12 +6,19 @@ QueueEntry::QueueEntry(std::function<void()> workFn, std::function<void()> cbFn)
 QueueEntry::QueueEntry() {}
 
 ThreadPool::ThreadPool() : live(true) {
+  asyncHandle = new uv_async_t();
+  asyncHandle->data = this;
+  uv_loop_t *loop = windowsystembase::GetEventLoop();
+  uv_async_init(loop, asyncHandle, asyncFn);
+  uv_sem_init(&sem, 0);
+  
   threads.reserve(NUM_THREADS);
   for (int i = 0; i < NUM_THREADS; i++) {
     std::thread *thread = new std::thread([this]() -> void {
       for (;;) {
-        QueueEntry queueEntry;
+        uv_sem_wait(&sem);
         
+        QueueEntry queueEntry;
         {
           std::lock_guard<std::mutex> lock(mutex);
 
@@ -33,12 +40,6 @@ ThreadPool::ThreadPool() : live(true) {
     });
     threads.push_back(thread);
   }
-  
-  asyncHandle = new uv_async_t();
-  asyncHandle->data = this;
-  uv_loop_t *loop = windowsystembase::GetEventLoop();
-  uv_async_init(loop, asyncHandle, asyncFn);
-  uv_sem_init(&sem, NUM_THREADS);
 }
 
 void deleteHandle(uv_handle_t *handle) {
