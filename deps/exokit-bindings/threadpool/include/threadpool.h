@@ -30,7 +30,7 @@ public:
   ThreadPool();
   ~ThreadPool();
 
-  void queueWork(std::function<void()> workFn, std::function<void()> cbFn);
+  void queueWork(std::function<void()> workFn = []() -> void {}, std::function<void()> cbFn = []() -> void {});
   static void ThreadPool::asyncFn(uv_async_t *handle);
 
 // protected:
