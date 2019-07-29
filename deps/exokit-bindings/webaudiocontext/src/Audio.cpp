@@ -62,7 +62,7 @@ void Audio::Load(uint8_t *bufferValue, size_t bufferLength, Local<Function> cbFn
     std::vector<unsigned char> buffer(bufferLength);
     memcpy(buffer.data(), bufferValue, bufferLength);
     threadpool::ThreadPool *threadPool = threadpool::getWindowThreadPool();
-    threadPool->queueWork([this, buffer{std::move(buffer)}]() mutable -> void {
+    threadPool->queueWork([this, webAudioAsync, buffer{std::move(buffer)}]() mutable -> void {
       this->audioBus = lab::MakeBusFromMemory(buffer, false, &this->error);
       
       webAudioAsync->QueueOnMainThread(std::bind(ProcessLoadInMainThread, this));
