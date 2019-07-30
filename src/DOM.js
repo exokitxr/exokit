@@ -3029,6 +3029,14 @@ class HTMLAudioElement extends HTMLMediaElement {
     }
   }
 
+  get autoplay() {
+    const autoplay = this.getAttribute('autoplay');
+    return !!autoplay || autoplay === '';
+  }
+  set autoplay(autoplay) {
+    this.setAttribute('autoplay', autoplay);
+  }
+
   get buffered() {
     return new TimeRanges([0, this.duration]);
   }
