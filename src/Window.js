@@ -1344,11 +1344,10 @@ global.onrunasync = req => {
             error: req.error,
             result: req.result,
           });
-
-          return Promise.resolve();
         } else {
-          return Promise.reject(new Error(`response for unknown window ${method} ${JSON.stringify(windows.map(window => window.id))}`));
+          console.warn('ignoring unknown response', req, {windowId});
         }
+        return Promise.resolve();
       }
     }
     case 'keyEvent': {
