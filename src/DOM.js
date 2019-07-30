@@ -2228,6 +2228,19 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                       event,
                     });
                   },
+                  onpaymentrequest(event) {
+                    if (window.listeners('paymentrequest').length > 0) {
+                      window.dispatchEvent(new CustomEvent('paymentrequest', {
+                        detail: event,
+                      }));
+                    } else {
+                      parentPort.postMessage({
+                        method: 'emit',
+                        type: 'paymentRequest',
+                        event,
+                      });
+                    }
+                  },
                 });
                 this.contentWindow.document = this.contentDocument;
 

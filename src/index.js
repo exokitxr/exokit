@@ -583,6 +583,9 @@ const handleHapticPulse = ({index, value, duration}) => {
     // TODO: handle the other HMD cases...
   }
 };
+const handlePaymentRequest = () => {
+  throw new Error('no payment request handler');
+};
 
 const _startTopRenderLoop = () => {
   const timestamps = {
@@ -1485,6 +1488,7 @@ const _start = () => {
         onnavigate: _onnavigate,
         onrequest: handleRequest,
         onhapticpulse: handleHapticPulse,
+        onpaymentrequest: handlePaymentRequest,
       });
     };
     _onnavigate(u);
@@ -1509,6 +1513,7 @@ const _start = () => {
       onnavigate: _onnavigate,
       onrequest: handleRequest,
       onhapticpulse: handleHapticPulse,
+      onpaymentrequest: handlePaymentRequest,
     });
 
     const prompt = '[x] ';
