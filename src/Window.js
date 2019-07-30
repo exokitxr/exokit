@@ -1438,5 +1438,6 @@ global.onexit = () => {
   }
   
   AudioContext.Destroy();
+  nativeWindow.destroyThreadPool();
 };
 // global.setImmediate = undefined; // need this for the TLS implementation
