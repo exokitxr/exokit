@@ -47,7 +47,6 @@ private:
   sk_sp<SkImage> image;
   Nan::Persistent<Uint8ClampedArray> dataArray;
 
-  Nan::Persistent<ArrayBuffer> arrayBuffer;
   Nan::Persistent<Function> cbFn;
   bool loading;
   bool hasCbFn;

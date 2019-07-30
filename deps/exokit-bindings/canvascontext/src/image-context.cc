@@ -49,14 +49,15 @@ unsigned int Image::GetNumChannels() {
 void Image::Load(Local<ArrayBuffer> arrayBuffer, size_t byteOffset, size_t byteLength, Local<Function> cbFn) {
   if (!this->loading) {
     unsigned char *buffer = (unsigned char *)arrayBuffer->GetContents().Data() + byteOffset;
+    sk_sp<SkData> extendedData = SkData::MakeUninitialized(byteLength + 1);
+    memcpy((unsigned char *)extendedData->data(), buffer, byteLength);
+    sk_sp<SkData> data = SkData::MakeWithoutCopy(buffer, byteLength);
 
-    this->arrayBuffer.Reset(arrayBuffer);
     this->cbFn.Reset(cbFn);
     this->loading = true;
     this->hasCbFn = !cbFn.IsEmpty();
     
-    auto loadFn = [this, buffer, byteLength]() -> void {
-      sk_sp<SkData> data = SkData::MakeWithoutCopy(buffer, byteLength);
+    auto loadFn = [this, extendedData, data]() -> void {
       SkBitmap bitmap;
       bool ok = DecodeDataToBitmap(data, &bitmap);
 
@@ -64,11 +65,9 @@ void Image::Load(Local<ArrayBuffer> arrayBuffer, size_t byteOffset, size_t byteL
         bitmap.setImmutable();
         this->image = SkImage::MakeFromBitmap(bitmap);
       } else {
-        unique_ptr<char[]> svgString(new char[byteLength + 1]);
-        memcpy(svgString.get(), buffer, byteLength);
-        svgString[byteLength] = 0;
+        ((char *)extendedData->data())[extendedData->size() - 1] = 0; // NUL-terminate
 
-        NSVGimage *svgImage = nsvgParse(svgString.get(), "px", 96);
+        NSVGimage *svgImage = nsvgParse((char *)extendedData->data(), "px", 96);
         if (svgImage != nullptr) {
           if (svgImage->width > 0 && svgImage->height > 0 && svgImage->shapes != nullptr) {
             int w = svgImage->width;
@@ -125,7 +124,6 @@ void Image::Load(Local<ArrayBuffer> arrayBuffer, size_t byteOffset, size_t byteL
         asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
 
         this->cbFn.Reset();
-        this->arrayBuffer.Reset();
         this->error = "";
       });
     } else {
