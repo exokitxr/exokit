@@ -2970,6 +2970,10 @@ class HTMLAudioElement extends HTMLMediaElement {
                 this._dispatchEventOnDocumentReady(new Event('canplay', {target: this}));
                 this._dispatchEventOnDocumentReady(new Event('canplaythrough', {target: this}));
 
+                if (this.autoplay) {
+                  this.play();
+                }
+
                 cb();
               })
               .catch(err => {
@@ -3027,6 +3031,14 @@ class HTMLAudioElement extends HTMLMediaElement {
     if (this.audio) {
       this.audio.duration = duration;
     }
+  }
+
+  get autoplay() {
+    const autoplay = this.getAttribute('autoplay');
+    return !!autoplay || autoplay === '';
+  }
+  set autoplay(autoplay) {
+    this.setAttribute('autoplay', autoplay);
   }
 
   get buffered() {
@@ -3098,7 +3110,8 @@ class HTMLVideoElement extends HTMLMediaElement {
   set height(height) {}
 
   get autoplay() {
-    return this.getAttribute('autoplay');
+    const autoplay = this.getAttribute('autoplay');
+    return !!autoplay || autoplay === '';
   }
   set autoplay(autoplay) {
     this.setAttribute('autoplay', autoplay);
