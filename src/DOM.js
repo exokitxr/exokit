@@ -2970,6 +2970,10 @@ class HTMLAudioElement extends HTMLMediaElement {
                 this._dispatchEventOnDocumentReady(new Event('canplay', {target: this}));
                 this._dispatchEventOnDocumentReady(new Event('canplaythrough', {target: this}));
 
+                if (this.autoplay) {
+                  this.play();
+                }
+
                 cb();
               })
               .catch(err => {
