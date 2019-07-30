@@ -31,7 +31,7 @@ public:
   ~ThreadPool();
 
   void queueWork(std::function<void()> workFn = []() -> void {}, std::function<void()> cbFn = []() -> void {});
-  static void ThreadPool::asyncFn(uv_async_t *handle);
+  static void asyncFn(uv_async_t *handle);
 
 // protected:
   std::vector<std::thread *> threads;
