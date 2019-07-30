@@ -3110,7 +3110,8 @@ class HTMLVideoElement extends HTMLMediaElement {
   set height(height) {}
 
   get autoplay() {
-    return this.getAttribute('autoplay');
+    const autoplay = this.getAttribute('autoplay');
+    return !!autoplay || autoplay === '';
   }
   set autoplay(autoplay) {
     this.setAttribute('autoplay', autoplay);
