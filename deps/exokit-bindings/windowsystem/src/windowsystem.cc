@@ -1,4 +1,5 @@
 #include <windowsystem.h>
+#include <threadpool.h>
 
 #include <exout>
 
@@ -1370,6 +1371,10 @@ NAN_METHOD(ClearFramebuffer) {
   glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 }
 
+NAN_METHOD(DestroyThreadPool) {
+  threadpool::destroyWindowThreadPool();
+}
+
 void Decorate(Local<Object> target) {
   Nan::SetMethod(target, "createRenderTarget", CreateRenderTarget);
   Nan::SetMethod(target, "resizeRenderTarget", ResizeRenderTarget);
@@ -1383,6 +1388,7 @@ void Decorate(Local<Object> target) {
   Nan::SetMethod(target, "deleteSync", DeleteSync);
   Nan::SetMethod(target, "composeLayers", ComposeLayers);
   Nan::SetMethod(target, "clearFramebuffer", ClearFramebuffer);
+  Nan::SetMethod(target, "destroyThreadPool", DestroyThreadPool);
 }
 
 }
