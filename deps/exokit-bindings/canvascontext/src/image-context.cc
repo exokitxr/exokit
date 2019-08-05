@@ -46,47 +46,18 @@ unsigned int Image::GetNumChannels() {
   }
 } */
 
-void Image::RunInMainThread(uv_async_t *handle) {
-  Nan::HandleScope scope;
-
-  Image *image = (Image *)handle->data;
-
-  Local<Object> asyncObject = Nan::New<Object>();
-  AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "Image::RunInMainThread");
-
-  Local<Function> cbFn = Nan::New(image->cbFn);
-  Local<String> arg0 = Nan::New<String>(image->error).ToLocalChecked();
-  Local<Value> argv[] = {
-    arg0,
-  };
-  asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
-
-  image->cbFn.Reset();
-  image->arrayBuffer.Reset();
-  image->error = "";
-
-  uv_close((uv_handle_t *)handle, nullptr);
-}
-
 void Image::Load(Local<ArrayBuffer> arrayBuffer, size_t byteOffset, size_t byteLength, Local<Function> cbFn) {
   if (!this->loading) {
     unsigned char *buffer = (unsigned char *)arrayBuffer->GetContents().Data() + byteOffset;
+    sk_sp<SkData> extendedData = SkData::MakeUninitialized(byteLength + 1);
+    memcpy((unsigned char *)extendedData->data(), buffer, byteLength);
+    sk_sp<SkData> data = SkData::MakeWithoutCopy(buffer, byteLength);
 
-    this->arrayBuffer.Reset(arrayBuffer);
     this->cbFn.Reset(cbFn);
     this->loading = true;
     this->hasCbFn = !cbFn.IsEmpty();
-
-    if (this->hasCbFn) {
-      uv_loop_t *loop = windowsystembase::GetEventLoop();
-      uv_async_init(loop, &this->threadAsyncHandle, RunInMainThread);
-      this->threadAsyncHandle.data = this;
-    } else {
-      uv_sem_init(&this->sem, 0);
-    }
-
-    std::thread([this, buffer, byteLength]() -> void {
-      sk_sp<SkData> data = SkData::MakeWithoutCopy(buffer, byteLength);
+    
+    auto loadFn = [this, extendedData, data]() -> void {
       SkBitmap bitmap;
       bool ok = DecodeDataToBitmap(data, &bitmap);
 
@@ -94,11 +65,9 @@ void Image::Load(Local<ArrayBuffer> arrayBuffer, size_t byteOffset, size_t byteL
         bitmap.setImmutable();
         this->image = SkImage::MakeFromBitmap(bitmap);
       } else {
-        unique_ptr<char[]> svgString(new char[byteLength + 1]);
-        memcpy(svgString.get(), buffer, byteLength);
-        svgString[byteLength] = 0;
+        ((char *)extendedData->data())[extendedData->size() - 1] = 0; // NUL-terminate
 
-        NSVGimage *svgImage = nsvgParse(svgString.get(), "px", 96);
+        NSVGimage *svgImage = nsvgParse((char *)extendedData->data(), "px", 96);
         if (svgImage != nullptr) {
           if (svgImage->width > 0 && svgImage->height > 0 && svgImage->shapes != nullptr) {
             int w = svgImage->width;
@@ -134,14 +103,34 @@ void Image::Load(Local<ArrayBuffer> arrayBuffer, size_t byteOffset, size_t byteL
         }
       }
 
-      if (this->hasCbFn) {
-        uv_async_send(&this->threadAsyncHandle);
-      } else {
+      if (!this->hasCbFn) {
         uv_sem_post(&this->sem);
       }
-    }).detach();
+    };
 
-    if (!this->hasCbFn) {
+    if (this->hasCbFn) {
+      threadpool::ThreadPool *threadPool = threadpool::getWindowThreadPool();
+      threadPool->queueWork(loadFn, [this]() -> void {
+        Nan::HandleScope scope;
+        
+        Local<Object> asyncObject = Nan::New<Object>();
+        AsyncResource asyncResource(Isolate::GetCurrent(), asyncObject, "Image::Load");
+
+        Local<Function> cbFn = Nan::New(this->cbFn);
+        Local<String> arg0 = Nan::New<String>(this->error).ToLocalChecked();
+        Local<Value> argv[] = {
+          arg0,
+        };
+        asyncResource.MakeCallback(cbFn, sizeof(argv)/sizeof(argv[0]), argv);
+
+        this->cbFn.Reset();
+        this->error = "";
+      });
+    } else {
+      uv_sem_init(&this->sem, 0);
+      
+      loadFn();
+
       uv_sem_wait(&this->sem);
       uv_sem_destroy(&this->sem);
 

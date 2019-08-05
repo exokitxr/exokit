@@ -1,9 +1,13 @@
 #ifndef _CANVASCONTEXT_IMAGE_H_
 #define _CANVASCONTEXT_IMAGE_H_
 
+#include <string>
+#include <thread>
+
 #include <v8.h>
 #include <node.h>
 #include <nan.h>
+
 #include <defines.h>
 #include <canvas/include/Context.h>
 #include <canvas/include/Image.h>
@@ -14,8 +18,7 @@
 #include <nanosvg.h>
 #include <nanosvgrast.h>
 #include <windowsystem.h>
-#include <string>
-#include <thread>
+#include <threadpool.h>
 
 using namespace v8;
 using namespace node;
@@ -27,7 +30,6 @@ public:
   unsigned int GetHeight();
   unsigned int GetNumChannels();
   // unsigned char *GetData();
-  static void RunInMainThread(uv_async_t *handle);
   void Load(Local<ArrayBuffer> arrayBuffer, size_t byteOffset, size_t byteLength, Local<Function> cbFn);
   // void Set(canvas::Image *image);
 
@@ -45,12 +47,10 @@ private:
   sk_sp<SkImage> image;
   Nan::Persistent<Uint8ClampedArray> dataArray;
 
-  Nan::Persistent<ArrayBuffer> arrayBuffer;
   Nan::Persistent<Function> cbFn;
   bool loading;
   bool hasCbFn;
   std::string error;
-  uv_async_t threadAsyncHandle;
   uv_sem_t sem;
 
   friend class CanvasRenderingContext2D;
