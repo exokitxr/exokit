@@ -95,6 +95,7 @@ function initDocument (document, window) {
       document.dispatchEvent(new Event('paste'));
     }
   };
+  document.queryCommandSupported = s => ['copy', 'paste'].includes(s);
   document[symbols.pointerLockElementSymbol] = null;
   document[symbols.fullscreenElementSymbol] = null;
 
