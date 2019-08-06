@@ -209,6 +209,11 @@ function initDocument (document, window) {
 
     document.dispatchEvent(new Event('load', {target: document}));
     window.dispatchEvent(new Event('load', {target: window}));
+
+    parentPort.postMessage({
+      method: 'xrMode',
+      xr: GlobalContext.requestedXr,
+    });
   });
 
   return document;
