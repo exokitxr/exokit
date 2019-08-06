@@ -1510,6 +1510,7 @@ const _start = () => {
     };
     let window = core.make('', {
       dataPath,
+      args,
       onnavigate: _onnavigate,
       onrequest: handleRequest,
       onhapticpulse: handleHapticPulse,
