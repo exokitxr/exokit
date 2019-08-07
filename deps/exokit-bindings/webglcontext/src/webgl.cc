@@ -4148,7 +4148,7 @@ NAN_METHOD(WebGLRenderingContext::GetBufferSubData) {
     dataLength = std::min<size_t>(dataLength, length);
   }
 
-#if defined(ANDROID) && !defined(LUMIN)
+#if defined(ANDROID) || defined(LUMIN)
   void *mapping = glMapBufferRange(target, srcByteOffset, dataLength, GL_MAP_READ_BIT);
   if (mapping != nullptr) {
     memcpy(data, mapping, dataLength);
