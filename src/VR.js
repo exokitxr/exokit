@@ -126,9 +126,12 @@ class GamepadHapticActuator {
     });
   }
 }
+    var index = 0;
 class Gamepad {
   constructor(id, hand, xrGamepad, hapticActuator) {
     this.id = id;
+    this.index = index;
+    index++;
     this.hand = hand;
     this._xrGamepad = xrGamepad;
 
