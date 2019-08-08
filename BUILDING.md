@@ -46,7 +46,7 @@ Build targets :
 1. download developer certificate and private key from https://creator.magicleap.com in Publish then Certificates
 1. place the renamed certificate in `cert/app.cert` and private key in `cert/app.privkey`
 1. download Magic Leap Package Manager from https://creator.magicleap.com
-1. install Magic Leap Lumin SDK
+1. install Magic Leap Lumin SDK v0.19
 1. open **Ubuntu Bash on Windows**
 1. `cd /mnt/c/exokit`
 1. `git clone https://github.com/exokitxr/exokit.git`
