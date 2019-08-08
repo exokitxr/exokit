@@ -1,8 +1,6 @@
-const path = require('path');
-const fs = require('fs');
 const url = require('url');
 const {URL} = url;
-const vm = require('vm');
+// const vm = require('vm');
 const {
   workerData: {
     args,
