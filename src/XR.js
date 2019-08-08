@@ -3,7 +3,6 @@ const {Event, EventTarget} = require('./Event');
 const {getHMDType} = require('./VR');
 const GlobalContext = require('./GlobalContext');
 const THREE = require('../lib/three-min.js');
-const {defaultCanvasSize} = require('./constants');
 const symbols = require('./symbols');
 const {maxNumTrackers} = require('./constants');
 const {_elementGetter, _elementSetter} = require('./utils');
