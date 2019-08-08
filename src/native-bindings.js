@@ -1,4 +1,5 @@
 const path = require('path');
+const fs = require('fs');
 const {URL} = require('url');
 const {isMainThread, parentPort} = require('worker_threads');
 const {process} = global;
