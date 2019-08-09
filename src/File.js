@@ -1,3 +1,4 @@
+const {process} = global;
 const {EventTarget} = require('./Event');
 const {_elementGetter, _elementSetter} = require('./utils');
 
