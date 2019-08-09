@@ -36,7 +36,7 @@ const {url, int32Array} = workerData;
       int32Array[2] = 0;
     }
   } else {
-    int32Array[1] = req.status;
+    int32Array[1] = res.status;
     int32Array[2] = 0;
   }
 })().catch(err => {
