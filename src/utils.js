@@ -32,7 +32,7 @@ function _normalizeUrl(src, baseUrl) {
   if (/^\/\//.test(src)) {
     src = new URL(baseUrl).protocol + src;
   }
-  if (!/^[a-z]+:/.test(src)) {
+  if (!/^(?:\/|[a-z]+:)/.test(src)) {
     src = baseUrl + (!/\/$/.test(baseUrl) ? '/' : '') + src;
   }
   if (!/^(?:https?|data|blob):/.test(src)) {
