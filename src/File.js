@@ -1,4 +1,5 @@
 const {EventTarget} = require('./Event');
+const {_elementGetter, _elementSetter} = require('./utils');
 
 class FileReader extends EventTarget {
   constructor() {
