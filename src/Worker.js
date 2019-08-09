@@ -12,7 +12,7 @@ const WebSocket = require('ws/lib/websocket');
 const {FileReader} = require('./File.js');
 const GlobalContext = require('./GlobalContext');
 
-const {src, baseUrl} = args;
+const {src, options: {baseUrl}} = args;
 GlobalContext.baseUrl = baseUrl;
 
 const _normalizeUrl = src => {
