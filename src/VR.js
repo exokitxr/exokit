@@ -126,12 +126,10 @@ class GamepadHapticActuator {
     });
   }
 }
-    var index = 0;
 class Gamepad {
-  constructor(id, hand, xrGamepad, hapticActuator) {
-    this.id = id;
+  constructor(index, id, hand, xrGamepad, hapticActuator) {
     this.index = index;
-    index++;
+    this.id = id;
     this.hand = hand;
     this._xrGamepad = xrGamepad;
 
@@ -693,34 +691,37 @@ const lookupHMDTypeString = i => hmdTypeStringMap[i];
 const createFakeXRDisplay = () => new FakeXRDisplay();
 
 let globalGamepads = null;
-const _makeGlobalGamepads = () => ({
-  main: [
-    new Gamepad('gamepad', 'left', GlobalContext.xrState.gamepads[0], new GamepadHapticActuator(0)),
-    new Gamepad('gamepad', 'right', GlobalContext.xrState.gamepads[1], new GamepadHapticActuator(1)),
-  ],
-  tracker: (() => {
-    const result = Array(maxNumTrackers);
-    for (let i = 0; i < result.length; i++) {
-      result[i] = new Gamepad('tracker', '', GlobalContext.xrState.gamepads[2+i], null);
-    }
-    return result;
-  })(),
-  hand: (() => {
-    const result = [
-      new Gamepad('hand', 'left', GlobalContext.xrState.hands[0], null),
-      new Gamepad('hand', 'right', GlobalContext.xrState.hands[1], null),
-    ];
-    for (let i = 0; i < result.length; i++) {
-      const handGamepad = result[i];
-      const hand = handGamepad._xrGamepad;
+const _makeGlobalGamepads = () => {
+  let index = 0;
+  return {
+    main: [
+      new Gamepad(index++, 'gamepad', 'left', GlobalContext.xrState.gamepads[0], new GamepadHapticActuator(0)),
+      new Gamepad(index++, 'gamepad', 'right', GlobalContext.xrState.gamepads[1], new GamepadHapticActuator(1)),
+    ],
+    tracker: (() => {
+      const result = Array(maxNumTrackers);
+      for (let i = 0; i < result.length; i++) {
+        result[i] = new Gamepad(index++, 'tracker', '', GlobalContext.xrState.gamepads[2+i], null);
+      }
+      return result;
+    })(),
+    hand: (() => {
+      const result = [
+        new Gamepad(index++, 'hand', 'left', GlobalContext.xrState.hands[0], null),
+        new Gamepad(index++, 'hand', 'right', GlobalContext.xrState.hands[1], null),
+      ];
+      for (let i = 0; i < result.length; i++) {
+        const handGamepad = result[i];
+        const hand = handGamepad._xrGamepad;
 
-      handGamepad.wrist = hand.wrist;
-      handGamepad.fingers = hand.fingers;
-    }
-    return result;
-  })(),
-  eye: new Gamepad('eye', '', GlobalContext.xrState.eye, null),
-});
+        handGamepad.wrist = hand.wrist;
+        handGamepad.fingers = hand.fingers;
+      }
+      return result;
+    })(),
+    eye: new Gamepad(index++, 'eye', '', GlobalContext.xrState.eye, null),
+  };
+};
 
 const controllerIDs = {
   fake: 'OpenVR Gamepad',
