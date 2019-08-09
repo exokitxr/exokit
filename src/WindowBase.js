@@ -86,7 +86,7 @@ class Worker extends EventTarget {
         src,
         options: {
           url: src,
-          baseUrl: utils._getBaseUrl(src, GlobalContext.baseUrl),
+          baseUrl: utils._getBaseUrl(src, args.options.baseUrl),
         },
         args: args.options.args,
         xrState: args.xrState,
@@ -242,7 +242,7 @@ class Worker extends EventTarget {
   });
 })(global);
 
-const _normalizeUrl = src => utils._normalizeUrl(src, GlobalContext.baseUrl);
+const _normalizeUrl = src => utils._normalizeUrl(src, args.options.baseUrl);
 
 const SYNC_REQUEST_BUFFER_SIZE = 5 * 1024 * 1024; // TODO: we can make this unlimited with a streaming buffer + atomics loop
 function getScript(url) {
