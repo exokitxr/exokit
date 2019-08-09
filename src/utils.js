@@ -29,8 +29,11 @@ function _getBaseUrl(u, currentBaseUrl = '') {
 module.exports._getBaseUrl = _getBaseUrl;
 
 function _normalizeUrl(src, baseUrl) {
-  if (/^\/\//.test(src) || !/^[a-z]+:/.test(src)) {
+  if (/^\/\//.test(src)) {
     src = new URL(baseUrl).protocol + src;
+  }
+  if (!/^[a-z]+:/.test(src)) {
+    src = baseUrl + (!/\/$/.test(baseUrl) ? '/' : '') + src;
   }
   if (!/^(?:https?|data|blob):/.test(src)) {
     return new URL(src, baseUrl).href
