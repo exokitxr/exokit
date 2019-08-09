@@ -26,8 +26,6 @@ const {XRRigidTransform} = require('./XR.js');
 const mkdirp = require('mkdirp');
 const ws = require('ws');
 
-const core = require('./core.js');
-
 const {
   /* getUserMedia,
   MediaStream,
