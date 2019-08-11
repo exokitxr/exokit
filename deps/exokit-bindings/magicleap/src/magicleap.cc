@@ -177,17 +177,17 @@ void beginPlanesQuery(const MLVec3f &position, const MLQuaternionf &rotation, ML
 }
 void endPlanesQuery(MLHandle &planesHandle, MLHandle &planesQueryHandle, MLPlane *planes, uint32_t *numPlanes) {
   if (MLHandleIsValid(planesQueryHandle)) {
-    MLResult result = MLPlanesQueryGetResults(planesHandle, planesQueryHandle, planes, numPlanes);
+    MLResult result = MLPlanesQueryGetResultsWithBoundaries(planesHandle, planesQueryHandle, planes, numPlanes);
     if (result == MLResult_Ok) {
       planesQueryHandle = ML_INVALID_HANDLE;
     } else if (result == MLResult_UnspecifiedFailure) {
       planesQueryHandle = ML_INVALID_HANDLE;
 
-      ML_LOG(Error, "MLPlanesQueryGetResults failed: %d", result);
+      ML_LOG(Error, "MLPlanesQueryGetResultsWithBoundaries failed: %d", result);
     } else if (result == MLResult_Pending) {
       // nothing, we wait
     } else {
-      ML_LOG(Error, "MLPlanesQueryGetResults complained: %d", result);
+      ML_LOG(Error, "MLPlanesQueryGetResultsWithBoundaries complained: %d", result);
     }
   }
 }
@@ -973,7 +973,7 @@ NAN_METHOD(MLPlaneTracker::WaitGetPoses) {
   if (mlPlaneTracker->planesRequestPending) {
     MLPlane planeResults[MAX_NUM_PLANES];
     uint32_t numPlanesResults;
-    MLResult result = MLPlanesQueryGetResults(mlPlaneTracker->tracker, mlPlaneTracker->planesRequestHandle, planeResults, &numPlanesResults);
+    MLResult result = MLPlanesQueryGetResultsWithBoundaries(mlPlaneTracker->tracker, mlPlaneTracker->planesRequestHandle, planeResults, &numPlanesResults);
     if (result == MLResult_Ok) {
       std::vector<std::string> currentPlaneIds(numPlanesResults);
       for (uint32_t i = 0; i < numPlanesResults; i++) {
@@ -3706,7 +3706,7 @@ NAN_METHOD(MLContext::Update) {
 
 void MLContext::TickFloor() {
   if (floorRequestPending) {
-    MLResult result = MLPlanesQueryGetResults(floorTracker, floorRequestHandle, floorResults, &numFloorResults);
+    MLResult result = MLPlanesQueryGetResultsWithBoundaries(floorTracker, floorRequestHandle, floorResults, &numFloorResults);
     if (result == MLResult_Ok) {
       for (uint32_t i = 0; i < numFloorResults; i++) {
         const MLPlane &plane = floorResults[i];
