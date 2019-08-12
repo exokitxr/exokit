@@ -333,7 +333,7 @@ parentPort.on('message', m => {
     }
     case 'postMessage': {
       try {
-        const e = new MessageEvent('messge', {
+        const e = new MessageEvent('message', {
           data: m.message,
         });
         global.emit('message', e);
