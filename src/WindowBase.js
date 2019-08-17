@@ -178,6 +178,14 @@ class Worker extends EventTarget {
 
         super(url, protocols, options);
       }
+
+      close() { // ws.close throws if not open
+        try {
+          return super.close();
+        } catch(err) {
+          console.warn(err.stack);
+        }
+      }
     }
     for (const k in Old) {
       WebSocket[k] = Old[k];
