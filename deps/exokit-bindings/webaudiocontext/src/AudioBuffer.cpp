@@ -210,11 +210,13 @@ void AudioBuffer::Load(Local<ArrayBuffer> arrayBuffer, size_t byteOffset, size_t
     WebAudioAsync *webAudioAsync = getWebAudioAsync();
     std::vector<unsigned char> buffer(byteLength);
     memcpy(buffer.data(), (unsigned char *)arrayBuffer->GetContents().Data() + byteOffset, byteLength);
-    std::thread([this, webAudioAsync, buffer{std::move(buffer)}]() mutable -> void {
+    
+    threadpool::ThreadPool *threadPool = threadpool::getWindowThreadPool();
+    threadPool->queueWork([this, webAudioAsync, buffer{std::move(buffer)}]() mutable -> void {
       this->audioBus = lab::MakeBusFromMemory(buffer, false, &this->error);
 
       webAudioAsync->QueueOnMainThread(std::bind(ProcessLoadInMainThread, this));
-    }).detach();
+    });
   } else {
     Local<String> arg0 = Nan::New<String>("already loading").ToLocalChecked();
     Local<Value> argv[] = {

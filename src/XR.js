@@ -3,7 +3,6 @@ const {Event, EventTarget} = require('./Event');
 const {getHMDType} = require('./VR');
 const GlobalContext = require('./GlobalContext');
 const THREE = require('../lib/three-min.js');
-const {defaultCanvasSize} = require('./constants');
 const symbols = require('./symbols');
 const {maxNumTrackers} = require('./constants');
 const {_elementGetter, _elementSetter} = require('./utils');
@@ -447,12 +446,13 @@ class XRView {
     this.eye = eye;
     this.transform = new XRRigidTransform(eye);
     this.projectionMatrix = eye === 'left' ? GlobalContext.xrState.leftProjectionMatrix : GlobalContext.xrState.rightProjectionMatrix;
-    this.viewMatrix = this.transform.inverse.matrix; // non-standard
 
     this._viewport = new XRViewport(eye);
     this._realViewMatrix = this.transform.inverse.matrix;
     this._localViewMatrix = Float32Array.from([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
     this.transform.inverse.matrix = this._localViewMatrix;
+
+    this.viewMatrix = this.transform.inverse.matrix; // non-standard
   }
 }
 module.exports.XRView = XRView;

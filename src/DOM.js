@@ -48,6 +48,13 @@ const _loadPromise = el => new Promise((accept, reject) => {
   el.on('load', load);
   el.on('error', error);
 });
+const _windowHandleEquals = (a, b) => {
+  if (a && b) {
+    return a[0] === b[0] && a[1] === b[1];
+  } else {
+    return !a && !b;
+  }
+};
 
 const EMPTY_ARRAY = [];
 
@@ -1859,7 +1866,7 @@ class HTMLScriptElement extends HTMLLoadableElement {
               url = _mapUrl(_normalizeUrl(url, baseUrl), this.ownerDocument.defaultView);
               const s = await _fetch(url);
               return new vm.SourceTextModule(s, {
-                url: baseUrl,
+                url,
               });
             });
             script.instantiate();
@@ -2221,6 +2228,19 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                       event,
                     });
                   },
+                  onpaymentrequest(event) {
+                    if (window.listeners('paymentrequest').length > 0) {
+                      window.dispatchEvent(new CustomEvent('paymentrequest', {
+                        detail: event,
+                      }));
+                    } else {
+                      parentPort.postMessage({
+                        method: 'emit',
+                        type: 'paymentRequest',
+                        event,
+                      });
+                    }
+                  },
                 });
                 this.contentWindow.document = this.contentDocument;
 
@@ -2525,7 +2545,12 @@ class HTMLCanvasElement extends HTMLElement {
   getContext(contextType, attrs = {}) {
     if (contextType === '2d') {
       if (this._context) {
-        this._context.destroy();
+        const windowHandle = this._context.getWindowHandle();
+        const window = this.ownerDocument.defaultView;
+        const canvas2dWindowHandle = window[symbols.canvas2dWindowHandle];
+        if (!_windowHandleEquals(windowHandle, canvas2dWindowHandle)) {
+          this._context.destroy();
+        }
         this._context = null;
       }
 
@@ -2958,6 +2983,10 @@ class HTMLAudioElement extends HTMLMediaElement {
                 this._dispatchEventOnDocumentReady(new Event('canplay', {target: this}));
                 this._dispatchEventOnDocumentReady(new Event('canplaythrough', {target: this}));
 
+                if (this.autoplay) {
+                  this.play();
+                }
+
                 cb();
               })
               .catch(err => {
@@ -3015,6 +3044,14 @@ class HTMLAudioElement extends HTMLMediaElement {
     if (this.audio) {
       this.audio.duration = duration;
     }
+  }
+
+  get autoplay() {
+    const autoplay = this.getAttribute('autoplay');
+    return !!autoplay || autoplay === '';
+  }
+  set autoplay(autoplay) {
+    this.setAttribute('autoplay', autoplay);
   }
 
   get buffered() {
@@ -3086,7 +3123,8 @@ class HTMLVideoElement extends HTMLMediaElement {
   set height(height) {}
 
   get autoplay() {
-    return this.getAttribute('autoplay');
+    const autoplay = this.getAttribute('autoplay');
+    return !!autoplay || autoplay === '';
   }
   set autoplay(autoplay) {
     this.setAttribute('autoplay', autoplay);

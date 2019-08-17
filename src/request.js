@@ -18,7 +18,7 @@ consoleStream._writev = (chunks, callback) => {
 global.console = new Console(consoleStream);
 
 const {fetch} = require('./fetch');
-const {workerData, parentPort} = require('worker_threads');
+const {workerData} = require('worker_threads');
 const {url, int32Array} = workerData;
 
 (async () => {
@@ -36,7 +36,7 @@ const {url, int32Array} = workerData;
       int32Array[2] = 0;
     }
   } else {
-    int32Array[1] = req.status;
+    int32Array[1] = res.status;
     int32Array[2] = 0;
   }
 })().catch(err => {

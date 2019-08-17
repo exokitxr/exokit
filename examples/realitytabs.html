@@ -1695,12 +1695,14 @@ window.addEventListener('mousedown', e => {
   if (window.document.pointerLockElement) {
     const gamepads = navigator.getGamepads();
     gamepads[1].buttons[1].pressed = true;
+    gamepads[1].buttons[1].value = 1;
   }
 });
 window.addEventListener('mouseup', e => {
   if (window.document.pointerLockElement) {
     const gamepads = navigator.getGamepads();
     gamepads[1].buttons[1].pressed = false;
+    gamepads[1].buttons[1].value = 0;
   }
 });
 window.addEventListener('mousemove', e => {

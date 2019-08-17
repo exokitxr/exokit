@@ -1,8 +1,6 @@
-const path = require('path');
-const fs = require('fs');
 const url = require('url');
 const {URL} = url;
-const vm = require('vm');
+// const vm = require('vm');
 const {
   workerData: {
     args,
@@ -14,7 +12,7 @@ const WebSocket = require('ws/lib/websocket');
 const {FileReader} = require('./File.js');
 const GlobalContext = require('./GlobalContext');
 
-const {src, baseUrl} = args;
+const {src, options: {baseUrl}} = args;
 GlobalContext.baseUrl = baseUrl;
 
 const _normalizeUrl = src => {

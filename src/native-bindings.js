@@ -1,4 +1,5 @@
 const path = require('path');
+const fs = require('fs');
 const {URL} = require('url');
 const {isMainThread, parentPort} = require('worker_threads');
 const {process} = global;
@@ -349,21 +350,15 @@ const _onGl3DConstruct = (gl, canvas, attrs) => {
     gl.destroy = (destroy => function() {
       destroy.call(this);
 
-      if (gl === GlobalContext.vrPresentState.glContext) {
-        throw new Error('destroyed vr presenting context');
-        /* bindings.nativeOpenVR.VR_Shutdown();
-
-        GlobalContext.vrPresentState.glContextId = 0;
-        GlobalContext.vrPresentState.system = null;
-        GlobalContext.vrPresentState.compositor = null; */
-      }
-
       nativeWindow.destroyWindowHandle(windowHandle);
       canvas._context = null;
-
-      canvas.ownerDocument.removeListener('domchange', ondomchange);
-
+      
       GlobalContext.contexts.splice(GlobalContext.contexts.indexOf(gl), 1);
+      
+      if (gl === GlobalContext.vrPresentState.glContext) {
+        GlobalContext.vrPresentState.glContext = null;
+      }
+      canvas.ownerDocument.removeListener('domchange', ondomchange);
 
       if (gl.id === 1) {
         process.kill(process.pid); // XXX make this a softer process.exit()
@@ -418,24 +413,29 @@ const _onGl2DConstruct = (ctx, canvas, attrs) => {
 
   const windowSpec = (() => {
     if (!window[symbols.optionsSymbol].args.nogl) {
-      try {
-        const windowHandle = nativeWindow.createWindowHandle(canvasWidth, canvasHeight, false);
-        return nativeWindow.initWindow2D(windowHandle);
-      } catch (err) {
-        console.warn(err.message);
-        return null;
+      let windowHandle = window[symbols.canvas2dWindowHandle];
+      let grContext = window[symbols.canvas2dGrContext];
+      if (!windowHandle) {
+        windowHandle = nativeWindow.createWindowHandle(16, 16, false);
+        window[symbols.canvas2dWindowHandle] = windowHandle;
+
+        nativeWindow.setCurrentWindowContext(windowHandle);
+        grContext = ctx.makeGrContext();
+        window[symbols.canvas2dGrContext] = grContext;
       }
+      return [windowHandle, grContext];
     } else {
       return null;
     }
   })();
 
   if (windowSpec) {
-    const [windowHandle, tex] = windowSpec;
-
+    const [windowHandle, grContext] = windowSpec;
     ctx.setWindowHandle(windowHandle);
-    ctx.setTexture(tex, canvasWidth, canvasHeight);
-    
+    nativeWindow.setCurrentWindowContext(windowHandle);
+    ctx.setGrContext(grContext);
+    ctx.setTexture(canvasWidth, canvasHeight);
+
     ctx.destroy = (destroy => function() {
       destroy.call(this);
       

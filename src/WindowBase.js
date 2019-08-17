@@ -86,7 +86,7 @@ class Worker extends EventTarget {
         src,
         options: {
           url: src,
-          baseUrl: utils._getBaseUrl(src, GlobalContext.baseUrl),
+          baseUrl: utils._getBaseUrl(src, args.options.baseUrl),
         },
         args: args.options.args,
         xrState: args.xrState,
@@ -178,6 +178,14 @@ class Worker extends EventTarget {
 
         super(url, protocols, options);
       }
+
+      close() { // ws.close throws if not open
+        try {
+          return super.close();
+        } catch(err) {
+          console.warn(err.stack);
+        }
+      }
     }
     for (const k in Old) {
       WebSocket[k] = Old[k];
@@ -242,7 +250,7 @@ class Worker extends EventTarget {
   });
 })(global);
 
-const _normalizeUrl = src => utils._normalizeUrl(src, GlobalContext.baseUrl);
+const _normalizeUrl = src => utils._normalizeUrl(src, args.options.baseUrl);
 
 const SYNC_REQUEST_BUFFER_SIZE = 5 * 1024 * 1024; // TODO: we can make this unlimited with a streaming buffer + atomics loop
 function getScript(url) {
@@ -281,7 +289,7 @@ function getScript(url) {
 function importScripts() {
   for (let i = 0; i < arguments.length; i++) {
     const importScriptPath = arguments[i];
-    const importScriptSource = getScript(importScriptPath);
+    const importScriptSource = getScript(importScriptPath, args.options.baseUrl);
     vm.runInThisContext(importScriptSource, global, {
       filename: /^https?:/.test(importScriptPath) ? importScriptPath : 'data-url://',
     });
@@ -333,7 +341,7 @@ parentPort.on('message', m => {
     }
     case 'postMessage': {
       try {
-        const e = new MessageEvent('messge', {
+        const e = new MessageEvent('message', {
           data: m.message,
         });
         global.emit('message', e);

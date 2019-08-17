@@ -85,7 +85,7 @@
     "window-fetch": "0.0.13",
     "window-ls": "0.0.1",
     "window-selector": "0.0.8",
-    "window-xhr": "0.0.41",
+    "window-xhr": "0.0.42",
     "ws": "^6.2.0"
   },
   "optionalDependencies": {

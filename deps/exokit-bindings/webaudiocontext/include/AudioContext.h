@@ -21,6 +21,7 @@
 #include <MediaStreamTrack.h>
 #include <MicrophoneMediaStream.h>
 #include <AudioDestinationGenericImpl.h>
+#include <threadpool.h>
 #include <windowsystem.h>
 
 using namespace std;

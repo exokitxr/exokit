@@ -208,7 +208,7 @@ const xrState = (() => {
   result.renderHeight = _makeTypedArray(Float32Array, 1);
   result.renderHeight[0] = 1080;
   result.metrics = _makeTypedArray(Uint32Array, 2);
-  result.devicePixelRatio = _makeTypedArray(Uint32Array, 1);
+  result.devicePixelRatio = _makeTypedArray(Float32Array, 1);
   result.depthNear = _makeTypedArray(Float32Array, 1);
   result.depthNear[0] = 0.1;
   result.depthFar = _makeTypedArray(Float32Array, 1);
@@ -582,6 +582,9 @@ const handleHapticPulse = ({index, value, duration}) => {
     console.warn(`ignoring haptic pulse: ${index}/${value}/${duration}`);
     // TODO: handle the other HMD cases...
   }
+};
+const handlePaymentRequest = () => {
+  throw new Error('no payment request handler');
 };
 
 const _startTopRenderLoop = () => {
@@ -1485,6 +1488,7 @@ const _start = () => {
         onnavigate: _onnavigate,
         onrequest: handleRequest,
         onhapticpulse: handleHapticPulse,
+        onpaymentrequest: handlePaymentRequest,
       });
     };
     _onnavigate(u);
@@ -1506,9 +1510,11 @@ const _start = () => {
     };
     let window = core.make('', {
       dataPath,
+      args,
       onnavigate: _onnavigate,
       onrequest: handleRequest,
       onhapticpulse: handleHapticPulse,
+      onpaymentrequest: handlePaymentRequest,
     });
 
     const prompt = '[x] ';
