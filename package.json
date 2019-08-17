@@ -11,8 +11,9 @@
   "main": "src/index.js",
   "scripts": {
     "build": "node-gyp build",
+    "build-dat": "node builddat > src/DatArchive.bundle.js",
     "debug": "ndb",
-    "install": "node ./scripts/preinstall.js && node-gyp configure --msvs_version=2017 && node-gyp rebuild",
+    "install": "node ./scripts/preinstall.js && node-gyp configure --msvs_version=2017 && node-gyp rebuild && npm run build-dat",
     "lint": "eslint src tests",
     "rebuild": "shx rm -rf node_modules && npm cache clean --force && npm install",
     "serve": "serve examples",
@@ -91,6 +92,7 @@
     "electron": "^5.0.3"
   },
   "devDependencies": {
+    "browserify": "^16.5.0",
     "chai": "^4.1.2",
     "eslint": "^5.2.0",
     "express": "^4.16.3",

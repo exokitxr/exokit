@@ -380,4 +380,4 @@ if (onbeforeload) {
 if (!args.require) {
   global.require = undefined;
 }
-// global.process = undefined;
+global.process = undefined;
