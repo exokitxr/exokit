@@ -4,7 +4,7 @@ Exokit is a node module. The core is written in Javascript, with native bindings
 
 > Note: Using [nvm](https://github.com/creationix/nvm) makes it easy to manage multiple active node.js versions.
 
-Build targets :
+# Build targets :
 
 ## Windows
 
