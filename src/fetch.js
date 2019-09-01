@@ -4,7 +4,7 @@ const utils = require('./utils');
 const windowFetch = require('window-fetch');
 const {Response} = windowFetch;
 const GlobalContext = require('./GlobalContext');
-const DatArchive = require('./DatArchive.bundle.js');
+const { DatArchive } = require('../build/js/DatArchive.bundle.js');
 const datFetch = require('dat-fetch')(DatArchive);
 
 const protocols = {
