@@ -309,7 +309,7 @@ Node.DOCUMENT_TYPE_NODE = 10;
 Node.DOCUMENT_FRAGMENT_NODE = 11;
 module.exports.Node = Node;
 
-const _setAttributeRaw = (el, prop, value, notify = true) => {
+const _setAttributeRaw = (el, prop, value) => {
   if (prop === 'length') {
     el.attrs.length = value;
   } else {
@@ -320,11 +320,11 @@ const _setAttributeRaw = (el, prop, value, notify = true) => {
         value,
       };
       el.attrs.push(attr);
-      notify && el._emit('attribute', prop, value, null);
+      el._emit('attribute', prop, value, null);
     } else {
       const oldValue = attr.value;
       attr.value = value;
-      notify && el._emit('attribute', prop, value, oldValue);
+      el._emit('attribute', prop, value, oldValue);
     }
   }
 };
@@ -2200,8 +2200,6 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                 const options = parentWindow[symbols.optionsSymbol];
 
                 url = _normalizeUrl(res.url, options.baseUrl);
-                // passively update .src with the final url (which can differ in case of redirects)
-                _setAttributeRaw(this, 'src', url, false);
                 const parent = {};
                 const top = parentWindow === parentWindow.top ? parent : {};
                 this.contentWindow = _makeWindow({
