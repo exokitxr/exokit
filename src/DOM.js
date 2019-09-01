@@ -2199,7 +2199,7 @@ class HTMLIFrameElement extends HTMLSrcableElement {
                 const parentWindow = this.ownerDocument.defaultView;
                 const options = parentWindow[symbols.optionsSymbol];
 
-                url = _normalizeUrl(url, options.baseUrl);
+                url = _normalizeUrl(res.url, options.baseUrl);
                 const parent = {};
                 const top = parentWindow === parentWindow.top ? parent : {};
                 this.contentWindow = _makeWindow({
