@@ -1,6 +1,7 @@
 #include <glfw/include/glfw.h>
 #include <windowsystem.h>
 #include <webgl.h>
+#include "canvas/src/stb_image.h"
 
 #include <exout>
 
@@ -969,6 +970,18 @@ NAN_METHOD(SetCurrentWindowContext) {
   SetCurrentWindowContext(window);
 }
 
+bool SetNativeWindowIcon(NATIVEwindow* window, const char* filename) {
+    GLFWimage icon;
+    int components;
+    icon.pixels = stbi_load(filename, &icon.width, &icon.height, &components, STBI_rgb_alpha);
+    if (icon.pixels != nullptr) {
+        glfwSetWindowIcon(window, 1, &icon);
+        stbi_image_free(icon.pixels);
+        return true;
+    }
+    return false;
+}
+
 NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool visible) {
   glfwWindowHint(GLFW_VISIBLE, visible);
 
@@ -989,6 +1002,7 @@ NATIVEwindow *CreateNativeWindow(unsigned int width, unsigned int height, bool v
   NATIVEwindow *window = glfwCreateWindow(width, height, "Exokit", nullptr, sharedWindow);
   if (window) {
     glfwSetWindowUserPointer(window, new WindowState());
+    SetNativeWindowIcon(window, "assets/icon.png");
     return window;
   } else {
     exerr << "Can't create GLFW window" << std::endl;
