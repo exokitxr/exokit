@@ -592,11 +592,11 @@ const _openUrl = (u, position = new THREE.Vector3(), orientation = new THREE.Qua
     }
   }
 
-  const _drawOk = () => {
-    console.log('reality tab load ok: ' + u);
+  const _drawOk = (src) => {
+    console.log('reality tab load ok: ' + src);
   };
-  const _drawFail = () => {
-    console.log('reality tab load error: ' + u);
+  const _drawFail = (src) => {
+    console.log('reality tab load error: ' + src);
   };
 
   const iframe = document.createElement('iframe');
@@ -617,11 +617,11 @@ const _openUrl = (u, position = new THREE.Vector3(), orientation = new THREE.Qua
       }
     })();
     if (contentDocument) {
-      _drawOk();
+      _drawOk(iframe.src);
 
       // scene.background = null;
     } else {
-      _drawFail();
+      _drawFail(iframe.src || u);
 
       _closeTab(tab);
 
