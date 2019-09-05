@@ -46,7 +46,6 @@
   "homepage": "https://github.com/exokitxr/exokit#readme",
   "dependencies": {
     "@rgrove/parse-xml": "^1.1.1",
-    "cross-env": "^5.2.0",
     "css": "^2.2.4",
     "events": "^3.0.0",
     "fake-indexeddb": "^2.0.4",
