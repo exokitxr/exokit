@@ -242,6 +242,8 @@ class VRDisplay extends EventEmitter {
 
     frameData.leftProjectionMatrix.set(GlobalContext.xrState.leftProjectionMatrix);
     frameData.rightProjectionMatrix.set(GlobalContext.xrState.rightProjectionMatrix);
+
+    return true;
   }
 
   getLayers() {
