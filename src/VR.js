@@ -227,8 +227,8 @@ class VRDisplay extends EventEmitter {
       // pose
       localMatrix
         .compose(localVector.fromArray(GlobalContext.xrState.position), localQuaternion.fromArray(GlobalContext.xrState.orientation), localVector2.set(1, 1, 1))
-        .multiply(
-          localMatrix2
+        .premultiply(
+          localMatrix2.getInverse(localMatrix2)
         )
         .decompose(localVector, localQuaternion, localVector2);
       localVector.toArray(frameData.pose.position);
