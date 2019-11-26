@@ -12,6 +12,7 @@
 #include <AudioDestinationNode.h>
 #include <GainNode.h>
 #include <AnalyserNode.h>
+#include <DynamicsCompressorNode.h>
 #include <PannerNode.h>
 #include <OscillatorNode.h>
 #include <StereoPannerNode.h>
@@ -37,7 +38,7 @@ lab::AudioContext *getDefaultAudioContext(float sampleRate = lab::DefaultSampleR
 
 class AudioContext : public ObjectWrap {
 public:
-  static Local<Object> Initialize(Isolate *isolate, Local<Value> audioListenerCons, Local<Value> audioSourceNodeCons, Local<Value> audioDestinationNodeCons, Local<Value> gainNodeCons, Local<Value> analyserNodeCons, Local<Value> pannerNodeCons, Local<Value> audioBufferCons, Local<Value> audioBufferSourceNodeCons, Local<Value> audioProcessingEventCons, Local<Value> stereoPannerNodeCons, Local<Value> oscillatorNodeCons, Local<Value> scriptProcessorNodeCons, Local<Value> mediaStreamTrackCons, Local<Value> microphoneMediaStreamCons);
+  static Local<Object> Initialize(Isolate *isolate, Local<Value> audioListenerCons, Local<Value> audioSourceNodeCons, Local<Value> audioDestinationNodeCons, Local<Value> gainNodeCons, Local<Value> analyserNodeCons, Local<Value> dynamicsCompressorNodeCons, Local<Value> pannerNodeCons, Local<Value> audioBufferCons, Local<Value> audioBufferSourceNodeCons, Local<Value> audioProcessingEventCons, Local<Value> stereoPannerNodeCons, Local<Value> oscillatorNodeCons, Local<Value> scriptProcessorNodeCons, Local<Value> mediaStreamTrackCons, Local<Value> microphoneMediaStreamCons);
   void Close();
   Local<Object> CreateMediaElementSource(Local<Function> audioDestinationNodeConstructor, Local<Object> mediaElement, Local<Object> audioContextObj);
   Local<Object> CreateMediaStreamSource(Local<Function> audioSourceNodeConstructor, Local<Object> mediaStream, Local<Object> audioContextObj);
@@ -45,6 +46,7 @@ public:
   void CreateMediaStreamTrackSource();
   Local<Object> CreateGain(Local<Function> gainNodeConstructor, Local<Object> audioContextObj);
   Local<Object> CreateAnalyser(Local<Function> analyserNodeConstructor, Local<Object> audioContextObj);
+  Local<Object> CreateDynamicsCompressor(Local<Function> dynamicsCompressorNodeConstructor, Local<Object> audioContextObj);
   Local<Object> CreatePanner(Local<Function> pannerNodeConstructor, Local<Object> audioContextObj);
   Local<Object> CreateStereoPanner(Local<Function> stereoPannerNodeConstructor, Local<Object> audioContextObj);
   Local<Object> CreateOscillator(Local<Function> oscillatorNodeConstructor, Local<Object> audioContextObj);
@@ -64,6 +66,7 @@ public:
   static NAN_METHOD(CreateMediaStreamTrackSource);
   static NAN_METHOD(CreateGain);
   static NAN_METHOD(CreateAnalyser);
+  static NAN_METHOD(CreateDynamicsCompressor);
   static NAN_METHOD(CreatePanner);
   static NAN_METHOD(CreateStereoPanner);
   static NAN_METHOD(CreateOscillator);

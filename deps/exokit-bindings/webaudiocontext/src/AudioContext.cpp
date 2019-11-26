@@ -26,7 +26,7 @@ AudioContext::AudioContext(float sampleRate) {
 
 AudioContext::~AudioContext() {}
 
-Local<Object> AudioContext::Initialize(Isolate *isolate, Local<Value> audioListenerCons, Local<Value> audioSourceNodeCons, Local<Value> audioDestinationNodeCons, Local<Value> gainNodeCons, Local<Value> analyserNodeCons, Local<Value> pannerNodeCons, Local<Value> audioBufferCons, Local<Value> audioBufferSourceNodeCons, Local<Value> audioProcessingEventCons, Local<Value> stereoPannerNodeCons, Local<Value> oscillatorNodeCons, Local<Value> scriptProcessorNodeCons, Local<Value> mediaStreamTrackCons, Local<Value> microphoneMediaStreamCons) {
+Local<Object> AudioContext::Initialize(Isolate *isolate, Local<Value> audioListenerCons, Local<Value> audioSourceNodeCons, Local<Value> audioDestinationNodeCons, Local<Value> gainNodeCons, Local<Value> analyserNodeCons, Local<Value> dynamicsCompressNodeCons, Local<Value> pannerNodeCons, Local<Value> audioBufferCons, Local<Value> audioBufferSourceNodeCons, Local<Value> audioProcessingEventCons, Local<Value> stereoPannerNodeCons, Local<Value> oscillatorNodeCons, Local<Value> scriptProcessorNodeCons, Local<Value> mediaStreamTrackCons, Local<Value> microphoneMediaStreamCons) {
 #if defined(ANDROID) || defined(LUMIN)
   lab::SetGenericFunctions(
     adgCreate,
@@ -58,6 +58,7 @@ Local<Object> AudioContext::Initialize(Isolate *isolate, Local<Value> audioListe
   Nan::SetMethod(proto, "createMediaStreamTrackSource", CreateMediaStreamTrackSource);
   Nan::SetMethod(proto, "createGain", CreateGain);
   Nan::SetMethod(proto, "createAnalyser", CreateAnalyser);
+  Nan::SetMethod(proto, "createDynamicsCompressor", CreateDynamicsCompressor);
   Nan::SetMethod(proto, "createPanner", CreatePanner);
   Nan::SetMethod(proto, "createStereoPanner", CreateStereoPanner);
   Nan::SetMethod(proto, "createOscillator", CreateOscillator);
@@ -78,6 +79,7 @@ Local<Object> AudioContext::Initialize(Isolate *isolate, Local<Value> audioListe
   ctorFn->Set(JS_STR("AudioDestinationNode"), audioDestinationNodeCons);
   ctorFn->Set(JS_STR("GainNode"), gainNodeCons);
   ctorFn->Set(JS_STR("AnalyserNode"), analyserNodeCons);
+  ctorFn->Set(JS_STR("DynamicsCompressorNode"), dynamicsCompressNodeCons);
   ctorFn->Set(JS_STR("PannerNode"), pannerNodeCons);
   ctorFn->Set(JS_STR("StereoPannerNode"), stereoPannerNodeCons);
   ctorFn->Set(JS_STR("OscillatorNode"), oscillatorNodeCons);
@@ -313,15 +315,27 @@ NAN_METHOD(AudioContext::CreateGain) {
 }
 
 NAN_METHOD(AudioContext::CreateAnalyser) {
-  // Nan::HandleScope scope;
+	// Nan::HandleScope scope;
 
-  Local<Object> audioContextObj = info.This();
-  AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(audioContextObj);
+	Local<Object> audioContextObj = info.This();
+	AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(audioContextObj);
 
-  Local<Function> analyserNodeConstructor = Local<Function>::Cast(JS_OBJ(audioContextObj->Get(JS_STR("constructor")))->Get(JS_STR("AnalyserNode")));
-  Local<Object> analyserNodeObj = audioContext->CreateAnalyser(analyserNodeConstructor, audioContextObj);
+	Local<Function> analyserNodeConstructor = Local<Function>::Cast(JS_OBJ(audioContextObj->Get(JS_STR("constructor")))->Get(JS_STR("AnalyserNode")));
+	Local<Object> analyserNodeObj = audioContext->CreateAnalyser(analyserNodeConstructor, audioContextObj);
 
-  info.GetReturnValue().Set(analyserNodeObj);
+	info.GetReturnValue().Set(analyserNodeObj);
+}
+
+NAN_METHOD(AudioContext::CreateDynamicsCompressor) {
+	// Nan::HandleScope scope;
+
+	Local<Object> audioContextObj = info.This();
+	AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(audioContextObj);
+
+	Local<Function> dynamicsCompressorNodeConstructor = Local<Function>::Cast(JS_OBJ(audioContextObj->Get(JS_STR("constructor")))->Get(JS_STR("DynamicsCompressorNode")));
+	Local<Object> dynamicsCompressorNodeObj = audioContext->CreateDynamicsCompressor(dynamicsCompressorNodeConstructor, audioContextObj);
+
+	info.GetReturnValue().Set(dynamicsCompressorNodeObj);
 }
 
 NAN_METHOD(AudioContext::CreatePanner) {
