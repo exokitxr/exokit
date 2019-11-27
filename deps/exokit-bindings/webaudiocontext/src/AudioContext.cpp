@@ -26,7 +26,7 @@ AudioContext::AudioContext(float sampleRate) {
 
 AudioContext::~AudioContext() {}
 
-Local<Object> AudioContext::Initialize(Isolate *isolate, Local<Value> audioListenerCons, Local<Value> audioSourceNodeCons, Local<Value> audioDestinationNodeCons, Local<Value> gainNodeCons, Local<Value> analyserNodeCons, Local<Value> dynamicsCompressNodeCons, Local<Value> pannerNodeCons, Local<Value> audioBufferCons, Local<Value> audioBufferSourceNodeCons, Local<Value> audioProcessingEventCons, Local<Value> stereoPannerNodeCons, Local<Value> oscillatorNodeCons, Local<Value> scriptProcessorNodeCons, Local<Value> mediaStreamTrackCons, Local<Value> microphoneMediaStreamCons) {
+Local<Object> AudioContext::Initialize(Isolate *isolate, Local<Value> audioListenerCons, Local<Value> audioSourceNodeCons, Local<Value> audioDestinationNodeCons, Local<Value> gainNodeCons, Local<Value> analyserNodeCons, Local<Value> biquadFilterNodeCons, Local<Value> dynamicsCompressNodeCons, Local<Value> pannerNodeCons, Local<Value> audioBufferCons, Local<Value> audioBufferSourceNodeCons, Local<Value> audioProcessingEventCons, Local<Value> stereoPannerNodeCons, Local<Value> oscillatorNodeCons, Local<Value> scriptProcessorNodeCons, Local<Value> mediaStreamTrackCons, Local<Value> microphoneMediaStreamCons) {
 #if defined(ANDROID) || defined(LUMIN)
   lab::SetGenericFunctions(
     adgCreate,
@@ -58,6 +58,7 @@ Local<Object> AudioContext::Initialize(Isolate *isolate, Local<Value> audioListe
   Nan::SetMethod(proto, "createMediaStreamTrackSource", CreateMediaStreamTrackSource);
   Nan::SetMethod(proto, "createGain", CreateGain);
   Nan::SetMethod(proto, "createAnalyser", CreateAnalyser);
+  Nan::SetMethod(proto, "createBiquadFilter", CreateBiquadFilter);
   Nan::SetMethod(proto, "createDynamicsCompressor", CreateDynamicsCompressor);
   Nan::SetMethod(proto, "createPanner", CreatePanner);
   Nan::SetMethod(proto, "createStereoPanner", CreateStereoPanner);
@@ -132,12 +133,30 @@ Local<Object> AudioContext::CreateGain(Local<Function> gainNodeConstructor, Loca
 }
 
 Local<Object> AudioContext::CreateAnalyser(Local<Function> analyserNodeConstructor, Local<Object> audioContextObj) {
-  Local<Value> argv[] = {
-    audioContextObj,
-  };
-  Local<Object> analyserNodeObj = analyserNodeConstructor->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(argv)/sizeof(argv[0]), argv).ToLocalChecked();
+	Local<Value> argv[] = {
+	  audioContextObj,
+	};
+	Local<Object> analyserNodeObj = analyserNodeConstructor->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(argv) / sizeof(argv[0]), argv).ToLocalChecked();
 
-  return analyserNodeObj;
+	return analyserNodeObj;
+}
+
+Local<Object> AudioContext::CreateBiquadFilter(Local<Function> biquadFilterNodeConstructor, Local<Object> audioContextObj) {
+	Local<Value> argv[] = {
+	  audioContextObj,
+	};
+	Local<Object> biquadFilterNodeObj = biquadFilterNodeConstructor->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(argv) / sizeof(argv[0]), argv).ToLocalChecked();
+
+	return biquadFilterNodeObj;
+}
+
+Local<Object> AudioContext::CreateDynamicsCompressor(Local<Function> dynamicsCompressorNodeConstructor, Local<Object> audioContextObj) {
+	Local<Value> argv[] = {
+	  audioContextObj,
+	};
+	Local<Object> dynamicsCompressorNodeObj = dynamicsCompressorNodeConstructor->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(argv) / sizeof(argv[0]), argv).ToLocalChecked();
+
+	return dynamicsCompressorNodeObj;
 }
 
 Local<Object> AudioContext::CreatePanner(Local<Function> pannerNodeConstructor, Local<Object> audioContextObj) {
@@ -324,6 +343,18 @@ NAN_METHOD(AudioContext::CreateAnalyser) {
 	Local<Object> analyserNodeObj = audioContext->CreateAnalyser(analyserNodeConstructor, audioContextObj);
 
 	info.GetReturnValue().Set(analyserNodeObj);
+}
+
+NAN_METHOD(AudioContext::CreateBiquadFilter) {
+	// Nan::HandleScope scope;
+
+	Local<Object> audioContextObj = info.This();
+	AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(audioContextObj);
+
+	Local<Function> biquadFilterNodeConstructor = Local<Function>::Cast(JS_OBJ(audioContextObj->Get(JS_STR("constructor")))->Get(JS_STR("BiquadFilterNode")));
+	Local<Object> biquadFilterNodeObj = audioContext->CreateBiquadFilter(biquadFilterNodeConstructor, audioContextObj);
+
+	info.GetReturnValue().Set(biquadFilterNodeObj);
 }
 
 NAN_METHOD(AudioContext::CreateDynamicsCompressor) {
