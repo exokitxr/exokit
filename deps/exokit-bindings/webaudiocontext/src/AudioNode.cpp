@@ -55,8 +55,11 @@ NAN_METHOD(AudioNode::Connect) {
       constructorName->StrictEquals(JS_STR("AudioSourceNode")) ||
       constructorName->StrictEquals(JS_STR("AudioDestinationNode")) ||
       constructorName->StrictEquals(JS_STR("GainNode")) ||
-      constructorName->StrictEquals(JS_STR("AnalyserNode")) ||
-      constructorName->StrictEquals(JS_STR("PannerNode")) ||
+	  constructorName->StrictEquals(JS_STR("AnalyserNode")) ||
+	  constructorName->StrictEquals(JS_STR("BiquadFilterNode")) ||
+	  constructorName->StrictEquals(JS_STR("ConvolverNode")) ||
+	  constructorName->StrictEquals(JS_STR("DynamicsCompressorNode")) ||
+	  constructorName->StrictEquals(JS_STR("PannerNode")) ||
       constructorName->StrictEquals(JS_STR("StereoPannerNode")) ||
       constructorName->StrictEquals(JS_STR("ScriptProcessorNode"))
     ) {
@@ -153,7 +156,10 @@ NAN_METHOD(AudioNode::Disconnect) {
         constructorName->StrictEquals(JS_STR("AudioDestinationNode")) ||
         constructorName->StrictEquals(JS_STR("GainNode")) ||
         constructorName->StrictEquals(JS_STR("AnalyserNode")) ||
-        constructorName->StrictEquals(JS_STR("PannerNode")) ||
+		constructorName->StrictEquals(JS_STR("BiquadFilterNode")) ||
+		constructorName->StrictEquals(JS_STR("ConvolverNode")) ||
+		constructorName->StrictEquals(JS_STR("DynamicsCompressorNode")) ||
+		constructorName->StrictEquals(JS_STR("PannerNode")) ||
         constructorName->StrictEquals(JS_STR("StereoPannerNode")) ||
         constructorName->StrictEquals(JS_STR("ScriptProcessorNode"))
       ) {

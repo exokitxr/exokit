@@ -26,7 +26,7 @@ AudioContext::AudioContext(float sampleRate) {
 
 AudioContext::~AudioContext() {}
 
-Local<Object> AudioContext::Initialize(Isolate *isolate, Local<Value> audioListenerCons, Local<Value> audioSourceNodeCons, Local<Value> audioDestinationNodeCons, Local<Value> gainNodeCons, Local<Value> analyserNodeCons, Local<Value> biquadFilterNodeCons, Local<Value> dynamicsCompressNodeCons, Local<Value> pannerNodeCons, Local<Value> audioBufferCons, Local<Value> audioBufferSourceNodeCons, Local<Value> audioProcessingEventCons, Local<Value> stereoPannerNodeCons, Local<Value> oscillatorNodeCons, Local<Value> scriptProcessorNodeCons, Local<Value> mediaStreamTrackCons, Local<Value> microphoneMediaStreamCons) {
+Local<Object> AudioContext::Initialize(Isolate *isolate, Local<Value> audioListenerCons, Local<Value> audioSourceNodeCons, Local<Value> audioDestinationNodeCons, Local<Value> gainNodeCons, Local<Value> analyserNodeCons, Local<Value> biquadFilterNodeCons, Local<Value> convolverNodeCons, Local<Value> dynamicsCompressNodeCons, Local<Value> pannerNodeCons, Local<Value> audioBufferCons, Local<Value> audioBufferSourceNodeCons, Local<Value> audioProcessingEventCons, Local<Value> stereoPannerNodeCons, Local<Value> oscillatorNodeCons, Local<Value> scriptProcessorNodeCons, Local<Value> mediaStreamTrackCons, Local<Value> microphoneMediaStreamCons) {
 #if defined(ANDROID) || defined(LUMIN)
   lab::SetGenericFunctions(
     adgCreate,
@@ -59,6 +59,7 @@ Local<Object> AudioContext::Initialize(Isolate *isolate, Local<Value> audioListe
   Nan::SetMethod(proto, "createGain", CreateGain);
   Nan::SetMethod(proto, "createAnalyser", CreateAnalyser);
   Nan::SetMethod(proto, "createBiquadFilter", CreateBiquadFilter);
+  Nan::SetMethod(proto, "createConvolver", CreateConvolver);
   Nan::SetMethod(proto, "createDynamicsCompressor", CreateDynamicsCompressor);
   Nan::SetMethod(proto, "createPanner", CreatePanner);
   Nan::SetMethod(proto, "createStereoPanner", CreateStereoPanner);
@@ -80,6 +81,8 @@ Local<Object> AudioContext::Initialize(Isolate *isolate, Local<Value> audioListe
   ctorFn->Set(JS_STR("AudioDestinationNode"), audioDestinationNodeCons);
   ctorFn->Set(JS_STR("GainNode"), gainNodeCons);
   ctorFn->Set(JS_STR("AnalyserNode"), analyserNodeCons);
+  ctorFn->Set(JS_STR("BiquadFilterNode"), biquadFilterNodeCons);
+  ctorFn->Set(JS_STR("ConvolverNode"), convolverNodeCons);
   ctorFn->Set(JS_STR("DynamicsCompressorNode"), dynamicsCompressNodeCons);
   ctorFn->Set(JS_STR("PannerNode"), pannerNodeCons);
   ctorFn->Set(JS_STR("StereoPannerNode"), stereoPannerNodeCons);
@@ -148,6 +151,15 @@ Local<Object> AudioContext::CreateBiquadFilter(Local<Function> biquadFilterNodeC
 	Local<Object> biquadFilterNodeObj = biquadFilterNodeConstructor->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(argv) / sizeof(argv[0]), argv).ToLocalChecked();
 
 	return biquadFilterNodeObj;
+}
+
+Local<Object> AudioContext::CreateConvolver(Local<Function> convolverNodeConstructor, Local<Object> audioContextObj) {
+	Local<Value> argv[] = {
+	  audioContextObj,
+	};
+	Local<Object> convolverNodeObj = convolverNodeConstructor->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(argv) / sizeof(argv[0]), argv).ToLocalChecked();
+
+	return convolverNodeObj;
 }
 
 Local<Object> AudioContext::CreateDynamicsCompressor(Local<Function> dynamicsCompressorNodeConstructor, Local<Object> audioContextObj) {
@@ -355,6 +367,18 @@ NAN_METHOD(AudioContext::CreateBiquadFilter) {
 	Local<Object> biquadFilterNodeObj = audioContext->CreateBiquadFilter(biquadFilterNodeConstructor, audioContextObj);
 
 	info.GetReturnValue().Set(biquadFilterNodeObj);
+}
+
+NAN_METHOD(AudioContext::CreateConvolver) {
+	// Nan::HandleScope scope;
+
+	Local<Object> audioContextObj = info.This();
+	AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(audioContextObj);
+
+	Local<Function> convolverNodeConstructor = Local<Function>::Cast(JS_OBJ(audioContextObj->Get(JS_STR("constructor")))->Get(JS_STR("ConvolverNode")));
+	Local<Object> convolverNodeObj = audioContext->CreateConvolver(convolverNodeConstructor, audioContextObj);
+
+	info.GetReturnValue().Set(convolverNodeObj);
 }
 
 NAN_METHOD(AudioContext::CreateDynamicsCompressor) {
