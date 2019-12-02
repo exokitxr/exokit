@@ -26,7 +26,26 @@ AudioContext::AudioContext(float sampleRate) {
 
 AudioContext::~AudioContext() {}
 
-Local<Object> AudioContext::Initialize(Isolate *isolate, Local<Value> audioListenerCons, Local<Value> audioSourceNodeCons, Local<Value> audioDestinationNodeCons, Local<Value> gainNodeCons, Local<Value> analyserNodeCons, Local<Value> biquadFilterNodeCons, Local<Value> convolverNodeCons, Local<Value> dynamicsCompressNodeCons, Local<Value> pannerNodeCons, Local<Value> audioBufferCons, Local<Value> audioBufferSourceNodeCons, Local<Value> audioProcessingEventCons, Local<Value> stereoPannerNodeCons, Local<Value> oscillatorNodeCons, Local<Value> scriptProcessorNodeCons, Local<Value> mediaStreamTrackCons, Local<Value> microphoneMediaStreamCons) {
+Local<Object> AudioContext::Initialize(
+	Isolate *isolate, 
+	Local<Value> audioListenerCons, 
+	Local<Value> audioSourceNodeCons, 
+	Local<Value> audioDestinationNodeCons, 
+	Local<Value> gainNodeCons, 
+	Local<Value> analyserNodeCons, 
+	Local<Value> biquadFilterNodeCons, 
+	Local<Value> convolverNodeCons, 
+	Local<Value> delayNodeCons, 
+	Local<Value> dynamicsCompressNodeCons, 
+	Local<Value> pannerNodeCons, 
+	Local<Value> audioBufferCons, 
+	Local<Value> audioBufferSourceNodeCons, 
+	Local<Value> audioProcessingEventCons, 
+	Local<Value> stereoPannerNodeCons, 
+	Local<Value> oscillatorNodeCons, 
+	Local<Value> scriptProcessorNodeCons, 
+	Local<Value> mediaStreamTrackCons, 
+	Local<Value> microphoneMediaStreamCons) {
 #if defined(ANDROID) || defined(LUMIN)
   lab::SetGenericFunctions(
     adgCreate,
@@ -60,6 +79,7 @@ Local<Object> AudioContext::Initialize(Isolate *isolate, Local<Value> audioListe
   Nan::SetMethod(proto, "createAnalyser", CreateAnalyser);
   Nan::SetMethod(proto, "createBiquadFilter", CreateBiquadFilter);
   Nan::SetMethod(proto, "createConvolver", CreateConvolver);
+  Nan::SetMethod(proto, "createDelay", CreateDelay);
   Nan::SetMethod(proto, "createDynamicsCompressor", CreateDynamicsCompressor);
   Nan::SetMethod(proto, "createPanner", CreatePanner);
   Nan::SetMethod(proto, "createStereoPanner", CreateStereoPanner);
@@ -83,6 +103,7 @@ Local<Object> AudioContext::Initialize(Isolate *isolate, Local<Value> audioListe
   ctorFn->Set(JS_STR("AnalyserNode"), analyserNodeCons);
   ctorFn->Set(JS_STR("BiquadFilterNode"), biquadFilterNodeCons);
   ctorFn->Set(JS_STR("ConvolverNode"), convolverNodeCons);
+  ctorFn->Set(JS_STR("DelayNode"), delayNodeCons);
   ctorFn->Set(JS_STR("DynamicsCompressorNode"), dynamicsCompressNodeCons);
   ctorFn->Set(JS_STR("PannerNode"), pannerNodeCons);
   ctorFn->Set(JS_STR("StereoPannerNode"), stereoPannerNodeCons);
@@ -160,6 +181,17 @@ Local<Object> AudioContext::CreateConvolver(Local<Function> convolverNodeConstru
 	Local<Object> convolverNodeObj = convolverNodeConstructor->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(argv) / sizeof(argv[0]), argv).ToLocalChecked();
 
 	return convolverNodeObj;
+}
+
+Local<Object> AudioContext::CreateDelay(Local<Function> delayNodeConstructor, float sampleRate, double maxDelayTime, Local<Object> audioContextObj) {
+	Local<Value> argv[] = {
+	 JS_NUM(sampleRate),
+	 JS_NUM(maxDelayTime),
+	  audioContextObj,
+	};
+	Local<Object> delayNodeObj = delayNodeConstructor->NewInstance(Isolate::GetCurrent()->GetCurrentContext(), sizeof(argv) / sizeof(argv[0]), argv).ToLocalChecked();
+
+	return delayNodeObj;
 }
 
 Local<Object> AudioContext::CreateDynamicsCompressor(Local<Function> dynamicsCompressorNodeConstructor, Local<Object> audioContextObj) {
@@ -379,6 +411,26 @@ NAN_METHOD(AudioContext::CreateConvolver) {
 	Local<Object> convolverNodeObj = audioContext->CreateConvolver(convolverNodeConstructor, audioContextObj);
 
 	info.GetReturnValue().Set(convolverNodeObj);
+}
+
+NAN_METHOD(AudioContext::CreateDelay) {
+	// Nan::HandleScope scope;
+
+	if (info[0]->IsNumber() && info[1]->IsNumber()) {
+	   float sampleRate = TO_FLOAT(info[0]);
+	   double maxDelayTime = TO_DOUBLE(info[1]);
+
+	   Local<Object> audioContextObj = info.This();
+	   AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(audioContextObj);
+
+	   Local<Function> delayNodeConstructor = Local<Function>::Cast(JS_OBJ(audioContextObj->Get(JS_STR("constructor")))->Get(JS_STR("DelayNode")));
+	   Local<Object> delayNodeObj = audioContext->CreateDelay(delayNodeConstructor, sampleRate, maxDelayTime, audioContextObj);
+
+	   info.GetReturnValue().Set(delayNodeObj);
+	}
+	else {
+		Nan::ThrowError("AudioContext::CreateDelay: invalid arguments");
+	}
 }
 
 NAN_METHOD(AudioContext::CreateDynamicsCompressor) {

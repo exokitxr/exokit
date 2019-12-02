@@ -48,6 +48,7 @@ protected:
   friend class AudioBufferSourceNode;
   friend class DynamicsCompressorNode;
   friend class BiquadFilterNode;
+  friend class DelayNode;
 };
 
 }
