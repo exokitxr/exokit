@@ -1,10 +1,9 @@
 #include <DelayNode.h>
-#include <AudioBuffer.h>
 #include <AudioContext.h>
 
 namespace webaudio {
 
-DelayNode::DelayNode(float sampleRate, double maxDelayTime) {}
+DelayNode::DelayNode(double maxDelayTime, float sampleRate) {}
 
 DelayNode::~DelayNode() {}
 
@@ -41,10 +40,10 @@ NAN_METHOD(DelayNode::New) {
 		Local<Object> audioContextObj = Local<Object>::Cast(info[2]);
 		AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(audioContextObj);
 
-		float sampleRate = TO_FLOAT(info[0]);
-		double maxDelayTime = TO_DOUBLE(info[1]);
+		double maxDelayTime = TO_DOUBLE(info[0]);
+		float sampleRate = TO_FLOAT(info[1]);
 
-		DelayNode *delayNode = new DelayNode(sampleRate, maxDelayTime);
+		DelayNode *delayNode = new DelayNode(maxDelayTime, sampleRate);
 		Local<Object> delayNodeObj = info.This();
 		delayNode->Wrap(delayNodeObj);
 

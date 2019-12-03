@@ -1,5 +1,5 @@
-#ifndef _DELAY_NODE_H_
-#define _DELAY_NODE_H_
+#ifndef _CHANNEL_MERGER_NODE_H_
+#define _CHANNEL_MERGER_NODE_H_
 
 #include <v8.h>
 #include <node.h>
@@ -14,16 +14,16 @@ using namespace node;
 
 namespace webaudio {
 
-class DelayNode : public AudioNode {
+class ChannelMergerNode : public AudioNode {
 public:
-  static Local<Object> Initialize(Isolate *isolate, Local<Value> audioParamCons);
+  static Local<Object> Initialize(Isolate *isolate);
   static void InitializePrototype(Local<ObjectTemplate> proto);
 
 protected:
   static NAN_METHOD(New);
 
-  DelayNode(double maxDelayTime, float sampleRate);
-  ~DelayNode();
+  ChannelMergerNode(uint32_t numberOfInputs);
+  ~ChannelMergerNode();
 
 protected:
 };

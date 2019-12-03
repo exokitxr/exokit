@@ -94,19 +94,33 @@ NAN_METHOD(BiquadFilterNode::New) {
 NAN_METHOD(BiquadFilterNode::GetFrequencyResponse) {
 	// Nan::HandleScope scope;
 
-	BiquadFilterNode *biquadFilterNode = ObjectWrap::Unwrap<BiquadFilterNode>(info.This());
-	shared_ptr<lab::BiquadFilterNode> labBiquadFilterNode = *(shared_ptr<lab::BiquadFilterNode> *)(&biquadFilterNode->audioNode);
-
-	// need to establish args to getFrequencyResponse for return values
-	Local<Float32Array> frequencyHz;
-	Local<Float32Array> magResponse;
-	Local<Float32Array> phaseResponse;
 	if (info[0]->IsFloat32Array() && info[1]->IsFloat32Array() && info[2]->IsFloat32Array()) {
-		frequencyHz   = Local<Float32Array>::Cast(info[0]);
-		magResponse   = Local<Float32Array>::Cast(info[1]);
-		phaseResponse = Local<Float32Array>::Cast(info[2]);
+		BiquadFilterNode *biquadFilterNode = ObjectWrap::Unwrap<BiquadFilterNode>(info.This());
+		shared_ptr<lab::BiquadFilterNode> labBiquadFilterNode = *(shared_ptr<lab::BiquadFilterNode> *)(&biquadFilterNode->audioNode);
+		Local<Object> audioContextObj = Nan::New(biquadFilterNode->context);
+		AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(audioContextObj);
 
-//		labBiquadFilterNode->getFrequencyResponse(' ', &frequencyHz, &magResponse, &phaseResponse);
+		Local<Float32Array> frequencyHzArg   = Local<Float32Array>::Cast(info[0]);
+		Local<Float32Array> magResponseArg   = Local<Float32Array>::Cast(info[1]);
+		Local<Float32Array> phaseResponseArg = Local<Float32Array>::Cast(info[2]);
+
+		vector<float> freqBuffer (frequencyHzArg->Length());
+		vector<float> magRBuffer (magResponseArg->Length());
+		vector<float> phaseBuffer(phaseResponseArg->Length());
+
+		{
+		   lab::ContextRenderLock lock(audioContext->audioContext.get(), "BiquadFilterNode::GetFrequencyResponse");
+	       labBiquadFilterNode->getFrequencyResponse(lock, freqBuffer, magRBuffer, phaseBuffer);
+		}
+		Local<ArrayBuffer> freqArrayBuffer = frequencyHzArg->Buffer();
+		memcpy((unsigned char *)freqArrayBuffer ->GetContents().Data() + frequencyHzArg ->ByteOffset(), freqBuffer .data(), frequencyHzArg  ->Length());
+
+		Local<ArrayBuffer> magRArrayBuffer = magResponseArg->Buffer();
+		memcpy((unsigned char *)magRArrayBuffer ->GetContents().Data() + magResponseArg ->ByteOffset(), magRBuffer .data(), magResponseArg  ->Length());
+
+		Local<ArrayBuffer> phaseArrayBuffer = phaseResponseArg->Buffer();
+		memcpy((unsigned char *)phaseArrayBuffer->GetContents().Data() + phaseResponseArg->ByteOffset(), phaseBuffer.data(), phaseResponseArg->Length());
+
 	}
 	else {
 		Nan::ThrowError("BiquadFilter:GetFrequencyResponse: invalid arguments");

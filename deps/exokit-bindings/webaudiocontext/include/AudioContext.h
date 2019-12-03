@@ -13,6 +13,8 @@
 #include <GainNode.h>
 #include <AnalyserNode.h>
 #include <BiquadFilterNode.h>
+#include <ChannelMergerNode.h>
+#include <ChannelSplitterNode.h>
 #include <ConvolverNode.h>
 #include <DelayNode.h>
 #include <DynamicsCompressorNode.h>
@@ -49,8 +51,10 @@ public:
 	  Local<Value> gainNodeCons, 
 	  Local<Value> analyserNodeCons, 
 	  Local<Value> biquadFilterNodeCons, 
-	  Local<Value> ConvolverNodeCons, 
-	  Local<Value> DelayNodeCons, 
+	  Local<Value> ChannelMergerNodeCons,
+	  Local<Value> ChannelSplitterNodeCons,
+	  Local<Value> ConvolverNodeCons,
+	  Local<Value> DelayNodeCons,
 	  Local<Value> dynamicsCompressorNodeCons, 
 	  Local<Value> pannerNodeCons, 
 	  Local<Value> audioBufferCons, 
@@ -69,6 +73,8 @@ public:
   Local<Object> CreateGain(Local<Function> gainNodeConstructor, Local<Object> audioContextObj);
   Local<Object> CreateAnalyser(Local<Function> analyserNodeConstructor, Local<Object> audioContextObj);
   Local<Object> CreateBiquadFilter(Local<Function> biquadFilterNodeConstructor, Local<Object> audioContextObj);
+  Local<Object> CreateChannelMerger(Local<Function> ChannelMergerNodeConstructor, uint32_t numberOfInputs, Local<Object> audioContextObj);
+  Local<Object> CreateChannelSplitter(Local<Function> ChannelSplitterNodeConstructor, uint32_t numberOfOutputs, Local<Object> audioContextObj);
   Local<Object> CreateConvolver(Local<Function> ConvolverNodeConstructor, Local<Object> audioContextObj);
   Local<Object> CreateDelay(Local<Function> DelayNodeConstructor, float sampleRate, double maxDelayTime, Local<Object> audioContextObj);
   Local<Object> CreateDynamicsCompressor(Local<Function> dynamicsCompressorNodeConstructor, Local<Object> audioContextObj);
@@ -92,6 +98,8 @@ public:
   static NAN_METHOD(CreateGain);
   static NAN_METHOD(CreateAnalyser);
   static NAN_METHOD(CreateBiquadFilter);
+  static NAN_METHOD(CreateChannelMerger);
+  static NAN_METHOD(CreateChannelSplitter);
   static NAN_METHOD(CreateConvolver);
   static NAN_METHOD(CreateDelay);
   static NAN_METHOD(CreateDynamicsCompressor);

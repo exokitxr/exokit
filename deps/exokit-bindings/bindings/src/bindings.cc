@@ -126,6 +126,12 @@ Local<Object> makeAudio() {
   Local<Value> biquadFilterNodeCons = webaudio::BiquadFilterNode::Initialize(isolate, audioParamCons);
   exports->Set(JS_STR("BiquadFilterNode"), biquadFilterNodeCons);
 
+  Local<Value> channelMergerNodeCons = webaudio::ChannelMergerNode::Initialize(isolate);
+  exports->Set(JS_STR("ChannelMergerNode"), channelMergerNodeCons);
+
+  Local<Value> channelSplitterNodeCons = webaudio::ChannelSplitterNode::Initialize(isolate);
+  exports->Set(JS_STR("ChannelSplitterNode"), channelSplitterNodeCons);
+
   Local<Value> convolverNodeCons = webaudio::ConvolverNode::Initialize(isolate);
   exports->Set(JS_STR("ConvolverNode"), convolverNodeCons);
 
@@ -162,7 +168,7 @@ Local<Object> makeAudio() {
   Local<Value> microphoneMediaStreamCons = webaudio::MicrophoneMediaStream::Initialize(isolate, mediaStreamTrackCons);
   exports->Set(JS_STR("MicrophoneMediaStream"), microphoneMediaStreamCons);
 
-  exports->Set(JS_STR("AudioContext"), webaudio::AudioContext::Initialize(isolate, audioListenerCons, audioSourceNodeCons, audioDestinationNodeCons, gainNodeCons, analyserNodeCons, biquadFilterNodeCons, convolverNodeCons, delayNodeCons, dynamicsCompressorNodeCons, pannerNodeCons, audioBufferCons, audioBufferSourceNodeCons, audioProcessingEventCons, stereoPannerNodeCons, oscillatorNodeCons, scriptProcessorNodeCons, mediaStreamTrackCons, microphoneMediaStreamCons));
+  exports->Set(JS_STR("AudioContext"), webaudio::AudioContext::Initialize(isolate, audioListenerCons, audioSourceNodeCons, audioDestinationNodeCons, gainNodeCons, analyserNodeCons, biquadFilterNodeCons, channelMergerNodeCons, channelSplitterNodeCons, convolverNodeCons, delayNodeCons, dynamicsCompressorNodeCons, pannerNodeCons, audioBufferCons, audioBufferSourceNodeCons, audioProcessingEventCons, stereoPannerNodeCons, oscillatorNodeCons, scriptProcessorNodeCons, mediaStreamTrackCons, microphoneMediaStreamCons));
 
   return scope.Escape(exports);
 }
