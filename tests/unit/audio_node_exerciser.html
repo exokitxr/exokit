@@ -429,10 +429,18 @@
             const bufferSource = context.createBufferSource();
             bufferSource.buffer = exokitRules;
             // - - - -
+            const dynamicsCompressor = context.createDynamicsCompressor();
+            dynamicsCompressor.threshold.value = -3;
+            dynamicsCompressor.knee.value = 30;
+            dynamicsCompressor.ratio.value = 12;
+            dynamicsCompressor.attack.value = 0.05;
+            dynamicsCompressor.release.value = 0.08;
+            bufferSource.connect(dynamicsCompressor);
+            // - - - -
             const biquadFilter = context.createBiquadFilter();
             biquadFilter.type = "lowpass";
             biquadFilter.frequency.value = 18000;
-            bufferSource.connect(biquadFilter);
+            dynamicsCompressor.connect(biquadFilter);
             // - - - -
             const dry = context.createGain();
             const wet = context.createGain();
@@ -447,7 +455,7 @@
             dry.connect(context.destination); // connect dry directly to output
             convolver.connect(context.destination); // wet must go through convolver, first
             // - - - -
-            bufferSource.start(0);
+            bufferSource.start(context.currentTime + 10);
         }
     </script>
 </body>
