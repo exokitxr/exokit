@@ -35,24 +35,25 @@
             context.decodeAudioData(arraybuffer, passed, failed);
         }
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        function remainTests() {
-            testParams();
+        function remainTests(speakonly) {
+            if (!speakonly) {
+                testParams();
 
-            testAnalyser();
-            testBiquadFilter();
-            testChannelMerger();
-            testChannelSplitter();
-            testConstantSource();
-            testConvolver();
-            //testDelay();
-            testDynamicsCompressor();
-            testGain();
-            testOscillator();
-            testPanner();
-            testScriptProcessor();
-            testStereoPanner();
-            testWaveShaper();
-
+                testAnalyser();
+                testBiquadFilter();
+                testChannelMerger();
+                testChannelSplitter();
+                testConstantSource();
+                testConvolver();
+                testDelay();
+                testDynamicsCompressor();
+                testGain();
+                testOscillator();
+                testPanner();
+                testScriptProcessor();
+                testStereoPanner();
+                testWaveShaper();
+            }
             if (irr) speak();
             setTimeout(() => {console.log('current times final setting ' + context.currentTime);}, 2000);
         }
@@ -246,9 +247,9 @@
         function testDelay() {
             let delay;
             try {
-                delay = context.createDelay(); // defaults
-                delay = context.createDelay(5); // delay 5 seconds, default samplerate matching context
                 delay = context.createDelay(5, 16000);
+                delay = context.createDelay(5); // delay 5 seconds, default samplerate matching context
+                delay = context.createDelay(); // defaults
             } catch (e) {
                 console.error('delay FAILED!');
                 return;
@@ -442,8 +443,8 @@
             biquadFilter.frequency.value = 18000;
             dynamicsCompressor.connect(biquadFilter);
             // - - - -
-            const dry = context.createGain();
-            const wet = context.createGain();
+            const dry = context.createGain(); dry.gain.value = 0.5;
+            const wet = context.createGain(); wet.gain.value = 1.15;
 
             biquadFilter.connect(dry);
             biquadFilter.connect(wet);
@@ -452,10 +453,13 @@
             convolver.buffer = irr;
             wet.connect(convolver)
             // - - - -
-            dry.connect(context.destination); // connect dry directly to output
-            convolver.connect(context.destination); // wet must go through convolver, first
+            const finalGain = context.createGain();
+            dry.connect(finalGain); // connect dry directly to output
+            convolver.connect(finalGain); // wet must go through convolver, first
+            
+            finalGain.connect(context.destination);
             // - - - -
-            bufferSource.start(context.currentTime + 10);
+            bufferSource.start(context.currentTime + 1);
         }
     </script>
 </body>

@@ -23,6 +23,7 @@
 #include <StereoPannerNode.h>
 #include <AudioBuffer.h>
 #include <ScriptProcessorNode.h>
+#include <WaveShaperNode.h>
 #include <AudioListener.h>
 #include <MediaStreamTrack.h>
 #include <MicrophoneMediaStream.h>
@@ -63,6 +64,7 @@ public:
 	  Local<Value> stereoPannerNodeCons, 
 	  Local<Value> oscillatorNodeCons, 
 	  Local<Value> scriptProcessorNodeCons, 
+	  Local<Value> waveShaperCons,
 	  Local<Value> mediaStreamTrackCons, 
 	  Local<Value> microphoneMediaStreamCons);
   void Close();
@@ -76,7 +78,7 @@ public:
   Local<Object> CreateChannelMerger(Local<Function> ChannelMergerNodeConstructor, uint32_t numberOfInputs, Local<Object> audioContextObj);
   Local<Object> CreateChannelSplitter(Local<Function> ChannelSplitterNodeConstructor, uint32_t numberOfOutputs, Local<Object> audioContextObj);
   Local<Object> CreateConvolver(Local<Function> ConvolverNodeConstructor, Local<Object> audioContextObj);
-  Local<Object> CreateDelay(Local<Function> DelayNodeConstructor, float sampleRate, double maxDelayTime, Local<Object> audioContextObj);
+  Local<Object> CreateDelay(Local<Function> DelayNodeConstructor, double maxDelayTime, float sampleRate, Local<Object> audioContextObj);
   Local<Object> CreateDynamicsCompressor(Local<Function> dynamicsCompressorNodeConstructor, Local<Object> audioContextObj);
   Local<Object> CreatePanner(Local<Function> pannerNodeConstructor, Local<Object> audioContextObj);
   Local<Object> CreateStereoPanner(Local<Function> stereoPannerNodeConstructor, Local<Object> audioContextObj);
@@ -85,6 +87,7 @@ public:
   Local<Object> CreateEmptyBuffer(Local<Function> audioBufferConstructor, uint32_t sampleRate);
   Local<Object> CreateBufferSource(Local<Function> audioBufferSourceNodeConstructor, Local<Object> audioContextObj);
   Local<Object> CreateScriptProcessor(Local<Function> scriptProcessorNodeConstructor, uint32_t bufferSize, uint32_t numberOfInputChannels, uint32_t numberOfOutputChannels, Local<Object> audioContextObj);
+  Local<Object> CreateWaveShaper(Local<Function> WaveShaperNodeConstructor, Local<Object> audioContextObj);
   void Suspend();
   void Resume();
 
@@ -110,6 +113,7 @@ public:
   static NAN_METHOD(CreateEmptyBuffer);
   static NAN_METHOD(CreateBufferSource);
   static NAN_METHOD(CreateScriptProcessor);
+  static NAN_METHOD(CreateWaveShaper);
   static NAN_METHOD(Suspend);
   static NAN_METHOD(Resume);
   static NAN_GETTER(CurrentTimeGetter);

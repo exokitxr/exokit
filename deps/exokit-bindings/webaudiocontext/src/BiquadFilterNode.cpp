@@ -1,5 +1,4 @@
 #include <BiquadFilterNode.h>
-#include <AudioContext.h>
 
 namespace webaudio {
 
@@ -174,7 +173,7 @@ NAN_GETTER(BiquadFilterNode::TypeGetter) {
 }
 
 NAN_SETTER(BiquadFilterNode::TypeSetter) {
-  Nan::HandleScope scope;
+///  Nan::HandleScope scope;
 
   if (value->IsString()) {
 	BiquadFilterNode *biquadFilterNode = ObjectWrap::Unwrap<BiquadFilterNode>(info.This());

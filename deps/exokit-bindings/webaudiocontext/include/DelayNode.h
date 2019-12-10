@@ -22,7 +22,7 @@ public:
 protected:
   static NAN_METHOD(New);
 
-  DelayNode(double maxDelayTime, float sampleRate);
+  DelayNode();
   ~DelayNode();
 
 protected:

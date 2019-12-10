@@ -3,7 +3,7 @@
 
 namespace webaudio {
 
-DelayNode::DelayNode(double maxDelayTime, float sampleRate) {}
+DelayNode::DelayNode() {}
 
 DelayNode::~DelayNode() {}
 
@@ -37,13 +37,14 @@ NAN_METHOD(DelayNode::New) {
 	if (info[0]->IsNumber() && info[1]->IsNumber() &&
 		info[2]->IsObject() && JS_OBJ(JS_OBJ(info[2])->Get(JS_STR("constructor")))->Get(JS_STR("name"))->StrictEquals(JS_STR("AudioContext"))
 	) {
+
 		Local<Object> audioContextObj = Local<Object>::Cast(info[2]);
 		AudioContext *audioContext = ObjectWrap::Unwrap<AudioContext>(audioContextObj);
 
 		double maxDelayTime = TO_DOUBLE(info[0]);
 		float sampleRate = TO_FLOAT(info[1]);
 
-		DelayNode *delayNode = new DelayNode(maxDelayTime, sampleRate);
+		DelayNode *delayNode = new DelayNode();
 		Local<Object> delayNodeObj = info.This();
 		delayNode->Wrap(delayNodeObj);
 
