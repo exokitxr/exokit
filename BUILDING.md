@@ -66,7 +66,7 @@ Note that, unlike for other target platform you should **not** run `npm install`
 1. `export MLSDK=/mnt/c/your_mlsdk_path_goes_here # fill this in` e.g. `export MLSDK=/mnt/c/Users/Name/MagicLeap/mlsdk/v0.20.0/`
 1. run `scripts/magicleap/build-ml.sh --unsigned`
 
-## Oculus Quest
+## Oculus Quest / Go
 
 **Requirements**: Windows Subsystem for Linux, Ubuntu Bash, Node.js 11.15.0, Python 2, Python 3, Android SDK, Android NDK
 
@@ -85,6 +85,5 @@ Notes:
 - If you're getting linking errors, try deleting `node_modules` and running the build script again
 - Make sure you have the `ndk-bundle` within your `$ANDROID_HOME`, you might need to create a symlink to a specific folder in the `ndk` directory if you're using Android Studio
 - The compiled APK is going to be inside `./app/build/outputs/apk/debug/app-debug.apk`
-- You can run different files from the `examples` repo with this command: `adb shell am start -n com.webmr.exokit/android.app.NativeActivity -e ARGS "'node /package /package/examples/NAME_HERE.htm
-l'"`
+- You can run different files from the `examples` repo with this command: `adb shell am start -n com.webmr.exokit/android.app.NativeActivity -e ARGS "'node /package /package/examples/NAME_HERE.html'"`
 - You can kill the app if it's a black screen with this command: `adb shell am force-stop com.webmr.exokit`
