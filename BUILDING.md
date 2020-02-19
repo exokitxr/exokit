@@ -85,3 +85,6 @@ Notes:
 - If you're getting linking errors, try deleting `node_modules` and running the build script again
 - Make sure you have the `ndk-bundle` within your `$ANDROID_HOME`, you might need to create a symlink to a specific folder in the `ndk` directory if you're using Android Studio
 - The compiled APK is going to be inside `./app/build/outputs/apk/debug/app-debug.apk`
+- You can run different files from the `examples` repo with this command: `adb shell am start -n com.webmr.exokit/android.app.NativeActivity -e ARGS "'node /package /package/examples/NAME_HERE.htm
+l'"`
+- You can kill the app if it's a black screen with this command: `adb shell am force-stop com.webmr.exokit`
