@@ -90,6 +90,7 @@ const args = (() => {
       boolean: [
         'version',
         'home',
+        'help',
         'log',
         'perf',
         'performance',
@@ -134,6 +135,7 @@ const args = (() => {
     return {
       version: minimistArgs.version,
       url: minimistArgs._[0] || '',
+      help: minimistArgs.help || false,
       home: minimistArgs.home,
       log: minimistArgs.log,
       webgl: minimistArgs.webgl || '2',
@@ -150,12 +152,40 @@ const args = (() => {
       nogl: minimistArgs.nogl,
       headless: minimistArgs.headless,
       uncapped: minimistArgs.uncapped,
-      onbeforeload: minimistArgs.onbeforeload
+      onbeforeload: minimistArgs.onbeforeload,
     };
   } else {
     return {};
   }
 })();
+
+const helpText = `Exokit Help
+Usage: exokit [flags] <url>
+
+Flags:
+--help
+Display's this text and exits.
+--version, -v
+Prints current exokit version.
+--home, -h
+--log, -l
+--perf,
+--performance, --perf
+--frame, -f
+--minimalFrame, -m
+--tab, -t
+--quit, -q
+--blit, -b
+--require, -u
+--nogl, -n
+--headless, -e
+--uncapped, -u
+--webgl, -w
+--xr, -x
+--size, -s
+--replace, -r
+--onbeforeload 
+`;
 
 core.setArgs(args);
 core.setVersion(version);
@@ -1616,6 +1646,10 @@ if (require.main === module) {
 
   if (args.version) {
     console.log(version);
+    process.exit(0);
+  }
+  if (args.help){
+    console.log(helpText);
     process.exit(0);
   }
   if (args.size) {
