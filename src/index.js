@@ -159,7 +159,8 @@ const args = (() => {
   }
 })();
 
-const helpText = `Exokit Help
+const helpText = `Exokit v${version}
+
 Usage: exokit [flags] <url>
 
 Flags:
@@ -184,7 +185,7 @@ Prints current exokit version.
 --xr, -x
 --size, -s
 --replace, -r
---onbeforeload 
+--onbeforeload
 `;
 
 core.setArgs(args);
