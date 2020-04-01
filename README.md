@@ -179,6 +179,9 @@ let window = await require('./src/').load(yourUrl);
 Now you have a handle on the window object as you test your application, and
 you can set `debugger` breakpoints, inspect memory, profile CPU, etc.
 
+## Flags
+
+- `--xr webvr` Makes exokit trigger the vr entry event regardless of the webpage. If exokit is always opening in pancake mode use this to fix that.
 
 ## Stay in Touch
 
