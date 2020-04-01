@@ -181,7 +181,7 @@ you can set `debugger` breakpoints, inspect memory, profile CPU, etc.
 
 ## Flags
 
-- `--xr webvr` Makes exokit trigger the vr entry event regardless of the webpage. If exokit is always opening in pancake mode use this to fix that.
+- `--xr webvr` Makes exokit WebVR mode regardless of the webpage. If exokit is always opening in pancake mode you can use this to try to fix that.
 
 ## Stay in Touch
 
