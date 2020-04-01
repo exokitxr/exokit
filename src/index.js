@@ -166,26 +166,64 @@ Usage: exokit [flags] <url>
 Flags:
 --help
 Display's this text and exits.
+
 --version, -v
 Prints current exokit version.
+
 --home, -h
+stub
+
 --log, -l
+stub
+
 --perf,
+stub
+
 --performance, --perf
+stub
+
 --frame, -f
+stub
+
 --minimalFrame, -m
+stub
+
 --tab, -t
+stub
+
 --quit, -q
+stub
+
 --blit, -b
+stub
+
 --require, -u
+stub
+
 --nogl, -n
+stub
+
 --headless, -e
+stub
+
 --uncapped, -u
---webgl, -w
---xr, -x
---size, -s
---replace, -r
---onbeforeload
+stub
+
+--webgl [option], -w [option]
+stub
+
+--xr [option], -x [option]
+stub
+
+--size [option], -s [option]
+stub
+
+--replace [option], -r [option]
+stub
+
+--onbeforeload [option]
+stub
+
 `;
 
 core.setArgs(args);
