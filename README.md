@@ -11,10 +11,6 @@
 </p>
 
 <div align="center">
-  <a href="https://exokit.org">Site</a>
-  &mdash;
-  <a href="https://exokit.org/docs/">Docs</a>
-  &mdash;
   <a href="https://discord.gg/9M8awV8">Discord</a>
   &mdash;
   <a href="https://twitter.com/exokitxr">Twitter</a>
@@ -30,7 +26,7 @@
 
 <a href="https://www.youtube.com/watch?v=m_QntqZmd_Q"><img alt="Reality Projection with HTC Vive and Magic Leap" target="_blank" src="https://user-images.githubusercontent.com/29695350/55507271-e60a0480-561c-11e9-87ad-7dc736ba0760.gif" height="190" width="32%"></a>
 <a href="https://youtu.be/i0MXRCNkdB4"><img alt="Emukit" target="_blank" src="https://user-images.githubusercontent.com/29695350/55507623-a8f24200-561d-11e9-97a3-194b6b4a1d8b.gif" height="190" width="32%"></a>
-<a href="https://exokit.org/"><img alt="Various Exokit Apps" target="_blank" src="https://user-images.githubusercontent.com/29695350/55506701-ba3a4f00-561b-11e9-9e19-ba808bed7c5a.gif" height="190" width="32%"></a>
+<img alt="Various Exokit Apps" target="_blank" src="https://user-images.githubusercontent.com/29695350/55506701-ba3a4f00-561b-11e9-9e19-ba808bed7c5a.gif" height="190" width="32%">
 
 *Find more examples [here](https://github.com/exokitxr/exokit/tree/master/examples) and on [YouTube](https://www.youtube.com/channel/UC87Q7_5ooY8FSLwOec52ZPQ).*
 
