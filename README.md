@@ -85,7 +85,7 @@ This project **enables developers to build XR experiences using the same code th
 ## Quickstart
 
 ### Desktop
-<h4><a href="https://get.exokit.org">Download for current OS</a></h4>
+<h4><a href="https://unavailable">Download for current OS</a></h4>
 
 #### Run a WebXR site (desktop)
 
@@ -95,7 +95,7 @@ exokit https://aframe.io/a-painter/ # start A-Painter in Exokit
 
 ### Magic Leap
 
-<h4><a href="https://get.exokit.org/magicleap">Download for Magic Leap</a></h4>
+<h4><a href="https://unavailable/magicleap">Download for Magic Leap</a></h4>
 
 #### Run (Magic Leap device)
 
