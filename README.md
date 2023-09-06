@@ -1,5 +1,5 @@
 <h1 align="center">Exokit</h1>
-<p align="center"><a href="https://exokit.org" target="_blank"><img width="300" height="300" alt="Exokit" src="assets/icon.png"/></a></p>
+<p align="center"><img width="300" height="300" alt="Exokit" src="assets/icon.png"/></p>
 <p align="center"><b>:dark_sunglasses: Native VR and AR engine for JavaScript 🦖</b></p>
 
 <p align="center">
